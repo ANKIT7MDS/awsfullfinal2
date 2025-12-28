@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EventLens Pro – Single File</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root{
+      --bg:#050505; --card:#101010; --border:#262626;
+      --text:#fff; --muted:#a0a0a0;
+      --brand:#00e676; --brand2:#6366f1;
+      --danger:#ff5252;
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at 30% 10%, #1a1a1a 0%, var(--bg) 60%);color:var(--text);font-family:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;}
+    a{color:var(--brand);text-decoration:none}
+    .wrap{max-width:1200px;margin:28px auto;padding:0 18px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:18px;background:rgba(16,16,16,.75);backdrop-filter:blur(8px);box-shadow:var(--shadow);position:sticky;top:10px;z-index:5}
+    .logo{font-weight:800;letter-spacing:.3px}
+    .logo span{color:var(--brand)}
+    .nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .pill{padding:7px 12px;border-radius:999px;border:1px solid var(--border);background:#0c0c0c;color:var(--muted);font-size:12px}
+    .btn{border:none;border-radius:999px;padding:10px 16px;font-weight:800;cursor:pointer;transition:.18s;display:inline-flex;align-items:center;gap:8px}
+    .btn.primary{background:var(--brand);color:#000}
+    .btn.primary:hover{transform:translateY(-1px);filter:brightness(.95)}
+    .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+    .btn.secondary:hover{border-color:var(--brand)}
+    .btn.danger{background:rgba(255,82,82,.08);border:1px solid var(--danger);color:var(--danger)}
+    .btn.danger:hover{background:var(--danger);color:#fff}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:16px}
+    @media(max-width:980px){.grid{grid-template-columns:1fr}}
+    .card{background:rgba(16,16,16,.8);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+    .card h2,.card h3{margin:0 0 12px}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input,select,textarea{
+      width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);
+      background:#000;color:#fff;outline:none;
+    }
+    input:focus,select:focus,textarea:focus{border-color:var(--brand)}
+    .kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media(max-width:520px){.kpi{grid-template-columns:1fr}}
+    .k{border:1px solid var(--border);border-radius:14px;background:#0c0c0c;padding:12px}
+    .k .v{font-size:22px;font-weight:900;color:var(--brand);margin-top:6px}
+    table{width:100%;border-collapse:collapse;min-width:640px}
+    th,td{padding:12px 10px;border-bottom:1px solid #1b1b1b;font-size:13px}
+    th{color:var(--muted);text-align:left;font-weight:800}
+    tr:hover td{background:#141414}
+    .tableWrap{overflow:auto;border:1px solid var(--border);border-radius:16px}
+    .tag{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#0c0c0c;color:#ddd;font-size:12px;margin:4px 6px 0 0}
+    .chips{display:flex;flex-wrap:wrap}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:980px){.split{grid-template-columns:1fr}}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+    .ph{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#0b0b0b}
+    .ph img{width:100%;height:160px;object-fit:cover;display:block}
+    .ph .m{padding:10px}
+    .ph .m .t{font-weight:800;font-size:12px}
+    .ph .m .s{color:var(--muted);font-size:11px;margin-top:4px}
+    .drawer{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+    .drawer.open{display:flex}
+    .drawer .box{max-width:980px;width:100%;background:#0c0c0c;border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:16px}
+    .drawer img{width:100%;max-height:68vh;object-fit:contain;border-radius:14px;border:1px solid var(--border)}
+    .toast{position:fixed;top:18px;right:18px;transform:translateX(420px);transition:.25s;z-index:30;
+      padding:12px 14px;border-radius:14px;font-weight:800;background:var(--brand);color:#000;box-shadow:var(--shadow)}
+    .toast.show{transform:translateX(0)}
+    .toast.error{background:var(--danger);color:#fff}
+    .loader{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:25;background:rgba(0,0,0,.7)}
+    .loader.on{display:flex}
+    .spin{width:42px;height:42px;border:4px solid #999;border-top-color:var(--brand);border-radius:50%;animation:sp 1s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    .view{display:none}
+    .view.on{display:block}
+    .hr{height:1px;background:var(--border);margin:12px 0}
+    .hint{font-size:12px;color:var(--muted);line-height:1.5}
+    .dangerBox{border:1px solid rgba(255,82,82,.5);background:rgba(255,82,82,.06);padding:12px;border-radius:14px}
+  </style>
+</head>
+<body>
+  <div class="loader" id="loader"><div style="text-align:center"><div class="spin"></div><div class="muted" style="margin-top:10px">Loading...</div></div></div>
+  <div class="toast" id="toast"></div>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div class="row" style="gap:12px">
+        <div class="logo">EventLens <span>Pro</span></div>
+        <span class="pill" id="whoPill">Not logged in</span>
+      </div>
+      <div class="nav">
+        <a class="btn secondary" href="#/login"><i class="fa-solid fa-right-to-bracket"></i>Login</a>
+        <a class="btn secondary" href="#/dashboard"><i class="fa-solid fa-table-cells-large"></i>Dashboard</a>
+        <a class="btn secondary" href="#/superadmin"><i class="fa-solid fa-user-shield"></i>SuperAdmin</a>
+        <a class="btn secondary" href="#/guest"><i class="fa-solid fa-camera"></i>Guest</a>
+        <button class="btn danger" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i>Logout</button>
+      </div>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="view" id="viewLogin">
+      <div class="grid">
+        <div class="card">
+          <h2>Admin Login</h2>
+          <div class="muted">Cognito Hosted UI से login होगा. Login के बाद ये same file dashboard खोल देगा.</div>
+          <div class="hr"></div>
+          <button class="btn primary" id="btnLogin"><i class="fa-brands fa-aws"></i> Login with AWS Cognito</button>
+          <div class="hr"></div>
+          <div class="hint">
+            <b>Important:</b> Cognito App client में callback URL में इस file का URL add होना चाहिए.  
+            अगर आप Netlify पर host कर रहे हो तो callback में <code>https://YOUR_DOMAIN/single.html</code> या जो भी path हो add कर दो.
+          </div>
+        </div>
+        <div class="card">
+          <h3>Quick Debug</h3>
+          <div class="dangerBox">
+            <div style="font-weight:900;margin-bottom:6px">“Failed to load data. Refreshing session...”</div>
+            <div class="hint">
+              ये error तब आता है जब token missing/expired हो, या redirect_uri mismatch हो.  
+              इस single file में token flow वही रखा है जो आपके dashboard.html में है: code → /oauth2/token → id_token localStorage.  
+              (ref: fileciteturn3file0L344-L384)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="view" id="viewDashboard">
+      <div class="grid">
+        <div class="card">
+          <h2>Photographer Dashboard</h2>
+          <div class="kpi">
+            <div class="k"><div class="muted">Data Used</div><div class="v" id="kData">-</div></div>
+            <div class="k"><div class="muted">Expiry</div><div class="v" style="color:#fff" id="kExp">-</div></div>
+          </div>
+          <div class="hr"></div>
+
+          <h3>Create / Edit Collection</h3>
+          <div class="row">
+            <div style="flex:1;min-width:240px">
+              <input id="colName" placeholder="Collection name (e.g. Rahul & Priya Wedding)" />
+              <input id="colIdEdit" type="hidden" />
+            </div>
+            <button class="btn primary" id="colSave"><i class="fa-solid fa-floppy-disk"></i><span id="colSaveTxt">Create</span></button>
+            <button class="btn secondary" id="colCancel" style="display:none"><i class="fa-solid fa-ban"></i>Cancel</button>
+          </div>
+
+          <div class="hr"></div>
+          <div class="row" style="justify-content:space-between">
+            <h3 style="margin:0">Your Collections</h3>
+            <input id="colSearch" placeholder="Search..." style="max-width:280px" />
+          </div>
+          <div class="tableWrap" style="margin-top:10px">
+            <table>
+              <thead><tr><th>Name</th><th>Created</th><th>Events</th><th>Photos</th><th>Storage</th><th>Actions</th></tr></thead>
+              <tbody id="colRows"><tr><td colspan="6" class="muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Open Collection</h3>
+          <div class="muted">Collection पर click करके details view open होगा (same file). Quick link generate भी यहीं.</div>
+          <div class="hr"></div>
+          <div class="hint">
+            Dashboard APIs: <code>/get-collections</code>, <code>/upsert-collection</code>, <code>/delete-collection</code>, <code>/account-status</code>  
+            (ref: fileciteturn3file0L169-L173)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLLECTION DETAILS -->
+    <div class="view" id="viewCollection">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <h2 style="margin-bottom:4px">Collection: <span id="cdName" style="color:var(--brand)"></span></h2>
+            <div class="muted">ID: <span id="cdId"></span></div>
+          </div>
+          <div class="row">
+            <button class="btn secondary" id="backDash"><i class="fa-solid fa-arrow-left"></i>Dashboard</button>
+            <button class="btn primary" id="genLinkBtn"><i class="fa-solid fa-link"></i>Generate Guest Link</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="split">
+          <div class="card" style="padding:14px;background:#0c0c0c">
+            <h3 style="margin:0 0 10px">Events</h3>
+            <div class="row">
+              <input id="evName" placeholder="Event name (e.g. Haldi / Stage / Reception)" />
+              <button class="btn primary" id="evSave"><i class="fa-solid fa-plus"></i>Add</button>
+            </div>
+            <div class="tableWrap" style="margin-top:10px">
+              <table>
+                <thead><tr><th>Event</th><th>Photos</th><th>Actions</th></tr></thead>
+                <tbody id="evRows"><tr><td colspan="3" class="muted">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" style="padding:14px;background:#0c0c0c">
+            <h3 style="margin:0 0 10px">Upload Photos</h3>
+            <div class="hint">Generate upload URLs → PUT to S3. (endpoints: fileciteturn4file11L49-L59)</div>
+            <div class="row" style="margin-top:10px">
+              <select id="uploadEvent"></select>
+              <input id="filePick" type="file" multiple accept="image/*" />
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="btn primary" id="uploadBtn"><i class="fa-solid fa-cloud-arrow-up"></i>Start Upload</button>
+              <span class="muted" id="uploadStat"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="split">
+          <div class="card" style="padding:14px;background:#0c0c0c">
+            <div class="row" style="justify-content:space-between">
+              <h3 style="margin:0">Photos</h3>
+              <div class="row" style="gap:8px">
+                <select id="photoEventFilter" style="max-width:220px"></select>
+                <input id="photoSearch" placeholder="filename / tag" style="max-width:220px" />
+              </div>
+            </div>
+            <div class="hr"></div>
+            <div class="gallery" id="photoGrid"></div>
+            <div class="row" style="justify-content:center;margin-top:10px">
+              <button class="btn secondary" id="loadMoreBtn"><i class="fa-solid fa-angles-down"></i>Load more</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding:14px;background:#0c0c0c">
+            <div class="row" style="justify-content:space-between">
+              <h3 style="margin:0">Leads</h3>
+              <button class="btn secondary" id="refreshLeads"><i class="fa-solid fa-rotate"></i>Refresh</button>
+            </div>
+            <div class="hint">Leads API: <code>/get-leads</code> (ref: fileciteturn4file13L48-L48)</div>
+            <div class="hr"></div>
+            <div class="tableWrap">
+              <table>
+                <thead><tr><th>Guest</th><th>Selfie</th><th>Matched Photos</th><th>Actions</th></tr></thead>
+                <tbody id="leadRows"><tr><td colspan="4" class="muted">Load to view…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SUPERADMIN -->
+    <div class="view" id="viewSuper">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h2>Super Admin</h2>
+          <button class="btn primary" id="newPhotog"><i class="fa-solid fa-user-plus"></i>New Photographer</button>
+        </div>
+        <div class="hint">Uses <code>/photographers</code> endpoints (ref: fileciteturn4file2L37-L56)</div>
+        <div class="hr"></div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>Email</th><th>Limit (GB)</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="saRows"><tr><td colspan="5" class="muted">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUEST -->
+    <div class="view" id="viewGuest">
+      <div class="grid">
+        <div class="card">
+          <h2>Guest Search</h2>
+          <div class="muted">यह page guest link से खुलना चाहिए. Example: <code>#/guest?linkId=XXXX</code></div>
+          <div class="hr"></div>
+          <label class="muted">Link ID</label>
+          <input id="gLinkId" placeholder="Paste linkId here" />
+          <label class="muted" style="margin-top:10px;display:block">Upload Selfie</label>
+          <input id="gSelfie" type="file" accept="image/*" />
+          <div class="row" style="margin-top:10px">
+            <button class="btn primary" id="gSearchBtn"><i class="fa-solid fa-magnifying-glass"></i>Find my photos</button>
+            <span class="muted" id="gStat"></span>
+          </div>
+          <div class="hr"></div>
+          <div class="hint">
+            Guest search endpoint: <code>/search</code> (ref: fileciteturn4file11L58-L60).  
+            NOTE: अगर आपका backend “selfie upload” अलग endpoint से लेता है, तो बताना—मैं same file में patch कर दूँगा.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Results</h3>
+          <div class="gallery" id="gResults"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PHOTO MODAL -->
+  <div class="drawer" id="photoModal">
+    <div class="box">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <div style="font-weight:900" id="pmTitle">Photo</div>
+        <div class="row">
+          <a class="btn secondary" id="pmDownload" href="#" target="_blank"><i class="fa-solid fa-download"></i>Download</a>
+          <button class="btn danger" id="pmClose"><i class="fa-solid fa-xmark"></i>Close</button>
+        </div>
+      </div>
+      <img id="pmImg" src="" alt="photo"/>
+      <div class="hr"></div>
+      <div id="pmMeta" class="hint"></div>
+    </div>
+  </div>
+
+<script>
+/** ===================== CONFIG (from your existing pages) ===================== **/
+const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
+const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+
+// Dashboard endpoints (ref: fileciteturn3file0L169-L173)
+const GET_COLLECTIONS_API = `${API_BASE}/get-collections`;
+const UPSERT_COLLECTION_API = `${API_BASE}/upsert-collection`;
+const DELETE_COLLECTION_API = `${API_BASE}/delete-collection`;
+const GET_ACCOUNT_STATUS_API = `${API_BASE}/account-status`;
+
+// Collection endpoints (ref: fileciteturn4file11L49-L59)
+const GET_EVENTS_API      = `${API_BASE}/get-events`;            // POST
+const GET_PHOTOS_API      = `${API_BASE}/get-photos`;            // POST
+const UPSERT_EVENT_API    = `${API_BASE}/upsert-event`;          // POST
+const DELETE_EVENT_API    = `${API_BASE}/delete-event`;          // POST
+const UPLOAD_URLS_API     = `${API_BASE}/generate-upload-urls`;  // POST
+const GENERATE_LINK_API   = `${API_BASE}/generate-search-link`;  // POST
+const GET_LEADS_API       = `${API_BASE}/get-leads`;             // POST/GET (your UI uses it as API)
+const SEARCH_API          = `${API_BASE}/search`;                // POST
+
+/** ===================== STATE ===================== **/
+let idToken = localStorage.getItem('idToken') || null;
+let me = null;
+
+let dashCollections = [];
+let cd = { id:null, name:null, events:[], photos:[], next:null, leads:[] };
+let guest = { linkId:null, results:[] };
+
+/** ===================== UI helpers ===================== **/
+const $ = (id)=>document.getElementById(id);
+const toast = $('toast');
+const loader = $('loader');
+const whoPill = $('whoPill');
+
+function showLoader(on=true){ loader.classList.toggle('on', !!on); }
+function showToast(msg, type='success'){
+  toast.textContent = msg;
+  toast.className = `toast ${type==='error'?'error':''}`.trim();
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 2600);
+}
+function fmtDate(d){
+  try{ if(!d) return '-'; return new Date(d).toLocaleDateString('en-IN'); }catch{return d||'-'}
+}
+function formatBytes(bytes=0, decimals=2){
+  if(!+bytes) return '0 Bytes';
+  const k=1024, dm=decimals<0?0:decimals, sizes=['Bytes','KB','MB','GB','TB'];
+  const i=Math.floor(Math.log(bytes)/Math.log(k));
+  return `${parseFloat((bytes/Math.pow(k,i)).toFixed(dm))} ${sizes[i]}`;
+}
+function parseJwt(token){
+  const payload = JSON.parse(atob(token.split('.')[1]));
+  return payload;
+}
+function authHeader(){
+  if(!idToken) return {};
+  return { 'Authorization': `Bearer ${idToken}` };
+}
+async function apiFetch(url, opts={}){
+  const o = Object.assign({headers:{}}, opts);
+  o.headers = Object.assign({}, o.headers, authHeader());
+  return fetch(url, o);
+}
+
+/** ===================== ROUTER ===================== **/
+const views = {
+  login: $('viewLogin'),
+  dashboard: $('viewDashboard'),
+  collection: $('viewCollection'),
+  superadmin: $('viewSuper'),
+  guest: $('viewGuest'),
+};
+
+function setView(name){
+  Object.values(views).forEach(v=>v.classList.remove('on'));
+  (views[name]||views.login).classList.add('on');
+}
+
+function getHashRoute(){
+  // examples:
+  // #/dashboard
+  // #/collection?id=...&name=...
+  // #/guest?linkId=...
+  const h = location.hash || '#/login';
+  const [path, q] = h.replace(/^#\/?/, '').split('?');
+  const params = new URLSearchParams(q||'');
+  return { path: (path||'login').toLowerCase(), params };
+}
+
+window.addEventListener('hashchange', ()=>route());
+document.addEventListener('DOMContentLoaded', ()=>route());
+
+/** ===================== AUTH FLOW (same as dashboard.html) ===================== **/
+async function handleAuthFromQuery(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  if(!code) return;
+
+  // redirect_uri MUST match callback configured in Cognito. We'll use current page URL without query.
+  const redirectUri = location.origin + location.pathname;
+
+  showLoader(true);
+  whoPill.textContent = 'Logging in...';
+
+  try{
+    const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({
+        grant_type:'authorization_code',
+        client_id: CLIENT_ID,
+        code,
+        redirect_uri: redirectUri
+      })
+    });
+
+    const tokens = await res.json();
+    if(!res.ok) throw new Error(tokens?.error_description || 'Auth failed');
+
+    idToken = tokens.id_token;
+    localStorage.setItem('idToken', idToken);
+
+    // clear ?code= from URL
+    history.replaceState({}, document.title, location.pathname + location.hash);
+    showToast('Login successful!');
+  }catch(e){
+    console.error(e);
+    localStorage.removeItem('idToken');
+    idToken = null;
+    showToast('Login failed. Redirect URI / callback mismatch?', 'error');
+  }finally{
+    showLoader(false);
+  }
+}
+
+function ensureLoggedIn(){
+  if(!idToken) return false;
+  try{
+    const payload = parseJwt(idToken);
+    if(Date.now() > payload.exp*1000) throw new Error('Token expired');
+    me = payload;
+    whoPill.textContent = `Hi, ${payload.email?.split('@')[0] || 'User'}`;
+    return true;
+  }catch(e){
+    console.warn(e);
+    localStorage.removeItem('idToken');
+    idToken = null;
+    me = null;
+    whoPill.textContent = 'Not logged in';
+    return false;
+  }
+}
+
+function isMasterAdmin(){
+  const groups = (me && me['cognito:groups']) || [];
+  return Array.isArray(groups) ? groups.includes('MasterAdmins') : String(groups).includes('MasterAdmins');
+}
+
+/** ===================== LOGIN UI ===================== **/
+$('btnLogin').addEventListener('click', ()=>{
+  const redirectUri = location.origin + location.pathname; // same file
+  const scopes = "openid profile email aws.cognito.signin.user.admin";
+  const loginUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
+  location.href = loginUrl;
+});
+
+/** ===================== LOGOUT ===================== **/
+$('logoutBtn').addEventListener('click', ()=>{
+  localStorage.clear();
+  idToken = null; me=null;
+  whoPill.textContent = 'Not logged in';
+  // Optional: hosted UI logout
+  const logoutUri = location.origin + location.pathname + '#/login';
+  const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  location.href = logoutUrl;
+});
+
+/** ===================== DASHBOARD LOGIC ===================== **/
+$('colSave').addEventListener('click', ()=>saveCollection());
+$('colCancel').addEventListener('click', ()=>resetColForm());
+$('colSearch').addEventListener('input', ()=>renderCollections());
+
+function resetColForm(){
+  $('colName').value = '';
+  $('colIdEdit').value = '';
+  $('colSaveTxt').textContent = 'Create';
+  $('colCancel').style.display = 'none';
+}
+
+async function loadAccountStatus(){
+  try{
+    const res = await apiFetch(GET_ACCOUNT_STATUS_API);
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    $('kData').textContent = data.storage_limit_bytes > 0
+      ? `${formatBytes(data.total_storage_used_bytes||0)} / ${formatBytes(data.storage_limit_bytes)}`
+      : `${formatBytes(data.total_storage_used_bytes||0)} (Unlimited)`;
+    $('kExp').textContent = data.expiry_date ? new Date(data.expiry_date).toLocaleDateString('en-IN') : 'Lifetime';
+  }catch(e){
+    console.error(e);
+    $('kData').textContent = '-';
+    $('kExp').textContent = '-';
+  }
+}
+
+async function loadCollections(){
+  $('colRows').innerHTML = `<tr><td colspan="6" class="muted">Loading...</td></tr>`;
+  try{
+    const res = await apiFetch(GET_COLLECTIONS_API);
+    if(!res.ok) throw new Error('Failed to fetch collections');
+    const data = await res.json();
+    dashCollections = (data.Items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+    renderCollections();
+  }catch(e){
+    console.error(e);
+    $('colRows').innerHTML = `<tr><td colspan="6" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderCollections(){
+  const q = ($('colSearch').value||'').toLowerCase();
+  const rows = dashCollections.filter(c => (c.name||'').toLowerCase().includes(q));
+  if(!rows.length){
+    $('colRows').innerHTML = `<tr><td colspan="6" class="muted">No collections</td></tr>`;
+    return;
+  }
+  $('colRows').innerHTML = rows.map(c => {
+    const nameEsc = encodeURIComponent(c.name||'Collection');
+    return `
+      <tr>
+        <td><a href="#/collection?id=${encodeURIComponent(c.collection_id)}&name=${nameEsc}" style="color:#fff;font-weight:800">📁 ${c.name||'-'}</a></td>
+        <td>${fmtDate(c.created_at)}</td>
+        <td><span class="pill">${c.event_count||0}</span></td>
+        <td><span class="pill">${c.total_photo_count||0}</span></td>
+        <td>${formatBytes(c.storage_bytes||0)}</td>
+        <td>
+          <div class="row">
+            <button class="btn secondary" onclick="editCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i>Edit</button>
+            <button class="btn danger" onclick="deleteCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i>Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.editCollection = (id, name)=>{
+  $('colName').value = name;
+  $('colIdEdit').value = id;
+  $('colSaveTxt').textContent = 'Update';
+  $('colCancel').style.display = 'inline-flex';
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+
+async function saveCollection(){
+  const name = ($('colName').value||'').trim();
+  if(!name) return showToast('Name is required', 'error');
+  const payload = { name };
+  const editId = $('colIdEdit').value;
+  if(editId) payload.collection_id = editId;
+
+  showLoader(true);
+  try{
+    const res = await apiFetch(UPSERT_COLLECTION_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed to save');
+    resetColForm();
+    await loadCollections();
+    showToast(editId ? 'Collection updated!' : 'Collection created!');
+  }catch(e){
+    console.error(e);
+    showToast(e.message, 'error');
+  }finally{
+    showLoader(false);
+  }
+}
+
+window.deleteCollection = async (id, name)=>{
+  if(!confirm(`Delete "${name}"?`)) return;
+  showLoader(true);
+  try{
+    const res = await apiFetch(DELETE_COLLECTION_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({collection_id:id})
+    });
+    if(!res.ok) throw new Error('Delete failed');
+    await loadCollections();
+    showToast('Deleted');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{
+    showLoader(false);
+  }
+};
+
+/** ===================== COLLECTION DETAILS ===================== **/
+$('backDash').addEventListener('click', ()=> location.hash = '#/dashboard');
+$('evSave').addEventListener('click', ()=> upsertEvent());
+$('genLinkBtn').addEventListener('click', ()=> generateGuestLink());
+$('uploadBtn').addEventListener('click', ()=> startUpload());
+$('photoSearch').addEventListener('input', ()=> renderPhotos());
+$('photoEventFilter').addEventListener('change', ()=> renderPhotos());
+$('refreshLeads').addEventListener('click', ()=> loadLeads());
+$('loadMoreBtn').addEventListener('click', ()=> loadPhotos(true));
+
+function setCollectionFromRoute(params){
+  cd.id = params.get('id');
+  cd.name = params.get('name') || 'Collection';
+  $('cdId').textContent = cd.id || '-';
+  $('cdName').textContent = cd.name || '-';
+}
+
+async function loadEvents(){
+  $('evRows').innerHTML = `<tr><td colspan="3" class="muted">Loading...</td></tr>`;
+  try{
+    const res = await apiFetch(GET_EVENTS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id })
+    });
+    if(!res.ok) throw new Error('Failed to load events');
+    const data = await res.json();
+    cd.events = data.events || data.Items || data || [];
+    renderEvents();
+    fillEventSelects();
+  }catch(e){
+    console.error(e);
+    $('evRows').innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderEvents(){
+  const evs = Array.isArray(cd.events)?cd.events:[];
+  if(!evs.length){
+    $('evRows').innerHTML = `<tr><td colspan="3" class="muted">No events</td></tr>`;
+    return;
+  }
+  $('evRows').innerHTML = evs.map(ev=>{
+    const eid = ev.event_id || ev.eventId || ev.id;
+    const nm = ev.name || ev.event_name || ev.eventName || '-';
+    const pc = ev.photo_count || ev.photoCount || 0;
+    return `
+      <tr>
+        <td style="font-weight:800">${nm}</td>
+        <td><span class="pill">${pc}</span></td>
+        <td class="row">
+          <button class="btn danger" onclick="delEvent('${eid}','${(nm||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function fillEventSelects(){
+  const evs = Array.isArray(cd.events)?cd.events:[];
+  const opt = [`<option value="">All events</option>`].concat(
+    evs.map(ev=>{
+      const eid = ev.event_id || ev.eventId || ev.id;
+      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
+      return `<option value="${eid}">${nm}</option>`;
+    })
+  ).join('');
+  $('photoEventFilter').innerHTML = opt;
+  $('uploadEvent').innerHTML = `<option value="">Select event</option>` + evs.map(ev=>{
+      const eid = ev.event_id || ev.eventId || ev.id;
+      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
+      return `<option value="${eid}">${nm}</option>`;
+  }).join('');
+}
+
+async function upsertEvent(){
+  const name = ($('evName').value||'').trim();
+  if(!name) return showToast('Event name required','error');
+  showLoader(true);
+  try{
+    const res = await apiFetch(UPSERT_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, name })
+    });
+    if(!res.ok) throw new Error('Failed to save event');
+    $('evName').value='';
+    await loadEvents();
+    showToast('Event added');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+window.delEvent = async (eventId, name)=>{
+  if(!confirm(`Delete event "${name}"?`)) return;
+  showLoader(true);
+  try{
+    const res = await apiFetch(DELETE_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, event_id: eventId })
+    });
+    if(!res.ok) throw new Error('Failed to delete event');
+    await loadEvents();
+    showToast('Event deleted');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+};
+
+/** Photos pagination */
+async function loadPhotos(append=false){
+  if(!append){ cd.photos=[]; cd.next=null; }
+  const eventFilter = $('photoEventFilter').value || '';
+  const payload = { collection_id: cd.id };
+  if(eventFilter) payload.event_id = eventFilter;
+  if(cd.next) payload.nextToken = cd.next;
+
+  showLoader(true);
+  try{
+    const res = await apiFetch(GET_PHOTOS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed to load photos');
+    const data = await res.json();
+    const items = data.Items || data.photos || data.items || [];
+    cd.next = data.nextToken || data.next_token || null;
+    cd.photos = append ? cd.photos.concat(items) : items;
+    renderPhotos();
+    $('loadMoreBtn').style.display = cd.next ? 'inline-flex' : 'none';
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+function renderPhotos(){
+  const q = ($('photoSearch').value||'').toLowerCase();
+  const evSel = $('photoEventFilter').value || '';
+  const filtered = cd.photos.filter(p=>{
+    const fn = (p.filename||p.file_name||p.key||'').toLowerCase();
+    const tags = Array.isArray(p.ai_tags)?p.ai_tags.join(' ').toLowerCase():'';
+    const matchText = !q || fn.includes(q) || tags.includes(q);
+    const pid = p.event_id || p.eventId || '';
+    const matchEv = !evSel || pid===evSel;
+    return matchText && matchEv;
+  });
+
+  if(!filtered.length){
+    $('photoGrid').innerHTML = `<div class="muted">No photos</div>`;
+    return;
+  }
+
+  $('photoGrid').innerHTML = filtered.map(p=>{
+    const url = p.url || p.s3_url || p.photo_url || p.image_url || p.public_url || '';
+    const thumb = p.thumbnail_url || url;
+    const fn = p.filename || p.file_name || 'photo';
+    const faces = (p.face_count ?? (Array.isArray(p.faces)?p.faces.length:null) ?? (Array.isArray(p.face_ids)?p.face_ids.length:null) ?? 0);
+    return `
+      <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','${(fn||'').replace(/'/g,"\\'")}', ${faces})">
+        <img src="${thumb}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"/>
+        <div class="m">
+          <div class="t">${fn}</div>
+          <div class="s">Faces: ${faces}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.openPhoto = (encUrl, title, faces)=>{
+  const url = decodeURIComponent(encUrl||'');
+  $('pmImg').src = url;
+  $('pmTitle').textContent = title || 'Photo';
+  $('pmDownload').href = url;
+  $('pmMeta').textContent = `Faces detected: ${faces}`;
+  $('photoModal').classList.add('open');
+};
+$('pmClose').addEventListener('click', ()=> $('photoModal').classList.remove('open'));
+$('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') $('photoModal').classList.remove('open'); });
+
+/** Upload */
+async function startUpload(){
+  const eventId = $('uploadEvent').value;
+  const files = $('filePick').files;
+  if(!eventId) return showToast('Select event','error');
+  if(!files || !files.length) return showToast('Select files','error');
+
+  $('uploadStat').textContent = 'Requesting URLs...';
+  showLoader(true);
+  try{
+    const filesPayload = Array.from(files).map(f=>({ name:f.name, type:f.type || 'image/jpeg' }));
+    const res = await apiFetch(UPLOAD_URLS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, event_id: eventId, files: filesPayload })
+    });
+    if(!res.ok) throw new Error('Failed to get upload URLs');
+    const data = await res.json();
+    const urls = data.urls || data.uploadUrls || [];
+    let done = 0;
+
+    for(let i=0;i<urls.length;i++){
+      const info = urls[i];
+      const file = files[i];
+      if(!info || !info.uploadURL || !file) continue;
+
+      $('uploadStat').textContent = `Uploading ${i+1}/${urls.length}: ${file.name}`;
+      const put = await fetch(info.uploadURL, { method:'PUT', body:file, headers:{'Content-Type': file.type || 'image/jpeg'} });
+      if(!put.ok) console.warn('Upload failed', file.name, put.status);
+      done++;
+    }
+
+    $('uploadStat').textContent = `Uploaded ${done}/${urls.length}. Indexing may take a bit.`;
+    showToast('Upload done');
+    // refresh after a moment
+    setTimeout(()=>loadPhotos(false), 1200);
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{
+    showLoader(false);
+  }
+}
+
+/** Guest link */
+async function generateGuestLink(){
+  showLoader(true);
+  try{
+    const res = await apiFetch(GENERATE_LINK_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id })
+    });
+    if(!res.ok) throw new Error('Failed to generate link');
+    const data = await res.json();
+    const linkId = data.linkId || data.link_id || data.id;
+    const url = location.origin + location.pathname + `#/guest?linkId=${encodeURIComponent(linkId)}`;
+    await navigator.clipboard.writeText(url).catch(()=>{});
+    showToast('Guest link copied!');
+    alert(`Guest link:\n${url}\n\n(Already copied to clipboard if browser allowed)`);
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+/** Leads */
+async function loadLeads(){
+  $('leadRows').innerHTML = `<tr><td colspan="4" class="muted">Loading...</td></tr>`;
+  showLoader(true);
+  try{
+    // Some setups have GET, some POST. We'll try POST first.
+    let res = await apiFetch(GET_LEADS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id })
+    });
+    if(!res.ok){
+      res = await apiFetch(`${GET_LEADS_API}?collection_id=${encodeURIComponent(cd.id)}`);
+    }
+    if(!res.ok) throw new Error('Failed to load leads');
+    const data = await res.json();
+    cd.leads = data.Items || data.leads || data || [];
+    renderLeads();
+  }catch(e){
+    console.error(e);
+    $('leadRows').innerHTML = `<tr><td colspan="4" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }finally{ showLoader(false); }
+}
+
+function renderLeads(){
+  const leads = Array.isArray(cd.leads)?cd.leads:[];
+  if(!leads.length){
+    $('leadRows').innerHTML = `<tr><td colspan="4" class="muted">No leads</td></tr>`;
+    return;
+  }
+  $('leadRows').innerHTML = leads.map(l=>{
+    const name = l.name || l.guest_name || l.guestName || '-';
+    const phone = l.phone || l.mobile || l.number || '';
+    const selfie = l.selfie_url || l.selfieUrl || l.selfie || '';
+    const matched = l.match_count || l.matched_count || (Array.isArray(l.photo_urls)?l.photo_urls.length:0) || 0;
+    const safeSelfie = selfie || 'https://via.placeholder.com/70x70?text=NA'; // your UI showed this placeholder when selfie url missing
+    return `
+      <tr>
+        <td><div style="font-weight:900">${name}</div><div class="muted" style="font-size:12px">${phone}</div></td>
+        <td><img src="${safeSelfie}" style="width:54px;height:54px;object-fit:cover;border-radius:12px;border:1px solid var(--border)" onerror="this.src='https://via.placeholder.com/70x70?text=NA'"></td>
+        <td><span class="pill">${matched}</span></td>
+        <td>
+          <div class="row">
+            <button class="btn secondary" onclick="openLead('${encodeURIComponent(JSON.stringify(l))}')"><i class="fa-solid fa-images"></i>Open</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.openLead = (enc)=>{
+  let l = {};
+  try{ l = JSON.parse(decodeURIComponent(enc)); }catch{}
+  // If lead has matched photos array, show quickly in modal using gallery
+  const photos = l.photo_urls || l.matched_photos || l.photos || [];
+  if(Array.isArray(photos) && photos.length){
+    $('pmTitle').textContent = 'Lead matched photos';
+    $('pmImg').src = photos[0];
+    $('pmDownload').href = photos[0];
+    $('pmMeta').textContent = `Total matched: ${photos.length}`;
+    $('photoModal').classList.add('open');
+  }else{
+    alert('This lead does not have matched photo URLs in response. Backend should return them (or a linkId to open guest gallery).');
+  }
+};
+
+/** ===================== SUPERADMIN ===================== **/
+$('newPhotog').addEventListener('click', ()=>openNewPhotog());
+async function loadSuperAdmin(){
+  $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers`);
+    if(!res.ok) throw new Error('Failed to load photographers');
+    const data = await res.json();
+    const rows = Array.isArray(data)?data:[];
+    $('saRows').innerHTML = rows.map(u=>{
+      const status = u.disabled ? 'Disabled' : 'Active';
+      return `
+        <tr>
+          <td style="font-weight:900">${u.email||'-'}</td>
+          <td>${u.storage_limit_gb ?? (u.storage_limit_bytes?Math.round(u.storage_limit_bytes/1024/1024/1024):'-')}</td>
+          <td>${u.expiry_date||'-'}</td>
+          <td><span class="pill" style="color:${u.disabled?'#ffb4b4':'#b7ffcf'}">${status}</span></td>
+          <td class="row">
+            <button class="btn danger" onclick="saDelete('${u.user_id}')"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn secondary" onclick="saToggle('${u.user_id}', ${!!u.disabled})"><i class="fa-solid fa-power-off"></i></button>
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="5" class="muted">No users</td></tr>`;
+  }catch(e){
+    console.error(e);
+    $('saRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }finally{ showLoader(false); }
+}
+
+function openNewPhotog(){
+  const email = prompt('Photographer email:');
+  if(!email) return;
+  const limitGb = parseInt(prompt('Storage limit (GB)?', '5')||'5', 10);
+  const expiry = prompt('Expiry date (YYYY-MM-DD) or blank:', '') || '';
+  saSave({ email, storage_limit_gb: isNaN(limitGb)?5:limitGb, expiry_date: expiry });
+}
+
+async function saSave(payload){
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Save failed');
+    showToast('Saved');
+    await loadSuperAdmin();
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+window.saDelete = async (userId)=>{
+  if(!confirm('Delete user?')) return;
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers/${userId}`, { method:'DELETE' });
+    if(!res.ok) throw new Error('Delete failed');
+    showToast('Deleted');
+    await loadSuperAdmin();
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+};
+
+window.saToggle = async (userId, current)=>{
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers/${userId}/toggle`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ disabled: !current })
+    });
+    if(!res.ok) throw new Error('Toggle failed');
+    showToast('Toggled');
+    await loadSuperAdmin();
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+};
+
+/** ===================== GUEST ===================== **/
+$('gSearchBtn').addEventListener('click', ()=>guestSearch());
+
+async function guestSearch(){
+  const linkId = ($('gLinkId').value||'').trim();
+  const file = $('gSelfie').files?.[0];
+  if(!linkId) return showToast('linkId required','error');
+  if(!file) return showToast('selfie required','error');
+
+  $('gStat').textContent = 'Searching...';
+  showLoader(true);
+  try{
+    // Send as multipart to be flexible. If your backend expects base64 JSON, tell me and I’ll switch.
+    const fd = new FormData();
+    fd.append('linkId', linkId);
+    fd.append('selfie', file);
+
+    let res = await fetch(SEARCH_API, { method:'POST', body: fd }); // guest is generally public; no auth header
+    if(!res.ok){
+      // fallback: json base64
+      const b64 = await fileToBase64(file);
+      res = await fetch(SEARCH_API, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ linkId, selfie_base64: b64 })
+      });
+    }
+    if(!res.ok) throw new Error('Search failed');
+    const data = await res.json();
+    const photos = data.photos || data.Items || data.items || data.matches || [];
+    guest.results = photos;
+    renderGuestResults();
+    $('gStat').textContent = `Found: ${photos.length}`;
+  }catch(e){
+    console.error(e);
+    $('gStat').textContent = '';
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+function renderGuestResults(){
+  const photos = guest.results || [];
+  if(!photos.length){
+    $('gResults').innerHTML = `<div class="muted">No matches</div>`;
+    return;
+  }
+  $('gResults').innerHTML = photos.map(p=>{
+    const url = p.url || p.photo_url || p.s3_url || p.image_url || '';
+    const thumb = p.thumbnail_url || url;
+    return `
+      <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','Guest Photo', 0)">
+        <img src="${thumb}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"/>
+        <div class="m"><div class="t">Open</div><div class="s">Tap to view</div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(String(r.result).split(',')[1]||'');
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+/** ===================== MAIN ROUTE ===================== **/
+async function route(){
+  await handleAuthFromQuery();
+  const ok = ensureLoggedIn();
+
+  const { path, params } = getHashRoute();
+
+  if(path==='login'){
+    setView('login');
+    return;
+  }
+
+  // guest can be public; no token required
+  if(path==='guest'){
+    setView('guest');
+    const linkId = params.get('linkId') || '';
+    $('gLinkId').value = linkId;
+    return;
+  }
+
+  // everything else requires login
+  if(!ok){
+    setView('login');
+    location.hash = '#/login';
+    return;
+  }
+
+  // Redirect based on group
+  if(path==='superadmin'){
+    if(!isMasterAdmin()){
+      showToast('Not authorized (need MasterAdmins group)', 'error');
+      setView('dashboard');
+      location.hash = '#/dashboard';
+      return;
+    }
+    setView('superadmin');
+    await loadSuperAdmin();
+    return;
+  }
+
+  if(path==='collection'){
+    setView('collection');
+    setCollectionFromRoute(params);
+    // basic init
+    await loadEvents();
+    await loadPhotos(false);
+    await loadLeads();
+    return;
+  }
+
+  // default dashboard
+  setView('dashboard');
+  await loadCollections();
+  await loadAccountStatus();
+}
+</script>
+</body>
+</html>

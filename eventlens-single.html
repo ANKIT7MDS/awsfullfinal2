@@ -1,1278 +1,968 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EventLens Pro – Single File</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <style>
-    :root{
-      --bg:#050505; --card:#101010; --border:#262626;
-      --text:#fff; --muted:#a0a0a0;
-      --brand:#00e676; --brand2:#6366f1;
-      --danger:#ff5252;
-      --shadow: 0 18px 60px rgba(0,0,0,.55);
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(circle at 30% 10%, #1a1a1a 0%, var(--bg) 60%);color:var(--text);font-family:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;}
-    a{color:var(--brand);text-decoration:none}
-    .wrap{max-width:1200px;margin:28px auto;padding:0 18px}
-    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:18px;background:rgba(16,16,16,.75);backdrop-filter:blur(8px);box-shadow:var(--shadow);position:sticky;top:10px;z-index:5}
-    .logo{font-weight:800;letter-spacing:.3px}
-    .logo span{color:var(--brand)}
-    .nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .pill{padding:7px 12px;border-radius:999px;border:1px solid var(--border);background:#0c0c0c;color:var(--muted);font-size:12px}
-    .btn{border:none;border-radius:999px;padding:10px 16px;font-weight:800;cursor:pointer;transition:.18s;display:inline-flex;align-items:center;gap:8px}
-    .btn.primary{background:var(--brand);color:#000}
-    .btn.primary:hover{transform:translateY(-1px);filter:brightness(.95)}
-    .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
-    .btn.secondary:hover{border-color:var(--brand)}
-    .btn.danger{background:rgba(255,82,82,.08);border:1px solid var(--danger);color:var(--danger)}
-    .btn.danger:hover{background:var(--danger);color:#fff}
-    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:16px}
-    @media(max-width:980px){.grid{grid-template-columns:1fr}}
-    .card{background:rgba(16,16,16,.8);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
-    .card h2,.card h3{margin:0 0 12px}
-    .muted{color:var(--muted)}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input,select,textarea{
-      width:100%;padding:12px 12px;border-radius:12px;border:1px solid var(--border);
-      background:#000;color:#fff;outline:none;
-    }
-    input:focus,select:focus,textarea:focus{border-color:var(--brand)}
-    .kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    @media(max-width:520px){.kpi{grid-template-columns:1fr}}
-    .k{border:1px solid var(--border);border-radius:14px;background:#0c0c0c;padding:12px}
-    .k .v{font-size:22px;font-weight:900;color:var(--brand);margin-top:6px}
-    table{width:100%;border-collapse:collapse;min-width:640px}
-    th,td{padding:12px 10px;border-bottom:1px solid #1b1b1b;font-size:13px}
-    th{color:var(--muted);text-align:left;font-weight:800}
-    tr:hover td{background:#141414}
-    .tableWrap{overflow:auto;border:1px solid var(--border);border-radius:16px}
-    .tag{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#0c0c0c;color:#ddd;font-size:12px;margin:4px 6px 0 0}
-    .chips{display:flex;flex-wrap:wrap}
-    .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media(max-width:980px){.split{grid-template-columns:1fr}}
-    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-    .ph{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#0b0b0b}
-    .ph img{width:100%;height:160px;object-fit:cover;display:block}
-    .ph .m{padding:10px}
-    .ph .m .t{font-weight:800;font-size:12px}
-    .ph .m .s{color:var(--muted);font-size:11px;margin-top:4px}
-    .drawer{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
-    .drawer.open{display:flex}
-    .drawer .box{max-width:980px;width:100%;background:#0c0c0c;border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:16px}
-    .drawer img{width:100%;max-height:68vh;object-fit:contain;border-radius:14px;border:1px solid var(--border)}
-    .toast{position:fixed;top:18px;right:18px;transform:translateX(420px);transition:.25s;z-index:30;
-      padding:12px 14px;border-radius:14px;font-weight:800;background:var(--brand);color:#000;box-shadow:var(--shadow)}
-    .toast.show{transform:translateX(0)}
-    .toast.error{background:var(--danger);color:#fff}
-    .loader{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:25;background:rgba(0,0,0,.7)}
-    .loader.on{display:flex}
-    .spin{width:42px;height:42px;border:4px solid #999;border-top-color:var(--brand);border-radius:50%;animation:sp 1s linear infinite}
-    @keyframes sp{to{transform:rotate(360deg)}}
-    .view{display:none}
-    .view.on{display:block}
-    .hr{height:1px;background:var(--border);margin:12px 0}
-    .hint{font-size:12px;color:var(--muted);line-height:1.5}
-    .dangerBox{border:1px solid rgba(255,82,82,.5);background:rgba(255,82,82,.06);padding:12px;border-radius:14px}
-  
-  /* Upload list */
-  .upload-row{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:12px;margin-top:8px;background:rgba(255,255,255,.03)}
-  .up-idx{min-width:66px;color:var(--text-muted);font-weight:800;font-size:12px}
-  .up-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .up-status{min-width:110px;text-align:right;font-weight:800;font-size:12px}
-  .up-status.success{color:var(--success)}
-  .up-status.danger{color:var(--danger)}
-  #uploadProgressWrap{display:none;margin-top:10px}
-  #uploadProgressBar{height:10px;background:linear-gradient(90deg,var(--primary),var(--success));width:0%;border-radius:999px}
-  #uploadProgressOuter{height:10px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
-  #uploadProgressText{margin-top:8px;font-size:12px;color:var(--text-muted)}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EventLens - AI Gallery System</title>
+    
+    <!-- Libraries (Icons, Zip, Image Processors) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.3/dist/heic2any.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-</style>
+    <style>
+        /* ================= GLOBAL THEME ================= */
+        :root {
+            --bg: #050505;
+            --card: #101010;
+            --border: #262626;
+            --text: #ffffff;
+            --text-muted: #a0a0a0;
+            --brand: #6366f1; /* Indigo Brand */
+            --brand-hover: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        
+        /* Layout Utilities */
+        .hidden { display: none !important; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .flex { display: flex; align-items: center; }
+        .flex-between { justify-content: space-between; }
+        .gap-2 { gap: 10px; } .gap-4 { gap: 20px; }
+        .w-full { width: 100%; }
+        
+        /* UI Components */
+        .btn {
+            background: var(--brand); color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s;
+            display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+        }
+        .btn:hover { background: var(--brand-hover); transform: translateY(-2px); }
+        .btn-secondary { background: #222; border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #333; }
+        .btn-danger { background: var(--danger); }
+        
+        .input-box {
+            background: #151515; border: 1px solid var(--border); color: white;
+            padding: 12px; border-radius: 8px; width: 100%; outline: none; margin-bottom: 10px;
+        }
+        .input-box:focus { border-color: var(--brand); }
+
+        .card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Loading Spinner */
+        .loader-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #333;
+            border-top: 4px solid var(--brand); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* ================= LOGIN VIEW ================= */
+        .login-box { max-width: 400px; margin: 100px auto; text-align: center; }
+
+        /* ================= DASHBOARD VIEW ================= */
+        .collection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .stat-badge { background: #222; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+
+        /* ================= COLLECTION DETAILS VIEW ================= */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { background: #1a1a1a; padding: 10px 20px; border-radius: 8px; cursor: pointer; white-space: nowrap; color: var(--text-muted); }
+        .tab-btn.active { background: var(--brand); color: white; }
+        
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .photo-card { aspect-ratio: 1; background: #222; border-radius: 8px; overflow: hidden; position: relative; }
+        .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; transition: 0.2s; display: flex; align-items: flex-end; padding: 10px; }
+        .photo-card:hover .photo-overlay { opacity: 1; }
+
+        /* ================= CLIENT/GUEST VIEW ================= */
+        .camera-circle {
+            width: 140px; height: 140px; border-radius: 50%; border: 4px solid var(--brand);
+            margin: 20px auto; overflow: hidden; position: relative;
+        }
+        .camera-circle img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Toast Notification */
+        .toast {
+            position: fixed; top: 20px; right: 20px; background: var(--brand); color: white;
+            padding: 12px 24px; border-radius: 8px; z-index: 10000;
+            transform: translateX(150%); transition: transform 0.3s;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.error { background: var(--danger); }
+
+    </style>
 </head>
 <body>
-  <div class="loader" id="loader"><div style="text-align:center"><div class="spin"></div><div class="muted" style="margin-top:10px">Loading...</div></div></div>
-  <div class="toast" id="toast"></div>
 
-  <div class="wrap">
-    <div class="topbar">
-      <div class="row" style="gap:12px">
-        <div class="logo">EventLens <span>Pro</span></div>
-        <span class="pill" id="whoPill">Not logged in</span>
-      </div>
-      <div class="nav">
-        <a class="btn secondary" href="#/login"><i class="fa-solid fa-right-to-bracket"></i>Login</a>
-        <a class="btn secondary" href="#/dashboard"><i class="fa-solid fa-table-cells-large"></i>Dashboard</a>
-        <a class="btn secondary" href="#/superadmin"><i class="fa-solid fa-user-shield"></i>SuperAdmin</a>
-        <a class="btn secondary" href="#/guest"><i class="fa-solid fa-camera"></i>Guest</a>
-        <button class="btn danger" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i>Logout</button>
-      </div>
+    <!-- GLOBAL COMPONENTS -->
+    <div id="loader" class="loader-overlay hidden">
+        <div class="spinner"></div>
+        <div id="loaderText">Loading...</div>
+    </div>
+    <div id="toast" class="toast">Action Successful</div>
+
+    <!-- APP CONTAINER -->
+    <div id="app">
+        
+        <!-- ================= VIEW: LOGIN ================= -->
+        <div id="view-login" class="container hidden">
+            <div class="login-box card">
+                <h1>EventLens Admin</h1>
+                <p style="color: var(--text-muted); margin-bottom: 30px;">Photographer & Staff Login</p>
+                <button id="btnLogin" class="btn w-full">
+                    <i class="fas fa-lock"></i> Login with AWS Cognito
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: SUPER ADMIN ================= -->
+        <div id="view-superadmin" class="container hidden">
+            <div class="flex flex-between" style="margin-bottom: 20px;">
+                <h2>Super Admin Dashboard</h2>
+                <button class="btn btn-secondary" onclick="Auth.logout()">Logout</button>
+            </div>
+            <div class="card">
+                <h3>Manage Photographers</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead><tr style="border-bottom: 1px solid #333; color: var(--text-muted);"><th>Email</th><th>Limit (GB)</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="superAdminTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: PHOTOGRAPHER DASHBOARD ================= -->
+        <div id="view-dashboard" class="container hidden">
+            <header class="flex flex-between" style="margin-bottom: 30px;">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p style="color: var(--text-muted);">Welcome back, <span id="dashUserName">User</span></p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn" onclick="UI.showCreateCollectionModal()">+ New Collection</button>
+                    <button class="btn btn-secondary" onclick="Auth.logout()">Logout</button>
+                </div>
+            </header>
+
+            <div class="card">
+                <input type="text" id="dashSearch" class="input-box" placeholder="Search collections..." onkeyup="Dashboard.filterCollections()">
+                <div id="collectionsList" class="collection-grid">
+                    <!-- Collections injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: COLLECTION DETAILS ================= -->
+        <div id="view-collection" class="container hidden">
+            <div class="flex flex-between" style="margin-bottom: 20px;">
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary" onclick="Router.navigate('dashboard')"><i class="fas fa-arrow-left"></i></button>
+                    <h2 id="colName">Collection Name</h2>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary" onclick="Collection.refreshData()"><i class="fas fa-sync"></i></button>
+                    <a id="staffLinkBtn" target="_blank" class="btn"><i class="fas fa-bolt"></i> Staff Link</a>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab-btn active" onclick="Collection.switchTab('photos')">Photos</div>
+                <div class="tab-btn" onclick="Collection.switchTab('events')">Events</div>
+                <div class="tab-btn" onclick="Collection.switchTab('upload')">Upload</div>
+                <div class="tab-btn" onclick="Collection.switchTab('links')">Client Links</div>
+                <div class="tab-btn" onclick="Collection.switchTab('analytics')">Guests</div>
+            </div>
+
+            <!-- Tab: Photos -->
+            <div id="tab-photos" class="tab-content">
+                <div class="card">
+                    <div id="collectionGallery" class="photo-grid"></div>
+                    <div id="collectionGalleryEmpty" class="hidden" style="text-align: center; color: #666; padding: 40px;">No photos yet.</div>
+                </div>
+            </div>
+
+            <!-- Tab: Events -->
+            <div id="tab-events" class="tab-content hidden">
+                <div class="card">
+                    <div class="flex gap-2" style="margin-bottom: 15px;">
+                        <input type="text" id="newEventName" class="input-box" placeholder="Event Name (e.g. Haldi)">
+                        <input type="date" id="newEventDate" class="input-box">
+                        <button class="btn" onclick="Collection.createEvent()">Add</button>
+                    </div>
+                    <div id="eventsList"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Upload -->
+            <div id="tab-upload" class="tab-content hidden">
+                <div class="card" style="text-align: center;">
+                    <h3>Upload Photos</h3>
+                    <select id="uploadEventSelect" class="input-box" style="margin: 10px 0; max-width: 400px;"></select>
+                    
+                    <div id="dropZone" style="border: 2px dashed #333; padding: 40px; border-radius: 10px; cursor: pointer;" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 40px; color: var(--brand); margin-bottom: 10px;"></i>
+                        <p>Click to select photos</p>
+                        <input type="file" id="fileInput" multiple style="display:none" accept="image/*">
+                    </div>
+
+                    <div id="uploadQueue" style="margin-top: 20px; text-align: left;"></div>
+                    <button id="startUploadBtn" class="btn hidden" style="margin-top: 20px;" onclick="UploadManager.start()">Start Upload</button>
+                    
+                    <div id="uploadProgressBox" class="hidden" style="margin-top: 20px;">
+                        <div style="background: #222; height: 10px; border-radius: 5px;">
+                            <div id="uploadProgressBar" style="background: var(--brand); height: 100%; width: 0%; border-radius: 5px;"></div>
+                        </div>
+                        <p id="uploadStatusText" style="margin-top: 5px; font-size: 14px; color: var(--text-muted);">Uploading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Links -->
+            <div id="tab-links" class="tab-content hidden">
+                <div class="card">
+                    <h3>Generate Client Link</h3>
+                    <div id="linkEventChecks" style="margin: 15px 0;"></div>
+                    <button class="btn" onclick="Collection.generateLink()">Create Link</button>
+                    <div id="generatedLinkBox" class="input-box hidden" style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                        <a id="finalLink" href="#" target="_blank" style="color: var(--brand);"></a>
+                        <button class="btn btn-secondary" onclick="UI.copyLink()">Copy</button>
+                    </div>
+                </div>
+            </div>
+             <!-- Tab: Analytics (Guests) -->
+             <div id="tab-analytics" class="tab-content hidden">
+                <div class="card">
+                    <h3>Guest Leads</h3>
+                    <div id="leadsList">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: QUICK UPLOAD (Staff) ================= -->
+        <div id="view-quickupload" class="container hidden">
+            <div class="card" style="max-width: 600px; margin: 0 auto;">
+                <h2>Quick Upload</h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px;" id="quickUploadTitle">Collection Name</p>
+                <!-- Reuse upload logic here simply by cloning logic or separate structure. keeping simple: -->
+                 <select id="quickUploadEventSelect" class="input-box"></select>
+                 <div onclick="document.getElementById('quickFileInput').click()" style="border: 2px dashed #333; padding: 40px; border-radius: 10px; text-align: center; cursor: pointer;">
+                    <i class="fas fa-camera" style="font-size: 30px;"></i>
+                    <p>Select Photos</p>
+                    <input type="file" id="quickFileInput" multiple style="display:none" accept="image/*">
+                 </div>
+                 <div id="quickUploadStatus" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: CLIENT LANDING (Selfie Search) ================= -->
+        <div id="view-client-landing" class="container hidden" style="max-width: 600px; text-align: center; margin-top: 50px;">
+            <h1>EventLens</h1>
+            <p style="color: var(--text-muted);">Find your photos using AI</p>
+
+            <div class="card" id="step-selfie">
+                <h3>1. Take a Selfie</h3>
+                <input type="file" id="clientSelfieInput" accept="image/*" style="display:none" onchange="Client.handleSelfieSelect(this)">
+                <div class="camera-circle" onclick="document.getElementById('clientSelfieInput').click()">
+                    <img id="clientPreviewImg" src="https://placehold.co/150x150?text=Click+Me" alt="Selfie">
+                </div>
+                <button class="btn w-full" onclick="Client.searchFaces()">Find My Photos 🔍</button>
+            </div>
+
+            <div class="card hidden" id="step-details">
+                <h3>2. Your Details</h3>
+                <p>We found <span id="matchCount" style="color: var(--brand); font-weight: bold;">0</span> photos!</p>
+                <input type="text" id="guestName" class="input-box" placeholder="Your Name">
+                <input type="tel" id="guestMobile" class="input-box" placeholder="Mobile Number">
+                <button class="btn w-full" onclick="Client.submitDetails()">View Gallery 👉</button>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: CLIENT GALLERY ================= -->
+        <div id="view-client-gallery" class="container hidden">
+            <div class="flex flex-between" style="margin-bottom: 20px;">
+                <h2>My Photos</h2>
+                <button class="btn" onclick="Client.downloadZip()">Download All</button>
+            </div>
+            <div id="clientPhotoGrid" class="photo-grid"></div>
+        </div>
+
     </div>
 
-    <!-- LOGIN -->
-    <div class="view" id="viewLogin">
-      <div class="grid">
-        <div class="card">
-          <h2>Admin Login</h2>
-          <div class="muted">Cognito Hosted UI से login होगा. Login के बाद ये same file dashboard खोल देगा.</div>
-          <div class="hr"></div>
-          <button class="btn primary" id="btnLogin"><i class="fa-brands fa-aws"></i> Login with AWS Cognito</button>
-          <div class="hr"></div>
-          <div class="hint">
-            <b>Important:</b> Cognito App client में callback URL में इस file का URL add होना चाहिए.  
-            अगर आप Netlify पर host कर रहे हो तो callback में <code>https://YOUR_DOMAIN/single.html</code> या जो भी path हो add कर दो.
-          </div>
-        </div>
-        <div class="card">
-          <h3>Quick Debug</h3>
-          <div class="dangerBox">
-            <div style="font-weight:900;margin-bottom:6px">“Failed to load data. Refreshing session...”</div>
-            <div class="hint">
-              ये error तब आता है जब token missing/expired हो, या redirect_uri mismatch हो.  
-              इस single file में token flow वही रखा है जो आपके dashboard.html में है: code → /oauth2/token → id_token localStorage.  
-              (ref: fileciteturn3file0L344-L384)
+    <!-- MODAL: Create Collection -->
+    <div id="modalCreateCollection" class="loader-overlay hidden" style="background: rgba(0,0,0,0.8);">
+        <div class="card" style="width: 400px;">
+            <h3>New Collection</h3>
+            <input type="text" id="newCollectionName" class="input-box" placeholder="Collection Name">
+            <div class="flex gap-2" style="margin-top: 20px;">
+                <button class="btn" onclick="Dashboard.createCollection()">Create</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('modalCreateCollection').classList.add('hidden')">Cancel</button>
             </div>
-          </div>
         </div>
-      </div>
     </div>
-
-    <!-- DASHBOARD -->
-    <div class="view" id="viewDashboard">
-      <div class="grid">
-        <div class="card">
-          <h2>Photographer Dashboard</h2>
-          <div class="kpi">
-            <div class="k"><div class="muted">Data Used</div><div class="v" id="kData">-</div></div>
-            <div class="k"><div class="muted">Expiry</div><div class="v" style="color:#fff" id="kExp">-</div></div>
-          </div>
-          <div class="hr"></div>
-
-          <h3>Create / Edit Collection</h3>
-          <div class="row">
-            <div style="flex:1;min-width:240px">
-              <input id="colName" placeholder="Collection name (e.g. Rahul & Priya Wedding)" />
-              <input id="colIdEdit" type="hidden" />
-            </div>
-            <button class="btn primary" id="colSave"><i class="fa-solid fa-floppy-disk"></i><span id="colSaveTxt">Create</span></button>
-            <button class="btn secondary" id="colCancel" style="display:none"><i class="fa-solid fa-ban"></i>Cancel</button>
-          </div>
-
-          <div class="hr"></div>
-          <div class="row" style="justify-content:space-between">
-            <h3 style="margin:0">Your Collections</h3>
-            <input id="colSearch" placeholder="Search..." style="max-width:280px" />
-          </div>
-          <div class="tableWrap" style="margin-top:10px">
-            <table>
-              <thead><tr><th>Name</th><th>Created</th><th>Events</th><th>Photos</th><th>Storage</th><th>Actions</th></tr></thead>
-              <tbody id="colRows"><tr><td colspan="6" class="muted">Loading...</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Open Collection</h3>
-          <div class="muted">Collection पर click करके details view open होगा (same file). Quick link generate भी यहीं.</div>
-          <div class="hr"></div>
-          <div class="hint">
-            Dashboard APIs: <code>/get-collections</code>, <code>/upsert-collection</code>, <code>/delete-collection</code>, <code>/account-status</code>  
-            (ref: fileciteturn3file0L169-L173)
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- COLLECTION DETAILS -->
-    <div class="view" id="viewCollection">
-      <div class="card">
-        <div class="row" style="justify-content:space-between">
-          <div>
-            <h2 style="margin-bottom:4px">Collection: <span id="cdName" style="color:var(--brand)"></span></h2>
-            <div class="muted">ID: <span id="cdId"></span></div>
-          </div>
-          <div class="row">
-            <button class="btn secondary" id="backDash"><i class="fa-solid fa-arrow-left"></i>Dashboard</button>
-            <button class="btn primary" id="genLinkBtn"><i class="fa-solid fa-link"></i>Generate Guest Link</button>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="split">
-          <div class="card" style="padding:14px;background:#0c0c0c">
-            <h3 style="margin:0 0 10px">Events</h3>
-            <div class="row">
-              <input id="evName" placeholder="Event name (e.g. Haldi / Stage / Reception)" />
-              <button class="btn primary" id="evSave"><i class="fa-solid fa-plus"></i>Add</button>
-            </div>
-            <div class="tableWrap" style="margin-top:10px">
-              <table>
-                <thead><tr><th>Event</th><th>Photos</th><th>Actions</th></tr></thead>
-                <tbody id="evRows"><tr><td colspan="3" class="muted">Loading...</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="card" style="padding:14px;background:#0c0c0c">
-            <h3 style="margin:0 0 10px">Upload Photos</h3>
-            <div class="hint">Generate upload URLs → PUT to S3. (endpoints: fileciteturn4file11L49-L59)</div>
-            <div class="row" style="margin-top:10px">
-              <select id="uploadEvent"></select>
-              <input id="filePick" type="file" multiple accept="image/*" />
-            </div>
-            <div class="row" style="margin-top:10px">
-              <button class="btn primary" id="uploadBtn"><i class="fa-solid fa-cloud-arrow-up"></i>Start Upload</button>
-              <span class="muted" id="uploadStat"></span>
-            </div>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="split">
-          <div class="card" style="padding:14px;background:#0c0c0c">
-            <div class="row" style="justify-content:space-between">
-              <h3 style="margin:0">Photos</h3>
-              <div class="row" style="gap:8px">
-                <select id="photoEventFilter" style="max-width:220px"></select>
-                <input id="photoSearch" placeholder="filename / tag" style="max-width:220px" />
-              </div>
-            </div>
-            <div class="hr"></div>
-            <div class="gallery" id="photoGrid"></div>
-            <div class="row" style="justify-content:center;margin-top:10px">
-              <button class="btn secondary" id="loadMoreBtn"><i class="fa-solid fa-angles-down"></i>Load more</button>
-            </div>
-          </div>
-
-          <div class="card" style="padding:14px;background:#0c0c0c">
-            <div class="row" style="justify-content:space-between">
-              <h3 style="margin:0">Leads</h3>
-              <button class="btn secondary" id="refreshLeads"><i class="fa-solid fa-rotate"></i>Refresh</button>
-            </div>
-            <div class="hint">Leads API: <code>/get-leads</code> (ref: fileciteturn4file13L48-L48)</div>
-            <div class="hr"></div>
-            <div class="tableWrap">
-              <table>
-                <thead><tr><th>Guest</th><th>Selfie</th><th>Matched Photos</th><th>Actions</th></tr></thead>
-                <tbody id="leadRows"><tr><td colspan="4" class="muted">Load to view…</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- SUPERADMIN -->
-    <div class="view" id="viewSuper">
-      <div class="card">
-        <div class="row" style="justify-content:space-between">
-          <h2>Super Admin</h2>
-          <button class="btn primary" id="newPhotog"><i class="fa-solid fa-user-plus"></i>New Photographer</button>
-        </div>
-        <div class="hint">Uses <code>/photographers</code> endpoints (ref: fileciteturn4file2L37-L56)</div>
-        <div class="hr"></div>
-        <div class="tableWrap">
-          <table>
-            <thead><tr><th>Email</th><th>Limit (GB)</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="saRows"><tr><td colspan="5" class="muted">Loading...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- GUEST -->
-    <div class="view" id="viewGuest">
-      <div class="grid">
-        <div class="card">
-          <h2>Guest Search</h2>
-          <div class="muted">यह page guest link से खुलना चाहिए. Example: <code>#/guest?linkId=XXXX</code></div>
-          <div class="hr"></div>
-          <label class="muted">Link ID</label>
-          <input id="gLinkId" placeholder="Paste linkId here" />
-          <label class="muted" style="margin-top:10px;display:block">Upload Selfie</label>
-          <input id="gSelfie" type="file" accept="image/*" />
-          <div class="row" style="margin-top:10px">
-            <button class="btn primary" id="gSearchBtn"><i class="fa-solid fa-magnifying-glass"></i>Find my photos</button>
-            <span class="muted" id="gStat"></span>
-          </div>
-          <div class="hr"></div>
-          <div class="hint">
-            Guest search endpoint: <code>/search</code> (ref: fileciteturn4file11L58-L60).  
-            NOTE: अगर आपका backend “selfie upload” अलग endpoint से लेता है, तो बताना—मैं same file में patch कर दूँगा.
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Results</h3>
-          <div class="gallery" id="gResults"></div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- PHOTO MODAL -->
-  <div class="drawer" id="photoModal">
-    <div class="box">
-      <div class="row" style="justify-content:space-between;margin-bottom:10px">
-        <div style="font-weight:900" id="pmTitle">Photo</div>
-        <div class="row">
-          <a class="btn secondary" id="pmDownload" href="#" target="_blank"><i class="fa-solid fa-download"></i>Download</a>
-          <button class="btn danger" id="pmClose"><i class="fa-solid fa-xmark"></i>Close</button>
-        </div>
-      </div>
-      <img id="pmImg" src="" alt="photo"/>
-      <div class="hr"></div>
-      <div id="pmMeta" class="hint"></div>
-    </div>
-  </div>
 
 <script>
-/** ===================== CONFIG (from your existing pages) ===================== **/
-const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
-const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
-const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+/**
+ * =========================================================================
+ * EVENTLENS UNIFIED CONTROLLER
+ * All logic merged into a single file with State Management & Router.
+ * =========================================================================
+ */
 
-// Dashboard endpoints (ref: fileciteturn3file0L169-L173)
-const GET_COLLECTIONS_API = `${API_BASE}/get-collections`;
-const UPSERT_COLLECTION_API = `${API_BASE}/upsert-collection`;
-const DELETE_COLLECTION_API = `${API_BASE}/delete-collection`;
-const GET_ACCOUNT_STATUS_API = `${API_BASE}/account-status`;
-
-// Collection endpoints (ref: fileciteturn4file11L49-L59)
-const GET_EVENTS_API      = `${API_BASE}/get-events`;            // POST
-const GET_PHOTOS_API      = `${API_BASE}/get-photos`;            // POST
-const UPSERT_EVENT_API    = `${API_BASE}/upsert-event`;          // POST
-const DELETE_EVENT_API    = `${API_BASE}/delete-event`;          // POST
-const UPLOAD_URLS_API     = `${API_BASE}/generate-upload-urls`;  // POST
-const GENERATE_LINK_API   = `${API_BASE}/generate-search-link`;  // POST
-const GET_LEADS_API       = `${API_BASE}/get-leads`;             // POST/GET (your UI uses it as API)
-const SEARCH_API          = `${API_BASE}/search`;                // POST
-
-/** ===================== STATE ===================== **/
-let idToken = localStorage.getItem('idToken') || null;
-let me = null;
-
-let dashCollections = [];
-let cd = { id:null, name:null, events:[], photos:[], next:null, leads:[] };
-let guest = { linkId:null, results:[] };
-
-/** ===================== UI helpers ===================== **/
-const $ = (id)=>document.getElementById(id);
-const toast = $('toast');
-const loader = $('loader');
-const whoPill = $('whoPill');
-
-function showLoader(on=true){ loader.classList.toggle('on', !!on); }
-function showToast(msg, type='success'){
-  toast.textContent = msg;
-  toast.className = `toast ${type==='error'?'error':''}`.trim();
-  toast.classList.add('show');
-  setTimeout(()=>toast.classList.remove('show'), 2600);
-}
-function fmtDate(d){
-  try{ if(!d) return '-'; return new Date(d).toLocaleDateString('en-IN'); }catch{return d||'-'}
-}
-function formatBytes(bytes=0, decimals=2){
-  if(!+bytes) return '0 Bytes';
-  const k=1024, dm=decimals<0?0:decimals, sizes=['Bytes','KB','MB','GB','TB'];
-  const i=Math.floor(Math.log(bytes)/Math.log(k));
-  return `${parseFloat((bytes/Math.pow(k,i)).toFixed(dm))} ${sizes[i]}`;
-}
-function parseJwt(token){
-  const payload = JSON.parse(atob(token.split('.')[1]));
-  return payload;
-}
-function authHeader(){
-  if(!idToken) return {};
-  return { 'Authorization': `Bearer ${idToken}` };
-}
-async function apiFetch(url, opts={}){
-  const o = Object.assign({headers:{}}, opts);
-  o.headers = Object.assign({}, o.headers, authHeader());
-  return fetch(url, o);
-}
-
-/** ===================== ROUTER ===================== **/
-const views = {
-  login: $('viewLogin'),
-  dashboard: $('viewDashboard'),
-  collection: $('viewCollection'),
-  superadmin: $('viewSuper'),
-  guest: $('viewGuest'),
-};
-
-function setView(name){
-  Object.values(views).forEach(v=>v.classList.remove('on'));
-  (views[name]||views.login).classList.add('on');
-}
-
-function getHashRoute(){
-  // examples:
-  // #/dashboard
-  // #/collection?id=...&name=...
-  // #/guest?linkId=...
-  const h = location.hash || '#/login';
-  const [path, q] = h.replace(/^#\/?/, '').split('?');
-  const params = new URLSearchParams(q||'');
-  return { path: (path||'login').toLowerCase(), params };
-}
-
-window.addEventListener('hashchange', ()=>route());
-document.addEventListener('DOMContentLoaded', ()=>route());
-
-/** ===================== AUTH FLOW (same as dashboard.html) ===================== **/
-async function handleAuthFromQuery(){
-  const params = new URLSearchParams(location.search);
-  const code = params.get('code');
-  if(!code) return;
-
-  // redirect_uri MUST match callback configured in Cognito. We'll use current page URL without query.
-  const redirectUri = location.origin + location.pathname;
-
-  showLoader(true);
-  whoPill.textContent = 'Logging in...';
-
-  try{
-    const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({
-        grant_type:'authorization_code',
-        client_id: CLIENT_ID,
-        code,
-        redirect_uri: redirectUri
-      })
-    });
-
-    const tokens = await res.json();
-    if(!res.ok) throw new Error(tokens?.error_description || 'Auth failed');
-
-    idToken = tokens.id_token;
-    localStorage.setItem('idToken', idToken);
-
-    // clear ?code= from URL
-    history.replaceState({}, document.title, location.pathname + location.hash);
-    showToast('Login successful!');
-  }catch(e){
-    console.error(e);
-    localStorage.removeItem('idToken');
-    idToken = null;
-    showToast('Login failed. Redirect URI / callback mismatch?', 'error');
-  }finally{
-    showLoader(false);
-  }
-}
-
-function ensureLoggedIn(){
-  if(!idToken) return false;
-  try{
-    const payload = parseJwt(idToken);
-    if(Date.now() > payload.exp*1000) throw new Error('Token expired');
-    me = payload;
-    whoPill.textContent = `Hi, ${payload.email?.split('@')[0] || 'User'}`;
-    return true;
-  }catch(e){
-    console.warn(e);
-    localStorage.removeItem('idToken');
-    idToken = null;
-    me = null;
-    whoPill.textContent = 'Not logged in';
-    return false;
-  }
-}
-
-function isMasterAdmin(){
-  const groups = (me && me['cognito:groups']) || [];
-  return Array.isArray(groups) ? groups.includes('MasterAdmins') : String(groups).includes('MasterAdmins');
-}
-
-/** ===================== LOGIN UI ===================== **/
-$('btnLogin').addEventListener('click', ()=>{
-  const redirectUri = location.origin + location.pathname; // same file
-  const scopes = "openid profile email aws.cognito.signin.user.admin";
-  const loginUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
-  location.href = loginUrl;
-});
-
-/** ===================== LOGOUT ===================== **/
-$('logoutBtn').addEventListener('click', ()=>{
-  localStorage.clear();
-  idToken = null; me=null;
-  whoPill.textContent = 'Not logged in';
-  // Optional: hosted UI logout
-  const logoutUri = location.origin + location.pathname + '#/login';
-  const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUri)}`;
-  location.href = logoutUrl;
-});
-
-/** ===================== DASHBOARD LOGIC ===================== **/
-$('colSave').addEventListener('click', ()=>saveCollection());
-$('colCancel').addEventListener('click', ()=>resetColForm());
-$('colSearch').addEventListener('input', ()=>renderCollections());
-
-function resetColForm(){
-  $('colName').value = '';
-  $('colIdEdit').value = '';
-  $('colSaveTxt').textContent = 'Create';
-  $('colCancel').style.display = 'none';
-}
-
-async function loadAccountStatus(){
-  try{
-    const res = await apiFetch(GET_ACCOUNT_STATUS_API);
-    if(!res.ok) throw new Error('Failed');
-    const data = await res.json();
-    $('kData').textContent = data.storage_limit_bytes > 0
-      ? `${formatBytes(data.total_storage_used_bytes||0)} / ${formatBytes(data.storage_limit_bytes)}`
-      : `${formatBytes(data.total_storage_used_bytes||0)} (Unlimited)`;
-    $('kExp').textContent = data.expiry_date ? new Date(data.expiry_date).toLocaleDateString('en-IN') : 'Lifetime';
-  }catch(e){
-    console.error(e);
-    $('kData').textContent = '-';
-    $('kExp').textContent = '-';
-  }
-}
-
-async function loadCollections(){
-  $('colRows').innerHTML = `<tr><td colspan="6" class="muted">Loading...</td></tr>`;
-  try{
-    const res = await apiFetch(GET_COLLECTIONS_API);
-    if(!res.ok) throw new Error('Failed to fetch collections');
-    const data = await res.json();
-    dashCollections = (data.Items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
-    renderCollections();
-  }catch(e){
-    console.error(e);
-    $('colRows').innerHTML = `<tr><td colspan="6" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
-  }
-}
-
-function renderCollections(){
-  const q = ($('colSearch').value||'').toLowerCase();
-  const rows = dashCollections.filter(c => (c.name||'').toLowerCase().includes(q));
-  if(!rows.length){
-    $('colRows').innerHTML = `<tr><td colspan="6" class="muted">No collections</td></tr>`;
-    return;
-  }
-  $('colRows').innerHTML = rows.map(c => {
-    const nameEsc = encodeURIComponent(c.name||'Collection');
-    return `
-      <tr>
-        <td><a href="#/collection?id=${encodeURIComponent(c.collection_id)}&name=${nameEsc}" style="color:#fff;font-weight:800">📁 ${c.name||'-'}</a></td>
-        <td>${fmtDate(c.created_at)}</td>
-        <td><span class="pill">${c.event_count||0}</span></td>
-        <td><span class="pill">${c.total_photo_count||0}</span></td>
-        <td>${formatBytes(c.storage_bytes||0)}</td>
-        <td>
-          <div class="row">
-            <button class="btn secondary" onclick="editCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i>Edit</button>
-            <button class="btn danger" onclick="deleteCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i>Delete</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-window.editCollection = (id, name)=>{
-  $('colName').value = name;
-  $('colIdEdit').value = id;
-  $('colSaveTxt').textContent = 'Update';
-  $('colCancel').style.display = 'inline-flex';
-  window.scrollTo({top:0,behavior:'smooth'});
-};
-
-async function saveCollection(){
-  const name = ($('colName').value||'').trim();
-  if(!name) return showToast('Name is required', 'error');
-  const payload = { name };
-  const editId = $('colIdEdit').value;
-  if(editId) payload.collection_id = editId;
-
-  showLoader(true);
-  try{
-    const res = await apiFetch(UPSERT_COLLECTION_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    if(!res.ok) throw new Error('Failed to save');
-    resetColForm();
-    await loadCollections();
-    showToast(editId ? 'Collection updated!' : 'Collection created!');
-  }catch(e){
-    console.error(e);
-    showToast(e.message, 'error');
-  }finally{
-    showLoader(false);
-  }
-}
-
-window.deleteCollection = async (id, name)=>{
-  if(!confirm(`Delete "${name}"?`)) return;
-  showLoader(true);
-  try{
-    const res = await apiFetch(DELETE_COLLECTION_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({collection_id:id})
-    });
-    if(!res.ok) throw new Error('Delete failed');
-    await loadCollections();
-    showToast('Deleted');
-  }catch(e){
-    console.error(e);
-    showToast(e.message,'error');
-  }finally{
-    showLoader(false);
-  }
-};
-
-/** ===================== COLLECTION DETAILS ===================== **/
-$('backDash').addEventListener('click', ()=> location.hash = '#/dashboard');
-$('evSave').addEventListener('click', ()=> upsertEvent());
-$('genLinkBtn').addEventListener('click', ()=> generateGuestLink());
-$('uploadBtn').addEventListener('click', ()=> startUpload());
-$('photoSearch').addEventListener('input', ()=> renderPhotos());
-$('photoEventFilter').addEventListener('change', ()=> renderPhotos());
-$('refreshLeads').addEventListener('click', ()=> loadLeads());
-$('loadMoreBtn').addEventListener('click', ()=> loadPhotos(true));
-
-function setCollectionFromRoute(params){
-  cd.id = params.get('id');
-  cd.name = params.get('name') || 'Collection';
-  $('cdId').textContent = cd.id || '-';
-  $('cdName').textContent = cd.name || '-';
-}
-
-async function loadEvents(){
-  $('evRows').innerHTML = `<tr><td colspan="3" class="muted">Loading...</td></tr>`;
-  try{
-    const res = await apiFetch(GET_EVENTS_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ collection_id: cd.id })
-    });
-    if(!res.ok) throw new Error('Failed to load events');
-    const data = await res.json();
-    cd.events = data.events || data.Items || data || [];
-    renderEvents();
-    fillEventSelects();
-  }catch(e){
-    console.error(e);
-    $('evRows').innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
-  }
-}
-
-function renderEvents(){
-  const evs = Array.isArray(cd.events)?cd.events:[];
-  if(!evs.length){
-    $('evRows').innerHTML = `<tr><td colspan="3" class="muted">No events</td></tr>`;
-    return;
-  }
-  $('evRows').innerHTML = evs.map(ev=>{
-    const eid = ev.event_id || ev.eventId || ev.id;
-    const nm = ev.name || ev.event_name || ev.eventName || '-';
-    const pc = ev.photo_count || ev.photoCount || 0;
-    return `
-      <tr>
-        <td style="font-weight:800">${nm}</td>
-        <td><span class="pill">${pc}</span></td>
-        <td class="row">
-          <button class="btn danger" onclick="delEvent('${eid}','${(nm||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function fillEventSelects(){
-  const evs = Array.isArray(cd.events)?cd.events:[];
-  const opt = [`<option value="">All events</option>`].concat(
-    evs.map(ev=>{
-      const eid = ev.event_id || ev.eventId || ev.id;
-      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
-      return `<option value="${eid}">${nm}</option>`;
-    })
-  ).join('');
-  $('photoEventFilter').innerHTML = opt;
-  $('uploadEvent').innerHTML = `<option value="">Select event</option>` + evs.map(ev=>{
-      const eid = ev.event_id || ev.eventId || ev.id;
-      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
-      return `<option value="${eid}">${nm}</option>`;
-  }).join('');
-}
-
-async function upsertEvent(){
-  const name = ($('evName').value||'').trim();
-  if(!name) return showToast('Event name required','error');
-  showLoader(true);
-  try{
-    const res = await apiFetch(UPSERT_EVENT_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ collection_id: cd.id, name })
-    });
-    if(!res.ok) throw new Error('Failed to save event');
-    $('evName').value='';
-    await loadEvents();
-    showToast('Event added');
-  }catch(e){
-    console.error(e);
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
-}
-
-window.delEvent = async (eventId, name)=>{
-  if(!confirm(`Delete event "${name}"?`)) return;
-  showLoader(true);
-  try{
-    const res = await apiFetch(DELETE_EVENT_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ collection_id: cd.id, event_id: eventId })
-    });
-    if(!res.ok) throw new Error('Failed to delete event');
-    await loadEvents();
-    showToast('Event deleted');
-  }catch(e){
-    console.error(e);
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
-};
-
-/** Photos pagination */
-async function loadPhotos(append=false){
-  if(!append){ cd.photos=[]; cd.next=null; }
-  const eventFilter = $('photoEventFilter').value || '';
-  const payload = { collection_id: cd.id };
-  if(eventFilter) payload.event_id = eventFilter;
-  if(cd.next) payload.nextToken = cd.next;
-
-  showLoader(true);
-  try{
-    const res = await apiFetch(GET_PHOTOS_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    if(!res.ok) throw new Error('Failed to load photos');
-    const data = await res.json();
-    const items = data.Items || data.photos || data.items || [];
-    cd.next = data.nextToken || data.next_token || null;
-    cd.photos = append ? cd.photos.concat(items) : items;
-    renderPhotos();
-    $('loadMoreBtn').style.display = cd.next ? 'inline-flex' : 'none';
-  }catch(e){
-    console.error(e);
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
-}
-
-function renderPhotos(){
-  const q = ($('photoSearch').value||'').toLowerCase();
-  const evSel = $('photoEventFilter').value || '';
-  const filtered = cd.photos.filter(p=>{
-    const fn = (p.filename||p.file_name||p.key||'').toLowerCase();
-    const tags = Array.isArray(p.ai_tags)?p.ai_tags.join(' ').toLowerCase():'';
-    const matchText = !q || fn.includes(q) || tags.includes(q);
-    const pid = p.event_id || p.eventId || '';
-    const matchEv = !evSel || pid===evSel;
-    return matchText && matchEv;
-  });
-
-  if(!filtered.length){
-    $('photoGrid').innerHTML = `<div class="muted">No photos</div>`;
-    return;
-  }
-
-  $('photoGrid').innerHTML = filtered.map(p=>{
-    const url = p.url || p.s3_url || p.photo_url || p.image_url || p.public_url || '';
-    const thumb = p.thumbnail_url || url;
-    const fn = p.filename || p.file_name || 'photo';
-    const faces = (p.face_count ?? (Array.isArray(p.faces)?p.faces.length:null) ?? (Array.isArray(p.face_ids)?p.face_ids.length:null) ?? 0);
-    return `
-      <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','${(fn||'').replace(/'/g,"\\'")}', ${faces})">
-        <img src="${thumb}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"/>
-        <div class="m">
-          <div class="t">${fn}</div>
-          <div class="s">Faces: ${faces}</div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-window.openPhoto = (encUrl, title, faces)=>{
-  const url = decodeURIComponent(encUrl||'');
-  $('pmImg').src = url;
-  $('pmTitle').textContent = title || 'Photo';
-  $('pmDownload').href = url;
-  $('pmMeta').textContent = `Faces detected: ${faces}`;
-  $('photoModal').classList.add('open');
-};
-$('pmClose').addEventListener('click', ()=> $('photoModal').classList.remove('open'));
-$('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') $('photoModal').classList.remove('open'); });
-
-/** Upload */
-async function startUpload(){
-  const eventId = $('uploadEvent').value;
-  const files = Array.from($('filePick').files || []);
-  if(!eventId){ showToast("Event select karo", "error"); return; }
-  if(!files.length){ showToast("Files select karo", "error"); return; }
-
-  $('uploadBtn').disabled = true;
-  $('uploadStat').style.display = "block";
-  $('uploadStat').innerHTML = "";
-
-  const total = files.length;
-  let done = 0, ok = 0, fail = 0;
-
-  const row = (i, name)=> {
-    const d = document.createElement('div');
-    d.className = "upload-row";
-    d.innerHTML = `
-      <div class="up-idx">${i+1}/${total}</div>
-      <div class="up-name">${escapeHtml(name)}</div>
-      <div class="up-status muted">Queued</div>
-    `;
-    $('uploadStat').appendChild(d);
-    return d;
-  };
-
-  const rows = files.map((f,i)=> row(i,f.name));
-
-  const setStatus = (i, text, cls="muted")=>{
-    const el = rows[i].querySelector('.up-status');
-    el.className = "up-status " + cls;
-    el.textContent = text;
-  };
-
-  const setOverall = ()=>{
-    const pct = Math.round((done/total)*100);
-    $('uploadProgressBar').style.width = pct + "%";
-    $('uploadProgressText').textContent = `Uploading... ${done}/${total} (${pct}%)`;
-  };
-
-  // show progress bar area (if exists)
-  if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "block";
-  setOverall();
-
-  try{
-    // Step 1: get presigned URLs (1 per file)
-    // Backend expects: {event_id, count}
-    const meta = await apiPostJson(UPLOAD_URLS_API, { event_id: eventId, count: total });
-    const urls = meta.urls || meta.uploadUrls || meta.items || [];
-    if(!Array.isArray(urls) || urls.length < total){
-      throw new Error("Upload URLs not returned for all files");
+// --- CONFIGURATION ---
+const CONFIG = {
+    // API Gateway URL from your provided files
+    API_BASE: "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod",
+    // Cognito Details
+    COGNITO: {
+        DOMAIN: "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com",
+        CLIENT_ID: "6j3gec3kk0q0ktkals8cr8s367",
+        // IMPORTANT: In a real deployment, this must match the Callback URL in Cognito settings.
+        // For this single file to work, assume the user is serving it at a URL that is whitelisted.
+        // We will attempt to use current location origin + pathname.
+        REDIRECT_URI: window.location.origin + window.location.pathname
     }
+};
 
-    // Step 2: upload with small concurrency
-    const CONCURRENCY = 3;
-    let cursor = 0;
+// --- STATE MANAGEMENT ---
+const State = {
+    user: null,
+    token: localStorage.getItem('idToken'),
+    currentView: 'login',
+    data: {
+        collections: [],
+        currentCollection: null,
+        events: [],
+        photos: [],
+        linkId: null // For client view
+    }
+};
 
-    const worker = async ()=>{
-      while(cursor < total){
-        const i = cursor++;
-        const file = files[i];
-        const u = urls[i];
-
-        const putUrl = u.uploadURL || u.uploadUrl || u.url;
-        const objectKey = u.objectKey || u.key || u.object_key;
-
-        if(!putUrl || !objectKey){
-          setStatus(i, "Missing URL", "danger");
-          fail++; done++; setOverall();
-          continue;
+// --- ROUTER ---
+const Router = {
+    init: async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // 1. Check for Client Link (?linkId=...)
+        if (urlParams.has('linkId')) {
+            State.data.linkId = urlParams.get('linkId');
+            Router.navigate('client-landing');
+            return;
         }
 
-        setStatus(i, "Uploading...", "muted");
-
-        try{
-          const up = await fetch(putUrl, {
-            method:"PUT",
-            headers:{ "Content-Type": file.type || "application/octet-stream" },
-            body: file
-          });
-          if(!up.ok) throw new Error("PUT failed");
-
-          // Step 3: register photo in DB (so it shows in gallery)
-          // Backend expects: {event_id, object_key, filename, size}
-          await apiPostJson(REGISTER_PHOTO_API, {
-            event_id: eventId,
-            object_key: objectKey,
-            filename: file.name,
-            size: file.size
-          });
-
-          ok++;
-          setStatus(i, "Uploaded ✅", "success");
-        }catch(err){
-          console.error("upload file error", file.name, err);
-          fail++;
-          setStatus(i, "Failed ❌", "danger");
-        }finally{
-          done++;
-          setOverall();
+        // 2. Check for Staff/Quick Upload (?action=upload&id=...)
+        if (urlParams.get('action') === 'quick-upload') {
+            const colId = urlParams.get('id');
+            const colName = urlParams.get('name');
+            if(colId) {
+                QuickUpload.init(colId, colName);
+                Router.navigate('quickupload');
+                return;
+            }
         }
-      }
-    };
 
-    await Promise.all(Array.from({length: CONCURRENCY}, ()=>worker()));
+        // 3. Check for Auth Callback (?code=...)
+        if (urlParams.has('code')) {
+            await Auth.handleCallback(urlParams.get('code'));
+            return;
+        }
 
-    $('uploadProgressText').textContent = `Done ✅  Success: ${ok}, Failed: ${fail}`;
-    showToast(`Upload done ✅ (${ok}/${total})`);
-    // Refresh events/photos after short delay
-    setTimeout(()=>{ loadEvents(); loadPhotos(); loadFaceGroups(); }, 1200);
+        // 4. Default: Admin/Photographer Flow
+        if (State.token) {
+            await Auth.validateToken();
+        } else {
+            Router.navigate('login');
+        }
+    },
 
-  }catch(e){
-    console.error("startUpload error:", e);
-    showToast("Upload failed: " + (e.message||e), "error");
-    $('uploadProgressText').textContent = "Upload failed: " + (e.message||e);
-  }finally{
-    $('uploadBtn').disabled = false;
-    $('uploadBtn').textContent = "Upload";
-  }
-}
-
-/** Guest link */
-async function generateGuestLink(){
-  showLoader(true);
-  try{
-    const checked = document.querySelectorAll(".linkEventCheck:checked");
-    const eventIds = Array.from(checked).map(x=>x.value).filter(Boolean);
-    if(!eventIds.length){ showToast("कम से कम 1 Event select करो", "error"); return; }
-
-    const expiry = parseInt($('expiryHours')?.value || "0", 10) || 0;
-    const password = ($('linkPassword')?.value || "").trim();
-
-    apiPostJson(GENERATE_LINK_API, { collection_id: cd.id, event_ids: eventIds, expiry_hours: expiry, password })
-      .then(data=>{
-        const rawLink = data?.searchUrl || data?.link || data?.url || "";
-        if(!rawLink) throw new Error("No link returned from API");
-
-        // Try to extract linkId from returned URL
-        let linkId = null;
-        try{
-          const u = new URL(rawLink, window.location.origin);
-          linkId = u.searchParams.get("linkId") || u.searchParams.get("link_id");
-          if(!linkId && u.hash){
-            const hp = new URLSearchParams(u.hash.replace(/^#\/?/,''));
-            linkId = hp.get("linkId") || hp.get("link_id");
-          }
-        }catch(_){}
-
-        // If API ever directly returns link_id
-        linkId = linkId || data?.link_id || data?.linkId || data?.id || null;
-
-        if(!linkId) throw new Error("Link ID not found in response");
-
-        const guestUrl = `${location.origin}${location.pathname.replace(/\/[^\/]*$/, '/')}` + `eventlens-guest.html?linkId=${encodeURIComponent(linkId)}`;
-
-        $('generatedLink').href = guestUrl;
-        $('generatedLink').textContent = guestUrl;
-        $('linkResult').style.display = "block";
-
-        // alert + copy
-        const msg = `Guest link:\n${guestUrl}\n\n(Already copied to clipboard if browser allowed)`;
-        navigator.clipboard?.writeText(guestUrl).catch(()=>{});
-        alert(msg);
-        showToast("Guest link generated ✅");
-      })
-      .catch(err=>{
-        console.error("generateGuestLink error:", err);
-        showToast("Guest link generate failed", "error");
-      })
-      .finally(()=>showLoader(false));
-
-  }catch(e){
-    console.error(e);
-    showToast("Guest link generate failed", "error");
-    showLoader(false);
-  }
-}
-
-async function loadLeads(){
-  $('leadRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
-  try{
-    // ✅ save-details lambda supports: {action:"list", collection_id}
-    // ✅ Use Content-Type: text/plain to avoid CORS preflight issues
-    const res = await fetch(GET_LEADS_API, {
-      method:"POST",
-      headers:{ "Content-Type":"text/plain" },
-      body: JSON.stringify({ action:"list", collection_id: cd.id })
-    });
-    const items = await res.json().catch(()=>[]);
-    if(!res.ok){
-      throw new Error((items && items.message) ? items.message : `HTTP ${res.status}`);
+    navigate: (viewName) => {
+        // Hide all views
+        document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+        
+        // Show target view
+        const target = document.getElementById(`view-${viewName}`);
+        if (target) {
+            target.classList.remove('hidden');
+            State.currentView = viewName;
+            
+            // Trigger load functions
+            if (viewName === 'dashboard') Dashboard.load();
+        } else {
+            console.error('View not found:', viewName);
+        }
     }
-    renderLeads(Array.isArray(items) ? items : (items.items || items.Items || []));
-  }catch(e){
-    console.error("loadLeads error:", e);
-    $('leadRows').innerHTML = `<tr><td colspan="5" class="muted" style="color:var(--danger)">Leads load failed: ${escapeHtml(e.message||e)}</td></tr>`;
-  }
-}
-
-function renderLeads(){
-  const leads = Array.isArray(cd.leads)?cd.leads:[];
-  if(!leads.length){
-    $('leadRows').innerHTML = `<tr><td colspan="4" class="muted">No leads</td></tr>`;
-    return;
-  }
-  $('leadRows').innerHTML = leads.map(l=>{
-    const name = l.name || l.guest_name || l.guestName || '-';
-    const phone = l.phone || l.mobile || l.number || '';
-    const selfie = l.selfie_url || l.selfieUrl || l.selfie || '';
-    const matched = l.match_count || l.matched_count || (Array.isArray(l.photo_urls)?l.photo_urls.length:0) || 0;
-    const safeSelfie = selfie || 'https://via.placeholder.com/70x70?text=NA'; // your UI showed this placeholder when selfie url missing
-    return `
-      <tr>
-        <td><div style="font-weight:900">${name}</div><div class="muted" style="font-size:12px">${phone}</div></td>
-        <td><img src="${safeSelfie}" style="width:54px;height:54px;object-fit:cover;border-radius:12px;border:1px solid var(--border)" onerror="this.src='https://via.placeholder.com/70x70?text=NA'"></td>
-        <td><span class="pill">${matched}</span></td>
-        <td>
-          <div class="row">
-            <button class="btn secondary" onclick="openLead('${encodeURIComponent(JSON.stringify(l))}')"><i class="fa-solid fa-images"></i>Open</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-window.openLead = (enc)=>{
-  let l = {};
-  try{ l = JSON.parse(decodeURIComponent(enc)); }catch{}
-  // If lead has matched photos array, show quickly in modal using gallery
-  const photos = l.photo_urls || l.matched_photos || l.photos || [];
-  if(Array.isArray(photos) && photos.length){
-    $('pmTitle').textContent = 'Lead matched photos';
-    $('pmImg').src = photos[0];
-    $('pmDownload').href = photos[0];
-    $('pmMeta').textContent = `Total matched: ${photos.length}`;
-    $('photoModal').classList.add('open');
-  }else{
-    alert('This lead does not have matched photo URLs in response. Backend should return them (or a linkId to open guest gallery).');
-  }
 };
 
-/** ===================== SUPERADMIN ===================== **/
-$('newPhotog').addEventListener('click', ()=>openNewPhotog());
-async function loadSuperAdmin(){
-  $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
-  showLoader(true);
-  try{
-    const res = await apiFetch(`${API_BASE}/photographers`);
-    if(!res.ok) throw new Error('Failed to load photographers');
+// --- AUTHENTICATION ---
+const Auth = {
+    login: () => {
+        const loginUrl = `${CONFIG.COGNITO.DOMAIN}/login?response_type=code&client_id=${CONFIG.COGNITO.CLIENT_ID}&redirect_uri=${encodeURIComponent("https://selfiphotos.netlify.app/dashboard.html")}`;
+        // NOTE: Hardcoded redirect to the working domain provided in original files to ensure auth works
+        // Ideally, this should be window.location.href if updated in Cognito.
+        window.location.href = loginUrl;
+    },
+
+    handleCallback: async (code) => {
+        UI.showLoader('Logging in...');
+        try {
+            const body = new URLSearchParams({
+                grant_type: 'authorization_code',
+                client_id: CONFIG.COGNITO.CLIENT_ID,
+                code: code,
+                redirect_uri: "https://selfiphotos.netlify.app/dashboard.html"
+            });
+
+            const res = await fetch(`${CONFIG.COGNITO.DOMAIN}/oauth2/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            });
+
+            if (!res.ok) throw new Error('Token exchange failed');
+            const data = await res.json();
+            
+            localStorage.setItem('idToken', data.id_token);
+            State.token = data.id_token;
+            
+            // Redirect to clear query params
+            window.location.href = window.location.pathname; 
+        } catch (e) {
+            console.error(e);
+            UI.showToast(e.message, 'error');
+            UI.hideLoader();
+            Router.navigate('login');
+        }
+    },
+
+    validateToken: async () => {
+        try {
+            // Decode JWT simply to check expiry and group
+            const payload = JSON.parse(atob(State.token.split('.')[1]));
+            if (Date.now() >= payload.exp * 1000) {
+                throw new Error('Token expired');
+            }
+            State.user = payload;
+
+            // Check if Super Admin
+            const groups = payload['cognito:groups'] || [];
+            if (groups.includes('MasterAdmins')) {
+                SuperAdmin.load();
+                Router.navigate('superadmin');
+            } else {
+                document.getElementById('dashUserName').innerText = payload.email.split('@')[0];
+                Router.navigate('dashboard');
+            }
+        } catch (e) {
+            console.log("Auth error:", e);
+            localStorage.removeItem('idToken');
+            Router.navigate('login');
+        }
+    },
+
+    logout: () => {
+        localStorage.clear();
+        const logoutUrl = `${CONFIG.COGNITO.DOMAIN}/logout?client_id=${CONFIG.COGNITO.CLIENT_ID}&logout_uri=${encodeURIComponent("https://selfiphotos.netlify.app/login.html")}`;
+        window.location.href = logoutUrl;
+    }
+};
+
+// --- UI UTILITIES ---
+const UI = {
+    showLoader: (msg) => {
+        document.getElementById('loaderText').innerText = msg;
+        document.getElementById('loader').classList.remove('hidden');
+    },
+    hideLoader: () => {
+        document.getElementById('loader').classList.add('hidden');
+    },
+    showToast: (msg, type = 'success') => {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.className = `toast show ${type}`;
+        setTimeout(() => t.classList.remove('show'), 3000);
+    },
+    formatBytes: (bytes) => {
+        if (!+bytes) return '0 B';
+        const k = 1024;
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${['B', 'KB', 'MB', 'GB'][i]}`;
+    },
+    showCreateCollectionModal: () => {
+        document.getElementById('modalCreateCollection').classList.remove('hidden');
+    },
+    copyLink: () => {
+        const link = document.getElementById('finalLink').href;
+        navigator.clipboard.writeText(link).then(() => UI.showToast('Copied!'));
+    }
+};
+
+// --- API HELPER ---
+async function apiCall(endpoint, method = 'GET', body = null) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (State.token) headers['Authorization'] = `Bearer ${State.token}`;
+
+    const opts = { method, headers };
+    if (body) opts.body = JSON.stringify(body);
+
+    const res = await fetch(`${CONFIG.API_BASE}${endpoint}`, opts);
     const data = await res.json();
-    const rows = Array.isArray(data)?data:[];
-    $('saRows').innerHTML = rows.map(u=>{
-      const status = u.disabled ? 'Disabled' : 'Active';
-      return `
-        <tr>
-          <td style="font-weight:900">${u.email||'-'}</td>
-          <td>${u.storage_limit_gb ?? (u.storage_limit_bytes?Math.round(u.storage_limit_bytes/1024/1024/1024):'-')}</td>
-          <td>${u.expiry_date||'-'}</td>
-          <td><span class="pill" style="color:${u.disabled?'#ffb4b4':'#b7ffcf'}">${status}</span></td>
-          <td class="row">
-            <button class="btn danger" onclick="saDelete('${u.user_id}')"><i class="fa-solid fa-trash"></i></button>
-            <button class="btn secondary" onclick="saToggle('${u.user_id}', ${!!u.disabled})"><i class="fa-solid fa-power-off"></i></button>
-          </td>
-        </tr>
-      `;
-    }).join('') || `<tr><td colspan="5" class="muted">No users</td></tr>`;
-  }catch(e){
-    console.error(e);
-    $('saRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
-  }finally{ showLoader(false); }
+    if (!res.ok) throw new Error(data.message || 'API Error');
+    return data;
 }
 
-function openNewPhotog(){
-  const email = prompt('Photographer email:');
-  if(!email) return;
-  const limitGb = parseInt(prompt('Storage limit (GB)?', '5')||'5', 10);
-  const expiry = prompt('Expiry date (YYYY-MM-DD) or blank:', '') || '';
-  saSave({ email, storage_limit_gb: isNaN(limitGb)?5:limitGb, expiry_date: expiry });
-}
+// --- MODULE: DASHBOARD ---
+const Dashboard = {
+    load: async () => {
+        UI.showLoader('Loading Collections...');
+        try {
+            const data = await apiCall('/get-collections', 'POST', {});
+            State.data.collections = data.Items || [];
+            Dashboard.renderCollections(State.data.collections);
+        } catch (e) {
+            UI.showToast('Failed to load collections', 'error');
+        } finally {
+            UI.hideLoader();
+        }
+    },
 
-async function saSave(payload){
-  showLoader(true);
-  try{
-    const res = await apiFetch(`${API_BASE}/photographers`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    if(!res.ok) throw new Error('Save failed');
-    showToast('Saved');
-    await loadSuperAdmin();
-  }catch(e){
-    console.error(e);
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
-}
+    renderCollections: (list) => {
+        const html = list.map(c => `
+            <div class="card" onclick="Collection.open('${c.collection_id}', '${c.name}')" style="cursor:pointer">
+                <div class="flex flex-between">
+                    <h3>${c.name}</h3>
+                    <i class="fas fa-chevron-right" style="color:#444"></i>
+                </div>
+                <div style="margin-top:15px; color:var(--text-muted); font-size:14px;">
+                    <div class="flex gap-2">
+                        <span class="stat-badge"><i class="fas fa-image"></i> ${c.total_photo_count || 0}</span>
+                        <span class="stat-badge"><i class="fas fa-hdd"></i> ${UI.formatBytes(c.storage_bytes)}</span>
+                    </div>
+                    <div style="margin-top:8px;">Date: ${new Date(c.created_at).toLocaleDateString()}</div>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('collectionsList').innerHTML = html || '<p style="text-align:center; color:#555">No collections found.</p>';
+    },
 
-window.saDelete = async (userId)=>{
-  if(!confirm('Delete user?')) return;
-  showLoader(true);
-  try{
-    const res = await apiFetch(`${API_BASE}/photographers/${userId}`, { method:'DELETE' });
-    if(!res.ok) throw new Error('Delete failed');
-    showToast('Deleted');
-    await loadSuperAdmin();
-  }catch(e){
-    console.error(e);
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
+    createCollection: async () => {
+        const name = document.getElementById('newCollectionName').value;
+        if (!name) return;
+        
+        UI.showLoader('Creating...');
+        try {
+            await apiCall('/upsert-collection', 'POST', { name });
+            document.getElementById('modalCreateCollection').classList.add('hidden');
+            document.getElementById('newCollectionName').value = '';
+            UI.showToast('Collection Created');
+            Dashboard.load();
+        } catch (e) {
+            UI.showToast(e.message, 'error');
+        } finally {
+            UI.hideLoader();
+        }
+    },
+
+    filterCollections: () => {
+        const q = document.getElementById('dashSearch').value.toLowerCase();
+        const filtered = State.data.collections.filter(c => c.name.toLowerCase().includes(q));
+        Dashboard.renderCollections(filtered);
+    }
 };
 
-window.saToggle = async (userId, current)=>{
-  showLoader(true);
-  try{
-    const res = await apiFetch(`${API_BASE}/photographers/${userId}/toggle`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ disabled: !current })
-    });
-    if(!res.ok) throw new Error('Toggle failed');
-    showToast('Toggled');
-    await loadSuperAdmin();
-  }catch(e){
-    console.error(e);
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
+// --- MODULE: SUPER ADMIN ---
+const SuperAdmin = {
+    load: async () => {
+        UI.showLoader('Loading Photographers...');
+        try {
+            // Using API endpoint inferred from files
+            const users = await apiCall('/photographers', 'GET'); 
+            SuperAdmin.render(users);
+        } catch (e) {
+            // Fallback mock if API differs
+            console.error(e);
+            document.getElementById('superAdminTableBody').innerHTML = '<tr><td colspan="4">Error loading data</td></tr>';
+        } finally {
+            UI.hideLoader();
+        }
+    },
+    render: (users) => {
+        const html = users.map(u => `
+            <tr style="border-bottom: 1px solid #222;">
+                <td style="padding: 12px;">${u.email}</td>
+                <td>${u.storage_limit_gb} GB</td>
+                <td><span style="color:${u.disabled ? 'red' : 'green'}">${u.disabled ? 'Disabled' : 'Active'}</span></td>
+                <td>
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                </td>
+            </tr>
+        `).join('');
+        document.getElementById('superAdminTableBody').innerHTML = html;
+    }
 };
 
-/** ===================== GUEST ===================== **/
-$('gSearchBtn').addEventListener('click', ()=>guestSearch());
+// --- MODULE: COLLECTION DETAILS ---
+const Collection = {
+    currentId: null,
+    
+    open: async (id, name) => {
+        Collection.currentId = id;
+        document.getElementById('colName').innerText = name;
+        
+        // Setup Staff Link
+        const link = `${window.location.origin}${window.location.pathname}?action=quick-upload&id=${id}&name=${encodeURIComponent(name)}`;
+        document.getElementById('staffLinkBtn').href = link;
+        
+        Router.navigate('collection');
+        Collection.refreshData();
+    },
 
-async function guestSearch(){
-  const linkId = ($('gLinkId').value||'').trim();
-  const file = $('gSelfie').files?.[0];
-  if(!linkId) return showToast('linkId required','error');
-  if(!file) return showToast('selfie required','error');
+    refreshData: async () => {
+        UI.showLoader('Fetching details...');
+        try {
+            // 1. Get Events & Stats
+            const data = await apiCall('/get-events', 'POST', { collection_id: Collection.currentId });
+            State.data.events = data.events || [];
+            
+            // 2. Get Photos
+            const pData = await apiCall('/get-photos', 'POST', { collection_id: Collection.currentId });
+            State.data.photos = pData.photos || [];
 
-  $('gStat').textContent = 'Searching...';
-  showLoader(true);
-  try{
-    // Send as multipart to be flexible. If your backend expects base64 JSON, tell me and I’ll switch.
-    const fd = new FormData();
-    fd.append('linkId', linkId);
-    fd.append('selfie', file);
+            // 3. Get Leads
+            try {
+                const lData = await apiCall('/save-details', 'POST', { collection_id: Collection.currentId, action: "list" });
+                const leads = (lData.leads || lData.items || []);
+                document.getElementById('leadsList').innerHTML = leads.length ? 
+                    leads.map(l => `<div style="border-bottom:1px solid #222; padding:10px;"><b>${l.name}</b> (${l.mobile}) - Found ${l.photo_count} photos</div>`).join('') 
+                    : 'No leads yet.';
+            } catch(err) { console.log("Leads fetch error", err); }
 
-    let res = await fetch(SEARCH_API, { method:'POST', body: fd }); // guest is generally public; no auth header
-    if(!res.ok){
-      // fallback: json base64
-      const b64 = await fileToBase64(file);
-      res = await fetch(SEARCH_API, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ linkId, selfie_base64: b64 })
-      });
+            Collection.renderPhotos();
+            Collection.renderEvents();
+            
+        } catch (e) {
+            console.error(e);
+            UI.showToast('Error loading details', 'error');
+        } finally {
+            UI.hideLoader();
+        }
+    },
+
+    switchTab: (tabName) => {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        // Find button index to active is tricky without ID, using event.target in click handler is better
+        // Simpler: assume button order matches
+    },
+
+    renderPhotos: () => {
+        const grid = document.getElementById('collectionGallery');
+        if (State.data.photos.length === 0) {
+            document.getElementById('collectionGalleryEmpty').classList.remove('hidden');
+            grid.innerHTML = '';
+            return;
+        }
+        document.getElementById('collectionGalleryEmpty').classList.add('hidden');
+        
+        const html = State.data.photos.map(p => `
+            <div class="photo-card">
+                <img src="${p.thumbnail_url || p.url}" loading="lazy">
+                <div class="photo-overlay">
+                    <span style="font-size:12px;">${p.filename || 'Photo'}</span>
+                </div>
+            </div>
+        `).join('');
+        grid.innerHTML = html;
+    },
+
+    renderEvents: () => {
+        const html = State.data.events.map(e => `
+            <div style="background:#222; padding:10px; margin-bottom:5px; border-radius:5px; display:flex; justify-content:space-between;">
+                <span>${e.name} (${e.event_date})</span>
+                <span style="color:#888">${e.photo_count || 0} photos</span>
+            </div>
+        `).join('');
+        document.getElementById('eventsList').innerHTML = html;
+
+        // Populate dropdowns for upload and links
+        const opts = `<option value="">Select Event</option>` + State.data.events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+        document.getElementById('uploadEventSelect').innerHTML = opts;
+        
+        // Populate Checkboxes for Links
+        const checks = State.data.events.map(e => `
+            <label style="display:flex; gap:10px; margin-bottom:5px;">
+                <input type="checkbox" class="event-check" value="${e.event_id}"> ${e.name}
+            </label>
+        `).join('');
+        document.getElementById('linkEventChecks').innerHTML = checks || "No events found.";
+    },
+
+    createEvent: async () => {
+        const name = document.getElementById('newEventName').value;
+        const date = document.getElementById('newEventDate').value;
+        if (!name || !date) return UI.showToast('Enter details', 'error');
+        
+        try {
+            await apiCall('/upsert-event', 'POST', { collection_id: Collection.currentId, name, event_date: date });
+            document.getElementById('newEventName').value = '';
+            Collection.refreshData();
+            UI.showToast('Event Created');
+        } catch (e) {
+            UI.showToast('Failed to create event', 'error');
+        }
+    },
+
+    generateLink: async () => {
+        const checked = Array.from(document.querySelectorAll('.event-check:checked')).map(c => c.value);
+        if (checked.length === 0) return UI.showToast('Select at least one event', 'error');
+
+        try {
+            const res = await apiCall('/generate-search-link', 'POST', {
+                collection_id: Collection.currentId,
+                event_ids: checked,
+                expiry_hours: 0
+            });
+            
+            // Convert backend link to this SPA format
+            // Backend returns typically: https://.../index.html?linkId=...
+            // We need to ensure it points to CURRENT URL + ?linkId=...
+            const rawUrl = res.searchUrl || res.url;
+            const linkId = rawUrl.split('linkId=')[1];
+            
+            const spaLink = `${window.location.origin}${window.location.pathname}?linkId=${linkId}`;
+            
+            document.getElementById('finalLink').href = spaLink;
+            document.getElementById('finalLink').innerText = spaLink;
+            document.getElementById('generatedLinkBox').classList.remove('hidden');
+        } catch (e) {
+            UI.showToast(e.message, 'error');
+        }
     }
-    if(!res.ok) throw new Error('Search failed');
-    const data = await res.json();
-    const photos = data.photos || data.Items || data.items || data.matches || [];
-    guest.results = photos;
-    renderGuestResults();
-    $('gStat').textContent = `Found: ${photos.length}`;
-  }catch(e){
-    console.error(e);
-    $('gStat').textContent = '';
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
-}
+};
 
-function renderGuestResults(){
-  const photos = guest.results || [];
-  if(!photos.length){
-    $('gResults').innerHTML = `<div class="muted">No matches</div>`;
-    return;
-  }
-  $('gResults').innerHTML = photos.map(p=>{
-    const url = p.url || p.photo_url || p.s3_url || p.image_url || '';
-    const thumb = p.thumbnail_url || url;
-    return `
-      <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','Guest Photo', 0)">
-        <img src="${thumb}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'"/>
-        <div class="m"><div class="t">Open</div><div class="s">Tap to view</div></div>
-      </div>
-    `;
-  }).join('');
-}
+// --- MODULE: UPLOAD MANAGER (Shared) ---
+const UploadManager = {
+    selectedFiles: [],
+    
+    initFileListener: () => {
+        document.getElementById('fileInput').addEventListener('change', (e) => UploadManager.handleFiles(e.target.files, 'uploadQueue'));
+        document.getElementById('quickFileInput').addEventListener('change', (e) => UploadManager.handleFiles(e.target.files, 'quickUploadStatus'));
+    },
 
-function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const r = new FileReader();
-    r.onload = ()=> resolve(String(r.result).split(',')[1]||'');
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
+    handleFiles: (files, containerId) => {
+        UploadManager.selectedFiles = Array.from(files);
+        const div = document.getElementById(containerId);
+        div.innerHTML = `<p>${files.length} files selected</p>`;
+        document.getElementById('startUploadBtn').classList.remove('hidden');
+    },
 
-/** ===================== MAIN ROUTE ===================== **/
-async function route(){
-  await handleAuthFromQuery();
-  const ok = ensureLoggedIn();
+    start: async () => {
+        const eventId = document.getElementById('uploadEventSelect').value || document.getElementById('quickUploadEventSelect').value;
+        if (!eventId) return UI.showToast('Select an Event', 'error');
+        if (UploadManager.selectedFiles.length === 0) return;
 
-  const { path, params } = getHashRoute();
+        // Use current collection ID or Quick Upload ID
+        const colId = Collection.currentId || QuickUpload.colId;
 
-  if(path==='login'){
-    setView('login');
-    return;
-  }
+        document.getElementById('uploadProgressBox').classList.remove('hidden');
+        document.getElementById('startUploadBtn').disabled = true;
 
-  // guest can be public; no token required
-  if(path==='guest'){
-    setView('guest');
-    const linkId = params.get('linkId') || '';
-    $('gLinkId').value = linkId;
-    return;
-  }
+        try {
+            // 1. Get Presigned URLs
+            const payload = {
+                collection_id: colId,
+                event_id: eventId,
+                files: UploadManager.selectedFiles.map(f => ({ name: f.name, type: f.type }))
+            };
+            
+            const res = await apiCall('/generate-upload-urls', 'POST', payload);
+            const urls = res.urls;
 
-  // everything else requires login
-  if(!ok){
-    setView('login');
-    location.hash = '#/login';
-    return;
-  }
+            // 2. Upload to S3
+            let completed = 0;
+            for (let i = 0; i < urls.length; i++) {
+                const item = urls[i];
+                const file = UploadManager.selectedFiles[i];
+                
+                await fetch(item.uploadURL, {
+                    method: 'PUT',
+                    body: file,
+                    headers: { 'Content-Type': file.type }
+                });
 
-  // Redirect based on group
-  if(path==='superadmin'){
-    if(!isMasterAdmin()){
-      showToast('Not authorized (need MasterAdmins group)', 'error');
-      setView('dashboard');
-      location.hash = '#/dashboard';
-      return;
+                completed++;
+                const pct = (completed / urls.length) * 100;
+                document.getElementById('uploadProgressBar').style.width = pct + '%';
+                document.getElementById('uploadStatusText').innerText = `Uploaded ${completed}/${urls.length}`;
+            }
+
+            UI.showToast('Upload Complete! Photos are processing...');
+            UploadManager.selectedFiles = [];
+            
+            // Clean up
+            setTimeout(() => {
+                document.getElementById('uploadProgressBox').classList.add('hidden');
+                document.getElementById('startUploadBtn').disabled = false;
+                if(State.currentView === 'collection') Collection.refreshData();
+            }, 2000);
+
+        } catch (e) {
+            console.error(e);
+            UI.showToast('Upload failed', 'error');
+            document.getElementById('startUploadBtn').disabled = false;
+        }
     }
-    setView('superadmin');
-    await loadSuperAdmin();
-    return;
-  }
+};
 
-  if(path==='collection'){
-    setView('collection');
-    setCollectionFromRoute(params);
-    // basic init
-    await loadEvents();
-    await loadPhotos(false);
-    await loadLeads();
-    return;
-  }
+// --- MODULE: QUICK UPLOAD (Staff) ---
+const QuickUpload = {
+    colId: null,
+    init: async (id, name) => {
+        QuickUpload.colId = id;
+        document.getElementById('quickUploadTitle').innerText = name || "Quick Upload";
+        
+        // Fetch events for dropdown
+        try {
+            // NOTE: We need a way to fetch events without Auth if staff link is public?
+            // Usually presigned links or public endpoints are used. 
+            // Assuming current API structure allows fetching events if we have ID.
+            // If API requires Auth, this view will fail without login.
+            // Assuming for this demo, staff is logged in OR API is open.
+            const data = await apiCall('/get-events', 'POST', { collection_id: id });
+            const opts = data.events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+            document.getElementById('quickUploadEventSelect').innerHTML = `<option value="">Select Event</option>` + opts;
+        } catch(e) {
+            console.log("Error fetching events for quick upload");
+        }
+    }
+};
 
-  // default dashboard
-  setView('dashboard');
-  await loadCollections();
-  await loadAccountStatus();
-}
+// --- MODULE: CLIENT VIEW ---
+const Client = {
+    linkId: null,
+    selfieBase64: null,
+    
+    handleSelfieSelect: (input) => {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const max = 800;
+                    if(w>h){ if(w>max){h*=max/w; w=max;}} else{ if(h>max){w*=max/h; h=max;}}
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    Client.selfieBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    document.getElementById('clientPreviewImg').src = Client.selfieBase64;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    },
+
+    searchFaces: async () => {
+        if (!Client.selfieBase64) return UI.showToast('Take a selfie first', 'error');
+        
+        UI.showLoader('Scanning faces with AI...');
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}/search`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    linkId: State.data.linkId, 
+                    selfie_image: Client.selfieBase64 
+                })
+            });
+            const data = await res.json();
+            
+            State.data.clientPhotos = data.matches || [];
+            
+            if (State.data.clientPhotos.length > 0) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                document.getElementById('matchCount').innerText = State.data.clientPhotos.length;
+                document.getElementById('step-selfie').classList.add('hidden');
+                document.getElementById('step-details').classList.remove('hidden');
+            } else {
+                UI.showToast('No matches found. Try another selfie.', 'warning');
+            }
+        } catch (e) {
+            UI.showToast('Search failed', 'error');
+        } finally {
+            UI.hideLoader();
+        }
+    },
+
+    submitDetails: () => {
+        const name = document.getElementById('guestName').value;
+        const mobile = document.getElementById('guestMobile').value;
+        
+        if (!name || !mobile) return UI.showToast('Enter details', 'error');
+
+        // Save Lead asynchronously
+        fetch(`${CONFIG.API_BASE}/save-details`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                linkId: State.data.linkId,
+                name, mobile, selfie_image: Client.selfieBase64,
+                photo_count: State.data.clientPhotos.length
+            })
+        });
+
+        // Show Gallery
+        Router.navigate('client-gallery');
+        Client.renderGallery();
+    },
+
+    renderGallery: () => {
+        const grid = document.getElementById('clientPhotoGrid');
+        grid.innerHTML = State.data.clientPhotos.map(p => `
+            <div class="photo-card">
+                <img src="${p.thumbnail_url || p.url}" onclick="window.open('${p.url}', '_blank')">
+            </div>
+        `).join('');
+    },
+    
+    downloadZip: async () => {
+        UI.showLoader("Zipping photos...");
+        const zip = new JSZip();
+        for(let i=0; i<State.data.clientPhotos.length; i++) {
+            const url = State.data.clientPhotos[i].url;
+            const blob = await fetch(url).then(r=>r.blob());
+            zip.file(`photo_${i+1}.jpg`, blob);
+        }
+        const content = await zip.generateAsync({type:"blob"});
+        saveAs(content, "MyPhotos.zip");
+        UI.hideLoader();
+    }
+};
+
+// --- INITIALIZATION ---
+document.getElementById('btnLogin').addEventListener('click', Auth.login);
+UploadManager.initFileListener();
+Router.init();
+
 </script>
 </body>
 </html>

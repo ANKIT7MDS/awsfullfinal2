@@ -30,6 +30,7 @@
       --warning: #ffb142;
       --text-main: #ffffff;
       --text-muted: #94949e;
+      --text-dark: #000000;
       --border-color: rgba(255, 255, 255, 0.08);
       --glass-bg: rgba(20, 20, 23, 0.65);
       --glass-blur: blur(16px);
@@ -142,7 +143,7 @@
     .up-status.danger { color: var(--danger); }
     
     /* Toast & Loaders */
-    .toast { position: fixed; top: 24px; right: 24px; background: var(--text-main); color: var(--text-dark); padding: 12px 20px; border-radius: var(--radius-md); font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 300; transform: translateX(120%); transition: transform 0.4s var(--ease); }
+    .toast { position: fixed; top: 24px; right: 24px; background: var(--text-dark); color: var(--text-main); padding: 12px 20px; border-radius: var(--radius-md); font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 300; transform: translateX(120%); transition: transform 0.4s var(--ease); border: 1px solid var(--border-color); }
     .toast.show { transform: translateX(0); }
     .toast.error { background: var(--danger); color: white; }
 
@@ -197,7 +198,6 @@
         <!-- Nav Actions -->
         <a class="btn secondary" href="#/login">Login</a>
         <a class="btn secondary" href="#/dashboard">Dash</a>
-        <a class="btn secondary" href="#/guest">Guest</a>
         <button class="btn danger" id="logoutBtn" style="padding: 8px 12px;"><i class="fa-solid fa-power-off"></i></button>
       </div>
     </div>
@@ -217,13 +217,6 @@
           <button class="btn primary" id="btnLogin" style="padding:14px 32px; font-size:16px;">
             <i class="fa-solid fa-right-to-bracket"></i> Login with Cognito
           </button>
-          
-          <div class="hr"></div>
-          
-          <div class="hint" style="text-align:left; max-width:500px; margin:0 auto;">
-            <i class="fa-solid fa-circle-info" style="margin-right:6px; color:var(--accent)"></i>
-            Important: Ensure this file's URL is added to the Cognito Callback URLs.
-          </div>
         </div>
       </div>
     </div>
@@ -295,12 +288,11 @@
           </div>
           <div class="row">
             <button class="btn secondary" id="backDash"><i class="fa-solid fa-arrow-left"></i> Back</button>
-            <button class="btn primary" id="genLinkBtn"><i class="fa-solid fa-share-nodes"></i> Share Link</button>
           </div>
         </div>
 
-        <!-- NEW: Improved Link Generation UI -->
-        <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--border-color);">
+        <!-- Link Generation Drawer (Improved UI) -->
+        <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-color);">
           <div class="row" style="align-items:flex-end; gap:16px; flex-wrap:wrap;">
             <div style="flex:2; min-width:200px;">
               <div class="muted" style="font-size:11px; font-weight:700; margin-bottom:6px;">SELECT EVENT TO SHARE</div>
@@ -311,6 +303,7 @@
             <div style="flex:1; min-width:120px;">
               <div class="muted" style="font-size:11px; font-weight:700; margin-bottom:6px;">EXPIRY</div>
               <select id="linkExpiry">
+                <option value="87600">Lifetime</option>
                 <option value="24">24 Hours</option>
                 <option value="48">2 Days</option>
                 <option value="168">1 Week</option>
@@ -474,39 +467,6 @@
       </div>
     </div>
 
-    <!-- VIEW: GUEST SEARCH -->
-    <div class="view" id="viewGuest">
-      <div class="grid" style="grid-template-columns: 1fr; max-width:600px; margin:0 auto;">
-        
-        <div class="card" style="text-align:center;">
-          <h2 style="margin-bottom:8px;">Find Your Photos</h2>
-          <p class="muted">Upload a selfie to find all your photos from the event.</p>
-          
-          <div style="margin: 24px auto; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.05); border:2px dashed var(--border-color); display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;">
-            <i class="fa-solid fa-camera" style="font-size:32px; color:var(--text-muted)"></i>
-            <img id="gPreview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none;" />
-            <input id="gSelfie" type="file" accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;" onchange="const f=this.files[0]; if(f){ const u=URL.createObjectURL(f); document.getElementById('gPreview').src=u; document.getElementById('gPreview').style.display='block'; }"/>
-          </div>
-          
-          <input id="gLinkId" placeholder="Paste Event Link ID here" style="text-align:center; margin-bottom:16px;" />
-
-          <button class="btn primary" id="gSearchBtn" style="width:100%; justify-content:center; padding:16px; font-size:16px;">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Find My Photos
-          </button>
-          
-          <div id="gStat" style="margin-top:16px; font-weight:600; color:var(--primary)"></div>
-        </div>
-
-        <div class="card">
-          <h3>Results</h3>
-          <div class="gallery" id="gResults">
-            <div class="muted" style="grid-column:1/-1; text-align:center; padding:20px;">Results will appear here</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
   </div> <!-- End Wrap -->
 
   <!-- MODAL: PHOTO VIEWER -->
@@ -633,8 +593,6 @@ async function apiPostJson(url, data){
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify(data)
   });
-  // NOTE: If backend returns 4xx/5xx for skipped/dup, it might throw here.
-  // We handle specific messages in calling functions.
   if(!res.ok) {
      const err = await res.json().catch(()=>({}));
      throw new Error(err.message || err.error || `HTTP ${res.status}`);
@@ -647,8 +605,7 @@ const views = {
   login: $('viewLogin'),
   dashboard: $('viewDashboard'),
   collection: $('viewCollection'),
-  superadmin: $('viewSuper'),
-  guest: $('viewGuest'),
+  superadmin: $('viewSuper')
 };
 
 function setView(name){
@@ -871,7 +828,7 @@ async function saveCollection(){
 }
 
 window.deleteCollection = async (id, name)=>{
-  if(!confirm(`Delete "${name}" and all its photos?`)) return;
+  if(!confirm(`Delete "${name}" and all its photos? This action cannot be undone.`)) return;
   showLoader(true);
   try{
     const res = await apiFetch(DELETE_COLLECTION_API, {
@@ -1060,7 +1017,7 @@ async function upsertEvent(){
 }
 
 window.delEvent = async (eventId, name)=>{
-  if(!confirm(`Delete event "${name}"?`)) return;
+  if(!confirm(`Delete event "${name}"? Photos inside will also be deleted.`)) return;
   showLoader(true);
   try{
     const res = await apiFetch(DELETE_EVENT_API, {
@@ -1518,8 +1475,8 @@ async function generateGuestLink(){
     const selectedEventId = eventSelect ? eventSelect.value : '';
     const eventIds = selectedEventId ? [selectedEventId] : [];
     
-    const expiry_hours = parseInt(($('expiryHours')?.value||'0'),10) || 24;
-    const password = ($('linkPassword')?.value||'').trim();
+    const expiry_hours = parseInt(($('linkExpiry')?.value||'0'),10) || 24;
+    const password = ($('linkPin')?.value||'').trim();
 
     const res = await apiFetch(GENERATE_LINK_API, {
       method:'POST',
@@ -1635,7 +1592,6 @@ $('guestMatchesCloseBtn').addEventListener('click', ()=> $('guestMatchesModal').
 
 
 /** ===================== SECTION: SUPERADMIN ===================== **/
-$('newPhotog').addEventListener('click', ()=>openNewPhotog());
 async function loadSuperAdmin(){
   $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
   showLoader(true);
@@ -1714,63 +1670,7 @@ window.saToggle = async (userId, current)=>{
   }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
 };
 
-/** ===================== SECTION: GUEST SEARCH ===================== **/
-$('gSearchBtn').addEventListener('click', ()=>guestSearch());
-
-async function guestSearch(){
-  const linkId = ($('gLinkId').value||'').trim();
-  const file = $('gSelfie').files?.[0];
-  if(!linkId) return showToast('Link ID is required','error');
-  if(!file) return showToast('Please select a selfie','error');
-
-  $('gStat').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Searching...';
-  showLoader(true);
-  
-  try{
-    const fd = new FormData();
-    fd.append('linkId', linkId);
-    fd.append('selfie', file);
-
-    let res = await fetch(SEARCH_API, { method:'POST', body: fd });
-    if(!res.ok){
-       const b64 = await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result.split(',')[1]); fr.readAsDataURL(file); });
-       res = await fetch(SEARCH_API, {
-         method:'POST',
-         headers:{'Content-Type':'application/json'},
-         body: JSON.stringify({ linkId, selfie_base64: b64 })
-       });
-    }
-    
-    if(!res.ok) throw new Error('No match found or invalid link');
-    const data = await res.json();
-    const photos = data.photos || data.Items || data.matches || [];
-    
-    guest.results = photos;
-    renderGuestResults();
-    $('gStat').innerHTML = `<span style="color:var(--primary)"><i class="fa-solid fa-check"></i> Found ${photos.length} photos</span>`;
-  }catch(e){
-    console.error(e);
-    $('gStat').textContent = '';
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
-}
-
-function renderGuestResults(){
-  const photos = guest.results || [];
-  if(!photos.length){
-    $('gResults').innerHTML = `<div class="muted" style="grid-column:1/-1; text-align:center;">No matching photos found.</div>`;
-    return;
-  }
-  $('gResults').innerHTML = photos.map(p=>{
-    const url = p.url || p.photo_url || '';
-    return `
-      <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','My Photo', 1)">
-        <img src="${url}" loading="lazy"/>
-      </div>
-    `;
-  }).join('');
-}
-
+/** ===================== HELPER ===================== **/
 window.copyLink = () => {
   navigator.clipboard.writeText($('finalLink').href);
   showToast('Copied');
@@ -1783,12 +1683,6 @@ async function route(){
   const { path, params } = getHashRoute();
 
   if(path==='login'){ setView('login'); return; }
-  
-  if(path==='guest'){
-    setView('guest');
-    $('gLinkId').value = params.get('linkId') || '';
-    return;
-  }
 
   if(!ok){ setView('login'); location.hash = '#/login'; return; }
 

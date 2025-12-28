@@ -413,20 +413,23 @@ const Router = {
 // --- AUTHENTICATION ---
 const Auth = {
     login: () => {
-        const loginUrl = `${CONFIG.COGNITO.DOMAIN}/login?response_type=code&client_id=${CONFIG.COGNITO.CLIENT_ID}&redirect_uri=${encodeURIComponent("https://selfiphotos.netlify.app/dashboard.html")}`;
-        // NOTE: Hardcoded redirect to the working domain provided in original files to ensure auth works
-        // Ideally, this should be window.location.href if updated in Cognito.
+        // Dynamic Redirect URI (Current Page URL)
+        const currentUrl = window.location.origin + window.location.pathname;
+        const loginUrl = `${CONFIG.COGNITO.DOMAIN}/login?response_type=code&client_id=${CONFIG.COGNITO.CLIENT_ID}&redirect_uri=${encodeURIComponent(currentUrl)}`;
         window.location.href = loginUrl;
     },
 
     handleCallback: async (code) => {
         UI.showLoader('Logging in...');
         try {
+            // Dynamic Redirect URI (Must match login)
+            const currentUrl = window.location.origin + window.location.pathname;
+            
             const body = new URLSearchParams({
                 grant_type: 'authorization_code',
                 client_id: CONFIG.COGNITO.CLIENT_ID,
                 code: code,
-                redirect_uri: "https://selfiphotos.netlify.app/dashboard.html"
+                redirect_uri: currentUrl
             });
 
             const res = await fetch(`${CONFIG.COGNITO.DOMAIN}/oauth2/token`, {

@@ -1300,7 +1300,12 @@ function processFile(file) {
         canvas.toBlob((blob) => {
           if(!blob) { reject(new Error('Conversion failed')); return; }
           // Create new File object with proper name
-          const newName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+          
+          // SANITIZATION: Remove spaces and invalid characters for Rekognition compatibility
+          let rawName = file.name.replace(/\.[^/.]+$/, ""); // strip extension
+          rawName = rawName.replace(/[^a-zA-Z0-9_.\-:]/g, "_"); // replace invalid chars with _
+          const newName = rawName + ".jpg";
+          
           const newFile = new File([blob], newName, { type: "image/jpeg" });
           resolve(newFile);
         }, 'image/jpeg', 0.85); // 85% Quality
@@ -1342,8 +1347,12 @@ async function startUpload(){
          processedFiles.push(jpegFile);
        } catch(err){
          console.error("Skipping bad file:", rawFiles[i].name, err);
-         // Fallback to original if conversion fails (rare)
-         processedFiles.push(rawFiles[i]);
+         
+         // FALLBACK: Even if conversion fails, we MUST sanitize the original filename
+         // otherwise Rekognition will reject it if it has spaces
+         const safeName = rawFiles[i].name.replace(/[^a-zA-Z0-9_.\-:]/g, "_");
+         const safeFile = new File([rawFiles[i]], safeName, { type: rawFiles[i].type });
+         processedFiles.push(safeFile);
        }
     }
     

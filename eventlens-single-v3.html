@@ -1404,7 +1404,13 @@ async function generateGuestLink(){
     
     if(!res.ok) throw new Error('Failed');
     const data = await res.json();
-    const link = data.searchUrl || data.link || data.url;
+    let link = data.searchUrl || data.link || data.url;
+
+    // FIX: Automatically append current collection_id to the generated link
+    if (link && cd.id && !link.includes('cid=')) {
+        const separator = link.includes('?') ? '&' : '?';
+        link += `${separator}cid=${encodeURIComponent(cd.id)}`;
+    }
 
     if($('generatedLink')){
       $('generatedLink').href = link;
@@ -1424,7 +1430,10 @@ async function loadLeads(){
     const tbody = $('leadRows');
     tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">Loading...</td></tr>';
 
-    const res = await fetch(SAVE_DETAILS_API, {
+    console.log("Loading leads for collection:", cd.id);
+    
+    // CHANGED: Using apiFetch instead of fetch to include Auth Token
+    const res = await apiFetch(SAVE_DETAILS_API, {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ action:'list', collection_id: cd.id })
@@ -1432,6 +1441,8 @@ async function loadLeads(){
 
     if(!res.ok) throw new Error('Failed');
     const data = await res.json();
+    console.log("Leads data:", data);
+    
     cd.leads = Array.isArray(data) ? data : (data.items || []);
 
     renderLeads();

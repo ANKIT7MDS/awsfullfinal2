@@ -93,7 +93,7 @@
     table { width: 100%; border-collapse: collapse; min-width: 600px; text-align: left; }
     th { background: rgba(255,255,255,0.03); color: var(--text-muted); font-weight: 600; padding: 14px 16px; font-size: 12px; text-transform: uppercase; }
     td { padding: 14px 16px; border-top: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
-
+    
     /* Gallery */
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
     .ph { border-radius: var(--radius-md); overflow: hidden; background: #000; border: 1px solid var(--border-color); cursor: pointer; position: relative; transition: 0.3s ease; aspect-ratio: 1; }
@@ -506,6 +506,12 @@ function fmtDate(d){
   try{ if(!d) return '-'; return new Date(d).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}); }catch{return d||'-'}
 }
 
+function formatBytes(bytes=0, decimals=2){
+  if(!+bytes) return '0 B';
+  const k=1024, dm=decimals<0?0:decimals, sizes=['Bytes','KB','MB','GB','TB'];
+  const i=Math.floor(Math.log(bytes)/Math.log(k));
+  return `${parseFloat((bytes/Math.pow(k,i)).toFixed(dm))} ${sizes[i]}`;
+}
 function parseJwt(token){
   try {
     const base64Url = token.split('.')[1];

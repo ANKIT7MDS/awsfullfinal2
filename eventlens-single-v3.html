@@ -1266,6 +1266,7 @@ async function startUpload(){
   const files = Array.from($('filePick').files || []);
   if(!eventId){ showToast("Please select an event first", "error"); return; }
   if(!files.length){ showToast("No files selected", "error"); return; }
+  if(!cd.id) { showToast("Collection ID missing. Please refresh.", "error"); return; }
 
   $('uploadBtn').disabled = true;
   $('uploadStat').innerHTML = "";
@@ -1305,11 +1306,14 @@ async function startUpload(){
   try{
     // Step 1: get URLs
     const fileNames = files.map(f => f.name);
+    // Added collection_id and file_names to fix "Missing required fields"
+    console.log("Generating Upload URLs with:", { collection_id: cd.id, event_id: eventId, count: total, file_names: fileNames });
+    
     const meta = await apiPostJson(UPLOAD_URLS_API, { 
-      collection_id: cd.id, // Fixed: Added collection_id
+      collection_id: cd.id, 
       event_id: eventId, 
       count: total,
-      file_names: fileNames // Fixed: Added file_names array
+      file_names: fileNames 
     });
 
     const urls = meta.urls || meta.uploadUrls || meta.items || [];
@@ -1344,13 +1348,12 @@ async function startUpload(){
           
           // Step 3: Register
           try {
-             // Backend expects registration to index the photo
              await apiPostJson(REGISTER_PHOTO_API, { 
-               collection_id: cd.id,
-               event_id: eventId, 
-               object_key: objectKey, 
-               filename: file.name, 
-               size: file.size 
+                collection_id: cd.id,
+                event_id: eventId, 
+                object_key: objectKey, 
+                filename: file.name, 
+                size: file.size 
              });
           } catch(err){ console.warn('Registration skip/fail', err); }
 

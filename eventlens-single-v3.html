@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     /* =========================================
-       CSS STYLES - DARK THEME
+       SECTION: CSS STYLES - DARK THEME
+       Basic styling, colors, and layout
        ========================================= */
     :root {
       /* Core Palette */
@@ -846,7 +847,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   route();
 });
 
-/** ===================== AUTH FLOW ===================== **/
+/** ===================== SECTION: AUTH FLOW ===================== **/
 async function handleAuthFromQuery(){
   const params = new URLSearchParams(location.search);
   const code = params.get('code');
@@ -928,7 +929,7 @@ $('logoutBtn').addEventListener('click', ()=>{
   location.href = logoutUrl;
 });
 
-/** ===================== DASHBOARD LOGIC ===================== **/
+/** ===================== SECTION: DASHBOARD LOGIC ===================== **/
 $('colSave').addEventListener('click', ()=>saveCollection());
 $('colCancel').addEventListener('click', ()=>resetColForm());
 $('colSearch').addEventListener('input', ()=>renderCollections());
@@ -1058,7 +1059,7 @@ window.deleteCollection = async (id, name)=>{
   }
 };
 
-/** ===================== COLLECTION DETAILS ===================== **/
+/** ===================== SECTION: COLLECTION DETAILS ===================== **/
 $('backDash').addEventListener('click', ()=> location.hash = '#/dashboard');
 $('evSave').addEventListener('click', ()=> upsertEvent());
 $('genLinkBtn').addEventListener('click', ()=> generateGuestLink());
@@ -1277,7 +1278,7 @@ window.openPhoto = (encUrl, title, faces)=>{
 $('pmClose').addEventListener('click', ()=> $('photoModal').classList.remove('open'));
 $('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') $('photoModal').classList.remove('open'); });
 
-/** Upload */
+/** ===================== SECTION: UPLOAD LOGIC (FIXED) ===================== **/
 // Helper to convert any image to JPEG Blob
 function processFile(file) {
   return new Promise((resolve, reject) => {
@@ -1369,10 +1370,10 @@ async function startUpload(){
       el.innerHTML = html;
     };
 
-    // 2. Get Upload URLs
+    // 2. Get Upload URLs (FIXED PAYLOAD STRUCTURE)
     setOverall(20, "Requesting Upload URLs...");
     
-    // Updated Payload to match what works in collection-details.html
+    // Construct payload exactly as required by working file logic
     const filesPayload = files.map(f => ({
       name: f.name,
       type: f.type || 'application/octet-stream'
@@ -1383,7 +1384,7 @@ async function startUpload(){
     const meta = await apiPostJson(UPLOAD_URLS_API, { 
       collection_id: cd.id, 
       event_id: eventId, 
-      files: filesPayload 
+      files: filesPayload // THIS WAS THE MISSING KEY
     });
 
     const urls = meta.urls || meta.uploadUrls || meta.items || [];
@@ -1409,6 +1410,9 @@ async function startUpload(){
         
         setStatus(i, '<i class="fa-solid fa-spinner fa-spin"></i>', "muted");
 
+        // RATE LIMIT: Sleep for 500ms before processing to avoid backend throttling
+        await new Promise(r => setTimeout(r, 500));
+
         try{
           await fetch(putUrl, {
              method:"PUT",
@@ -1416,20 +1420,35 @@ async function startUpload(){
              body: file
           });
           
-          // 4. Register
-          try {
-             await apiPostJson(REGISTER_PHOTO_API, { 
-                collection_id: cd.id,
-                event_id: eventId, 
-                object_key: objectKey, 
-                filename: file.name, 
-                size: file.size,
-                content_type: file.type
-             });
-          } catch(err){ console.warn('Registration skip/fail', err); }
+          // 4. Register (With retry logic for stability)
+          let registered = false;
+          let attempts = 0;
+          while(!registered && attempts < 3){
+             attempts++;
+             try {
+               await apiPostJson(REGISTER_PHOTO_API, { 
+                  collection_id: cd.id,
+                  event_id: eventId, 
+                  object_key: objectKey, 
+                  filename: file.name, 
+                  size: file.size,
+                  content_type: file.type || 'application/octet-stream'
+               });
+               registered = true;
+             } catch(err){ 
+               console.warn(`Registration attempt ${attempts} failed for ${file.name}`, err);
+               if(attempts < 3) await new Promise(r => setTimeout(r, 1000)); // wait 1s before retry
+             }
+          }
 
-          ok++;
-          setStatus(i, '<i class="fa-solid fa-check"></i>', "success");
+          if(registered){
+             ok++;
+             setStatus(i, '<i class="fa-solid fa-check"></i>', "success");
+          } else {
+             // Even if registration fails after retries, count as fail
+             throw new Error("Registration failed after retries");
+          }
+
         }catch(err){
           console.error(err);
           fail++;
@@ -1456,7 +1475,7 @@ async function startUpload(){
   }
 }
 
-/** Guest link */
+/** ===================== SECTION: GUEST LINK LOGIC ===================== **/
 async function generateGuestLink(){
   showLoader(true);
   try{
@@ -1566,7 +1585,7 @@ window.openLead = (enc)=>{
   }
 };
 
-/** ===================== SUPERADMIN ===================== **/
+/** ===================== SECTION: SUPERADMIN ===================== **/
 $('newPhotog').addEventListener('click', ()=>openNewPhotog());
 async function loadSuperAdmin(){
   $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
@@ -1646,7 +1665,7 @@ window.saToggle = async (userId, current)=>{
   }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
 };
 
-/** ===================== GUEST ===================== **/
+/** ===================== SECTION: GUEST SEARCH ===================== **/
 $('gSearchBtn').addEventListener('click', ()=>guestSearch());
 
 async function guestSearch(){

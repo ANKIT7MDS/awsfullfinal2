@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>EventLens Pro – Modern Dashboard</title>
+  <title>EventLens Pro – Admin Dashboard</title>
   
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1247,16 +1247,10 @@ async function saveFaceName(){
     }finally{ showLoader(false); }
 }
 
-/** ===================== SECTION: UPLOAD LOGIC (Optimized Queue) ===================== **/
-// Helper to convert any image to JPEG Blob
+/** ===================== SECTION: UPLOAD LOGIC (Strict Check + Content-Type) ===================== **/
+// Helper to convert any image to JPEG Blob (ALWAYS RE-ENCODE)
 function processFile(file) {
   return new Promise((resolve, reject) => {
-    // Optimization: Skip Canvas for JPG/PNG, only use for HEIC/others
-    if(file.type === 'image/jpeg' || file.type === 'image/png'){
-       resolve(file); 
-       return;
-    }
-    
     const reader = new FileReader();
     reader.onload = function(event) {
       const img = new Image();
@@ -1274,13 +1268,16 @@ function processFile(file) {
         // Convert to standard JPEG
         canvas.toBlob((blob) => {
           if(!blob) { reject(new Error('Conversion failed')); return; }
+          
           // Create new File object with proper name
+          // SANITIZATION: Remove spaces and invalid characters
           let rawName = file.name.replace(/\.[^/.]+$/, ""); 
           rawName = rawName.replace(/[^a-zA-Z0-9_.\-:]/g, "_"); 
           const newName = rawName + ".jpg";
+          
           const newFile = new File([blob], newName, { type: "image/jpeg" });
           resolve(newFile);
-        }, 'image/jpeg', 0.85); 
+        }, 'image/jpeg', 0.85); // 85% Quality
       };
       img.onerror = (e) => reject(e);
       img.src = event.target.result;
@@ -1297,7 +1294,6 @@ async function computeHash(file) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// UPDATED: Simple Add to Queue (No Processing)
 $('fileInput').onchange = (e) => {
   const files = Array.from(e.target.files);
   if(!files.length) return;
@@ -1316,7 +1312,7 @@ $('fileInput').onchange = (e) => {
     $('uploadList').appendChild(row);
 
     // Add to Global Queue (Status 'waiting')
-    // Note: We store rawFile. 'file' and 'hash' will be computed just before upload
+    // Store rawFile. 'file' and 'hash' will be computed just before upload
     selectedFiles.push({ id, rawFile: f, file: null, hash: null, status: 'waiting' });
   });
   
@@ -1332,7 +1328,7 @@ window.removeFile = (id) => {
   $('startUploadBtn').textContent = `Start Upload (${selectedFiles.length})`;
 };
 
-// UPDATED: Batch Processing Function
+// Batch Processing Function
 async function startUpload(){
   const eventId = $('uploadEventSelect').value;
   if(!eventId){ showToast("Please select an event first", "error"); return; }
@@ -1348,7 +1344,7 @@ async function startUpload(){
     $('uploadProgressText').textContent = text;
   };
 
-  const BATCH_SIZE = 5; // Process 5 files at a time to prevent UI freeze
+  const BATCH_SIZE = 3; 
   
   try {
     // Main Queue Loop
@@ -1363,18 +1359,20 @@ async function startUpload(){
         // Parallel process within batch
         await Promise.all(batch.map(async (item) => {
             const el = document.getElementById(`file-${item.id}`).querySelector('.up-status');
-            if(el) { el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Hashing...'; el.className='up-status waiting'; }
+            if(el) { el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; el.className='up-status waiting'; }
             
             try {
-                // HEIC check
+                // HEIC check first
                 let processedFile = item.rawFile;
                 if(item.rawFile.name.toLowerCase().endsWith('.heic')){
                     const blob = await heic2any({ blob: item.rawFile, toType: "image/jpeg", quality: 0.8 });
                     processedFile = new File([blob], item.rawFile.name.replace(/\.heic$/i, '.jpg'), { type: "image/jpeg" });
                 }
-                // Convert/Sanitize
+                
+                // FORCE RE-ENCODE (To change Hash)
                 item.file = await processFile(processedFile);
-                // Hash
+                
+                // Hash the NEW file
                 item.hash = await computeHash(item.file);
                 item.status = 'ready_to_upload';
             } catch(e) {
@@ -1392,9 +1390,9 @@ async function startUpload(){
         setOverall(30, `Checking duplicates...`);
         const filesPayload = readyBatch.map(f => ({
             name: f.file.name,
-            type: f.file.type || 'application/octet-stream',
+            type: f.file.type || 'application/octet-stream', // 'image/jpeg'
             size: f.file.size,
-            hash: f.hash
+            hash: f.hash 
         }));
 
         const meta = await apiPostJson(UPLOAD_URLS_API, { 
@@ -1425,8 +1423,11 @@ async function startUpload(){
              if(el) el.innerHTML = 'Sending...';
              
              try {
-                await fetch(u.uploadUrl, { method: 'PUT', body: item.file, headers: { 'Content-Type': item.file.type } });
+                // IMPORTANT: The Fix for Silent Failure
+                const s3Res = await fetch(u.uploadUrl, { method: 'PUT', body: item.file, headers: { 'Content-Type': item.file.type } });
                 
+                if(!s3Res.ok) throw new Error(`S3 Error: ${s3Res.status}`);
+
                 // Register
                 if(el) el.innerHTML = 'Indexing...';
                 
@@ -1450,12 +1451,12 @@ async function startUpload(){
                 } else { throw new Error('Reg Failed'); }
              } catch(e){
                 item.status = 'error';
-                if(el) { el.innerHTML = 'Fail'; el.className = 'up-status danger'; }
+                console.error(e);
+                if(el) { el.innerHTML = 'Fail'; el.className = 'up-status danger'; el.title = e.message; }
              }
         }));
 
         // Batch Done. Loop continues to next batch.
-        // Update Progress bar roughly
         const total = selectedFiles.length;
         const doneCount = selectedFiles.filter(x => x.status === 'done' || x.status === 'skipped' || x.status === 'error').length;
         setOverall((doneCount/total)*100, `Completed ${doneCount}/${total}`);
@@ -1734,3 +1735,4 @@ async function route(){
 </script>
 </body>
 </html>
+

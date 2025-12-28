@@ -407,7 +407,7 @@
   <div class="loader" id="loader">
     <div style="text-align:center">
       <div class="spin"></div>
-      <div class="muted" style="margin-top:16px; font-weight:500;">Processing...</div>
+      <div class="muted" style="margin-top:16px; font-weight:500;" id="loaderText">Processing...</div>
     </div>
   </div>
 
@@ -579,13 +579,13 @@
         <!-- Uploader -->
         <div class="card">
           <h3>Upload Photos</h3>
-          <div class="hint" style="margin-bottom:16px;">Photos are uploaded directly to S3 securely.</div>
+          <div class="hint" style="margin-bottom:16px;">Photos are uploaded directly to S3 securely. Auto-converts to JPEG.</div>
           
           <select id="uploadEvent" style="margin-bottom:12px;"></select>
           
           <div style="position:relative; height:120px; border:2px dashed var(--border-color); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; flex-direction:column; background:rgba(255,255,255,0.01); transition:0.2s;" ondragover="this.style.borderColor=var(--primary)" ondragleave="this.style.borderColor='var(--border-color)'">
             <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px; color:var(--text-muted); margin-bottom:8px;"></i>
-            <div class="muted">Click to select files</div>
+            <div class="muted" id="filePickLabel">Click to select files</div>
             <input id="filePick" type="file" multiple accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;" />
           </div>
 
@@ -752,7 +752,10 @@ const toast = $('toast');
 const loader = $('loader');
 const whoPill = $('whoPill');
 
-function showLoader(on=true){ loader.classList.toggle('on', !!on); }
+function showLoader(on=true, text="Processing..."){ 
+  loader.classList.toggle('on', !!on);
+  if(text) $('loaderText').textContent = text;
+}
 function showToast(msg, type='success'){
   toast.textContent = msg;
   toast.className = `toast ${type==='error'?'error':''}`.trim();
@@ -827,7 +830,18 @@ function getHashRoute(){
 }
 
 window.addEventListener('hashchange', ()=>route());
-document.addEventListener('DOMContentLoaded', ()=>route());
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Add listener for file picker count
+  const fp = $('filePick');
+  if(fp){
+    fp.addEventListener('change', function(){
+      const n = this.files.length;
+      $('filePickLabel').textContent = n > 0 ? `${n} Files Selected` : 'Click to select files';
+      if(n>0) showToast(`${n} files selected`);
+    });
+  }
+  route();
+});
 
 /** ===================== AUTH FLOW ===================== **/
 async function handleAuthFromQuery(){
@@ -1261,64 +1275,112 @@ $('pmClose').addEventListener('click', ()=> $('photoModal').classList.remove('op
 $('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') $('photoModal').classList.remove('open'); });
 
 /** Upload */
+// Helper to convert any image to JPEG Blob
+function processFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        // Draw image (handles transparency by making background white/black if needed, but JPEG is opaque)
+        ctx.fillStyle = "#FFFFFF"; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        // Convert to standard JPEG
+        canvas.toBlob((blob) => {
+          if(!blob) { reject(new Error('Conversion failed')); return; }
+          // Create new File object with proper name
+          const newName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+          const newFile = new File([blob], newName, { type: "image/jpeg" });
+          resolve(newFile);
+        }, 'image/jpeg', 0.85); // 85% Quality
+      };
+      img.onerror = (e) => reject(e);
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function startUpload(){
   const eventId = $('uploadEvent').value;
-  const files = Array.from($('filePick').files || []);
+  const rawFiles = Array.from($('filePick').files || []);
   if(!eventId){ showToast("Please select an event first", "error"); return; }
-  if(!files.length){ showToast("No files selected", "error"); return; }
+  if(!rawFiles.length){ showToast("No files selected", "error"); return; }
   if(!cd.id) { showToast("Collection ID missing. Please refresh.", "error"); return; }
 
   $('uploadBtn').disabled = true;
   $('uploadStat').innerHTML = "";
-
-  const total = files.length;
-  let done = 0, ok = 0, fail = 0;
-
-  const row = (i, name)=> {
-    const d = document.createElement('div');
-    d.className = "upload-row";
-    d.innerHTML = `
-      <div style="font-weight:700; min-width:30px;">#${i+1}</div>
-      <div class="up-name" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(name)}</div>
-      <div class="up-status muted"><i class="fa-solid fa-clock"></i></div>
-    `;
-    $('uploadStat').appendChild(d);
-    return d;
-  };
-
-  const rows = files.map((f,i)=> row(i,f.name));
-
-  const setStatus = (i, text, cls="muted")=>{
-    const el = rows[i].querySelector('.up-status');
-    el.className = "up-status " + cls;
-    el.innerHTML = text;
-  };
-
-  const setOverall = ()=>{
-    const pct = Math.round((done/total)*100);
-    $('uploadProgressBar').style.width = pct + "%";
-    $('uploadProgressText').textContent = `${pct}% (${done}/${total})`;
-  };
-
+  
+  // Progress UI setup
   if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "block";
-  setOverall();
+  const setOverall = (pct, text) => {
+    $('uploadProgressBar').style.width = pct + "%";
+    $('uploadProgressText').textContent = text;
+  };
 
-  try{
-    // Step 1: get URLs
-    const fileNames = files.map(f => f.name);
-    // Added collection_id and file_names to fix "Missing required fields"
-    console.log("Generating Upload URLs with:", { collection_id: cd.id, event_id: eventId, count: total, file_names: fileNames });
+  try {
+    // 1. Convert/Process all files to JPEG
+    showLoader(true, "Converting Images...");
+    setOverall(10, "Converting images to standard JPEG...");
     
+    const processedFiles = [];
+    for(let i=0; i<rawFiles.length; i++){
+       try {
+         const jpegFile = await processFile(rawFiles[i]);
+         processedFiles.push(jpegFile);
+       } catch(err){
+         console.error("Skipping bad file:", rawFiles[i].name, err);
+         // Fallback to original if conversion fails (rare)
+         processedFiles.push(rawFiles[i]);
+       }
+    }
+    
+    const files = processedFiles;
+    const total = files.length;
+    let done = 0, ok = 0, fail = 0;
+
+    // Build UI Rows
+    const row = (i, name)=> {
+      const d = document.createElement('div');
+      d.className = "upload-row";
+      d.innerHTML = `
+        <div style="font-weight:700; min-width:30px;">#${i+1}</div>
+        <div class="up-name" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(name)}</div>
+        <div class="up-status muted"><i class="fa-solid fa-clock"></i></div>
+      `;
+      $('uploadStat').appendChild(d);
+      return d;
+    };
+    const rows = files.map((f,i)=> row(i,f.name));
+    const setStatus = (i, html, cls="muted")=>{
+      const el = rows[i].querySelector('.up-status');
+      el.className = "up-status " + cls;
+      el.innerHTML = html;
+    };
+
+    // 2. Get Upload URLs
+    setOverall(20, "Requesting Upload URLs...");
+    const fileNames = files.map(f => f.name);
+    const contentTypes = files.map(f => f.type); // All should be image/jpeg now mostly
+
     const meta = await apiPostJson(UPLOAD_URLS_API, { 
       collection_id: cd.id, 
       event_id: eventId, 
       count: total,
-      file_names: fileNames 
+      file_names: fileNames,
+      content_types: contentTypes
     });
 
     const urls = meta.urls || meta.uploadUrls || meta.items || [];
     
-    // Step 2: Concurrency
+    // 3. Upload Concurrently
     const CONCURRENCY = 3;
     let cursor = 0;
 
@@ -1330,7 +1392,7 @@ async function startUpload(){
 
         if(!u || (!u.uploadURL && !u.url)){
           setStatus(i, '<i class="fa-solid fa-triangle-exclamation"></i> Err', "danger");
-          fail++; done++; setOverall();
+          fail++; done++; 
           continue;
         }
 
@@ -1342,18 +1404,19 @@ async function startUpload(){
         try{
           await fetch(putUrl, {
              method:"PUT",
-             headers:{ "Content-Type": file.type || "application/octet-stream" },
+             headers:{ "Content-Type": file.type },
              body: file
           });
           
-          // Step 3: Register
+          // 4. Register
           try {
              await apiPostJson(REGISTER_PHOTO_API, { 
                 collection_id: cd.id,
                 event_id: eventId, 
                 object_key: objectKey, 
                 filename: file.name, 
-                size: file.size 
+                size: file.size,
+                content_type: file.type
              });
           } catch(err){ console.warn('Registration skip/fail', err); }
 
@@ -1365,7 +1428,8 @@ async function startUpload(){
           setStatus(i, '<i class="fa-solid fa-xmark"></i>', "danger");
         }finally{
           done++;
-          setOverall();
+          const pct = 20 + Math.round((done/total)*80);
+          setOverall(pct, `Uploading ${done}/${total}`);
         }
       }
     };
@@ -1379,6 +1443,7 @@ async function startUpload(){
     console.error(e);
     showToast("Upload start failed: " + (e.message), "error");
   }finally{
+    showLoader(false);
     $('uploadBtn').disabled = false;
   }
 }

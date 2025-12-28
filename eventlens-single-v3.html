@@ -169,11 +169,16 @@
 
     <!-- VIEW: LOGIN -->
     <div class="view" id="viewLogin">
-      <div class="card" style="max-width:400px; margin: 80px auto; text-align:center;">
-        <i class="fa-brands fa-aws" style="font-size:40px; color:var(--primary); margin-bottom:20px;"></i>
-        <h2>Admin Login</h2>
-        <p class="muted" style="margin-bottom:30px;">Securely login to access dashboard.</p>
-        <button class="btn primary" id="btnLogin" style="width:100%; justify-content:center;">Login via Cognito</button>
+      <div class="grid" style="max-width:900px; margin:0 auto; grid-template-columns:1fr;">
+        <div class="card" style="text-align:center; padding:40px;">
+          <div style="margin-bottom:24px; display:inline-flex; padding:20px; background:rgba(0,230,118,0.1); border-radius:50%;">
+            <i class="fa-brands fa-aws" style="font-size:40px; color:var(--primary)"></i>
+          </div>
+          <h2>Admin Login</h2>
+          <p class="muted" style="margin-bottom:30px;">Securely login to access dashboard.</p>
+          
+          <button class="btn primary" id="btnLogin" style="width:100%; justify-content:center;">Login via Cognito</button>
+        </div>
       </div>
     </div>
 
@@ -1154,7 +1159,7 @@ async function startUpload(){
 }
 
 /** ===================== SECTION: GUEST LINK LOGIC ===================== **/
-async function generateGuestLink(){
+$('createLinkBtn').addEventListener('click', async () => {
   showLoader(true);
   try{
     const eventSelect = $('linkEventSelect');
@@ -1181,20 +1186,188 @@ async function generateGuestLink(){
   }catch(e){
     showToast('Generate failed','error');
   }finally{ showLoader(false); }
+});
+
+window.copyLink = () => {
+  navigator.clipboard.writeText($('finalLink').href);
+  showToast('Copied');
+};
+
+/** ===================== SECTION: LEADS ===================== **/
+async function loadLeads(){
+  try{
+    const tbody = $('leadRows');
+    tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">Loading...</td></tr>';
+    
+    const res = await apiFetch(SAVE_DETAILS_API, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'list', collection_id: cd.id })
+    });
+
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    let items = [];
+    if(Array.isArray(data)) items = data;
+    else if(data.items) items = data.items;
+    else if(data.leads) items = data.leads;
+
+    cd.leads = items;
+    renderLeads();
+  }catch(e){
+    console.error(e);
+    $('leadRows').innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center">Error loading leads</td></tr>`;
+  }
 }
 
-// --- INIT ---
+function renderLeads(){
+  const leads = Array.isArray(cd.leads)?cd.leads:[];
+  if(!leads.length){
+    $('leadRows').innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center">No leads captured yet</td></tr>`;
+    return;
+  }
+  $('leadRows').innerHTML = leads.map(l=>{
+    const name = l.name || l.guest_name || '-';
+    const phone = l.phone || l.mobile || '';
+    const selfie = l.selfie_url || l.selfie || '';
+    const matched = l.match_count || (Array.isArray(l.photo_urls)?l.photo_urls.length:0) || 0;
+    
+    return `
+      <tr>
+        <td>
+           <div style="font-weight:700">${escapeHtml(name)}</div>
+           <div class="muted" style="font-size:12px">${escapeHtml(phone)}</div>
+        </td>
+        <td>
+           <img src="${selfie}" style="width:30px; height:30px; object-fit:cover; border-radius:50%; border:2px solid var(--border-color);" onerror="this.src='https://via.placeholder.com/50'"/>
+        </td>
+        <td><span class="pill" style="background:var(--primary-dim); color:var(--primary)">${matched} Photos</span></td>
+        <td>
+           <button class="btn secondary" style="padding:6px 10px" onclick="openGuestMatchesModal('Guest Matches', '${escapeHtml(name)}', ${JSON.stringify(l.photo_urls || [])})"><i class="fa-solid fa-eye"></i></button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openGuestMatchesModal(title, info, matches){
+    const grid = $('guestMatchesGrid');
+    grid.innerHTML = '';
+    
+    if(!matches || !matches.length){
+        grid.innerHTML = '<div class="muted">No matches found data in lead.</div>';
+        $('guestMatchesModal').classList.add('open');
+        return;
+    }
+
+    matches.forEach(url => {
+        const div = document.createElement('div');
+        div.className = 'ph';
+        div.onclick = () => window.open(url, '_blank');
+        div.innerHTML = `<img src="${url}" loading="lazy">`;
+        grid.appendChild(div);
+    });
+
+    $('guestMatchesModal').classList.add('open');
+}
+
+$('guestMatchesCloseBtn').addEventListener('click', ()=> $('guestMatchesModal').classList.remove('open'));
+
+/** ===================== SECTION: SUPERADMIN ===================== **/
+$('newPhotog').addEventListener('click', ()=>openNewPhotog());
+async function loadSuperAdmin(){
+  $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers`);
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const rows = Array.isArray(data)?data:[];
+    $('saRows').innerHTML = rows.map(u=>{
+      const status = u.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--primary)">Active</span>';
+      return `
+        <tr>
+          <td style="font-weight:700">${escapeHtml(u.email||'-')}</td>
+          <td>${u.storage_limit_gb || 5} GB</td>
+          <td>${u.expiry_date||'Lifetime'}</td>
+          <td>${status}</td>
+          <td>
+            <div class="row" style="gap:6px;">
+              <button class="btn danger" style="padding:6px" onclick="saDelete('${u.user_id}')"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn secondary" style="padding:6px" onclick="saToggle('${u.user_id}', ${!!u.disabled})"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="5" class="muted">No users</td></tr>`;
+  }catch(e){
+    console.error(e);
+    $('saRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }finally{ showLoader(false); }
+}
+
+function openNewPhotog(){
+  const email = prompt('Photographer Email:');
+  if(!email) return;
+  const limitGb = parseInt(prompt('Storage Limit (GB):', '5')||'5', 10);
+  const expiry = prompt('Expiry (YYYY-MM-DD):', '');
+  saSave({ email, storage_limit_gb: limitGb, expiry_date: expiry });
+}
+
+async function saSave(payload){
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed');
+    showToast('User Saved');
+    await loadSuperAdmin();
+  }catch(e){
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+window.saDelete = async (userId)=>{
+  if(!confirm('Delete this user?')) return;
+  showLoader(true);
+  try{
+    await apiFetch(`${API_BASE}/photographers/${userId}`, { method:'DELETE' });
+    showToast('User Deleted');
+    await loadSuperAdmin();
+  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+};
+
+window.saToggle = async (userId, current)=>{
+  showLoader(true);
+  try{
+    await apiFetch(`${API_BASE}/photographers/${userId}/toggle`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ disabled: !current })
+    });
+    showToast('Status Updated');
+    await loadSuperAdmin();
+  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+};
+
+/** ===================== ROUTER MAIN ===================== **/
 async function route(){
   await handleAuthFromQuery();
   const ok = ensureLoggedIn();
   const { path, params } = getHashRoute();
 
   if(path==='login'){ setView('login'); return; }
+
   if(!ok){ setView('login'); location.hash = '#/login'; return; }
+
   if(path==='superadmin'){
     if(!isMasterAdmin()){ showToast('Access Denied','error'); location.hash='#/dashboard'; return; }
     setView('superadmin'); await loadSuperAdmin(); return;
   }
+
   if(path==='collection'){
     setView('collection');
     setCollectionFromRoute(params);
@@ -1203,26 +1376,10 @@ async function route(){
     loadLeads();
     return;
   }
+
   setView('dashboard');
   loadCollections();
   loadAccountStatus();
-}
-
-// Global Superadmin Load
-async function loadSuperAdmin(){
-  $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
-  try{
-    const res = await apiFetch(`${API_BASE}/photographers`);
-    if(!res.ok) throw new Error('Failed');
-    const data = await res.json();
-    $('saRows').innerHTML = data.map(u=>`<tr><td>${u.email}</td><td>${u.storage_limit_gb}GB</td><td>${u.expiry_date}</td><td>${u.disabled?'Disabled':'Active'}</td><td><button onclick="saDelete('${u.user_id}')">Del</button></td></tr>`).join('');
-  }catch(e){ console.error(e); }
-}
-
-function openNewPhotog(){
-    // Simplified for brevity, add full UI if needed
-    const email = prompt("Email");
-    if(email) saSave({email, storage_limit_gb:5, expiry_date: '2030-01-01'});
 }
 </script>
 </body>

@@ -536,26 +536,47 @@
           </div>
         </div>
 
-        <!-- Link Generation Drawer (Inline) -->
+        <!-- Link Generation Drawer (Improved UI) -->
         <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-color);">
-           <div class="row" style="align-items: flex-start;">
-             <div style="flex:1">
-               <div class="muted" style="margin-bottom:8px; font-size:12px; font-weight:700; text-transform:uppercase;">Select Events to Share</div>
-               <div id="linkEventList" style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:var(--radius-sm); padding:10px; border:1px solid var(--border-color);"></div>
+           <div class="row" style="align-items: flex-start; gap: 20px;">
+             <!-- Event Selection (Dropdown) -->
+             <div style="flex:1;">
+               <div class="muted" style="margin-bottom:8px; font-size:12px; font-weight:700; text-transform:uppercase;">Select Event</div>
+               <select id="linkEventSelect" style="width:100%;">
+                 <option value="">Select an Event</option>
+               </select>
              </div>
-             <div style="flex:1; max-width:300px;">
+             
+             <!-- Settings (Inline) -->
+             <div style="flex:1;">
                 <div class="muted" style="margin-bottom:8px; font-size:12px; font-weight:700;">SETTINGS</div>
-                <div class="row">
-                  <input id="expiryHours" type="number" min="1" value="24" placeholder="Hrs" style="width:80px" />
-                  <input id="linkPassword" placeholder="Optional PIN" />
-                </div>
-                <div id="linkResult" style="display:none; margin-top:12px;">
-                  <div class="row" style="background:var(--primary-dim); padding:8px; border-radius:var(--radius-sm);">
-                    <a id="generatedLink" href="#" target="_blank" style="font-size:12px; color:var(--primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; display:block;"></a>
-                    <button class="btn" id="copyLinkBtn" style="padding:4px 8px; font-size:10px; height:auto;">Copy</button>
-                  </div>
+                <div class="row" style="gap:10px;">
+                  <select id="expiryHours" style="flex:1;">
+                    <option value="24">24 Hours</option>
+                    <option value="48">48 Hours</option>
+                    <option value="72">3 Days</option>
+                    <option value="168">1 Week</option>
+                    <option value="720">1 Month</option>
+                  </select>
+                  <input id="linkPassword" placeholder="Optional PIN" style="flex:1;" />
                 </div>
              </div>
+
+             <!-- Action -->
+             <div style="flex:0.5; display:flex; align-items:flex-end;">
+               <button class="btn primary" id="createLinkBtn" style="height:44px; width:100%; justify-content:center;">Generate</button>
+             </div>
+           </div>
+
+           <!-- Result Area -->
+           <div id="linkResult" style="display:none; margin-top:16px; background:rgba(255,255,255,0.03); padding:12px; border-radius:var(--radius-md); border:1px dashed var(--border-color);">
+              <div class="row" style="justify-content:space-between;">
+                <a id="generatedLink" href="#" target="_blank" style="font-size:13px; color:var(--primary); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:12px;"></a>
+                <div class="row" style="gap:8px;">
+                  <button class="btn secondary" id="copyLinkBtn" style="padding:6px 12px; font-size:11px; height:auto;"><i class="fa-regular fa-copy"></i> Copy</button>
+                  <a id="openLinkBtn" href="#" target="_blank" class="btn secondary" style="padding:6px 12px; font-size:11px; height:auto;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
+                </div>
+              </div>
            </div>
         </div>
       </div>
@@ -567,11 +588,27 @@
           <div class="row" style="justify-content:space-between;">
             <h3>Sub-Events</h3>
           </div>
-          <div class="row" style="background:rgba(255,255,255,0.02); padding:12px; border-radius:var(--radius-md); margin-bottom:16px;">
+          <!-- Edit Form (Hidden by default) -->
+          <div id="evEditForm" style="display:none; background:rgba(255,255,255,0.05); padding:12px; border-radius:var(--radius-md); margin-bottom:16px; border:1px solid var(--border-color);">
+             <div class="row" style="margin-bottom:8px; justify-content:space-between;">
+               <span style="font-weight:700; font-size:12px; color:var(--accent);">EDIT EVENT</span>
+               <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="cancelEventEdit()"></i>
+             </div>
+             <input id="evEditId" type="hidden">
+             <div class="row">
+                <input id="evEditName" placeholder="New Name" style="flex:2" />
+                <input id="evEditDate" type="date" style="flex:1" />
+                <button class="btn primary" onclick="updateEvent()"><i class="fa-solid fa-check"></i></button>
+             </div>
+          </div>
+
+          <!-- Add Form -->
+          <div id="evAddForm" class="row" style="background:rgba(255,255,255,0.02); padding:12px; border-radius:var(--radius-md); margin-bottom:16px;">
             <input id="evName" placeholder="Event Name (e.g. Haldi)" style="flex:2" />
             <input id="evDate" type="date" style="flex:1" />
             <button class="btn primary" id="evSave" style="padding:12px;"><i class="fa-solid fa-plus"></i></button>
           </div>
+
           <div class="tableWrap">
             <table>
               <thead><tr><th>Event</th><th>Count</th><th>Action</th></tr></thead>
@@ -583,7 +620,6 @@
         <!-- Uploader -->
         <div class="card">
           <h3>Upload Photos</h3>
-          <div class="hint" style="margin-bottom:16px;">Photos are uploaded directly to S3 securely. Auto-converts to JPEG.</div>
           
           <select id="uploadEvent" style="margin-bottom:12px;"></select>
           
@@ -616,7 +652,12 @@
          <div class="row" style="justify-content:space-between; margin-bottom:20px;">
            <div class="row">
              <h3>Gallery</h3>
+             <!-- Filter 1: Event -->
              <select id="photoEventFilter" style="width:auto; padding:6px 12px; font-size:12px;"><option>All Events</option></select>
+             <!-- Filter 2: AI Tags (New) -->
+             <select id="photoTagFilter" style="width:auto; padding:6px 12px; font-size:12px; margin-left:8px;">
+               <option value="">All Tags</option>
+             </select>
            </div>
            <div class="row">
              <input id="photoSearch" placeholder="Filter by filename..." style="padding:8px 12px; font-size:13px; width:180px;" />
@@ -1062,11 +1103,12 @@ window.deleteCollection = async (id, name)=>{
 /** ===================== SECTION: COLLECTION DETAILS ===================== **/
 $('backDash').addEventListener('click', ()=> location.hash = '#/dashboard');
 $('evSave').addEventListener('click', ()=> upsertEvent());
-$('genLinkBtn').addEventListener('click', ()=> generateGuestLink());
+$('createLinkBtn').addEventListener('click', ()=> generateGuestLink());
 if($('copyLinkBtn')) $('copyLinkBtn').addEventListener('click', ()=>{ const t=$('generatedLink')?.textContent||''; if(!t) return; navigator.clipboard.writeText(t).then(()=>showToast('Copied')).catch(()=>showToast('Copy failed','error')); });
 $('uploadBtn').addEventListener('click', ()=> startUpload());
 $('photoSearch').addEventListener('input', ()=> renderPhotos());
 $('photoEventFilter').addEventListener('change', ()=> renderPhotos());
+$('photoTagFilter').addEventListener('change', ()=> renderPhotos());
 $('refreshLeads').addEventListener('click', ()=> loadLeads());
 $('loadMoreBtn').addEventListener('click', ()=> loadPhotos(true));
 
@@ -1112,12 +1154,56 @@ function renderEvents(){
         <td style="font-weight:700">${escapeHtml(nm)}</td>
         <td><span class="pill">${pc} Photos</span></td>
         <td class="row">
+          <button class="btn secondary" style="padding:6px 10px; margin-right:4px;" onclick="editEvent('${eid}', '${escapeHtml(nm)}', '${ev.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
           <button class="btn danger" style="padding:6px 10px" onclick="delEvent('${eid}','${(nm||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
     `;
   }).join('');
 }
+
+// Edit Event Logic
+window.editEvent = (id, name, date) => {
+  $('evEditId').value = id;
+  $('evEditName').value = name;
+  $('evEditDate').value = date;
+  $('evAddForm').style.display = 'none';
+  $('evEditForm').style.display = 'block';
+};
+
+window.cancelEventEdit = () => {
+  $('evEditId').value = '';
+  $('evEditName').value = '';
+  $('evEditDate').value = '';
+  $('evEditForm').style.display = 'none';
+  $('evAddForm').style.display = 'flex';
+};
+
+window.updateEvent = async () => {
+  const id = $('evEditId').value;
+  const name = $('evEditName').value;
+  const date = $('evEditDate').value;
+  if(!id || !name) return;
+  
+  // Reuse upsert API but include ID
+  showLoader(true);
+  try{
+    const payload = { collection_id: cd.id, event_id: id, name, event_date: date };
+    const res = await apiFetch(UPSERT_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed');
+    
+    cancelEventEdit();
+    await loadEvents();
+    showToast('Event updated');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+};
 
 function fillEventSelects(){
   const evs = Array.isArray(cd.events)?cd.events:[];
@@ -1137,28 +1223,20 @@ function fillEventSelects(){
 }
 
 function renderLinkEventList(){
-  const box = $('linkEventList');
-  if(!box) return;
-  box.innerHTML = '';
+  // UPDATED: Now populates the new Dropdown instead of checkboxes
+  const select = $('linkEventSelect');
+  if(!select) return;
+  
   const evs = Array.isArray(cd.events) ? cd.events : [];
-  if(!evs.length){
-    box.innerHTML = '<div class="muted">No events available</div>';
-    return;
-  }
+  let html = '<option value="">Select an Event (or leave empty for all)</option>';
+  
   evs.forEach(ev=>{
     const id = ev.event_id || ev.id;
     const nm = ev.name || ev.event_name || 'Event';
-    const date = ev.event_date || ev.date || '';
-    const row = document.createElement('label');
-    row.style.display='flex';
-    row.style.gap='10px';
-    row.style.alignItems='center';
-    row.style.padding='8px';
-    row.style.cursor='pointer';
-    row.style.borderBottom = '1px solid var(--border-color)';
-    row.innerHTML = `<input class="linkEventCheck" type="checkbox" value="${escapeHtml(id)}" style="accent-color:var(--primary)"> <span style="font-size:13px">${escapeHtml(nm)} ${date?`<span class="muted">(${date})</span>`:''}</span>`;
-    box.appendChild(row);
+    html += `<option value="${escapeHtml(id)}">${escapeHtml(nm)}</option>`;
   });
+  
+  select.innerHTML = html;
 }
 
 async function upsertEvent(){
@@ -1225,6 +1303,10 @@ async function loadPhotos(append=false){
     const items = data.Items || data.photos || data.items || [];
     cd.next = data.nextToken || data.next_token || null;
     cd.photos = append ? cd.photos.concat(items) : items;
+    
+    // Extract unique tags for filter
+    updateTagFilter(cd.photos);
+    
     renderPhotos();
     $('loadMoreBtn').style.display = cd.next ? 'inline-flex' : 'none';
   }catch(e){
@@ -1233,16 +1315,37 @@ async function loadPhotos(append=false){
   }finally{ showLoader(false); }
 }
 
+function updateTagFilter(photos){
+  const tags = new Set();
+  photos.forEach(p => {
+    if(Array.isArray(p.ai_tags)) p.ai_tags.forEach(t => tags.add(t));
+  });
+  
+  const select = $('photoTagFilter');
+  const currentVal = select.value;
+  let html = '<option value="">All Tags</option>';
+  tags.forEach(t => {
+    html += `<option value="${t}">${t}</option>`;
+  });
+  select.innerHTML = html;
+  select.value = currentVal; // preserve selection
+}
+
 function renderPhotos(){
   const q = ($('photoSearch').value||'').toLowerCase();
   const evSel = $('photoEventFilter').value || '';
+  const tagSel = $('photoTagFilter').value || ''; // New Tag Filter
+  
   const filtered = cd.photos.filter(p=>{
     const fn = (p.filename||p.file_name||p.key||'').toLowerCase();
     const tags = Array.isArray(p.ai_tags)?p.ai_tags.join(' ').toLowerCase():'';
-    const matchText = !q || fn.includes(q) || tags.includes(q);
+    
+    const matchText = !q || fn.includes(q);
     const pid = p.event_id || p.eventId || '';
     const matchEv = !evSel || pid===evSel;
-    return matchText && matchEv;
+    const matchTag = !tagSel || (p.ai_tags && p.ai_tags.includes(tagSel));
+    
+    return matchText && matchEv && matchTag;
   });
 
   if(!filtered.length){
@@ -1338,7 +1441,7 @@ async function startUpload(){
   try {
     // 1. Convert/Process all files to JPEG
     showLoader(true, "Converting Images...");
-    setOverall(10, "Converting images to standard JPEG...");
+    setOverall(10, "Converting & Preparing...");
     
     const processedFiles = [];
     for(let i=0; i<rawFiles.length; i++){
@@ -1429,6 +1532,8 @@ async function startUpload(){
              body: file
           });
           
+          setStatus(i, 'Indexing...', "muted");
+          
           // 4. Register (With retry logic for stability)
           let registered = false;
           let attempts = 0;
@@ -1465,7 +1570,7 @@ async function startUpload(){
         }finally{
           done++;
           const pct = 20 + Math.round((done/total)*80);
-          setOverall(pct, `Uploading ${done}/${total}`);
+          setOverall(pct, `Processed ${done}/${total}`);
         }
       }
     };
@@ -1488,12 +1593,12 @@ async function startUpload(){
 async function generateGuestLink(){
   showLoader(true);
   try{
-    const checked = document.querySelectorAll('.linkEventCheck:checked');
-    const eventIds = Array.from(checked).map(x=>x.value);
-    if(!eventIds.length){
-      showToast('Select at least one event','error');
-      return;
-    }
+    const eventSelect = $('linkEventSelect');
+    const selectedEventId = eventSelect ? eventSelect.value : '';
+    
+    // If specific event selected, send that. Otherwise, empty list means all.
+    const eventIds = selectedEventId ? [selectedEventId] : [];
+    
     const expiry_hours = parseInt(($('expiryHours')?.value||'0'),10) || 24;
     const password = ($('linkPassword')?.value||'').trim();
 
@@ -1516,6 +1621,7 @@ async function generateGuestLink(){
     if($('generatedLink')){
       $('generatedLink').href = link;
       $('generatedLink').textContent = link;
+      $('openLinkBtn').href = link;
       $('linkResult').style.display = 'block';
     }
     

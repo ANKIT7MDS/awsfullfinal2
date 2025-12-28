@@ -79,7 +79,20 @@
     .hr{height:1px;background:var(--border);margin:12px 0}
     .hint{font-size:12px;color:var(--muted);line-height:1.5}
     .dangerBox{border:1px solid rgba(255,82,82,.5);background:rgba(255,82,82,.06);padding:12px;border-radius:14px}
-  </style>
+  
+  /* Upload list */
+  .upload-row{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:12px;margin-top:8px;background:rgba(255,255,255,.03)}
+  .up-idx{min-width:66px;color:var(--text-muted);font-weight:800;font-size:12px}
+  .up-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .up-status{min-width:110px;text-align:right;font-weight:800;font-size:12px}
+  .up-status.success{color:var(--success)}
+  .up-status.danger{color:var(--danger)}
+  #uploadProgressWrap{display:none;margin-top:10px}
+  #uploadProgressBar{height:10px;background:linear-gradient(90deg,var(--primary),var(--success));width:0%;border-radius:999px}
+  #uploadProgressOuter{height:10px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+  #uploadProgressText{margin-top:8px;font-size:12px;color:var(--text-muted)}
+
+</style>
 </head>
 <body>
   <div class="loader" id="loader"><div style="text-align:center"><div class="spin"></div><div class="muted" style="margin-top:10px">Loading...</div></div></div>
@@ -812,44 +825,121 @@ $('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') 
 /** Upload */
 async function startUpload(){
   const eventId = $('uploadEvent').value;
-  const files = $('filePick').files;
-  if(!eventId) return showToast('Select event','error');
-  if(!files || !files.length) return showToast('Select files','error');
+  const files = Array.from($('filePick').files || []);
+  if(!eventId){ showToast("Event select karo", "error"); return; }
+  if(!files.length){ showToast("Files select karo", "error"); return; }
 
-  $('uploadStat').textContent = 'Requesting URLs...';
-  showLoader(true);
+  $('uploadBtn').disabled = true;
+  $('uploadStat').style.display = "block";
+  $('uploadStat').innerHTML = "";
+
+  const total = files.length;
+  let done = 0, ok = 0, fail = 0;
+
+  const row = (i, name)=> {
+    const d = document.createElement('div');
+    d.className = "upload-row";
+    d.innerHTML = `
+      <div class="up-idx">${i+1}/${total}</div>
+      <div class="up-name">${escapeHtml(name)}</div>
+      <div class="up-status muted">Queued</div>
+    `;
+    $('uploadStat').appendChild(d);
+    return d;
+  };
+
+  const rows = files.map((f,i)=> row(i,f.name));
+
+  const setStatus = (i, text, cls="muted")=>{
+    const el = rows[i].querySelector('.up-status');
+    el.className = "up-status " + cls;
+    el.textContent = text;
+  };
+
+  const setOverall = ()=>{
+    const pct = Math.round((done/total)*100);
+    $('uploadProgressBar').style.width = pct + "%";
+    $('uploadProgressText').textContent = `Uploading... ${done}/${total} (${pct}%)`;
+  };
+
+  // show progress bar area (if exists)
+  if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "block";
+  setOverall();
+
   try{
-    const filesPayload = Array.from(files).map(f=>({ name:f.name, type:f.type || 'image/jpeg' }));
-    const res = await apiFetch(UPLOAD_URLS_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ collection_id: cd.id, event_id: eventId, files: filesPayload })
-    });
-    if(!res.ok) throw new Error('Failed to get upload URLs');
-    const data = await res.json();
-    const urls = data.urls || data.uploadUrls || [];
-    let done = 0;
-
-    for(let i=0;i<urls.length;i++){
-      const info = urls[i];
-      const file = files[i];
-      if(!info || !info.uploadURL || !file) continue;
-
-      $('uploadStat').textContent = `Uploading ${i+1}/${urls.length}: ${file.name}`;
-      const put = await fetch(info.uploadURL, { method:'PUT', body:file, headers:{'Content-Type': file.type || 'image/jpeg'} });
-      if(!put.ok) console.warn('Upload failed', file.name, put.status);
-      done++;
+    // Step 1: get presigned URLs (1 per file)
+    // Backend expects: {event_id, count}
+    const meta = await apiPostJson(UPLOAD_URLS_API, { event_id: eventId, count: total });
+    const urls = meta.urls || meta.uploadUrls || meta.items || [];
+    if(!Array.isArray(urls) || urls.length < total){
+      throw new Error("Upload URLs not returned for all files");
     }
 
-    $('uploadStat').textContent = `Uploaded ${done}/${urls.length}. Indexing may take a bit.`;
-    showToast('Upload done');
-    // refresh after a moment
-    setTimeout(()=>loadPhotos(false), 1200);
+    // Step 2: upload with small concurrency
+    const CONCURRENCY = 3;
+    let cursor = 0;
+
+    const worker = async ()=>{
+      while(cursor < total){
+        const i = cursor++;
+        const file = files[i];
+        const u = urls[i];
+
+        const putUrl = u.uploadURL || u.uploadUrl || u.url;
+        const objectKey = u.objectKey || u.key || u.object_key;
+
+        if(!putUrl || !objectKey){
+          setStatus(i, "Missing URL", "danger");
+          fail++; done++; setOverall();
+          continue;
+        }
+
+        setStatus(i, "Uploading...", "muted");
+
+        try{
+          const up = await fetch(putUrl, {
+            method:"PUT",
+            headers:{ "Content-Type": file.type || "application/octet-stream" },
+            body: file
+          });
+          if(!up.ok) throw new Error("PUT failed");
+
+          // Step 3: register photo in DB (so it shows in gallery)
+          // Backend expects: {event_id, object_key, filename, size}
+          await apiPostJson(REGISTER_PHOTO_API, {
+            event_id: eventId,
+            object_key: objectKey,
+            filename: file.name,
+            size: file.size
+          });
+
+          ok++;
+          setStatus(i, "Uploaded ✅", "success");
+        }catch(err){
+          console.error("upload file error", file.name, err);
+          fail++;
+          setStatus(i, "Failed ❌", "danger");
+        }finally{
+          done++;
+          setOverall();
+        }
+      }
+    };
+
+    await Promise.all(Array.from({length: CONCURRENCY}, ()=>worker()));
+
+    $('uploadProgressText').textContent = `Done ✅  Success: ${ok}, Failed: ${fail}`;
+    showToast(`Upload done ✅ (${ok}/${total})`);
+    // Refresh events/photos after short delay
+    setTimeout(()=>{ loadEvents(); loadPhotos(); loadFaceGroups(); }, 1200);
+
   }catch(e){
-    console.error(e);
-    showToast(e.message,'error');
+    console.error("startUpload error:", e);
+    showToast("Upload failed: " + (e.message||e), "error");
+    $('uploadProgressText').textContent = "Upload failed: " + (e.message||e);
   }finally{
-    showLoader(false);
+    $('uploadBtn').disabled = false;
+    $('uploadBtn').textContent = "Upload";
   }
 }
 
@@ -857,46 +947,78 @@ async function startUpload(){
 async function generateGuestLink(){
   showLoader(true);
   try{
-    const res = await apiFetch(GENERATE_LINK_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ collection_id: cd.id })
-    });
-    if(!res.ok) throw new Error('Failed to generate link');
-    const data = await res.json();
-    const linkId = data.linkId || data.link_id || data.id;
-    const url = location.origin + location.pathname + `#/guest?linkId=${encodeURIComponent(linkId)}`;
-    await navigator.clipboard.writeText(url).catch(()=>{});
-    showToast('Guest link copied!');
-    alert(`Guest link:\n${url}\n\n(Already copied to clipboard if browser allowed)`);
+    const checked = document.querySelectorAll(".linkEventCheck:checked");
+    const eventIds = Array.from(checked).map(x=>x.value).filter(Boolean);
+    if(!eventIds.length){ showToast("कम से कम 1 Event select करो", "error"); return; }
+
+    const expiry = parseInt($('expiryHours')?.value || "0", 10) || 0;
+    const password = ($('linkPassword')?.value || "").trim();
+
+    apiPostJson(GENERATE_LINK_API, { collection_id: cd.id, event_ids: eventIds, expiry_hours: expiry, password })
+      .then(data=>{
+        const rawLink = data?.searchUrl || data?.link || data?.url || "";
+        if(!rawLink) throw new Error("No link returned from API");
+
+        // Try to extract linkId from returned URL
+        let linkId = null;
+        try{
+          const u = new URL(rawLink, window.location.origin);
+          linkId = u.searchParams.get("linkId") || u.searchParams.get("link_id");
+          if(!linkId && u.hash){
+            const hp = new URLSearchParams(u.hash.replace(/^#\/?/,''));
+            linkId = hp.get("linkId") || hp.get("link_id");
+          }
+        }catch(_){}
+
+        // If API ever directly returns link_id
+        linkId = linkId || data?.link_id || data?.linkId || data?.id || null;
+
+        if(!linkId) throw new Error("Link ID not found in response");
+
+        const guestUrl = `${location.origin}${location.pathname.replace(/\/[^\/]*$/, '/')}` + `eventlens-guest.html?linkId=${encodeURIComponent(linkId)}`;
+
+        $('generatedLink').href = guestUrl;
+        $('generatedLink').textContent = guestUrl;
+        $('linkResult').style.display = "block";
+
+        // alert + copy
+        const msg = `Guest link:\n${guestUrl}\n\n(Already copied to clipboard if browser allowed)`;
+        navigator.clipboard?.writeText(guestUrl).catch(()=>{});
+        alert(msg);
+        showToast("Guest link generated ✅");
+      })
+      .catch(err=>{
+        console.error("generateGuestLink error:", err);
+        showToast("Guest link generate failed", "error");
+      })
+      .finally(()=>showLoader(false));
+
   }catch(e){
     console.error(e);
-    showToast(e.message,'error');
-  }finally{ showLoader(false); }
+    showToast("Guest link generate failed", "error");
+    showLoader(false);
+  }
 }
 
-/** Leads */
 async function loadLeads(){
-  $('leadRows').innerHTML = `<tr><td colspan="4" class="muted">Loading...</td></tr>`;
-  showLoader(true);
+  $('leadRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
   try{
-    // Some setups have GET, some POST. We'll try POST first.
-    let res = await apiFetch(GET_LEADS_API, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ collection_id: cd.id })
+    // ✅ save-details lambda supports: {action:"list", collection_id}
+    // ✅ Use Content-Type: text/plain to avoid CORS preflight issues
+    const res = await fetch(GET_LEADS_API, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain" },
+      body: JSON.stringify({ action:"list", collection_id: cd.id })
     });
+    const items = await res.json().catch(()=>[]);
     if(!res.ok){
-      res = await apiFetch(`${GET_LEADS_API}?collection_id=${encodeURIComponent(cd.id)}`);
+      throw new Error((items && items.message) ? items.message : `HTTP ${res.status}`);
     }
-    if(!res.ok) throw new Error('Failed to load leads');
-    const data = await res.json();
-    cd.leads = data.Items || data.leads || data || [];
-    renderLeads();
+    renderLeads(Array.isArray(items) ? items : (items.items || items.Items || []));
   }catch(e){
-    console.error(e);
-    $('leadRows').innerHTML = `<tr><td colspan="4" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
-  }finally{ showLoader(false); }
+    console.error("loadLeads error:", e);
+    $('leadRows').innerHTML = `<tr><td colspan="5" class="muted" style="color:var(--danger)">Leads load failed: ${escapeHtml(e.message||e)}</td></tr>`;
+  }
 }
 
 function renderLeads(){

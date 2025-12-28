@@ -32,13 +32,15 @@
       --text-muted: #94949e;
       --text-dark: #000000;
       --border-color: rgba(255, 255, 255, 0.08);
-      --glass-bg: rgba(20, 20, 23, 0.95);
-      --glass-blur: blur(20px);
+      --glass-bg: rgba(20, 20, 23, 0.65);
+      --glass-blur: blur(16px);
       
       --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
       --radius-full: 9999px;
+      
+      --ease: cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -51,7 +53,13 @@
 
     a { text-decoration: none; color: inherit; transition: 0.2s; }
     
-    /* Layout */
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+    /* Layout Wrapper */
     .wrap { max-width: 1280px; margin: 0 auto; padding: 20px 24px; padding-bottom: 80px; }
 
     /* Top Navigation Bar */
@@ -60,7 +68,11 @@
     .logo { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
     .logo span { color: var(--primary); }
 
-    /* Buttons */
+    /* Nav Buttons & Pills */
+    .nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    
+    .pill { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: var(--radius-full); background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+
     .btn { border: none; border-radius: var(--radius-full); padding: 10px 18px; font-weight: 700; font-size: 13px; font-family: "Plus Jakarta Sans", sans-serif; cursor: pointer; transition: all 0.2s var(--ease); display: inline-flex; align-items: center; gap: 8px; letter-spacing: 0.3px; }
     .btn:active { transform: scale(0.96); }
     .btn.primary { background: var(--primary); color: var(--text-dark); box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3); }
@@ -73,76 +85,98 @@
     /* Grid Layouts */
     .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-top: 24px; }
     .split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    @media(max-width: 980px) { .grid, .split { grid-template-columns: 1fr; } .topbar { flex-direction: column; align-items: stretch; } }
+    @media(max-width: 980px) { .grid, .split { grid-template-columns: 1fr; } .topbar { flex-direction: column; align-items: stretch; } .nav { justify-content: center; } .logo { justify-content: center; } }
 
     /* Cards */
     .card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; position: relative; overflow: hidden; }
+    .card::before { content:''; position: absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
     .card h2, .card h3 { margin: 0 0 16px; font-family: 'Outfit', sans-serif; font-weight: 600; color: var(--text-main); }
-    
+    .card h2 { font-size: 24px; letter-spacing: -0.5px; }
+    .card h3 { font-size: 18px; margin-top: 4px; }
+
+    .muted { color: var(--text-muted); font-size: 0.95em; }
+    .hint { font-size: 12px; color: var(--text-muted); line-height: 1.6; background: rgba(255,255,255,0.03); padding: 10px; border-radius: var(--radius-sm); border: 1px dashed var(--border-color); }
+    .hr { height: 1px; background: var(--border-color); margin: 20px 0; }
+
     /* Form Elements */
     .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
     input, select, textarea { width: 100%; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main); font-family: inherit; font-size: 14px; transition: 0.2s; }
     input:focus, select:focus { border-color: var(--primary); background: rgba(0,0,0,0.5); box-shadow: 0 0 0 3px var(--primary-dim); }
-    select option { background-color: var(--bg-panel); color: var(--text-main); }
 
-    .muted { color: var(--text-muted); font-size: 0.95em; }
-    .tag { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.1); font-size: 11px; margin-right: 6px; }
+    /* KPI Cards */
+    .kpi { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .k { background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px 20px; text-align: center; }
+    .k .v { font-size: 28px; font-weight: 800; color: var(--primary); margin-top: 8px; font-family: 'Outfit', sans-serif; text-shadow: 0 4px 12px rgba(0,230,118,0.2); }
 
     /* Tables */
     .tableWrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: rgba(0,0,0,0.2); }
     table { width: 100%; border-collapse: collapse; min-width: 600px; text-align: left; }
-    th { background: rgba(255,255,255,0.03); color: var(--text-muted); font-weight: 600; padding: 14px 16px; font-size: 12px; text-transform: uppercase; }
+    th { background: rgba(255,255,255,0.03); color: var(--text-muted); font-weight: 600; padding: 14px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
     td { padding: 14px 16px; border-top: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
-    
-    /* Gallery */
-    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
-    .ph { border-radius: var(--radius-md); overflow: hidden; background: #000; border: 1px solid var(--border-color); cursor: pointer; position: relative; transition: 0.3s ease; aspect-ratio: 1; }
-    .ph:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.5); border-color: var(--primary); }
-    .ph img { width: 100%; height: 100%; object-fit: cover; }
-    .ph .m { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%); }
+    tr:hover td { background: rgba(255,255,255,0.02); }
 
-    /* Upload List */
+    /* Tags & Chips */
+    .tag { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.1); font-size: 11px; margin-right: 6px; }
+
+    /* Photo Gallery */
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+    .ph { border-radius: var(--radius-md); overflow: hidden; background: #000; border: 1px solid var(--border-color); cursor: pointer; position: relative; transition: 0.3s var(--ease); aspect-ratio: 1; }
+    .ph:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.5); border-color: var(--primary); }
+    .ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: 0.5s; }
+    .ph:hover img { transform: scale(1.05); opacity: 0.7; }
+    .ph .m { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px; background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%); transform: translateY(100%); transition: 0.3s; }
+    .ph:hover .m { transform: translateY(0); }
+    .ph .t { font-weight: 600; font-size: 13px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ph .s { font-size: 11px; color: var(--primary); margin-top: 2px; }
+
+    /* Modals & Drawers */
+    .drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.3s; }
+    .drawer.open { display: flex; opacity: 1; }
+    .drawer .box { max-width: 900px; width: 100%; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s var(--ease); }
+    .drawer.open .box { transform: scale(1); }
+    .drawer img { width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius-sm); background: #000; }
+
+    /* Upload List Styling */
     .upload-list { max-height: 250px; overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
     .upload-row { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 8px; background: rgba(255,255,255,0.02); font-size: 13px; }
     .up-status.success { color: var(--primary); }
-    .up-status.error { color: var(--danger); }
+    .up-status.danger { color: var(--danger); }
     
-    /* Modals & Loaders */
-    .drawer { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
-    .drawer.open { display: flex; }
-    .drawer .box { max-width: 900px; width: 100%; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; }
-    .drawer img { width: 100%; max-height: 70vh; object-fit: contain; }
+    /* Toast & Loaders */
+    .toast { position: fixed; top: 24px; right: 24px; background: var(--text-dark); color: var(--text-main); padding: 12px 20px; border-radius: var(--radius-md); font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 300; transform: translateX(120%); transition: transform 0.4s var(--ease); border: 1px solid var(--border-color); }
+    .toast.show { transform: translateX(0); }
+    .toast.error { background: var(--danger); color: white; }
 
-    .loader { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 250; display: none; align-items: center; justify-content: center; flex-direction: column; }
+    .loader { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 250; display: none; align-items: center; justify-content: center; }
     .loader.on { display: flex; }
     .spin { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Toast */
-    .toast { position: fixed; top: 24px; right: 24px; background: #000; color: #fff; padding: 12px 20px; border-radius: var(--radius-md); font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 300; transform: translateX(150%); transition: transform 0.4s ease; border: 1px solid var(--border-color); }
-    .toast.show { transform: translateX(0); }
-    .toast.error { border-color: var(--danger); color: var(--danger); }
 
     /* Utilities */
     .view { display: none; animation: fadeIn 0.4s ease-out; }
     .view.on { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Face Icons */
-    #faceIconsBar { display: flex; gap: 14px; padding: 8px 2px 16px; margin-bottom: 12px; overflow-x: auto; }
-    .face-item { display: flex; flex-direction: column; align-items: center; min-width: 70px; cursor: pointer; }
-    .face-icon-wrapper { width: 60px; height: 60px; border-radius: 50%; border: 2px solid transparent; background-size: cover; background-position: center; transition: 0.2s; background-color: rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; }
-    .face-icon-wrapper.selected { border-color: var(--primary); transform: scale(1.1); }
-    .face-name-label { margin-top: 6px; font-size: 11px; text-align: center; color: var(--text-muted); max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dangerBox { background: rgba(255, 71, 87, 0.05); border: 1px solid rgba(255, 71, 87, 0.2); padding: 16px; border-radius: var(--radius-md); color: #ff8a93; }
 
+    /* Face Icons Bar */
+    #faceIconsBar { display: flex; gap: 14px; padding: 8px 2px 16px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: thin; }
+    .face-item { display: flex; flex-direction: column; align-items: center; min-width: 86px; cursor: pointer; transition: 0.2s; }
+    .face-icon-wrapper { width: 66px; height: 66px; border-radius: 50%; overflow: hidden; border: 3px solid transparent; background: rgba(255,255,255,.06); transition: 0.2s; position: relative; box-shadow: 0 10px 18px rgba(0,0,0,.25); background-size: cover; background-position: center; }
+    .face-icon-wrapper:hover { transform: scale(1.08); border-color: rgba(99,102,241,.85); }
+    .face-icon-wrapper.selected { border-color: var(--primary); transform: scale(1.08); box-shadow: 0 0 20px rgba(0,230,118,.35); }
+    .face-name-label { margin-top: 8px; font-size: 12px; font-weight: 800; color: var(--text-muted); max-width: 86px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .face-count { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-weight: 700; }
   </style>
 </head>
 <body>
 
   <!-- LOADER -->
   <div class="loader" id="loader">
-    <div class="spin"></div>
-    <div style="margin-top:16px; font-weight:600; color:var(--primary)" id="loaderText">Processing...</div>
+    <div style="text-align:center">
+      <div class="spin"></div>
+      <div class="muted" style="margin-top:16px; font-weight:500;" id="loaderText">Processing...</div>
+    </div>
   </div>
 
   <!-- TOAST -->
@@ -159,10 +193,11 @@
       
       <div class="nav">
         <!-- Auth Info Pill -->
-        <span class="pill" id="whoPill"><i class="fa-regular fa-user" style="margin-right:6px"></i> User</span>
+        <span class="pill" id="whoPill"><i class="fa-regular fa-user" style="margin-right:6px"></i> Guest</span>
         
         <!-- Nav Actions -->
-        <button class="btn secondary" onclick="setView('dashboard')">Dash</button>
+        <a class="btn secondary" href="#/login">Login</a>
+        <a class="btn secondary" href="#/dashboard">Dash</a>
         <button class="btn danger" id="logoutBtn" style="padding: 8px 12px;"><i class="fa-solid fa-power-off"></i></button>
       </div>
     </div>
@@ -175,9 +210,13 @@
             <i class="fa-brands fa-aws" style="font-size:40px; color:var(--primary)"></i>
           </div>
           <h2>Admin Login</h2>
-          <p class="muted" style="margin-bottom:30px;">Securely login to access dashboard.</p>
+          <p class="muted" style="max-width:400px; margin:0 auto 30px;">
+            Securely login with your AWS Cognito credentials to access the photographer dashboard.
+          </p>
           
-          <button class="btn primary" id="btnLogin" style="width:100%; justify-content:center;">Login via Cognito</button>
+          <button class="btn primary" id="btnLogin" style="padding:14px 32px; font-size:16px;">
+            <i class="fa-solid fa-right-to-bracket"></i> Login with Cognito
+          </button>
         </div>
       </div>
     </div>
@@ -189,7 +228,11 @@
         <div class="card">
           <div class="row" style="justify-content:space-between; margin-bottom:20px;">
             <h2>Collections</h2>
-            <div class="muted">Total Usage: <span id="totalUsageVal" style="color:var(--primary); font-weight:700">0 GB</span></div>
+            <div class="kpi" style="gap:10px; grid-template-columns:auto auto;">
+              <div class="pill" style="border-color:var(--primary-dim); color:var(--primary)">
+                <i class="fa-solid fa-database" style="margin-right:6px"></i> <span id="kData">-</span>
+              </div>
+            </div>
           </div>
 
           <div class="row" style="margin-bottom:24px;">
@@ -201,21 +244,32 @@
 
           <div class="tableWrap">
             <table>
-              <thead><tr><th>Name</th><th>Date</th><th>Photos/Size</th><th>Action</th></tr></thead>
-              <tbody id="colRows"><tr><td colspan="4" class="muted" style="text-align:center">Loading...</td></tr></tbody>
+              <thead><tr><th>Collection Name</th><th>Created</th><th>Counts</th><th>Size</th><th>Manage</th></tr></thead>
+              <tbody id="colRows"><tr><td colspan="5" class="muted" style="text-align:center; padding:30px;">Loading data...</td></tr></tbody>
             </table>
           </div>
         </div>
 
         <!-- Right Panel: Create -->
         <div class="card" style="height:fit-content">
-          <h3>Create Collection</h3>
-          <p class="muted" style="font-size:13px; margin-bottom:16px;">New event bucket (Wedding, Party etc.)</p>
-          <input id="colNameInput" placeholder="Collection Name" style="margin-bottom:12px;">
-          <input id="colIdEdit" type="hidden">
+          <h3><i class="fa-solid fa-plus-circle" style="color:var(--primary); margin-right:8px;"></i>New Collection</h3>
+          <p class="muted" style="margin-bottom:20px; font-size:13px;">Create a new photo bucket for a wedding or event.</p>
+          
+          <label class="muted" style="font-size:12px; font-weight:600; margin-bottom:6px; display:block;">NAME</label>
+          <input id="colName" placeholder="e.g. Rahul & Priya Wedding" style="margin-bottom:12px;" />
+          <input id="colIdEdit" type="hidden" />
+
           <div class="row" style="margin-top:10px;">
-            <button class="btn primary" id="saveColBtn" style="width:100%; justify-content:center;">Create Collection</button>
-            <button class="btn secondary" id="cancelColBtn" style="display:none; width:100%; justify-content:center;">Cancel</button>
+            <button class="btn primary" id="colSave" style="width:100%; justify-content:center;">
+              <i class="fa-solid fa-rocket"></i> <span id="colSaveTxt">Create Collection</span>
+            </button>
+            <button class="btn secondary" id="colCancel" style="display:none; width:100%; justify-content:center;">Cancel</button>
+          </div>
+          
+          <div class="hr"></div>
+          <div class="dangerBox" style="font-size:12px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Expiry: <span id="kExp" style="color:#fff; font-weight:700">-</span>
           </div>
         </div>
       </div>
@@ -237,7 +291,7 @@
           </div>
         </div>
 
-        <!-- Link Generation Drawer -->
+        <!-- Link Generation Drawer (Improved UI) -->
         <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-color);">
           <div class="row" style="align-items:flex-end; gap:16px; flex-wrap:wrap;">
             <div style="flex:2; min-width:200px;">
@@ -249,7 +303,7 @@
             <div style="flex:1; min-width:120px;">
               <div class="muted" style="font-size:11px; font-weight:700; margin-bottom:6px;">EXPIRY</div>
               <select id="linkExpiry">
-                <option value="876000">Lifetime</option>
+                <option value="87600">Lifetime</option>
                 <option value="24">24 Hours</option>
                 <option value="48">2 Days</option>
                 <option value="168">1 Week</option>
@@ -295,7 +349,7 @@
              <div class="row">
                 <input id="evEditName" placeholder="New Name" style="flex:2" />
                 <input id="evEditDate" type="date" style="flex:1" />
-                <button class="btn primary" onclick="updateEvent()"><i class="fa-solid fa-check"></i> Update</button>
+                <button class="btn primary" onclick="updateEvent()"><i class="fa-solid fa-check"></i></button>
              </div>
           </div>
 
@@ -318,12 +372,10 @@
         <div class="card">
           <h3>Upload Photos</h3>
           
-          <select id="uploadEventSelect" style="margin-bottom:12px;">
-            <option value="">Select Event Target</option>
-          </select>
-
-          <div style="border:2px dashed var(--border-color); border-radius:var(--radius-md); padding:30px; text-align:center; cursor:pointer; position:relative; background:rgba(255,255,255,0.01); transition:0.2s;" ondragover="this.style.borderColor=var(--primary)" ondragleave="this.style.borderColor='var(--border-color)'">
-            <i class="fa-solid fa-cloud-arrow-up" style="font-size:32px; color:var(--text-muted); margin-bottom:10px;"></i>
+          <select id="uploadEventSelect" style="margin-bottom:12px;"></select>
+          
+          <div style="position:relative; height:120px; border:2px dashed var(--border-color); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; flex-direction:column; background:rgba(255,255,255,0.01); transition:0.2s;" ondragover="this.style.borderColor=var(--primary)" ondragleave="this.style.borderColor='var(--border-color)'">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px; color:var(--text-muted); margin-bottom:8px;"></i>
             <div class="muted" id="filePickLabel">Click to select photos</div>
             <input type="file" id="fileInput" multiple accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
           </div>
@@ -352,8 +404,12 @@
          <div class="row" style="justify-content:space-between; margin-bottom:20px;">
            <div class="row">
              <h3>Gallery</h3>
+             <!-- Filter 1: Event -->
              <select id="photoEventFilter" style="width:auto; padding:6px 12px; font-size:12px;"><option>All Events</option></select>
-             <select id="photoTagFilter" style="width:auto; padding:6px 12px; font-size:12px; margin-left:8px;"><option value="">All Tags</option></select>
+             <!-- Filter 2: AI Tags (New) -->
+             <select id="photoTagFilter" style="width:auto; padding:6px 12px; font-size:12px; margin-left:8px;">
+               <option value="">All Tags</option>
+             </select>
            </div>
            <div class="row">
              <input id="photoSearch" placeholder="Filter by filename..." style="padding:8px 12px; font-size:13px; width:180px;" />
@@ -416,6 +472,7 @@
   <!-- MODAL: PHOTO VIEWER -->
   <div class="drawer" id="photoModal">
     <div class="box" style="text-align:center; position:relative;">
+      
       <div class="row" style="justify-content:space-between; margin-bottom:16px;">
         <div id="pmTitle" style="font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%;">Photo</div>
         <div class="row">
@@ -423,9 +480,11 @@
            <button class="btn danger" id="pmClose"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </div>
+      
       <div style="background:#000; border-radius:var(--radius-sm); overflow:hidden; display:flex; align-items:center; justify-content:center; min-height:300px;">
-        <img id="pmImg" src="" alt="View" style="max-height:60vh; width:auto; max-width:100%;" />
+        <img id="pmImg" src="" alt="View" />
       </div>
+      
       <div class="row" style="margin-top:16px; justify-content:center;">
         <span class="pill" id="pmMeta" style="background:var(--bg-panel)">Details</span>
       </div>
@@ -445,67 +504,64 @@
 
 <!-- JAVASCRIPT Logic -->
 <script>
-/** ===================== CONFIG ===================== **/
+/** ===================== CONFIG (from your existing pages) ===================== **/
 const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
 const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
 const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
 
-// Endpoints
+// Dashboard endpoints
 const GET_COLLECTIONS_API = `${API_BASE}/get-collections`;
 const UPSERT_COLLECTION_API = `${API_BASE}/upsert-collection`;
 const DELETE_COLLECTION_API = `${API_BASE}/delete-collection`;
 const GET_ACCOUNT_STATUS_API = `${API_BASE}/account-status`;
-const GET_EVENTS_API = `${API_BASE}/get-events`;
-const GET_PHOTOS_API = `${API_BASE}/get-photos`;
-const UPSERT_EVENT_API = `${API_BASE}/upsert-event`;
-const DELETE_EVENT_API = `${API_BASE}/delete-event`;
-const UPLOAD_URLS_API = `${API_BASE}/generate-upload-urls`;
-const REGISTER_PHOTO_API = `${API_BASE}/register-photo`;
-const GENERATE_LINK_API = `${API_BASE}/generate-search-link`;
-const SAVE_DETAILS_API = `${API_BASE}/save-details`;
-const LIST_PEOPLE_API = `${API_BASE}/list_people`;
-const SAVE_FACE_NAME_API = `${API_BASE}/save-face-name`;
+
+// Collection endpoints
+const GET_EVENTS_API      = `${API_BASE}/get-events`;
+const GET_PHOTOS_API      = `${API_BASE}/get-photos`;
+const UPSERT_EVENT_API    = `${API_BASE}/upsert-event`;
+const DELETE_EVENT_API    = `${API_BASE}/delete-event`;
+const UPLOAD_URLS_API     = `${API_BASE}/generate-upload-urls`;
+const REGISTER_PHOTO_API  = `${API_BASE}/register-photo`;
+const GENERATE_LINK_API   = `${API_BASE}/generate-search-link`;
+const SAVE_DETAILS_API    = `${API_BASE}/save-details`;
+const SEARCH_API          = `${API_BASE}/search`;
+const LIST_PEOPLE_API     = `${API_BASE}/list_people`;
+const SAVE_FACE_NAME_API  = `${API_BASE}/save-face-name`;
 
 /** ===================== STATE ===================== **/
 let idToken = localStorage.getItem('idToken') || null;
 let me = null;
+
 let dashCollections = [];
 let cd = { id:null, name:null, events:[], photos:[], next:null, leads:[] };
+let guest = { linkId:null, results:[] };
 let faceGroups = [];
 let currentSelectedFaceId = null;
 let selectedFiles = [];
 
-/** ===================== UI UTILS ===================== **/
-const $ = (id) => document.getElementById(id);
-
-// Safe Event Listener Binding
-function safeBind(id, event, handler) {
-  const el = document.getElementById(id);
-  if(el) el.addEventListener(event, handler);
-}
+/** ===================== UI helpers ===================== **/
+const $ = (id)=>document.getElementById(id);
+const toast = $('toast');
+const loader = $('loader');
+const whoPill = $('whoPill');
 
 function showLoader(on=true, text="Processing..."){ 
-  const l = $('loader'); if(l) l.classList.toggle('on', !!on);
-  const t = $('loaderText'); if(t) t.textContent = text;
+  loader.classList.toggle('on', !!on);
+  if(text) $('loaderText').textContent = text;
 }
-
 function showToast(msg, type='success'){
-  const t = $('toast');
-  if(!t) return;
-  t.textContent = msg;
-  t.className = `toast show ${type==='error'?'error':''}`;
-  setTimeout(()=>t.classList.remove('show'), 3000);
+  toast.textContent = msg;
+  toast.className = `toast ${type==='error'?'error':''}`.trim();
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 3000);
 }
-
 function escapeHtml(text) {
   if (!text) return text;
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
-
 function fmtDate(d){
   try{ if(!d) return '-'; return new Date(d).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}); }catch{return d||'-'}
 }
-
 function formatBytes(bytes=0, decimals=2){
   if(!+bytes) return '0 B';
   const k=1024, dm=decimals<0?0:decimals, sizes=['Bytes','KB','MB','GB','TB'];
@@ -522,18 +578,15 @@ function parseJwt(token){
     return JSON.parse(jsonPayload);
   } catch (e) { return {}; }
 }
-
 function authHeader(){
   if(!idToken) return {};
   return { 'Authorization': `Bearer ${idToken}` };
 }
-
 async function apiFetch(url, opts={}){
   const o = Object.assign({headers:{}}, opts);
   o.headers = Object.assign({}, o.headers, authHeader());
   return fetch(url, o);
 }
-
 async function apiPostJson(url, data){
   const res = await apiFetch(url, {
     method:'POST',
@@ -556,8 +609,8 @@ const views = {
 };
 
 function setView(name){
-  Object.values(views).forEach(v => { if(v) v.classList.remove('on'); });
-  if(views[name]) views[name].classList.add('on');
+  Object.values(views).forEach(v=>v.classList.remove('on'));
+  (views[name]||views.login).classList.add('on');
   window.scrollTo(0,0);
 }
 
@@ -569,65 +622,304 @@ function getHashRoute(){
 }
 
 window.addEventListener('hashchange', ()=>route());
-
-// Init Listeners
 document.addEventListener('DOMContentLoaded', ()=>{
+  // Add listener for file picker count
   const fp = $('filePick');
   if(fp){
     fp.addEventListener('change', function(){
       const n = this.files.length;
-      const lbl = $('filePickLabel');
-      if(lbl) lbl.textContent = n > 0 ? `${n} Files Selected` : 'Click to select photos';
+      $('filePickLabel').textContent = n > 0 ? `${n} Files Selected` : 'Click to select files';
       if(n>0) showToast(`${n} files selected`);
     });
   }
   route();
 });
 
-// Bind Events Safely
-safeBind('btnLogin', 'click', ()=>{
-  const redirectUri = location.origin + location.pathname;
-  location.href = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-});
-safeBind('logoutBtn', 'click', ()=>{ localStorage.clear(); idToken=null; location.reload(); });
-safeBind('saveColBtn', 'click', ()=>saveCollection());
-safeBind('cancelColBtn', 'click', ()=>resetColForm());
-safeBind('colSearch', 'input', ()=>renderCollections());
-safeBind('backDash', 'click', ()=>location.hash = '#/dashboard');
-safeBind('evSave', 'click', ()=>upsertEvent());
-safeBind('createLinkBtn', 'click', ()=>generateGuestLink());
-safeBind('copyLinkBtn', 'click', ()=>copyLink());
-safeBind('startUploadBtn', 'click', ()=>startUpload());
-safeBind('photoSearch', 'input', ()=>renderPhotos());
-safeBind('photoEventFilter', 'change', ()=>renderPhotos());
-safeBind('photoTagFilter', 'change', ()=>renderPhotos());
-safeBind('refreshLeads', 'click', ()=>loadLeads());
-safeBind('loadMoreBtn', 'click', ()=>loadPhotos(true));
-safeBind('saveFaceBtn', 'click', ()=>saveFaceName());
-safeBind('cancelFaceBtn', 'click', ()=>{ if($('faceNamingHeader')) $('faceNamingHeader').style.display='none'; });
-safeBind('guestMatchesCloseBtn', 'click', ()=> { if($('guestMatchesModal')) $('guestMatchesModal').classList.remove('open'); });
-safeBind('pmClose', 'click', ()=> { if($('photoModal')) $('photoModal').classList.remove('open'); });
-safeBind('newPhotog', 'click', ()=>openNewPhotog());
+/** ===================== SECTION: AUTH FLOW ===================== **/
+async function handleAuthFromQuery(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  if(!code) return;
 
-/** ===================== GLOBAL FUNCTIONS (For inline onclicks) ===================== **/
-window.editCol = (id, name)=>{
-  $('colNameInput').value = name;
+  const redirectUri = location.origin + location.pathname;
+
+  showLoader(true);
+  whoPill.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging in...';
+
+  try{
+    const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({
+        grant_type:'authorization_code',
+        client_id: CLIENT_ID,
+        code,
+        redirect_uri: redirectUri
+      })
+    });
+
+    const tokens = await res.json();
+    if(!res.ok) throw new Error(tokens?.error_description || 'Auth failed');
+
+    idToken = tokens.id_token;
+    localStorage.setItem('idToken', idToken);
+
+    history.replaceState({}, document.title, location.pathname + location.hash);
+    showToast('Login successful!');
+  }catch(e){
+    console.error(e);
+    localStorage.removeItem('idToken');
+    idToken = null;
+    showToast('Login failed. Check Callback URLs.', 'error');
+  }finally{
+    showLoader(false);
+  }
+}
+
+function ensureLoggedIn(){
+  if(!idToken) return false;
+  try{
+    const payload = parseJwt(idToken);
+    if(Date.now() > payload.exp*1000) throw new Error('Token expired');
+    me = payload;
+    whoPill.innerHTML = `<i class="fa-solid fa-user-check" style="color:var(--primary)"></i> ${payload.email?.split('@')[0] || 'User'}`;
+    return true;
+  }catch(e){
+    console.warn(e);
+    localStorage.removeItem('idToken');
+    idToken = null;
+    me = null;
+    whoPill.innerHTML = '<i class="fa-regular fa-user"></i> Guest';
+    return false;
+  }
+}
+
+function isMasterAdmin(){
+  const groups = (me && me['cognito:groups']) || [];
+  return Array.isArray(groups) ? groups.includes('MasterAdmins') : String(groups).includes('MasterAdmins');
+}
+
+/** ===================== LOGIN UI ===================== **/
+$('btnLogin').addEventListener('click', ()=>{
+  const redirectUri = location.origin + location.pathname;
+  const scopes = "openid profile email aws.cognito.signin.user.admin";
+  const loginUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
+  location.href = loginUrl;
+});
+
+/** ===================== LOGOUT ===================== **/
+$('logoutBtn').addEventListener('click', ()=>{
+  localStorage.clear();
+  idToken = null; me=null;
+  whoPill.innerHTML = 'Not logged in';
+  const logoutUri = location.origin + location.pathname + '#/login';
+  const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  location.href = logoutUrl;
+});
+
+/** ===================== SECTION: DASHBOARD LOGIC ===================== **/
+$('colSave').addEventListener('click', ()=>saveCollection());
+$('colCancel').addEventListener('click', ()=>resetColForm());
+$('colSearch').addEventListener('input', ()=>renderCollections());
+
+function resetColForm(){
+  $('colName').value = '';
+  $('colIdEdit').value = '';
+  $('colSaveTxt').textContent = 'Create Collection';
+  $('colCancel').style.display = 'none';
+}
+
+async function loadAccountStatus(){
+  try{
+    const res = await apiFetch(GET_ACCOUNT_STATUS_API);
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    $('kData').textContent = data.storage_limit_bytes > 0
+      ? `${formatBytes(data.total_storage_used_bytes||0)} / ${formatBytes(data.storage_limit_bytes)}`
+      : `${formatBytes(data.total_storage_used_bytes||0)} (Unlimited)`;
+    $('kExp').textContent = data.expiry_date ? new Date(data.expiry_date).toLocaleDateString('en-IN') : 'Lifetime';
+  }catch(e){
+    console.error(e);
+    $('kData').textContent = '-';
+    $('kExp').textContent = '-';
+  }
+}
+
+async function loadCollections(){
+  $('colRows').innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center">Loading...</td></tr>`;
+  try{
+    const res = await apiFetch(GET_COLLECTIONS_API);
+    if(!res.ok) throw new Error('Failed to fetch collections');
+    const data = await res.json();
+    dashCollections = (data.Items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+    renderCollections();
+  }catch(e){
+    console.error(e);
+    $('colRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderCollections(){
+  const q = ($('colSearch').value||'').toLowerCase();
+  const rows = dashCollections.filter(c => (c.name||'').toLowerCase().includes(q));
+  if(!rows.length){
+    $('colRows').innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center">No collections found</td></tr>`;
+    return;
+  }
+  $('colRows').innerHTML = rows.map(c => {
+    const nameEsc = encodeURIComponent(c.name||'Collection');
+    return `
+      <tr>
+        <td>
+          <a href="#/collection?id=${encodeURIComponent(c.collection_id)}&name=${nameEsc}" style="display:flex; align-items:center; gap:10px;">
+            <div style="background:rgba(99,102,241,0.2); padding:8px; border-radius:8px;"><i class="fa-regular fa-folder-open" style="color:var(--accent)"></i></div>
+            <span style="font-weight:700; color:#fff">${escapeHtml(c.name||'-')}</span>
+          </a>
+        </td>
+        <td class="muted">${fmtDate(c.created_at)}</td>
+        <td>
+           <span class="tag" title="Events"><i class="fa-solid fa-calendar-days" style="margin-right:4px"></i> ${c.event_count||0}</span>
+           <span class="tag" title="Photos"><i class="fa-regular fa-image" style="margin-right:4px"></i> ${c.total_photo_count||0}</span>
+        </td>
+        <td class="muted">${formatBytes(c.storage_bytes||0)}</td>
+        <td>
+          <div class="row" style="gap:6px">
+            <button class="btn secondary" style="padding:6px 10px" onclick="editCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn danger" style="padding:6px 10px" onclick="deleteCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.editCollection = (id, name)=>{
+  $('colName').value = name;
   $('colIdEdit').value = id;
-  $('saveColBtn').textContent = 'Update';
-  $('cancelColBtn').style.display = 'inline-flex';
-  $('colNameInput').focus();
+  $('colSaveTxt').textContent = 'Update';
+  $('colCancel').style.display = 'inline-flex';
+  $('colName').focus();
 };
 
-window.deleteCol = async (id)=>{
-  if(!confirm(`Delete this collection? All photos will be permanently deleted.`)) return;
+async function saveCollection(){
+  const name = ($('colName').value||'').trim();
+  if(!name) return showToast('Name is required', 'error');
+  const payload = { name };
+  const editId = $('colIdEdit').value;
+  if(editId) payload.collection_id = editId;
+
   showLoader(true);
   try{
-    await apiPostJson(DELETE_COLLECTION_API, {collection_id:id});
+    const res = await apiFetch(UPSERT_COLLECTION_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed to save');
+    resetColForm();
+    await loadCollections();
+    showToast(editId ? 'Collection updated!' : 'Collection created!');
+  }catch(e){
+    console.error(e);
+    showToast(e.message, 'error');
+  }finally{
+    showLoader(false);
+  }
+}
+
+window.deleteCollection = async (id, name)=>{
+  if(!confirm(`Delete "${name}" and all its photos? This action cannot be undone.`)) return;
+  showLoader(true);
+  try{
+    const res = await apiFetch(DELETE_COLLECTION_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({collection_id:id})
+    });
+    if(!res.ok) throw new Error('Delete failed');
     await loadCollections();
     showToast('Collection Deleted');
-  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{
+    showLoader(false);
+  }
 };
 
+/** ===================== SECTION: COLLECTION DETAILS ===================== **/
+$('backDash').addEventListener('click', ()=> location.hash = '#/dashboard');
+$('evSave').addEventListener('click', ()=> upsertEvent());
+$('createLinkBtn').addEventListener('click', ()=> generateGuestLink());
+if($('copyLinkBtn')) $('copyLinkBtn').addEventListener('click', ()=>{ const t=$('generatedLink')?.textContent||''; if(!t) return; navigator.clipboard.writeText(t).then(()=>showToast('Copied')).catch(()=>showToast('Copy failed','error')); });
+
+// FIX: Changed 'uploadBtn' to 'startUploadBtn' to match HTML ID
+$('startUploadBtn').addEventListener('click', ()=> startUpload());
+
+$('photoSearch').addEventListener('input', ()=> renderPhotos());
+$('photoEventFilter').addEventListener('change', ()=> renderPhotos());
+$('photoTagFilter').addEventListener('change', ()=> renderPhotos());
+$('refreshLeads').addEventListener('click', ()=> loadLeads());
+$('loadMoreBtn').addEventListener('click', ()=> loadPhotos(true));
+
+// Face Naming Handlers
+$('saveFaceBtn').addEventListener('click', ()=>saveFaceName());
+$('cancelFaceBtn').addEventListener('click', ()=> { $('faceNamingHeader').style.display='none'; });
+
+// Added listener for New Photographer button in SuperAdmin view
+if($('newPhotog')) $('newPhotog').addEventListener('click', openNewPhotog);
+
+function setCollectionFromRoute(params){
+  cd.id = params.get('id');
+  cd.name = params.get('name') || 'Collection';
+  $('cdId').textContent = cd.id || '-';
+  $('cdName').textContent = cd.name || '-';
+}
+
+async function loadEvents(){
+  $('evRows').innerHTML = `<tr><td colspan="3" class="muted">Loading...</td></tr>`;
+  try{
+    const res = await apiFetch(GET_EVENTS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id })
+    });
+    if(!res.ok) throw new Error('Failed to load events');
+    const data = await res.json();
+    cd.events = data.events || data.Items || data || [];
+    renderEvents();
+    fillEventSelects();
+    renderLinkEventList();
+  }catch(e){
+    console.error(e);
+    $('evRows').innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderEvents(){
+  const evs = Array.isArray(cd.events)?cd.events:[];
+  if(!evs.length){
+    $('evRows').innerHTML = `<tr><td colspan="3" class="muted">No sub-events created</td></tr>`;
+    return;
+  }
+  $('evRows').innerHTML = evs.map(ev=>{
+    const eid = ev.event_id || ev.eventId || ev.id;
+    const nm = ev.name || ev.event_name || ev.eventName || '-';
+    const pc = ev.photo_count || ev.photoCount || 0;
+    return `
+      <tr>
+        <td style="font-weight:700">${escapeHtml(nm)}</td>
+        <td><span class="pill">${pc} Photos</span></td>
+        <td class="row">
+          <button class="btn secondary" style="padding:6px 10px; margin-right:4px;" onclick="editEvent('${eid}', '${escapeHtml(nm)}', '${ev.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn danger" style="padding:6px 10px" onclick="delEvent('${eid}','${(nm||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Edit Event Logic
 window.editEvent = (id, name, date) => {
   $('evEditId').value = id;
   $('evEditName').value = name;
@@ -644,253 +936,111 @@ window.cancelEventEdit = () => {
   $('evAddForm').style.display = 'flex';
 };
 
-window.delEvent = async (eventId, name)=>{
-  if(!confirm(`Delete event "${name}"? Photos inside will remain in collection but lose event tag.`)) return;
-  showLoader(true);
-  try{
-    await apiPostJson(DELETE_EVENT_API, { collection_id: cd.id, event_id: eventId });
-    await loadEvents();
-    showToast('Event deleted');
-  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
-};
-
 window.updateEvent = async () => {
   const id = $('evEditId').value;
   const name = $('evEditName').value;
   const date = $('evEditDate').value;
   if(!id || !name) return;
+  
+  // Reuse upsert API but include ID
   showLoader(true);
   try{
-    await apiPostJson(UPSERT_EVENT_API, { collection_id: cd.id, event_id: id, name, event_date: date });
-    window.cancelEventEdit();
-    await loadEvents();
-    showToast('Event updated');
-  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
-};
-
-window.removeFile = (id) => {
-  const el = document.getElementById(`file-${id}`);
-  if(el) el.remove();
-  selectedFiles = selectedFiles.filter(x => x.id !== id);
-  const btn = $('startUploadBtn');
-  if(btn) {
-    btn.textContent = `Start Upload (${selectedFiles.length})`;
-    if(selectedFiles.length === 0) btn.disabled = true;
-  }
-};
-
-window.copyLink = () => {
-  const link = $('finalLink');
-  if(link) {
-     navigator.clipboard.writeText(link.href);
-     showToast('Copied');
-  }
-};
-
-window.openPhoto = (encUrl, title, faces) => {
-  const url = decodeURIComponent(encUrl||'');
-  $('pmImg').src = url;
-  $('pmTitle').textContent = title || 'Photo';
-  $('pmDownload').href = url;
-  $('pmMeta').textContent = `Faces detected: ${faces}`;
-  $('photoModal').classList.add('open');
-};
-
-window.openGuestMatchesModal = (title, info, matches) => {
-    const grid = $('guestMatchesGrid');
-    grid.innerHTML = '';
-    if(!matches || !matches.length){
-        grid.innerHTML = '<div class="muted">No matches found data in lead.</div>';
-    } else {
-        matches.forEach(url => {
-            const div = document.createElement('div');
-            div.className = 'ph';
-            div.onclick = () => window.open(url, '_blank');
-            div.innerHTML = `<img src="${url}" loading="lazy">`;
-            grid.appendChild(div);
-        });
-    }
-    $('guestMatchesModal').classList.add('open');
-};
-
-window.saDelete = async (userId)=>{
-  if(!confirm('Delete this user?')) return;
-  showLoader(true);
-  try{
-    await apiFetch(`${API_BASE}/photographers/${userId}`, { method:'DELETE' });
-    showToast('User Deleted');
-    await loadSuperAdmin();
-  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
-};
-
-window.saToggle = async (userId, current)=>{
-  showLoader(true);
-  try{
-    await apiFetch(`${API_BASE}/photographers/${userId}/toggle`, {
+    const payload = { collection_id: cd.id, event_id: id, name, event_date: date };
+    const res = await apiFetch(UPSERT_EVENT_API, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ disabled: !current })
+      body: JSON.stringify(payload)
     });
-    showToast('Status Updated');
-    await loadSuperAdmin();
-  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
-};
-
-
-/** ===================== LOGIC IMPLEMENTATION ===================== **/
-
-// Auth
-async function handleAuthFromQuery(){
-  const params = new URLSearchParams(location.search);
-  const code = params.get('code');
-  if(!code) return;
-  const redirectUri = location.origin + location.pathname;
-  showLoader(true, "Logging in...");
-  try{
-    const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({ grant_type:'authorization_code', client_id: CLIENT_ID, code, redirect_uri: redirectUri })
-    });
-    const tokens = await res.json();
-    if(!res.ok) throw new Error(tokens?.error_description || 'Auth failed');
-    idToken = tokens.id_token;
-    localStorage.setItem('idToken', idToken);
-    history.replaceState({}, document.title, location.pathname + location.hash);
-    showToast('Login successful!');
+    if(!res.ok) throw new Error('Failed');
+    
+    cancelEventEdit();
+    await loadEvents();
+    showToast('Event updated');
   }catch(e){
-    localStorage.removeItem('idToken');
-    showToast('Login failed.', 'error');
+    console.error(e);
+    showToast(e.message,'error');
   }finally{ showLoader(false); }
-}
-
-function ensureLoggedIn(){
-  if(!idToken) return false;
-  try{
-    const payload = parseJwt(idToken);
-    if(Date.now() > payload.exp*1000) throw new Error('Token expired');
-    me = payload;
-    if($('whoPill')) $('whoPill').innerHTML = `<i class="fa-solid fa-user-check" style="color:var(--primary)"></i> ${payload.email?.split('@')[0] || 'User'}`;
-    return true;
-  }catch(e){
-    localStorage.removeItem('idToken');
-    return false;
-  }
-}
-
-// Dashboard
-function resetColForm(){
-  $('colNameInput').value = '';
-  $('colIdEdit').value = '';
-  $('saveColBtn').textContent = 'Create Collection';
-  $('cancelColBtn').style.display = 'none';
-}
-
-async function loadAccountStatus(){
-  try{
-    const res = await apiFetch(GET_ACCOUNT_STATUS_API);
-    if(!res.ok) throw new Error('Failed');
-    const data = await res.json();
-    const used = (data.total_storage_used_bytes || 0) / (1024*1024*1024);
-    $('totalUsageVal').textContent = used.toFixed(2) + ' GB';
-  }catch(e){ console.error(e); }
-}
-
-async function loadCollections(){
-  $('colRows').innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center">Loading...</td></tr>`;
-  try{
-    const res = await apiFetch(GET_COLLECTIONS_API);
-    if(!res.ok) throw new Error('Failed');
-    const data = await res.json();
-    dashCollections = (data.Items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
-    renderCollections();
-  }catch(e){
-    $('colRows').innerHTML = `<tr><td colspan="4" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
-  }
-}
-
-function renderCollections(){
-  const q = ($('colSearch').value||'').toLowerCase();
-  const rows = dashCollections.filter(c => (c.name||'').toLowerCase().includes(q));
-  if(!rows.length){
-    $('colRows').innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center">No collections found</td></tr>`;
-    return;
-  }
-  $('colRows').innerHTML = rows.map(c => `
-      <tr>
-        <td>
-          <a href="#/collection?id=${encodeURIComponent(c.collection_id)}&name=${encodeURIComponent(c.name)}" style="display:flex; align-items:center; gap:10px;">
-            <div style="background:rgba(99,102,241,0.2); padding:8px; border-radius:8px;"><i class="fa-regular fa-folder-open" style="color:var(--accent)"></i></div>
-            <span style="font-weight:700; color:#fff">${escapeHtml(c.name||'-')}</span>
-          </a>
-        </td>
-        <td class="muted">${fmtDate(c.created_at)}</td>
-        <td>
-           <span class="tag" title="Photos"><i class="fa-regular fa-image"></i> ${c.total_photo_count || 0}</span>
-           <span class="tag" title="Size"><i class="fa-solid fa-database"></i> ${((c.storage_bytes||0)/(1024*1024)).toFixed(1)} MB</span>
-        </td>
-        <td>
-          <div class="row" style="gap:6px">
-            <button class="btn secondary" style="padding:6px 10px" onclick="editCol('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn danger" style="padding:6px 10px" onclick="deleteCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        </td>
-      </tr>
-  `).join('');
-}
-
-// Collection Details
-async function loadEvents(){
-  $('evRows').innerHTML = `<tr><td colspan="3" class="muted">Loading...</td></tr>`;
-  try{
-    const data = await apiPostJson(GET_EVENTS_API, { collection_id: cd.id });
-    cd.events = data.events || data.Items || [];
-    renderEvents();
-    fillEventSelects();
-  }catch(e){
-    $('evRows').innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
-  }
-}
-
-function renderEvents(){
-  const evs = Array.isArray(cd.events)?cd.events:[];
-  if(!evs.length){
-    $('evRows').innerHTML = `<tr><td colspan="3" class="muted">No sub-events created</td></tr>`;
-    return;
-  }
-  $('evRows').innerHTML = evs.map(ev=>{
-    const eid = ev.event_id || ev.eventId || ev.id;
-    const nm = ev.name || ev.event_name || ev.eventName || '-';
-    return `
-      <tr>
-        <td style="font-weight:700">${escapeHtml(nm)}</td>
-        <td><span class="pill">${ev.photo_count || 0} Photos</span></td>
-        <td class="row">
-          <button class="btn secondary" style="padding:6px 10px; margin-right:4px;" onclick="editEvent('${eid}', '${escapeHtml(nm)}', '${ev.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn danger" style="padding:6px 10px" onclick="delEvent('${eid}','${(nm||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
+};
 
 function fillEventSelects(){
   const evs = Array.isArray(cd.events)?cd.events:[];
-  
-  // Filter Dropdown
-  const optFilter = [`<option value="">All Events</option>`].concat(evs.map(ev=>`<option value="${ev.event_id}">${escapeHtml(ev.name)}</option>`)).join('');
-  if($('photoEventFilter')) $('photoEventFilter').innerHTML = optFilter;
-
-  // Upload Dropdown
-  const optUpload = [`<option value="">Select Event Target</option>`].concat(evs.map(ev=>`<option value="${ev.event_id}">${escapeHtml(ev.name)}</option>`)).join('');
-  if($('uploadEventSelect')) $('uploadEventSelect').innerHTML = optUpload;
-
-  // Link Dropdown
-  const optLink = [`<option value="">All Events (Entire Collection)</option>`].concat(evs.map(ev=>`<option value="${ev.event_id}">${escapeHtml(ev.name)}</option>`)).join('');
-  if($('linkEventSelect')) $('linkEventSelect').innerHTML = optLink;
+  const opt = [`<option value="">All Events</option>`].concat(
+    evs.map(ev=>{
+      const eid = ev.event_id || ev.eventId || ev.id;
+      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
+      return `<option value="${eid}">${escapeHtml(nm)}</option>`;
+    })
+  ).join('');
+  $('photoEventFilter').innerHTML = opt;
+  $('uploadEventSelect').innerHTML = `<option value="">Select Event to Upload</option>` + evs.map(ev=>{
+      const eid = ev.event_id || ev.eventId || ev.id;
+      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
+      return `<option value="${eid}">${escapeHtml(nm)}</option>`;
+  }).join('');
 }
 
-// Photos
+function renderLinkEventList(){
+  // UPDATED: Now populates the new Dropdown instead of checkboxes
+  const select = $('linkEventSelect');
+  if(!select) return;
+  
+  const evs = Array.isArray(cd.events) ? cd.events : [];
+  let html = '<option value="">All Events (Entire Collection)</option>';
+  
+  evs.forEach(ev=>{
+    const id = ev.event_id || ev.id;
+    const nm = ev.name || ev.event_name || 'Event';
+    html += `<option value="${escapeHtml(id)}">${escapeHtml(nm)}</option>`;
+  });
+  
+  select.innerHTML = html;
+}
+
+async function upsertEvent(){
+  const name = ($('evName').value||'').trim();
+  const event_date = ($('evDate').value||'').trim();
+  if(!name) return showToast('Event name required','error');
+  if(!event_date) return showToast('Event date required','error');
+
+  showLoader(true);
+  try{
+    const payload = { collection_id: cd.id, name, event_date };
+    const res = await apiFetch(UPSERT_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed');
+
+    $('evName').value='';
+    $('evDate').value='';
+    await loadEvents();
+    showToast('Event added');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+window.delEvent = async (eventId, name)=>{
+  if(!confirm(`Delete event "${name}"? Photos inside will also be deleted.`)) return;
+  showLoader(true);
+  try{
+    const res = await apiFetch(DELETE_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, event_id: eventId })
+    });
+    if(!res.ok) throw new Error('Failed to delete event');
+    await loadEvents();
+    showToast('Event deleted');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+};
+
+/** Photos pagination & Logic (Full Features from v3) */
 async function loadPhotos(append=false){
   if(!append){ cd.photos=[]; cd.next=null; }
   const eventFilter = $('photoEventFilter').value || '';
@@ -900,28 +1050,43 @@ async function loadPhotos(append=false){
 
   showLoader(true);
   try{
-    const data = await apiPostJson(GET_PHOTOS_API, payload);
-    const items = data.Items || data.photos || [];
-    cd.next = data.nextToken || null;
+    const res = await apiFetch(GET_PHOTOS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed to load photos');
+    const data = await res.json();
+    const items = data.Items || data.photos || data.items || [];
+    cd.next = data.nextToken || data.next_token || null;
     cd.photos = append ? cd.photos.concat(items) : items;
     
+    // Extract unique tags for filter
     updateTagFilter(cd.photos);
+    
+    // Also load Faces from list_people if not loaded
     if(!append) loadFaceGroups();
+
     renderPhotos();
-    if($('loadMoreBtn')) $('loadMoreBtn').style.display = cd.next ? 'inline-flex' : 'none';
+    $('loadMoreBtn').style.display = cd.next ? 'inline-flex' : 'none';
   }catch(e){
+    console.error(e);
     showToast(e.message,'error');
   }finally{ showLoader(false); }
 }
 
 function updateTagFilter(photos){
   const tags = new Set();
-  photos.forEach(p => { if(Array.isArray(p.ai_tags)) p.ai_tags.forEach(t => tags.add(t)); });
+  photos.forEach(p => {
+    if(Array.isArray(p.ai_tags)) p.ai_tags.forEach(t => tags.add(t));
+  });
+  
   const select = $('photoTagFilter');
-  if(!select) return;
   const currentVal = select.value;
   let html = '<option value="">All Tags</option>';
-  tags.forEach(t => { html += `<option value="${t}">${t}</option>`; });
+  tags.forEach(t => {
+    html += `<option value="${t}">${t}</option>`;
+  });
   select.innerHTML = html;
   select.value = currentVal; 
 }
@@ -933,11 +1098,13 @@ function renderPhotos(){
   
   const filtered = cd.photos.filter(p=>{
     const fn = (p.filename||p.file_name||p.key||'').toLowerCase();
+    
     const matchText = !q || fn.includes(q);
     const pid = p.event_id || p.eventId || '';
     const matchEv = !evSel || pid===evSel;
     const matchTag = !tagSel || (p.ai_tags && p.ai_tags.includes(tagSel));
-    const matchFace = !currentSelectedFaceId || photoHasFace(p, currentSelectedFaceId); 
+    const matchFace = !currentSelectedFaceId || photoHasFace(p, currentSelectedFaceId); // Face Filter Logic
+    
     return matchText && matchEv && matchTag && matchFace;
   });
 
@@ -947,13 +1114,13 @@ function renderPhotos(){
   }
 
   $('photoGrid').innerHTML = filtered.map(p=>{
-    const url = p.url || p.s3_url || p.photo_url || p.image_url || '';
+    const url = p.url || p.s3_url || p.photo_url || p.image_url || p.public_url || '';
     const thumb = p.thumbnail_url || url;
     const fn = p.filename || p.file_name || 'photo';
     const faces = (p.face_count ?? (Array.isArray(p.faces)?p.faces.length:null) ?? 0);
     return `
       <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','${(fn||'').replace(/'/g,"\\'")}', ${faces})">
-        <img src="${thumb}" loading="lazy"/>
+        <img src="${thumb}" loading="lazy" onerror="this.src='https://via.placeholder.com/300?text=Error'"/>
         <div class="m">
           <div class="t">${fn}</div>
           <div class="s"><i class="fa-regular fa-face-smile"></i> ${faces}</div>
@@ -963,48 +1130,161 @@ function renderPhotos(){
   }).join('');
 }
 
+// Logic to check if photo belongs to selected face
 function photoHasFace(photo, faceId){
     if(!faceId) return true;
+    // Check person_ids first (if grouped)
     if(photo.person_ids && photo.person_ids.includes(faceId)) return true;
+    // Check face_ids fallback
     if(photo.face_ids && photo.face_ids.includes(faceId)) return true;
     return false;
 }
 
-// Faces
+window.openPhoto = (encUrl, title, faces)=>{
+  const url = decodeURIComponent(encUrl||'');
+  $('pmImg').src = url;
+  $('pmTitle').textContent = title || 'Photo';
+  $('pmDownload').href = url;
+  $('pmMeta').textContent = `Faces detected: ${faces}`;
+  $('photoModal').classList.add('open');
+};
+$('pmClose').addEventListener('click', ()=> $('photoModal').classList.remove('open'));
+$('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') $('photoModal').classList.remove('open'); });
+
+/** ===================== SECTION: FACE RECOGNITION (from v3) ===================== **/
 async function loadFaceGroups(){
   try{
-    const data = await apiPostJson(LIST_PEOPLE_API, { collection_id: cd.id });
-    faceGroups = data.people || data.items || [];
+    const res = await apiFetch(LIST_PEOPLE_API, {
+       method:'POST',
+       headers:{'Content-Type':'application/json'},
+       body: JSON.stringify({ collection_id: cd.id })
+    });
+    // Fallback logic if API fails or returns different structure handled here
+    const data = await res.json().catch(()=>({}));
+    const people = data.people || data.items || [];
+    
+    faceGroups = people; 
     renderFaceIcons();
-  }catch(e){ console.warn(e); }
+  }catch(e){
+    console.warn('Face groups load error (might be empty):', e);
+  }
 }
 
 function renderFaceIcons(){
     const bar = $('faceIconsBar');
-    if(!bar) return;
     bar.innerHTML = '';
     
-    // All
+    // "All" Icon
     const allItem = document.createElement('div');
     allItem.className = 'face-item';
+    allItem.innerHTML = `
+        <div class="face-icon-wrapper ${!currentSelectedFaceId?'selected':''}" style="display:flex;align-items:center;justify-content:center;background:rgba(99,102,241,0.2)">
+            <i class="fa-solid fa-users" style="color:#fff"></i>
+        </div>
+        <div class="face-name-label">All</div>
+    `;
     allItem.onclick = () => { currentSelectedFaceId=null; renderFaceIcons(); renderPhotos(); };
-    allItem.innerHTML = `<div class="face-icon-wrapper ${!currentSelectedFaceId?'selected':''}" style="background:rgba(99,102,241,0.2)"><i class="fa-solid fa-users" style="color:#fff"></i></div><div class="face-name-label">All</div>`;
     bar.appendChild(allItem);
 
     faceGroups.forEach(p => {
         const thumb = p.face_thumbnail_url || p.thumbnail || '';
         const name = p.name || p.FaceName || 'Unknown';
         const id = p.person_id || p.FaceId;
+        
         const item = document.createElement('div');
         item.className = 'face-item';
-        item.ondblclick = (e) => { e.stopPropagation(); startFaceNaming(id, name, thumb); };
-        item.onclick = () => { currentSelectedFaceId = (currentSelectedFaceId === id) ? null : id; renderFaceIcons(); renderPhotos(); };
-        item.innerHTML = `<div class="face-icon-wrapper ${currentSelectedFaceId===id?'selected':''}" style="background-image:url('${thumb}');"></div><div class="face-name-label">${name}</div>`;
+        
+        // Double click to rename logic
+        item.ondblclick = (e) => {
+             e.stopPropagation();
+             startFaceNaming(id, name, thumb);
+        };
+
+        item.onclick = () => {
+            currentSelectedFaceId = (currentSelectedFaceId === id) ? null : id;
+            renderFaceIcons();
+            renderPhotos();
+        };
+
+        item.innerHTML = `
+           <div class="face-icon-wrapper ${currentSelectedFaceId===id?'selected':''}" 
+                style="background-image:url('${thumb}');">
+           </div>
+           <div class="face-name-label">${name}</div>
+        `;
         bar.appendChild(item);
     });
 }
 
-// Upload
+function startFaceNaming(id, currentName, thumb){
+    $('faceNamingHeader').style.display = 'block';
+    $('faceHeaderImg').src = thumb || '';
+    $('faceNameInput').value = currentName === 'Unknown' ? '' : currentName;
+    
+    // Store temporarily
+    $('faceNameInput').dataset.faceId = id;
+}
+
+async function saveFaceName(){
+    const id = $('faceNameInput').dataset.faceId;
+    const name = $('faceNameInput').value;
+    if(!id || !name) return;
+    
+    showLoader(true);
+    try{
+       await apiFetch(SAVE_FACE_NAME_API, {
+           method: 'POST',
+           headers: {'Content-Type':'application/json'},
+           body: JSON.stringify({ collection_id: cd.id, face_id: id, name: name })
+       });
+       showToast('Name saved');
+       $('faceNamingHeader').style.display='none';
+       await loadFaceGroups(); // Refresh faces
+    }catch(e){
+       showToast(e.message,'error');
+    }finally{ showLoader(false); }
+}
+
+/** ===================== SECTION: UPLOAD LOGIC (FIXED from working file) ===================== **/
+// Helper to convert any image to JPEG Blob
+function processFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        // Draw image (handles transparency by making background white/black if needed, but JPEG is opaque)
+        ctx.fillStyle = "#FFFFFF"; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        // Convert to standard JPEG
+        canvas.toBlob((blob) => {
+          if(!blob) { reject(new Error('Conversion failed')); return; }
+          // Create new File object with proper name
+          
+          // SANITIZATION: Remove spaces and invalid characters for Rekognition compatibility
+          let rawName = file.name.replace(/\.[^/.]+$/, ""); // strip extension
+          rawName = rawName.replace(/[^a-zA-Z0-9_.\-:]/g, "_"); // replace invalid chars with _
+          const newName = rawName + ".jpg";
+          
+          const newFile = new File([blob], newName, { type: "image/jpeg" });
+          resolve(newFile);
+        }, 'image/jpeg', 0.85); // 85% Quality
+      };
+      img.onerror = (e) => reject(e);
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Compute Hash for duplicate check
 async function computeHash(file) {
   const buffer = await file.arrayBuffer();
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
@@ -1012,60 +1292,72 @@ async function computeHash(file) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function sanitizeFilename(name) { return name.replace(/[^a-zA-Z0-9._-]/g, '_'); }
-
-$('fileInput').addEventListener('change', async function(e){
+$('fileInput').onchange = async (e) => {
   const files = Array.from(e.target.files);
   if(!files.length) return;
   
   for (const f of files) {
     const id = Math.random().toString(36).substr(2, 9);
+    // Add UI Row
     const row = document.createElement('div');
     row.className = 'upload-row';
     row.id = `file-${id}`;
-    row.innerHTML = `<div class="up-name">${f.name}</div><div class="up-status pending"><i class="fa-solid fa-spinner fa-spin"></i> Processing...</div><button class="btn danger" style="padding:4px 8px; margin-left:10px;" onclick="removeFile('${id}')"><i class="fa-solid fa-times"></i></button>`;
+    row.innerHTML = `
+      <div class="up-name">${f.name}</div>
+      <div class="up-status pending"><i class="fa-solid fa-spinner fa-spin"></i> Processing...</div>
+      <button class="btn danger" style="padding:4px 8px; margin-left:10px;" onclick="removeFile('${id}')"><i class="fa-solid fa-times"></i></button>
+    `;
     $('uploadList').appendChild(row);
 
     try {
       let finalFile = f;
+      // 1. HEIC Conversion
       if(f.name.toLowerCase().endsWith('.heic')){
          try {
             const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
             finalFile = new File([blob], f.name.replace(/\.heic$/i, '.jpg'), { type: "image/jpeg" });
-         } catch(e) { console.warn(e); }
+         } catch(e) { console.warn("HEIC convert failed, using original"); }
       }
       
-      const safeName = sanitizeFilename(finalFile.name);
-      if(safeName !== finalFile.name) finalFile = new File([finalFile], safeName, { type: finalFile.type });
+      // 2. JPEG Processing & Sanitization (always ensure JPG for consistency)
+      try {
+          finalFile = await processFile(finalFile);
+      } catch(e) { console.warn("Process failed, using raw"); }
 
+      // 3. Hash Computation
       const hash = await computeHash(finalFile);
+
       selectedFiles.push({ id, file: finalFile, hash, status: 'ready' });
       
-      row.querySelector('.up-name').textContent = finalFile.name;
+      row.querySelector('.up-name').textContent = finalFile.name; // Update displayed name
       row.querySelector('.up-status').innerHTML = `<span style="color:var(--text-muted)">Ready</span>`;
       row.querySelector('.up-status').classList.remove('pending');
       
     } catch(err) {
+      console.error(err);
       row.querySelector('.up-status').innerHTML = 'Error';
       row.querySelector('.up-status').className = 'up-status error';
     }
   }
   
-  const btn = $('startUploadBtn');
-  if(btn) {
-      btn.disabled = false;
-      btn.textContent = `Start Upload (${selectedFiles.length})`;
-  }
-  this.value = '';
-});
+  $('startUploadBtn').disabled = false;
+  $('startUploadBtn').textContent = `Start Upload (${selectedFiles.length})`;
+  $('fileInput').value = '';
+};
+
+window.removeFile = (id) => {
+  document.getElementById(`file-${id}`).remove();
+  selectedFiles = selectedFiles.filter(x => x.id !== id);
+  $('startUploadBtn').textContent = `Start Upload (${selectedFiles.length})`;
+};
 
 async function startUpload(){
   const eventId = $('uploadEventSelect').value;
   if(!eventId){ showToast("Please select an event first", "error"); return; }
   if(!selectedFiles.length){ showToast("No files selected", "error"); return; }
+  if(!cd.id) { showToast("Collection ID missing. Please refresh.", "error"); return; }
 
-  const btn = $('startUploadBtn');
-  if(btn) btn.disabled = true;
+  $('startUploadBtn').disabled = true;
   if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "block";
   const setOverall = (pct, text) => {
     $('uploadProgressBar').style.width = pct + "%";
@@ -1073,21 +1365,24 @@ async function startUpload(){
   };
 
   try {
-    setOverall(10, "Checking Duplicates...");
+    setOverall(10, "Checking Duplicates & Requesting URLs...");
     
+    // Correct Payload structure for backend
     const filesPayload = selectedFiles.map(f => ({
       name: f.file.name,
       type: f.file.type || 'application/octet-stream',
       size: f.file.size,
-      hash: f.hash
+      hash: f.hash // CRITICAL: This is what backend needs for duplicate check
     }));
 
+    // Step 1: Generate URLs
     const meta = await apiPostJson(UPLOAD_URLS_API, { 
       collection_id: cd.id, 
       event_id: eventId, 
       files: filesPayload 
     });
 
+    // Handle Skipped (Duplicates)
     if(meta.skipped && meta.skipped.length){
       meta.skipped.forEach(idx => {
         const item = selectedFiles[idx];
@@ -1099,8 +1394,9 @@ async function startUpload(){
       });
     }
 
-    const uploads = meta.items || [];
+    const uploads = meta.items || []; // contains { uploadUrl, key, index }
     
+    // Helper for single upload
     const doUpload = async (itemInfo) => {
       const idx = itemInfo.index;
       const fileData = selectedFiles[idx];
@@ -1109,47 +1405,60 @@ async function startUpload(){
       el.innerHTML = 'Uploading...';
       try {
         await fetch(itemInfo.uploadUrl, { method: 'PUT', body: fileData.file, headers: { 'Content-Type': fileData.file.type } });
+        
         el.innerHTML = 'Indexing...';
         
+        // Retry logic for Register
         let registered = false;
         let attempts = 0;
         while(!registered && attempts < 3){
            attempts++;
            try {
              await apiPostJson(REGISTER_PHOTO_API, { 
-                collection_id: cd.id, event_id: eventId, 
-                object_key: itemInfo.key, filename: fileData.file.name, 
-                size: fileData.file.size, content_type: fileData.file.type, hash: fileData.hash 
+                collection_id: cd.id,
+                event_id: eventId, 
+                object_key: itemInfo.key,
+                filename: fileData.file.name,
+                size: fileData.file.size,
+                content_type: fileData.file.type,
+                hash: fileData.hash 
              });
              registered = true;
-           } catch(err){ if(attempts < 3) await new Promise(r => setTimeout(r, 1500)); }
+           } catch(err){ 
+             console.warn(`Retry ${attempts} for ${fileData.file.name}`);
+             if(attempts < 3) await new Promise(r => setTimeout(r, 1500));
+           }
         }
 
         if(registered){
            el.innerHTML = '<i class="fa-solid fa-check"></i> Done';
            el.className = 'up-status success';
-        } else throw new Error("Index Failed");
+        } else throw new Error("Registration Failed");
 
       } catch(err) {
+        console.error(err);
         el.innerHTML = 'Failed';
         el.className = 'up-status error';
       }
     };
 
+    // Parallel Batch Upload
     const CONCURRENCY = 3;
     let done = 0;
     const total = uploads.length;
+    const totalFiles = selectedFiles.length; // including skipped
     
-    if (total === 0 && selectedFiles.length > 0) {
+    if (total === 0 && totalFiles > 0) {
+        // All were duplicates
         setOverall(100, "All files were duplicates.");
         showToast("All files already existed.");
     } else {
         for (let i = 0; i < total; i += CONCURRENCY) {
-          await Promise.all(uploads.slice(i, i + CONCURRENCY).map(async (u) => {
-              await doUpload(u);
-              done++;
-              setOverall(20 + ((done/total)*80), `Uploading ${done}/${total}`);
-          }));
+        await Promise.all(uploads.slice(i, i + CONCURRENCY).map(async (u) => {
+            await doUpload(u);
+            done++;
+            setOverall(20 + ((done/total)*80), `Uploading ${done}/${total}`);
+        }));
         }
         showToast('Process Complete');
     }
@@ -1158,48 +1467,53 @@ async function startUpload(){
 
   }catch(e){
     console.error(e);
-    showToast("Upload start failed", "error");
+    showToast("Upload start failed: " + (e.message), "error");
   }finally{
-    if(btn) btn.disabled = false;
+    $('startUploadBtn').disabled = false;
   }
 }
 
 /** ===================== SECTION: GUEST LINK LOGIC ===================== **/
-$('createLinkBtn').addEventListener('click', async () => {
+async function generateGuestLink(){
   showLoader(true);
   try{
     const eventSelect = $('linkEventSelect');
     const selectedEventId = eventSelect ? eventSelect.value : '';
     const eventIds = selectedEventId ? [selectedEventId] : [];
     
-    const expiry_hours = parseInt(($('linkExpiry')?.value||'0'),10);
+    const expiry_hours = parseInt(($('linkExpiry')?.value||'0'),10) || 24;
     const password = ($('linkPin')?.value||'').trim();
 
-    const res = await apiPostJson(GENERATE_LINK_API, { collection_id: cd.id, event_ids: eventIds, expiry_hours, password });
+    const res = await apiFetch(GENERATE_LINK_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, event_ids: eventIds, expiry_hours, password })
+    });
     
-    let url = res.searchUrl || res.link || res.url;
-    if (url && cd.id && !url.includes('cid=')) {
-        const separator = url.includes('?') ? '&' : '?';
-        url += `${separator}cid=${encodeURIComponent(cd.id)}`;
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    let link = data.searchUrl || data.link || data.url;
+
+    // FIX: Automatically append current collection_id to the generated link
+    if (link && cd.id && !link.includes('cid=')) {
+        const separator = link.includes('?') ? '&' : '?';
+        link += `${separator}cid=${encodeURIComponent(cd.id)}`;
     }
 
-    $('finalLink').href = url;
-    $('finalLink').textContent = url;
-    $('finalLinkBtn').href = url;
-    $('linkResultBox').style.display = 'block';
+    if($('generatedLink')){
+      $('generatedLink').href = link;
+      $('generatedLink').textContent = link;
+      $('finalLinkBtn').href = link;
+      $('linkResultBox').style.display = 'block';
+    }
     
     showToast('Link Generated!');
   }catch(e){
-    showToast('Generate failed','error');
+    console.error(e);
+    showToast('Generate failed: '+(e.message||e),'error');
   }finally{ showLoader(false); }
-});
+}
 
-window.copyLink = () => {
-  navigator.clipboard.writeText($('finalLink').href);
-  showToast('Copied');
-};
-
-/** ===================== SECTION: LEADS ===================== **/
 async function loadLeads(){
   try{
     const tbody = $('leadRows');
@@ -1213,6 +1527,8 @@ async function loadLeads(){
 
     if(!res.ok) throw new Error('Failed');
     const data = await res.json();
+    
+    // Handle different response structures
     let items = [];
     if(Array.isArray(data)) items = data;
     else if(data.items) items = data.items;
@@ -1245,7 +1561,7 @@ function renderLeads(){
            <div class="muted" style="font-size:12px">${escapeHtml(phone)}</div>
         </td>
         <td>
-           <img src="${selfie}" style="width:30px; height:30px; object-fit:cover; border-radius:50%; border:2px solid var(--border-color);" onerror="this.src='https://via.placeholder.com/50'"/>
+           <img src="${selfie}" style="width:48px; height:48px; object-fit:cover; border-radius:50%; border:2px solid var(--border-color);" onerror="this.src='https://via.placeholder.com/50'"/>
         </td>
         <td><span class="pill" style="background:var(--primary-dim); color:var(--primary)">${matched} Photos</span></td>
         <td>
@@ -1256,6 +1572,7 @@ function renderLeads(){
   }).join('');
 }
 
+// Guest Matches Modal Helper (New Logic from V3)
 function openGuestMatchesModal(title, info, matches){
     const grid = $('guestMatchesGrid');
     grid.innerHTML = '';
@@ -1279,8 +1596,8 @@ function openGuestMatchesModal(title, info, matches){
 
 $('guestMatchesCloseBtn').addEventListener('click', ()=> $('guestMatchesModal').classList.remove('open'));
 
+
 /** ===================== SECTION: SUPERADMIN ===================== **/
-$('newPhotog').addEventListener('click', ()=>openNewPhotog());
 async function loadSuperAdmin(){
   $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
   showLoader(true);
@@ -1357,6 +1674,23 @@ window.saToggle = async (userId, current)=>{
     showToast('Status Updated');
     await loadSuperAdmin();
   }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+};
+
+/** ===================== HELPER ===================== **/
+window.copyLink = () => {
+  const link = $('finalLink').href;
+  if(navigator.clipboard){
+      navigator.clipboard.writeText(link).then(()=>showToast('Copied')).catch(e=>console.error(e));
+  } else {
+      // Fallback for iframe/insecure contexts
+      const ta = document.createElement('textarea');
+      ta.value = link;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Copied');
+  }
 };
 
 /** ===================== ROUTER MAIN ===================== **/

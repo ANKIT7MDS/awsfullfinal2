@@ -1367,15 +1367,19 @@ async function startUpload(){
 
     // 2. Get Upload URLs
     setOverall(20, "Requesting Upload URLs...");
-    const fileNames = files.map(f => f.name);
-    const contentTypes = files.map(f => f.type); // All should be image/jpeg now mostly
+    
+    // Updated Payload to match what works in collection-details.html
+    const filesPayload = files.map(f => ({
+      name: f.name,
+      type: f.type || 'application/octet-stream'
+    }));
 
+    console.log("Generating Upload URLs with:", { collection_id: cd.id, event_id: eventId, files: filesPayload });
+    
     const meta = await apiPostJson(UPLOAD_URLS_API, { 
       collection_id: cd.id, 
       event_id: eventId, 
-      count: total,
-      file_names: fileNames,
-      content_types: contentTypes
+      files: filesPayload 
     });
 
     const urls = meta.urls || meta.uploadUrls || meta.items || [];

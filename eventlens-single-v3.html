@@ -141,6 +141,7 @@
     .upload-row { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 8px; background: rgba(255,255,255,0.02); font-size: 13px; }
     .up-status.success { color: var(--primary); }
     .up-status.danger { color: var(--danger); }
+    .up-status.skipped { color: var(--warning); }
     
     /* Toast & Loaders */
     .toast { position: fixed; top: 24px; right: 24px; background: var(--text-dark); color: var(--text-main); padding: 12px 20px; border-radius: var(--radius-md); font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 300; transform: translateX(120%); transition: transform 0.4s var(--ease); border: 1px solid var(--border-color); }
@@ -1388,7 +1389,7 @@ async function startUpload(){
         const item = selectedFiles[idx];
         if(item) {
             const el = document.getElementById(`file-${item.id}`).querySelector('.up-status');
-            el.innerHTML = '<i class="fa-solid fa-forward"></i> Exists';
+            el.innerHTML = '<i class="fa-solid fa-forward"></i> Already Exists (Skipped)';
             el.className = 'up-status skipped';
         }
       });
@@ -1463,7 +1464,17 @@ async function startUpload(){
         showToast('Process Complete');
     }
 
-    setTimeout(()=>{ loadEvents(); loadPhotos(); loadFaceGroups(); }, 1500);
+    // AUTO-CLEAR LIST AFTER UPLOAD (Wait 1.5s then clear)
+    setTimeout(()=>{ 
+       $('uploadList').innerHTML = '';
+       selectedFiles = [];
+       $('startUploadBtn').textContent = 'Start Upload';
+       $('filePickLabel').textContent = 'Click to select photos';
+       if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "none";
+       loadEvents(); 
+       loadPhotos(); 
+       loadFaceGroups(); 
+    }, 1500);
 
   }catch(e){
     console.error(e);
@@ -1500,9 +1511,10 @@ async function generateGuestLink(){
         link += `${separator}cid=${encodeURIComponent(cd.id)}`;
     }
 
-    if($('generatedLink')){
-      $('generatedLink').href = link;
-      $('generatedLink').textContent = link;
+    // UPDATED ID HERE: Check for 'finalLink' instead of 'generatedLink'
+    if($('finalLink')){
+      $('finalLink').href = link;
+      $('finalLink').textContent = link;
       $('finalLinkBtn').href = link;
       $('linkResultBox').style.display = 'block';
     }

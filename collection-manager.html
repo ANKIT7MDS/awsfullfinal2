@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collection Manager • Premium</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.3/dist/heic2any.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ========== MODERN THEME VARIABLES ========== */
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: linear-gradient(145deg, #1a1a25, #232331);
+            --bg-hover: rgba(99, 102, 241, 0.1);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-light: rgba(255, 255, 255, 0.12);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --brand: #6366f1;
+            --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --brand-hover: #4f46e5;
+            --success: #10b981;
+            --success-light: rgba(16, 185, 129, 0.15);
+            --danger: #ef4444;
+            --danger-light: rgba(239, 68, 68, 0.15);
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.2);
+            --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.4);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --glass: rgba(20, 20, 30, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        /* ========== BASE STYLES ========== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--brand);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--brand-hover);
+        }
+
+        /* ========== LAYOUT ========== */
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* ========== HEADER ========== */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            padding: 20px 24px;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .top-bar::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 6px;
+            background: var(--brand-gradient);
+        }
+
+        .header-left h1 {
+            font-size: 26px;
+            font-weight: 800;
+            margin: 0 0 4px;
+        }
+
+        .stats-line {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-icon {
+            font-size: 16px;
+            color: var(--brand);
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* ========== BUTTONS ========== */
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            background: var(--brand-gradient);
+            color: #ffffff;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--brand);
+            color: var(--brand);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn i {
+            font-size: 14px;
+        }
+
+        /* ========== TABS ========== */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 4px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            position: relative;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: #ffffff;
+            background: var(--brand-gradient);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ========== CARDS ========== */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99,102,241,0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: var(--brand);
+        }
+
+        /* ========== EVENTS SECTION ========== */
+        .event-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        .event-item:hover {
+            border-color: var(--border-light);
+            box-shadow: var(--shadow-light);
+        }
+
+        .event-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .event-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-hover);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--brand);
+            font-size: 18px;
+        }
+
+        .event-details h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .event-details p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ========== FORM ========== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="date"] {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        input:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            outline: none;
+        }
+
+        /* ========== PHOTOS GRID ========== */
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .photo-item {
+            position: relative;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .photo-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .photo-item:hover .photo-overlay {
+            opacity: 1;
+        }
+
+        .photo-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 4px 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .photo-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .photo-actions button {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        .photo-actions button:hover {
+            color: var(--brand);
+        }
+
+        /* ========== FILTERS ========== */
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            appearance: none;
+            cursor: pointer;
+        }
+
+        /* ========== FACE NAMING MODAL ========== */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+            z-index: 1001;
+            display: none;
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            text-align: center;
+        }
+
+        .face-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 20px;
+            border: 2px solid var(--border-light);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        /* ========== TOAST ========== */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 280px;
+            box-shadow: var(--shadow-light);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: var(--transition);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            background: var(--success-light);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger-light);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        /* ========== UPLOAD SECTION ========== */
+        .upload-zone {
+            border: 2px dashed var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--brand);
+            background: var(--bg-hover);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: var(--brand);
+            margin-bottom: 12px;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .upload-subtext {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .file-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            color: var(--brand);
+            font-size: 18px;
+        }
+
+        .file-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .file-size {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .remove-file {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .upload-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .quality-slider {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: var(--bg-secondary);
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--brand);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* ========== VIEWER MODAL ========== */
+        #viewer {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .viewer-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .viewer-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+        }
+
+        .viewer-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.5);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+        }
+
+        /* ========== PHOTO DETAILS MODAL ========== */
+        #photoDetailsModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #photoDetailsContent {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: var(--shadow);
+        }
+
+        .detail-item {
+            margin-bottom: 16px;
+        }
+
+        .detail-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        /* ========== AI TAG SUGGESTIONS ========== */
+        #aiTagSuggestions {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+            width: 100%;
+        }
+
+        .ai-suggestion {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .ai-suggestion:hover {
+            background: var(--bg-hover);
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .wrap { padding: 16px; }
+            .top-bar { flex-direction: column; gap: 16px; }
+            .header-actions { width: 100%; justify-content: center; }
+            .photos-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+            .filters { flex-direction: column; }
+        }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <!-- Header -->
+        <div class="top-bar">
+            <div class="header-left">
+                <h1 id="collectionName">Collection</h1>
+                <div class="stats-line">
+                    <div class="stat-item"><i class="fas fa-images stat-icon"></i> <span id="totalPhotos">0</span> Photos</div>
+                    <div class="stat-item"><i class="fas fa-users stat-icon"></i> <span id="totalLeads">0</span> Leads</div>
+                    <div class="stat-item"><i class="fas fa-hdd stat-icon"></i> <span id="storageUsed">0 MB</span> Used</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline" id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                <a id="assistantLink" class="btn btn-outline" target="_blank"><i class="fas fa-link"></i> Staff Upload Link</a>
+                <button class="btn btn-danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="photosTab"><i class="fas fa-images"></i> Photos</div>
+            <div class="tab" data-tab="eventsTab"><i class="fas fa-calendar-alt"></i> Events</div>
+            <div class="tab" data-tab="linksTab"><i class="fas fa-link"></i> Links</div>
+            <div class="tab" data-tab="analyticsTab"><i class="fas fa-chart-line"></i> Analytics</div>
+        </div>
+
+        <!-- Tab Contents -->
+        <div id="photosTab" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-filter"></i> Filters</h2>
+                    <button class="btn btn-outline" id="clearFiltersBtn"><i class="fas fa-times"></i> Clear</button>
+                </div>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Event</label>
+                        <select id="filterEvent" class="select">
+                            <option value="">All Events</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Tag Search</label>
+                        <input type="text" id="tagSearch" placeholder="Search tags...">
+                    </div>
+                    <div class="filter-group" style="position: relative;">
+                        <label>AI Tag Search</label>
+                        <input type="text" id="aiTagSearch" placeholder="AI suggested tags...">
+                        <div id="aiTagSuggestions"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="photosCard">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-images"></i> Photos (<span id="photosCount">0</span>)</h2>
+                    <button class="btn" id="downloadZipBtn"><i class="fas fa-download"></i> Download ZIP</button>
+                </div>
+                <div id="photosGrid" class="photos-grid"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-users"></i> Face Groups (<span id="faceGroupsCount">0</span>)</h2>
+                </div>
+                <div id="faceGroupsGrid" class="photos-grid"></div>
+            </div>
+        </div>
+
+        <div id="eventsTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-calendar-alt"></i> Events (<span id="eventsCount">0</span>)</h2>
+                    <button class="btn" id="newEvtBtn"><i class="fas fa-plus"></i> New Event</button>
+                </div>
+                <div id="eventForm" style="display: none; margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" id="eventName" placeholder="Enter event name">
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="eventDate">
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn" id="saveEventBtn"><i class="fas fa-save"></i> Save</button>
+                        <button class="btn btn-outline" id="cancelEventBtn"><i class="fas fa-times"></i> Cancel</button>
+                    </div>
+                </div>
+                <div id="eventsList" class="event-list"></div>
+            </div>
+        </div>
+
+        <div id="linksTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-link"></i> Generate Search Link</h2>
+                </div>
+                <div class="form-group">
+                    <label>Select Event</label>
+                    <select id="linkEvent" class="select">
+                        <option value="">Select Event</option>
+                    </select>
+                </div>
+                <button class="btn" id="genLinkBtn"><i class="fas fa-magic"></i> Generate Link</button>
+                <div id="linkOutput" style="margin-top: 20px; display: none;">
+                    <input type="text" id="generatedLink" readonly>
+                    <button class="btn" id="copyLinkBtn"><i class="fas fa-copy"></i> Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="analyticsTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><i class="fas fa-chart-line"></i> Leads Analytics (<span id="leadsCount">0</span>)</h2>
+                    <button class="btn btn-outline" id="clearLeadsFiltersBtn"><i class="fas fa-times"></i> Clear Filters</button>
+                </div>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Date</label>
+                        <input type="date" id="dateFilter">
+                    </div>
+                    <div class="filter-group">
+                        <label>Mobile</label>
+                        <input type="text" id="mobileFilter" placeholder="Search mobile...">
+                    </div>
+                </div>
+                <div id="leadsTable"></div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fas fa-upload"></i> Quick Upload</h2>
+            </div>
+            <div class="upload-zone" id="uploadZone">
+                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <div class="upload-text">Drag & Drop Photos</div>
+                <div class="upload-subtext">or click to browse</div>
+            </div>
+            <div id="fileList" class="file-list"></div>
+            <div id="uploadControls" style="display: none;">
+                <div class="quality-slider">
+                    <label>JPEG Quality:</label>
+                    <input type="range" id="jpegQuality" min="50" max="100" value="85">
+                    <span id="jpegQualityVal">85</span>
+                </div>
+                <button class="btn" id="startUploadBtn"><i class="fas fa-upload"></i> Start Upload</button>
+                <button class="btn btn-outline" id="clearFilesBtn"><i class="fas fa-times"></i> Clear</button>
+            </div>
+        </div>
+
+        <!-- Viewer Modal -->
+        <div id="viewer">
+            <button class="viewer-close" id="viewerCloseBtn">&times;</button>
+            <img id="viewerImg" class="viewer-img" src="">
+        </div>
+
+        <!-- Photo Details Modal -->
+        <div id="photoDetailsModal">
+            <div id="photoDetailsContent">
+                <div class="modal-head">
+                    <div class="modal-title">Photo Details</div>
+                    <button class="btn" id="closePhotoDetailsBtn"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="photoDetailsBody"></div>
+            </div>
+        </div>
+
+        <!-- Face Naming Modal -->
+        <div class="modal-backdrop" id="faceNamingBackdrop"></div>
+        <div class="modal-card" id="faceNamingModal">
+            <div class="modal-head">
+                <div class="modal-title">Name This Face</div>
+                <button class="btn" id="closeFaceNamingBtn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <img id="facePreview" class="face-preview" src="">
+                <input type="text" id="faceNameInput" placeholder="Enter name...">
+                <div style="display: flex; gap: 12px; margin-top: 16px;">
+                    <button class="btn" id="saveFaceBtn"><i class="fas fa-save"></i> Save</button>
+                    <button class="btn btn-outline" id="cancelFaceBtn"><i class="fas fa-times"></i> Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script>
+        // ======================= GLOBAL VARIABLES =======================
+        let collectionId = new URLSearchParams(window.location.search).get('id');
+        let collectionNameParam = new URLSearchParams(window.location.search).get('name');
+        let idToken = localStorage.getItem('idToken');
+        let allPhotos = [];
+        let filteredPhotos = [];
+        let allEvents = [];
+        let allLeads = [];
+        let faceGroups = [];
+        let selectedFiles = [];
+        let currentFaceId = null;
+        let currentViewerPhoto = null;
+
+        // APIs (Replace with actual endpoints)
+        const GET_EVENTS_API = '/api/get-events';
+        const UPSERT_EVENT_API = '/api/upsert-event';
+        const DELETE_EVENT_API = '/api/delete-event';
+        const GENERATE_LINK_API = '/api/generate-search-link';
+        const GET_PHOTOS_API = '/api/get-photos-for-gallery';
+        const LIST_PEOPLE_API = '/api/list_people';
+        const SAVE_FACE_NAME_API = '/api/save_face_name';
+        const GET_LEADS_API = '/api/get-leads'; // Assume this exists for analytics
+
+        // Helper to get element
+        const $ = id => document.getElementById(id);
+
+        // Format bytes
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Show toast
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type} show`;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            $('toastContainer').appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ======================= LOAD DATA =======================
+        async function loadEvents() {
+            try {
+                const response = await fetch(GET_EVENTS_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ collection_id: collectionId })
+                });
+                if (!response.ok) throw new Error('Failed to load events');
+                const data = await response.json();
+                allEvents = data.events || [];
+                $('eventsCount').textContent = allEvents.length;
+
+                // Render events
+                const list = $('eventsList');
+                list.innerHTML = '';
+                allEvents.forEach(event => {
+                    const item = document.createElement('div');
+                    item.className = 'event-item fade-in';
+                    item.innerHTML = `
+                        <div class="event-info">
+                            <div class="event-icon"><i class="fas fa-calendar-day"></i></div>
+                            <div class="event-details">
+                                <h3>${event.name}</h3>
+                                <p>${new Date(event.date).toLocaleDateString()} • ${event.photo_count || 0} photos</p>
+                            </div>
+                        </div>
+                        <div class="event-actions">
+                            <button class="btn btn-outline" onclick="editEvent('${event.event_id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger" onclick="deleteEvent('${event.event_id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+
+                // Update event filters and link select
+                const eventSelect = $('filterEvent');
+                const linkSelect = $('linkEvent');
+                eventSelect.innerHTML = '<option value="">All Events</option>';
+                linkSelect.innerHTML = '<option value="">Select Event</option>';
+                allEvents.forEach(event => {
+                    const opt = document.createElement('option');
+                    opt.value = event.event_id;
+                    opt.textContent = `${event.name} (${event.date})`;
+                    eventSelect.appendChild(opt.cloneNode(true));
+                    linkSelect.appendChild(opt);
+                });
+
+            } catch (error) {
+                console.error('Load events error:', error);
+                showToast('Failed to load events', 'error');
+            }
+        }
+
+        async function loadPhotos(eventId = '') {
+            try {
+                const body = { collection_id: collectionId };
+                if (eventId) body.event_id = eventId;
+                const response = await fetch(GET_PHOTOS_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error('Failed to load photos');
+                const data = await response.json();
+                allPhotos = data.photos || [];
+                filteredPhotos = [...allPhotos];
+                $('photosCount').textContent = allPhotos.length;
+                renderPhotos();
+            } catch (error) {
+                console.error('Load photos error:', error);
+                showToast('Failed to load photos', 'error');
+            }
+        }
+
+        function renderPhotos() {
+            const grid = $('photosGrid');
+            grid.innerHTML = '';
+            filteredPhotos.forEach(photo => {
+                const item = document.createElement('div');
+                item.className = 'photo-item fade-in';
+                item.onclick = () => openViewer(photo);
+                item.innerHTML = `
+                    <img src="${photo.thumbnail_url || photo.url}" alt="Photo" loading="lazy">
+                    <div class="photo-overlay">
+                        <div class="photo-tags">
+                            ${(photo.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                        </div>
+                        <div class="photo-actions">
+                            <button onclick="event.stopPropagation(); showPhotoDetails('${photo.photo_id}')"><i class="fas fa-info-circle"></i></button>
+                            <button class="btn-danger" onclick="event.stopPropagation(); deletePhoto('${photo.photo_id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        function applyFilters() {
+            let filtered = [...allPhotos];
+
+            // Event filter
+            const eventId = $('filterEvent').value;
+            if (eventId) {
+                filtered = filtered.filter(p => p.event_id === eventId);
+            }
+
+            // Tag search
+            const tagQuery = $('tagSearch').value.toLowerCase();
+            if (tagQuery) {
+                filtered = filtered.filter(p => (p.tags || []).some(tag => tag.toLowerCase().includes(tagQuery)));
+            }
+
+            // AI tag search (assuming AI suggestions are applied as filters)
+            const aiQuery = $('aiTagSearch').value.toLowerCase();
+            if (aiQuery) {
+                filtered = filtered.filter(p => (p.ai_tags || []).some(tag => tag.toLowerCase().includes(aiQuery)));
+            }
+
+            filteredPhotos = filtered;
+            renderPhotos();
+        }
+
+        function clearFilters() {
+            $('filterEvent').value = '';
+            $('tagSearch').value = '';
+            $('aiTagSearch').value = '';
+            applyFilters();
+        }
+
+        async function loadFaceGroups() {
+            try {
+                const response = await fetch(LIST_PEOPLE_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ collection_id: collectionId })
+                });
+                if (!response.ok) throw new Error('Failed to load face groups');
+                const data = await response.json();
+                faceGroups = data.people || [];
+                $('faceGroupsCount').textContent = faceGroups.length;
+                renderFaceGroups();
+            } catch (error) {
+                console.error('Load face groups error:', error);
+                showToast('Failed to load face groups', 'error');
+            }
+        }
+
+        function renderFaceGroups() {
+            const grid = $('faceGroupsGrid');
+            grid.innerHTML = '';
+            faceGroups.forEach(group => {
+                const item = document.createElement('div');
+                item.className = 'photo-item fade-in';
+                item.onclick = () => nameFace(group.face_id, group.preview_url);
+                item.innerHTML = `
+                    <img src="${group.preview_url}" alt="Face" loading="lazy">
+                    <div class="photo-overlay">
+                        <div class="photo-tags">
+                            <span class="tag">${group.name || 'Unnamed'}</span>
+                            <span class="tag">${group.count} photos</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        async function loadLeads() {
+            try {
+                const body = { collection_id: collectionId };
+                const date = $('dateFilter').value;
+                const mobile = $('mobileFilter').value;
+                if (date) body.date = date;
+                if (mobile) body.mobile = mobile;
+
+                const response = await fetch(GET_LEADS_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error('Failed to load leads');
+                const data = await response.json();
+                allLeads = data.leads || [];
+                $('leadsCount').textContent = allLeads.length;
+                renderLeads();
+            } catch (error) {
+                console.error('Load leads error:', error);
+                showToast('Failed to load leads', 'error');
+            }
+        }
+
+        function renderLeads() {
+            const table = $('leadsTable');
+            table.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Mobile</th>
+                            <th>Date</th>
+                            <th>Photos</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsBody"></tbody>
+                </table>
+            `;
+            const tbody = $('leadsBody');
+            allLeads.forEach(lead => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${lead.name}</td>
+                    <td>${lead.mobile}</td>
+                    <td>${new Date(lead.date).toLocaleDateString()}</td>
+                    <td>${lead.photo_count}</td>
+                    <td>
+                        <button class="btn btn-outline" onclick="viewLeadMatches('${lead.link_id}')"><i class="fas fa-eye"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ======================= EVENT OPERATIONS =======================
+        async function createEvent() {
+            try {
+                const name = $('eventName').value.trim();
+                const date = $('eventDate').value;
+                if (!name || !date) {
+                    showToast('Name and date required', 'error');
+                    return;
+                }
+                const body = { collection_id: collectionId, name, date };
+                const response = await fetch(UPSERT_EVENT_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error('Failed to create event');
+                $('eventForm').style.display = 'none';
+                loadEvents();
+                showToast('Event created');
+            } catch (error) {
+                console.error('Create event error:', error);
+                showToast('Failed to create event', 'error');
+            }
+        }
+
+        function editEvent(eventId) {
+            const event = allEvents.find(e => e.event_id === eventId);
+            if (!event) return;
+            $('eventName').value = event.name;
+            $('eventDate').value = event.date;
+            $('eventForm').style.display = 'block';
+            $('saveEventBtn').onclick = () => updateEvent(eventId);
+        }
+
+        async function updateEvent(eventId) {
+            try {
+                const name = $('eventName').value.trim();
+                const date = $('eventDate').value;
+                if (!name || !date) {
+                    showToast('Name and date required', 'error');
+                    return;
+                }
+                const body = { collection_id: collectionId, event_id: eventId, name, date };
+                const response = await fetch(UPSERT_EVENT_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!response.ok) throw new Error('Failed to update event');
+                $('eventForm').style.display = 'none';
+                loadEvents();
+                showToast('Event updated');
+            } catch (error) {
+                console.error('Update event error:', error);
+                showToast('Failed to update event', 'error');
+            }
+        }
+
+        async function deleteEvent(eventId) {
+            if (!confirm('Delete this event? This will also delete associated photos.')) return;
+            try {
+                const response = await fetch(DELETE_EVENT_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+                if (!response.ok) throw new Error('Failed to delete event');
+                loadEvents();
+                loadPhotos();
+                showToast('Event deleted');
+            } catch (error) {
+                console.error('Delete event error:', error);
+                showToast('Failed to delete event', 'error');
+            }
+        }
+
+        // ======================= LINK GENERATION =======================
+        async function generateLink() {
+            try {
+                const eventId = $('linkEvent').value;
+                if (!eventId) {
+                    showToast('Select an event first', 'error');
+                    return;
+                }
+                const response = await fetch(GENERATE_LINK_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+                if (!response.ok) throw new Error('Failed to generate link');
+                const data = await response.json();
+                $('generatedLink').value = data.link;
+                $('linkOutput').style.display = 'block';
+                showToast('Link generated');
+            } catch (error) {
+                console.error('Generate link error:', error);
+                showToast('Failed to generate link', 'error');
+            }
+        }
+
+        function copyLink() {
+            const link = $('generatedLink');
+            link.select();
+            document.execCommand('copy');
+            showToast('Link copied');
+        }
+
+        // ======================= UPLOAD =======================
+        function setupUpload() {
+            const zone = $('uploadZone');
+            const input = $('fileInput');
+
+            zone.addEventListener('click', () => input.click());
+            input.addEventListener('change', handleFiles);
+
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+                zone.style.borderColor = var(--brand);
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.style.borderColor = var(--border-light);
+            });
+
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.style.borderColor = var(--border-light);
+                handleFiles(e.dataTransfer.files);
+            });
+        }
+
+        function handleFiles(files) {
+            selectedFiles = [...files];
+            const list = $('fileList');
+            list.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <div class="file-info">
+                        <i class="fas fa-file-image file-icon"></i>
+                        <div>
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatBytes(file.size)}</div>
+                        </div>
+                    </div>
+                    <button class="remove-file" onclick="removeFile(${index})"><i class="fas fa-trash"></i></button>
+                `;
+                list.appendChild(item);
+            });
+            $('uploadControls').style.display = 'flex';
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            handleFiles(selectedFiles);
+        }
+
+        async function startUpload() {
+            if (selectedFiles.length === 0) return;
+            $('startUploadBtn').disabled = true;
+            const quality = parseInt($('jpegQuality').value) / 100;
+
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                try {
+                    let blob = file;
+                    if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+                        blob = await heic2any({ blob: file, toType: 'image/jpeg' });
+                    }
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    img.src = URL.createObjectURL(blob);
+                    await new Promise(r => img.onload = r);
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const jpegBlob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+
+                    // Upload logic (replace with actual upload API)
+                    const formData = new FormData();
+                    formData.append('file', jpegBlob, file.name.replace(/\.[^/.]+$/, ".jpg"));
+                    formData.append('collection_id', collectionId);
+                    // Add event_id if needed
+
+                    const response = await fetch('/api/upload-photo', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${idToken}` },
+                        body: formData
+                    });
+                    if (!response.ok) throw new Error('Upload failed');
+                    showToast(`Uploaded ${file.name}`);
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    showToast(`Failed to upload ${file.name}`, 'error');
+                }
+            }
+
+            selectedFiles = [];
+            $('fileList').innerHTML = '';
+            $('uploadControls').style.display = 'none';
+            $('startUploadBtn').disabled = false;
+            loadPhotos();
+        }
+
+        // ======================= FACE NAMING =======================
+        function nameFace(faceId, previewUrl) {
+            currentFaceId = faceId;
+            $('facePreview').src = previewUrl;
+            $('faceNameInput').value = '';
+            $('faceNamingModal').style.display = 'block';
+            $('faceNamingBackdrop').style.display = 'block';
+            $('faceNameInput').focus();
+        }
+
+        async function saveFaceName() {
+            try {
+                const name = $('faceNameInput').value.trim();
+                if (!name) {
+                    showToast('Name required', 'error');
+                    return;
+                }
+                const response = await fetch(SAVE_FACE_NAME_API, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ face_id: currentFaceId, name })
+                });
+                if (!response.ok) throw new Error('Failed to save name');
+                cancelFaceNaming();
+                loadFaceGroups();
+                showToast('Name saved');
+            } catch (error) {
+                console.error('Save face name error:', error);
+                showToast('Failed to save name', 'error');
+            }
+        }
+
+        function cancelFaceNaming() {
+            $('faceNamingModal').style.display = 'none';
+            $('faceNamingBackdrop').style.display = 'none';
+            currentFaceId = null;
+        }
+
+        // ======================= PHOTO OPERATIONS =======================
+        async function deletePhoto(photoId) {
+            if (!confirm('Delete this photo?')) return;
+            try {
+                // Delete API call (assume endpoint)
+                const response = await fetch('/api/delete-photo', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ photo_id: photoId })
+                });
+                if (!response.ok) throw new Error('Failed to delete photo');
+                loadPhotos();
+                showToast('Photo deleted');
+            } catch (error) {
+                console.error('Delete photo error:', error);
+                showToast('Failed to delete photo', 'error');
+            }
+        }
+
+        function openViewer(photo) {
+            currentViewerPhoto = photo;
+            $('viewerImg').src = photo.url;
+            $('viewer').style.display = 'flex';
+        }
+
+        function closeViewer() {
+            $('viewer').style.display = 'none';
+            currentViewerPhoto = null;
+        }
+
+        async function downloadZip() {
+            if (filteredPhotos.length === 0) {
+                showToast('No photos to download', 'error');
+                return;
+            }
+            try {
+                const zip = new JSZip();
+                for (let i = 0; i < filteredPhotos.length; i++) {
+                    const photo = filteredPhotos[i];
+                    const response = await fetch(photo.url);
+                    const blob = await response.blob();
+                    zip.file(`photo_${i+1}.jpg`, blob);
+                }
+                const content = await zip.generateAsync({type: 'blob'});
+                saveAs(content, 'photos.zip');
+                showToast('ZIP downloaded');
+            } catch (error) {
+                console.error('Download ZIP error:', error);
+                showToast('Failed to create ZIP', 'error');
+            }
+        }
+
+        // ======================= TAB MANAGEMENT =======================
+        function switchTab(tabId, updateHash = true) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            $(tabId).classList.add('active');
+            
+            // Activate clicked tab
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            
+            // Update URL hash without reload
+            if (updateHash) {
+                history.pushState(null, null, `#${tabId}`);
+            }
+            
+            // Load data for specific tabs
+            if (tabId === 'photosTab') {
+                loadPhotos();
+            } else if (tabId === 'eventsTab') {
+                loadEvents();
+            } else if (tabId === 'analyticsTab') {
+                loadLeads();
+            } else if (tabId === 'linksTab') {
+                // Ensure events are loaded for link generation
+                if (allEvents.length === 0) {
+                    loadEvents();
+                }
+            }
+        }
+
+        // Handle browser back/forward
+        window.addEventListener('popstate', () => {
+            const hash = window.location.hash.replace('#', '');
+            const validTabs = ['photosTab', 'eventsTab', 'linksTab', 'analyticsTab'];
+            const tabId = validTabs.includes(hash) ? hash : 'photosTab';
+            switchTab(tabId, false);
+        });
+
+        // ======================= EVENT LISTENERS =======================
+        function setupEventListeners() {
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Refresh button
+            $('refreshBtn').addEventListener('click', async () => {
+                $('refreshBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                await init();
+                $('refreshBtn').innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            });
+            
+            // Filters
+            $('filterEvent').addEventListener('change', applyFilters);
+            $('tagSearch').addEventListener('input', applyFilters);
+            $('aiTagSearch').addEventListener('input', (e) => {
+                applyFilters();
+                // Simulate AI suggestions
+                const suggestions = ['Wedding', 'Portrait', 'Group', 'Candid'].filter(s => s.toLowerCase().includes(e.target.value.toLowerCase()));
+                const sugDiv = $('aiTagSuggestions');
+                sugDiv.innerHTML = '';
+                suggestions.forEach(sug => {
+                    const item = document.createElement('div');
+                    item.className = 'ai-suggestion';
+                    item.textContent = sug;
+                    item.onclick = () => {
+                        $('aiTagSearch').value = sug;
+                        sugDiv.style.display = 'none';
+                        applyFilters();
+                    };
+                    sugDiv.appendChild(item);
+                });
+                sugDiv.style.display = suggestions.length > 0 ? 'block' : 'none';
+            });
+            
+            $('clearFiltersBtn').addEventListener('click', clearFilters);
+            
+            // Download ZIP
+            $('downloadZipBtn').addEventListener('click', downloadZip);
+            
+            // Face naming
+            $('saveFaceBtn').addEventListener('click', saveFaceName);
+            $('cancelFaceBtn').addEventListener('click', cancelFaceNaming);
+            $('closeFaceNamingBtn').addEventListener('click', cancelFaceNaming);
+            
+            // Events
+            $('newEvtBtn').addEventListener('click', () => {
+                $('eventForm').style.display = 'block';
+                $('eventName').value = '';
+                $('eventDate').value = new Date().toISOString().split('T')[0];
+                $('saveEventBtn').onclick = createEvent;
+            });
+            
+            $('cancelEventBtn').addEventListener('click', () => {
+                $('eventForm').style.display = 'none';
+            });
+            
+            // Upload
+            setupUpload();
+            $('clearFilesBtn').addEventListener('click', () => {
+                selectedFiles = [];
+                $('fileList').innerHTML = '';
+                $('uploadControls').style.display = 'none';
+                $('fileInput').value = '';
+            });
+            
+            $('startUploadBtn').addEventListener('click', startUpload);
+            
+            // Quality slider
+            $('jpegQuality').addEventListener('input', (e) => {
+                $('jpegQualityVal').textContent = e.target.value;
+            });
+            
+            // Links
+            $('genLinkBtn').addEventListener('click', generateLink);
+            $('copyLinkBtn').addEventListener('click', copyLink);
+            
+            // Analytics filters
+            $('dateFilter').addEventListener('change', loadLeads);
+            $('mobileFilter').addEventListener('input', loadLeads);
+            $('clearLeadsFiltersBtn').addEventListener('click', () => {
+                $('dateFilter').value = '';
+                $('mobileFilter').value = '';
+                loadLeads();
+            });
+            
+            // Viewer
+            $('viewerCloseBtn').addEventListener('click', closeViewer);
+            $('viewer').addEventListener('click', (e) => {
+                if (e.target === $('viewer')) {
+                    closeViewer();
+                }
+            });
+            
+            // Photo details modal
+            $('closePhotoDetailsBtn').addEventListener('click', closePhotoDetails);
+            $('photoDetailsModal').addEventListener('click', (e) => {
+                if (e.target === $('photoDetailsModal')) {
+                    closePhotoDetails();
+                }
+            });
+            
+            // Close AI suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#aiTagSearch') && !e.target.closest('#aiTagSuggestions')) {
+                    $('aiTagSuggestions').style.display = 'none';
+                }
+            });
+        }
+
+        // ======================= VIEW LEAD MATCHES =======================
+        async function viewLeadMatches(linkId) {
+            try {
+                // Assume API to get matches for lead
+                const response = await fetch('/api/get-lead-matches', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ link_id: linkId })
+                });
+                if (!response.ok) throw new Error('Failed to load matches');
+                const data = await response.json();
+                const matches = data.matches || [];
+                // Render matches in a modal or section (add your UI logic here)
+                showToast(`${matches.length} matches found`);
+            } catch (error) {
+                console.error('View matches error:', error);
+                showToast('Failed to load matches', 'error');
+            }
+        }
+
+        // ======================= PHOTO DETAILS =======================
+        function showPhotoDetails(photoId) {
+            const photo = allPhotos.find(p => p.photo_id === photoId);
+            if (!photo) return;
+            const body = $('photoDetailsBody');
+            body.innerHTML = `
+                <div class="detail-item">
+                    <div class="detail-label">ID</div>
+                    <div class="detail-value">${photo.photo_id}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Event</div>
+                    <div class="detail-value">${photo.event_name || 'N/A'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Tags</div>
+                    <div class="detail-value">${(photo.tags || []).join(', ') || 'None'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">AI Tags</div>
+                    <div class="detail-value">${(photo.ai_tags || []).join(', ') || 'None'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Size</div>
+                    <div class="detail-value">${formatBytes(photo.size || 0)}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Upload Date</div>
+                    <div class="detail-value">${new Date(photo.upload_date).toLocaleString()}</div>
+                </div>
+            `;
+            $('photoDetailsModal').style.display = 'flex';
+        }
+
+        function closePhotoDetails() {
+            $('photoDetailsModal').style.display = 'none';
+        }
+
+        // ======================= INITIALIZE APP =======================
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!collectionId) {
+                showToast('Collection ID not found in URL', 'error');
+                return;
+            }
+
+            if (!idToken) {
+                showToast('Please login first', 'error');
+                setTimeout(() => window.location.href = 'login.html', 2000);
+                return;
+            }
+
+            setupEventListeners();
+            init();
+            
+            // Initialize quality slider display
+            $('jpegQualityVal').textContent = $('jpegQuality').value;
+            
+            // Check initial hash
+            const initialHash = window.location.hash.replace('#', '');
+            if (initialHash) {
+                switchTab(initialHash);
+            } else {
+                switchTab('photosTab');
+            }
+        });
+
+        async function init() {
+            try {
+                // Fetch collection data
+                const response = await fetch(GET_EVENTS_API, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${idToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ collection_id: collectionId })
+                });
+
+                if (!response.ok) throw new Error('Failed to load collection');
+
+                const data = await response.json();
+                const summary = data.collection_summary || {};
+
+                // Update UI
+                $('collectionName').textContent = summary.name || collectionNameParam || "Collection";
+                $('totalPhotos').textContent = summary.photo_count || 0;
+                $('totalLeads').textContent = summary.leads_count || 0;
+                $('storageUsed').textContent = formatBytes(summary.storage_bytes || 0);
+
+                // Load initial tab data
+                switchTab(window.location.hash.replace('#', '') || 'photosTab', false);
+
+            } catch (error) {
+                console.error('Init error:', error);
+                showToast('Failed to initialize: ' + error.message, 'error');
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

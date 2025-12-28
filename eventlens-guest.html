@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EventLens Guest Search</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" referrerpolicy="no-referrer">
+  <style>
+    :root{
+      --bg:#050505; --card:#0f0f0f; --border:#222; --text:#fff; --muted:#a3a3a3;
+      --primary:#22c55e; --primary2:#10b981; --danger:#ef4444; --shadow:0 14px 40px rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Plus Jakarta Sans',system-ui,Arial;background:radial-gradient(900px 500px at 20% 0%, rgba(34,197,94,.18), transparent 60%),
+                                           radial-gradient(900px 500px at 80% 20%, rgba(99,102,241,.14), transparent 60%),
+                                           var(--bg);color:var(--text);}
+    .wrap{max-width:980px;margin:0 auto;padding:26px 16px 60px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,rgba(34,197,94,.35),rgba(99,102,241,.25));
+      display:grid;place-items:center;border:1px solid rgba(255,255,255,.08)}
+    .logo i{font-size:18px}
+    .title h1{margin:0;font-size:18px;font-weight:900}
+    .title p{margin:2px 0 0;color:var(--muted);font-size:12px}
+    .pill{padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);color:var(--muted);font-size:12px}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.09);
+      border-radius:18px;box-shadow:var(--shadow);padding:18px}
+    .card h2{margin:0 0 10px;font-size:16px}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:10px;align-items:center}
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    label{font-size:12px;color:var(--muted)}
+    input,button{font-family:inherit}
+    input{width:100%;padding:12px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.35);color:#fff;outline:none}
+    input:focus{border-color:rgba(34,197,94,.55)}
+    .btn{border:none;border-radius:14px;padding:12px 14px;font-weight:900;cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,var(--primary),var(--primary2));color:#03150b}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.12);color:#fff}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .small{font-size:12px}
+    .hr{height:1px;background:rgba(255,255,255,.08);margin:14px 0}
+    .preview{width:100%;aspect-ratio:1.2/1;border-radius:16px;border:1px dashed rgba(255,255,255,.18);
+      background:rgba(255,255,255,.03);display:grid;place-items:center;overflow:hidden}
+    .preview img{width:100%;height:100%;object-fit:cover}
+    .stats{display:flex;gap:10px;flex-wrap:wrap}
+    .stat{padding:8px 10px;border:1px solid rgba(255,255,255,.10);border-radius:999px;font-size:12px;color:var(--muted)}
+    .gallery{margin-top:14px}
+    .photos{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    @media(max-width:900px){.photos{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:520px){.photos{grid-template-columns:repeat(2,1fr)}}
+    .ph{position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03)}
+    .ph img{width:100%;height:100%;display:block;object-fit:cover}
+    .ph .tick{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:9px;background:rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.12);display:grid;place-items:center;font-weight:900}
+    .ph.selected{outline:2px solid rgba(34,197,94,.7)}
+    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,.75);
+      border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:14px;display:none;gap:10px;align-items:center;z-index:50}
+    .toast.show{display:flex}
+    .toast .dot{width:10px;height:10px;border-radius:50%;background:var(--primary)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div class="title">
+          <h1>EventLens Guest Search</h1>
+          <p>Selfie upload करो → अपनी photos तुरंत पाओ</p>
+        </div>
+      </div>
+      <div class="pill" id="linkPill">linkId: —</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1) Link + Selfie</h2>
+        <div class="field">
+          <label>Link ID</label>
+          <input id="linkIdInput" placeholder="Paste linkId here" />
+          <div class="small muted">Example: eventlens-guest.html?linkId=XXXX (या सिर्फ XXXX)</div>
+        </div>
+
+        <div class="field">
+          <label>PIN (अगर photographer ने set किया हो)</label>
+          <input id="pinInput" placeholder="Optional PIN" />
+        </div>
+
+        <div class="field">
+          <label>Upload Selfie</label>
+          <input id="selfieFile" type="file" accept="image/*" />
+          <div class="preview" id="previewBox"><div class="muted small">Preview</div></div>
+        </div>
+
+        <div class="row" style="margin-top:12px;justify-content:space-between;flex-wrap:wrap">
+          <button class="btn primary" id="findBtn"><i class="fa-solid fa-magnifying-glass"></i> Find my photos</button>
+          <button class="btn ghost" id="resetBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <h2>2) Save Details (Optional)</h2>
+        <div class="row" style="gap:10px">
+          <div class="field" style="flex:1;margin-top:0">
+            <label>Name</label>
+            <input id="guestName" placeholder="Your name" />
+          </div>
+          <div class="field" style="flex:1;margin-top:0">
+            <label>Mobile</label>
+            <input id="guestMobile" placeholder="10 digit" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;justify-content:space-between;flex-wrap:wrap">
+          <button class="btn ghost" id="saveBtn"><i class="fa-brands fa-whatsapp"></i> Save & Share</button>
+          <div class="small muted" id="saveNote">Save करने से photographer को lead दिखेगी</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Results</h2>
+        <div class="stats">
+          <div class="stat" id="matchStat">Matches: 0</div>
+          <div class="stat" id="selStat">Selected: 0</div>
+        </div>
+        <div class="row" style="margin-top:10px;gap:10px;flex-wrap:wrap">
+          <button class="btn ghost" id="selectAllBtn"><i class="fa-solid fa-check-double"></i> Select All</button>
+          <button class="btn ghost" id="downloadBtn"><i class="fa-solid fa-download"></i> Download Selected</button>
+          <button class="btn ghost" id="copyLinkBtn"><i class="fa-regular fa-copy"></i> Copy Link</button>
+        </div>
+
+        <div class="gallery">
+          <div class="photos" id="photosGrid"></div>
+          <div class="muted small" id="emptyMsg" style="margin-top:12px">Upload selfie करके “Find my photos” दबाओ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><div class="dot"></div><div id="toastText"></div></div>
+
+<script>
+  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+  const FIND_MATCHES_API = `${API_BASE}/search`;
+  const SAVE_DETAILS_API = `${API_BASE}/save-details`;
+
+  const $ = (id)=>document.getElementById(id);
+
+  let selfieBase64 = "";
+  let matches = [];
+  const selected = new Set();
+
+  function toast(msg){
+    $('toastText').textContent = msg;
+    $('toast').classList.add('show');
+    setTimeout(()=> $('toast').classList.remove('show'), 1800);
+  }
+
+  function getLinkId(){
+    const u = new URL(location.href);
+    const q = u.searchParams.get('linkId') || u.searchParams.get('link_id');
+    const h = (u.hash||"").replace(/^#\/?/,'');
+    const hp = new URLSearchParams(h);
+    const fromHash = hp.get('linkId') || hp.get('link_id');
+    const v = ($('linkIdInput').value || '').trim();
+    const raw = v || q || fromHash || '';
+    if(raw.includes('http')){
+      try{
+        const uu = new URL(raw);
+        return uu.searchParams.get('linkId') || uu.searchParams.get('link_id') || '';
+      }catch(_){
+        return raw;
+      }
+    }
+    return raw;
+  }
+
+  function render(){
+    $('matchStat').textContent = `Matches: ${matches.length}`;
+    $('selStat').textContent = `Selected: ${selected.size}`;
+
+    const grid = $('photosGrid');
+    grid.innerHTML = "";
+    $('emptyMsg').style.display = matches.length ? "none" : "block";
+
+    matches.forEach((p)=>{
+      const url = p.url || p.thumbnail_url || p.thumbnailUrl;
+      if(!url) return;
+      const d = document.createElement('div');
+      d.className = 'ph' + (selected.has(url) ? ' selected' : '');
+      d.innerHTML = `<img src="${url}" loading="lazy" alt="photo"/>
+                     <div class="tick">${selected.has(url) ? '✓' : ''}</div>`;
+      d.onclick = ()=>{
+        if(selected.has(url)) selected.delete(url);
+        else selected.add(url);
+        render();
+      };
+      grid.appendChild(d);
+    });
+  }
+
+  function fileToBase64(file){
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = ()=> resolve(String(r.result||""));
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function postTextPlain(url, obj){
+    const res = await fetch(url, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain" },
+      body: JSON.stringify(obj)
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+    return data;
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const id = getLinkId();
+    if(id) {
+      $('linkIdInput').value = id;
+      $('linkPill').textContent = 'linkId: ' + id;
+    }
+  });
+
+  $('selfieFile').addEventListener('change', async (e)=>{
+    const f = e.target.files?.[0];
+    if(!f) return;
+    selfieBase64 = await fileToBase64(f);
+    $('previewBox').innerHTML = `<img src="${selfieBase64}" alt="selfie"/>`;
+  });
+
+  $('findBtn').addEventListener('click', async ()=>{
+    const linkId = getLinkId();
+    $('linkPill').textContent = 'linkId: ' + (linkId||'—');
+
+    if(!linkId) return toast("linkId missing");
+    if(!selfieBase64) return toast("Selfie upload करो");
+
+    $('findBtn').disabled = true;
+    selected.clear();
+    try{
+      const pin = ($('pinInput').value||'').trim();
+      const data = await postTextPlain(FIND_MATCHES_API, {
+        linkId,
+        selfie_image: selfieBase64,
+        pin
+      });
+      matches = data.matches || [];
+      matches.forEach(p=>{ if(p.url) selected.add(p.url); });
+      render();
+      toast(`Found ${matches.length} photos`);
+    }catch(e){
+      console.error(e);
+      matches = [];
+      render();
+      toast(e.message || "Search failed");
+    }finally{
+      $('findBtn').disabled = false;
+    }
+  });
+
+  $('saveBtn').addEventListener('click', async ()=>{
+    const linkId = getLinkId();
+    const name = ($('guestName').value||'').trim();
+    const mobile = ($('guestMobile').value||'').trim();
+
+    if(!linkId) return toast("linkId missing");
+    if(!name) return toast("Name डालो");
+    if(mobile.length < 10) return toast("Valid mobile डालो");
+
+    try{
+      await postTextPlain(SAVE_DETAILS_API, {
+        name, mobile,
+        linkId,
+        selfie_image: selfieBase64 || "",
+        photo_count: matches.length
+      });
+      toast("Saved ✅");
+      const share = `🎉 मेरी ${matches.length} photos मिली!\nTry here: ${location.href}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(share)}`, "_blank");
+    }catch(e){
+      console.error(e);
+      toast(e.message || "Save failed");
+    }
+  });
+
+  $('selectAllBtn').addEventListener('click', ()=>{
+    if(!matches.length) return;
+    const allCount = matches.filter(p=>p.url).length;
+    const allSelected = selected.size === allCount;
+    selected.clear();
+    if(!allSelected) matches.forEach(p=>{ if(p.url) selected.add(p.url); });
+    render();
+  });
+
+  $('downloadBtn').addEventListener('click', ()=>{
+    if(!selected.size) return toast("Select photos first");
+    let opened = 0;
+    for(const url of selected){
+      if(opened >= 8) break;
+      window.open(url, "_blank");
+      opened++;
+    }
+    toast(opened < selected.size ? "Opened first 8 downloads" : "Opened downloads");
+  });
+
+  $('copyLinkBtn').addEventListener('click', ()=>{
+    navigator.clipboard?.writeText(location.href).then(()=>toast("Copied")).catch(()=>toast("Copy failed"));
+  });
+
+  $('resetBtn').addEventListener('click', ()=>{
+    matches=[]; selected.clear(); selfieBase64="";
+    $('selfieFile').value="";
+    $('previewBox').innerHTML = '<div class="muted small">Preview</div>';
+    render();
+  });
+</script>
+</body>
+</html>

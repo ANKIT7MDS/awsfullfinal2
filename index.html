@@ -1,327 +1,1659 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EventLens Guest Search</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" referrerpolicy="no-referrer">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>EventLens Pro – Modern Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    :root{
-      --bg:#050505; --card:#0f0f0f; --border:#222; --text:#fff; --muted:#a3a3a3;
-      --primary:#22c55e; --primary2:#10b981; --danger:#ef4444; --shadow:0 14px 40px rgba(0,0,0,.55);
+    :root {
+      /* Core Palette */
+      --bg-dark: #030305;
+      --bg-panel: #0f0f12;
+      --primary: #00e676;
+      --primary-dim: rgba(0, 230, 118, 0.1);
+      --accent: #6366f1;
+      --danger: #ff4757;
+      
+      /* Text */
+      --text-main: #ffffff;
+      --text-muted: #94949e;
+      --text-dark: #000000;
+
+      /* Borders & Glass */
+      --border-color: rgba(255, 255, 255, 0.08);
+      --glass-bg: rgba(20, 20, 23, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-blur: blur(16px);
+      
+      /* Spacing & Radius */
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      
+      /* Transitions */
+      --ease: cubic-bezier(0.23, 1, 0.32, 1);
     }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:'Plus Jakarta Sans',system-ui,Arial;background:radial-gradient(900px 500px at 20% 0%, rgba(34,197,94,.18), transparent 60%),
-                                           radial-gradient(900px 500px at 80% 20%, rgba(99,102,241,.14), transparent 60%),
-                                           var(--bg);color:var(--text);}
-    .wrap{max-width:980px;margin:0 auto;padding:26px 16px 60px}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,rgba(34,197,94,.35),rgba(99,102,241,.25));
-      display:grid;place-items:center;border:1px solid rgba(255,255,255,.08)}
-    .logo i{font-size:18px}
-    .title h1{margin:0;font-size:18px;font-weight:900}
-    .title p{margin:2px 0 0;color:var(--muted);font-size:12px}
-    .pill{padding:8px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);color:var(--muted);font-size:12px}
-    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
-    @media(max-width:900px){.grid{grid-template-columns:1fr}}
-    .card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.09);
-      border-radius:18px;box-shadow:var(--shadow);padding:18px}
-    .card h2{margin:0 0 10px;font-size:16px}
-    .muted{color:var(--muted)}
-    .row{display:flex;gap:10px;align-items:center}
-    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-    label{font-size:12px;color:var(--muted)}
-    input,button{font-family:inherit}
-    input{width:100%;padding:12px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.35);color:#fff;outline:none}
-    input:focus{border-color:rgba(34,197,94,.55)}
-    .btn{border:none;border-radius:14px;padding:12px 14px;font-weight:900;cursor:pointer}
-    .btn.primary{background:linear-gradient(90deg,var(--primary),var(--primary2));color:#03150b}
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.12);color:#fff}
-    .btn:disabled{opacity:.55;cursor:not-allowed}
-    .small{font-size:12px}
-    .hr{height:1px;background:rgba(255,255,255,.08);margin:14px 0}
-    .preview{width:100%;aspect-ratio:1.2/1;border-radius:16px;border:1px dashed rgba(255,255,255,.18);
-      background:rgba(255,255,255,.03);display:grid;place-items:center;overflow:hidden}
-    .preview img{width:100%;height:100%;object-fit:cover}
-    .stats{display:flex;gap:10px;flex-wrap:wrap}
-    .stat{padding:8px 10px;border:1px solid rgba(255,255,255,.10);border-radius:999px;font-size:12px;color:var(--muted)}
-    .gallery{margin-top:14px}
-    .photos{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    @media(max-width:900px){.photos{grid-template-columns:repeat(3,1fr)}}
-    @media(max-width:520px){.photos{grid-template-columns:repeat(2,1fr)}}
-    .ph{position:relative;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.03)}
-    .ph img{width:100%;height:100%;display:block;object-fit:cover}
-    .ph .tick{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:9px;background:rgba(0,0,0,.55);
-      border:1px solid rgba(255,255,255,.12);display:grid;place-items:center;font-weight:900}
-    .ph.selected{outline:2px solid rgba(34,197,94,.7)}
-    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:rgba(0,0,0,.75);
-      border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:14px;display:none;gap:10px;align-items:center;z-index:50}
-    .toast.show{display:flex}
-    .toast .dot{width:10px;height:10px;border-radius:50%;background:var(--primary)}
+
+    /* Reset & Base */
+    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      margin: 0;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(0, 230, 118, 0.05) 0%, transparent 50%);
+      color: var(--text-main);
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    a { text-decoration: none; color: inherit; transition: 0.2s; }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+    /* Layout Wrapper */
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px 24px;
+      padding-bottom: 80px;
+    }
+
+    /* Top Navigation Bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 16px;
+      margin-bottom: 32px;
+      
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 4px 24px -1px rgba(0,0,0,0.2);
+      
+      position: sticky;
+      top: 16px;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo span { color: var(--primary); }
+
+    /* Nav Buttons & Pills */
+    .nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: var(--radius-full);
+      padding: 10px 18px;
+      font-weight: 700;
+      font-size: 13px;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.3px;
+    }
+    
+    .btn i { font-size: 14px; }
+    .btn:active { transform: scale(0.96); }
+
+    .btn.primary {
+      background: var(--primary);
+      color: var(--text-dark);
+      box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3);
+    }
+    .btn.primary:hover {
+      background: #00ff84;
+      box-shadow: 0 6px 16px rgba(0, 230, 118, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+    .btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn.danger {
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid rgba(255, 71, 87, 0.3);
+      color: var(--danger);
+    }
+    .btn.danger:hover {
+      background: var(--danger);
+      color: white;
+      box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+    }
+
+    /* Grid Layouts */
+    .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-top: 24px; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    
+    @media(max-width: 980px) {
+      .grid, .split { grid-template-columns: 1fr; }
+      .topbar { flex-direction: column; align-items: stretch; }
+      .nav { justify-content: center; }
+      .logo { justify-content: center; }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content:''; position: absolute; top:0; left:0; right:0; height:1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    }
+
+    .card h2, .card h3 {
+      margin: 0 0 16px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .card h2 { font-size: 24px; letter-spacing: -0.5px; }
+    .card h3 { font-size: 18px; margin-top: 4px; }
+
+    .muted { color: var(--text-muted); font-size: 0.95em; }
+    .hint { font-size: 12px; color: var(--text-muted); line-height: 1.6; background: rgba(255,255,255,0.03); padding: 10px; border-radius: var(--radius-sm); border: 1px dashed var(--border-color); }
+    .hr { height: 1px; background: var(--border-color); margin: 20px 0; }
+
+    /* Form Elements */
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background: rgba(0,0,0,0.3);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: var(--primary);
+      background: rgba(0,0,0,0.5);
+      box-shadow: 0 0 0 3px var(--primary-dim);
+    }
+
+    /* KPI Cards */
+    .kpi { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .k {
+      background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      text-align: center;
+    }
+    .k .v {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-top: 8px;
+      font-family: 'Outfit', sans-serif;
+      text-shadow: 0 4px 12px rgba(0,230,118,0.2);
+    }
+
+    /* Tables */
+    .tableWrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: rgba(0,0,0,0.2);
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; text-align: left; }
+    th {
+      background: rgba(255,255,255,0.03);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 14px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Tags & Chips */
+    .tag { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.1); font-size: 11px; margin-right: 6px; }
+
+    /* Photo Gallery */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 16px;
+    }
+    .ph {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      position: relative;
+      transition: 0.3s var(--ease);
+      aspect-ratio: 1; /* Square by default */
+    }
+    .ph:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.5); border-color: var(--primary); }
+    .ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: 0.5s; }
+    .ph:hover img { transform: scale(1.05); opacity: 0.7; }
+    
+    .ph .m {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 12px;
+      background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+      transform: translateY(100%);
+      transition: 0.3s;
+    }
+    .ph:hover .m { transform: translateY(0); }
+    
+    .ph .t { font-weight: 600; font-size: 13px; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ph .s { font-size: 11px; color: var(--primary); margin-top: 2px; }
+
+    /* Modals & Drawers */
+    .drawer {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .drawer.open { display: flex; opacity: 1; }
+    
+    .drawer .box {
+      max-width: 900px; width: 100%;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+      transform: scale(0.95);
+      transition: transform 0.3s var(--ease);
+    }
+    .drawer.open .box { transform: scale(1); }
+    
+    .drawer img {
+      width: 100%; max-height: 70vh;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      background: #000;
+    }
+
+    /* Upload List Styling */
+    .upload-row {
+      display: flex; gap: 12px; align-items: center;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-top: 8px;
+      background: rgba(255,255,255,0.02);
+      font-size: 13px;
+    }
+    .up-status.success { color: var(--primary); }
+    .up-status.danger { color: var(--danger); }
+    
+    /* Toast & Loaders */
+    .toast {
+      position: fixed; top: 24px; right: 24px;
+      background: var(--text-main); color: var(--text-dark);
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 300;
+      transform: translateX(120%);
+      transition: transform 0.4s var(--ease);
+    }
+    .toast.show { transform: translateX(0); }
+    .toast.error { background: var(--danger); color: white; }
+
+    .loader {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+      z-index: 250;
+      display: none; align-items: center; justify-content: center;
+    }
+    .loader.on { display: flex; }
+    
+    .spin {
+      width: 48px; height: 48px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Utilities */
+    .view { display: none; animation: fadeIn 0.4s ease-out; }
+    .view.on { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .dangerBox {
+      background: rgba(255, 71, 87, 0.05);
+      border: 1px solid rgba(255, 71, 87, 0.2);
+      padding: 16px; border-radius: var(--radius-md);
+      color: #ff8a93;
+    }
+
   </style>
 </head>
 <body>
+
+  <!-- LOADER -->
+  <div class="loader" id="loader">
+    <div style="text-align:center">
+      <div class="spin"></div>
+      <div class="muted" style="margin-top:16px; font-weight:500;">Processing...</div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">Action Successful</div>
+
   <div class="wrap">
+    
+    <!-- HEADER -->
     <div class="topbar">
-      <div class="brand">
-        <div class="logo"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-        <div class="title">
-          <h1>EventLens Guest Search</h1>
-          <p>Selfie upload करो → अपनी photos तुरंत पाओ</p>
-        </div>
+      <div class="logo">
+        <i class="fa-brands fa-camera-retro" style="color:var(--primary)"></i>
+        EventLens <span>Pro</span>
       </div>
-      <div class="pill" id="linkPill">linkId: —</div>
+      
+      <div class="nav">
+        <!-- Auth Info Pill -->
+        <span class="pill" id="whoPill"><i class="fa-regular fa-user" style="margin-right:6px"></i> Guest</span>
+        
+        <!-- Nav Actions -->
+        <a class="btn secondary" href="#/login">Login</a>
+        <a class="btn secondary" href="#/dashboard">Dash</a>
+        <a class="btn secondary" href="#/guest">Guest</a>
+        <button class="btn danger" id="logoutBtn" style="padding: 8px 12px;"><i class="fa-solid fa-power-off"></i></button>
+      </div>
     </div>
 
-    <div class="grid">
-      <div class="card">
-        <h2>1) Link + Selfie</h2>
-        <div class="field">
-          <label>Link ID</label>
-          <input id="linkIdInput" placeholder="Paste linkId here" />
-          <div class="small muted">Example: eventlens-guest.html?linkId=XXXX (या सिर्फ XXXX)</div>
-        </div>
-
-        <div class="field">
-          <label>PIN (अगर photographer ने set किया हो)</label>
-          <input id="pinInput" placeholder="Optional PIN" />
-        </div>
-
-        <div class="field">
-          <label>Upload Selfie</label>
-          <input id="selfieFile" type="file" accept="image/*" />
-          <div class="preview" id="previewBox"><div class="muted small">Preview</div></div>
-        </div>
-
-        <div class="row" style="margin-top:12px;justify-content:space-between;flex-wrap:wrap">
-          <button class="btn primary" id="findBtn"><i class="fa-solid fa-magnifying-glass"></i> Find my photos</button>
-          <button class="btn ghost" id="resetBtn"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-        </div>
-
-        <div class="hr"></div>
-
-        <h2>2) Save Details (Optional)</h2>
-        <div class="row" style="gap:10px">
-          <div class="field" style="flex:1;margin-top:0">
-            <label>Name</label>
-            <input id="guestName" placeholder="Your name" />
+    <!-- VIEW: LOGIN -->
+    <div class="view" id="viewLogin">
+      <div class="grid" style="max-width:900px; margin:0 auto; grid-template-columns:1fr;">
+        <div class="card" style="text-align:center; padding:40px;">
+          <div style="margin-bottom:24px; display:inline-flex; padding:20px; background:rgba(0,230,118,0.1); border-radius:50%;">
+            <i class="fa-brands fa-aws" style="font-size:40px; color:var(--primary)"></i>
           </div>
-          <div class="field" style="flex:1;margin-top:0">
-            <label>Mobile</label>
-            <input id="guestMobile" placeholder="10 digit" />
+          <h2>Admin Login</h2>
+          <p class="muted" style="max-width:400px; margin:0 auto 30px;">
+            Securely login with your AWS Cognito credentials to access the photographer dashboard.
+          </p>
+          
+          <button class="btn primary" id="btnLogin" style="padding:14px 32px; font-size:16px;">
+            <i class="fa-solid fa-right-to-bracket"></i> Login with Cognito
+          </button>
+          
+          <div class="hr"></div>
+          
+          <div class="hint" style="text-align:left; max-width:500px; margin:0 auto;">
+            <i class="fa-solid fa-circle-info" style="margin-right:6px; color:var(--accent)"></i>
+            Important: Ensure this file's URL is added to the Cognito Callback URLs.
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="row" style="margin-top:10px;justify-content:space-between;flex-wrap:wrap">
-          <button class="btn ghost" id="saveBtn"><i class="fa-brands fa-whatsapp"></i> Save & Share</button>
-          <div class="small muted" id="saveNote">Save करने से photographer को lead दिखेगी</div>
+    <!-- VIEW: DASHBOARD -->
+    <div class="view" id="viewDashboard">
+      <div class="grid">
+        <!-- Left Panel -->
+        <div class="card">
+          <div class="row" style="justify-content:space-between; margin-bottom:20px;">
+            <h2>Collections</h2>
+            <div class="kpi" style="gap:10px; grid-template-columns:auto auto;">
+              <div class="pill" style="border-color:var(--primary-dim); color:var(--primary)">
+                <i class="fa-solid fa-database" style="margin-right:6px"></i> <span id="kData">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-bottom:24px;">
+            <div style="position:relative; flex:1;">
+               <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:14px; top:14px; color:var(--text-muted)"></i>
+               <input id="colSearch" placeholder="Search collections..." style="padding-left:40px;" />
+            </div>
+          </div>
+
+          <div class="tableWrap">
+            <table>
+              <thead><tr><th>Collection Name</th><th>Created</th><th>Counts</th><th>Size</th><th>Manage</th></tr></thead>
+              <tbody id="colRows"><tr><td colspan="5" class="muted" style="text-align:center; padding:30px;">Loading data...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Panel: Create -->
+        <div class="card" style="height:fit-content">
+          <h3><i class="fa-solid fa-plus-circle" style="color:var(--primary); margin-right:8px;"></i>New Collection</h3>
+          <p class="muted" style="margin-bottom:20px; font-size:13px;">Create a new photo bucket for a wedding or event.</p>
+          
+          <label class="muted" style="font-size:12px; font-weight:600; margin-bottom:6px; display:block;">NAME</label>
+          <input id="colName" placeholder="e.g. Rahul & Priya Wedding" style="margin-bottom:12px;" />
+          <input id="colIdEdit" type="hidden" />
+
+          <div class="row" style="margin-top:10px;">
+            <button class="btn primary" id="colSave" style="width:100%; justify-content:center;">
+              <i class="fa-solid fa-rocket"></i> <span id="colSaveTxt">Create Collection</span>
+            </button>
+            <button class="btn secondary" id="colCancel" style="display:none; width:100%; justify-content:center;">Cancel</button>
+          </div>
+          
+          <div class="hr"></div>
+          <div class="dangerBox" style="font-size:12px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Expiry: <span id="kExp" style="color:#fff; font-weight:700">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: COLLECTION DETAILS -->
+    <div class="view" id="viewCollection">
+      
+      <!-- Collection Header -->
+      <div class="card" style="margin-bottom:24px; background: linear-gradient(135deg, var(--bg-panel) 0%, #151518 100%);">
+        <div class="row" style="justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div class="tag" style="margin-bottom:8px; border-color:var(--accent); color:var(--accent);">COLLECTION</div>
+            <h2 id="cdName" style="font-size:32px; color:white; margin-bottom:4px;">Loading...</h2>
+            <div class="muted" style="font-family:monospace; opacity:0.6;">ID: <span id="cdId">...</span></div>
+          </div>
+          <div class="row">
+            <button class="btn secondary" id="backDash"><i class="fa-solid fa-arrow-left"></i> Back</button>
+            <button class="btn primary" id="genLinkBtn"><i class="fa-solid fa-share-nodes"></i> Share Link</button>
+          </div>
+        </div>
+
+        <!-- Link Generation Drawer (Inline) -->
+        <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-color);">
+           <div class="row" style="align-items: flex-start;">
+             <div style="flex:1">
+               <div class="muted" style="margin-bottom:8px; font-size:12px; font-weight:700; text-transform:uppercase;">Select Events to Share</div>
+               <div id="linkEventList" style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:var(--radius-sm); padding:10px; border:1px solid var(--border-color);"></div>
+             </div>
+             <div style="flex:1; max-width:300px;">
+                <div class="muted" style="margin-bottom:8px; font-size:12px; font-weight:700;">SETTINGS</div>
+                <div class="row">
+                  <input id="expiryHours" type="number" min="1" value="24" placeholder="Hrs" style="width:80px" />
+                  <input id="linkPassword" placeholder="Optional PIN" />
+                </div>
+                <div id="linkResult" style="display:none; margin-top:12px;">
+                  <div class="row" style="background:var(--primary-dim); padding:8px; border-radius:var(--radius-sm);">
+                    <a id="generatedLink" href="#" target="_blank" style="font-size:12px; color:var(--primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; display:block;"></a>
+                    <button class="btn" id="copyLinkBtn" style="padding:4px 8px; font-size:10px; height:auto;">Copy</button>
+                  </div>
+                </div>
+             </div>
+           </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Results</h2>
-        <div class="stats">
-          <div class="stat" id="matchStat">Matches: 0</div>
-          <div class="stat" id="selStat">Selected: 0</div>
-        </div>
-        <div class="row" style="margin-top:10px;gap:10px;flex-wrap:wrap">
-          <button class="btn ghost" id="selectAllBtn"><i class="fa-solid fa-check-double"></i> Select All</button>
-          <button class="btn ghost" id="downloadBtn"><i class="fa-solid fa-download"></i> Download Selected</button>
-          <button class="btn ghost" id="copyLinkBtn"><i class="fa-regular fa-copy"></i> Copy Link</button>
+      <div class="split">
+        
+        <!-- Events Manager -->
+        <div class="card">
+          <div class="row" style="justify-content:space-between;">
+            <h3>Sub-Events</h3>
+          </div>
+          <div class="row" style="background:rgba(255,255,255,0.02); padding:12px; border-radius:var(--radius-md); margin-bottom:16px;">
+            <input id="evName" placeholder="Event Name (e.g. Haldi)" style="flex:2" />
+            <input id="evDate" type="date" style="flex:1" />
+            <button class="btn primary" id="evSave" style="padding:12px;"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <div class="tableWrap">
+            <table>
+              <thead><tr><th>Event</th><th>Count</th><th>Action</th></tr></thead>
+              <tbody id="evRows"></tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="gallery">
-          <div class="photos" id="photosGrid"></div>
-          <div class="muted small" id="emptyMsg" style="margin-top:12px">Upload selfie करके “Find my photos” दबाओ</div>
+        <!-- Uploader -->
+        <div class="card">
+          <h3>Upload Photos</h3>
+          <div class="hint" style="margin-bottom:16px;">Photos are uploaded directly to S3 securely.</div>
+          
+          <select id="uploadEvent" style="margin-bottom:12px;"></select>
+          
+          <div style="position:relative; height:120px; border:2px dashed var(--border-color); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; flex-direction:column; background:rgba(255,255,255,0.01); transition:0.2s;" ondragover="this.style.borderColor=var(--primary)" ondragleave="this.style.borderColor='var(--border-color)'">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px; color:var(--text-muted); margin-bottom:8px;"></i>
+            <div class="muted">Click to select files</div>
+            <input id="filePick" type="file" multiple accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;" />
+          </div>
+
+          <div class="row" style="margin-top:16px; justify-content:space-between;">
+            <button class="btn primary" id="uploadBtn" style="width:100%"><i class="fa-solid fa-upload"></i> Start Upload</button>
+          </div>
+          
+          <!-- Upload Progress -->
+          <div id="uploadProgressWrap" style="margin-top:16px; display:none;">
+             <div class="row" style="justify-content:space-between; margin-bottom:4px;">
+               <span class="muted" style="font-size:11px;">Overall Progress</span>
+               <span id="uploadProgressText" class="muted" style="font-size:11px;">0%</span>
+             </div>
+             <div id="uploadProgressOuter" style="height:6px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+               <div id="uploadProgressBar" style="height:100%; background:var(--primary); width:0%; transition: width 0.3s;"></div>
+             </div>
+          </div>
+          <div id="uploadStat" style="max-height:150px; overflow-y:auto; margin-top:10px;"></div>
         </div>
+      </div>
+
+      <!-- Gallery & Leads -->
+      <div class="card" style="margin-top:24px;">
+         <div class="row" style="justify-content:space-between; margin-bottom:20px;">
+           <div class="row">
+             <h3>Gallery</h3>
+             <select id="photoEventFilter" style="width:auto; padding:6px 12px; font-size:12px;"><option>All Events</option></select>
+           </div>
+           <div class="row">
+             <input id="photoSearch" placeholder="Filter by filename..." style="padding:8px 12px; font-size:13px; width:180px;" />
+           </div>
+         </div>
+         
+         <div class="gallery" id="photoGrid"></div>
+         
+         <div style="text-align:center; margin-top:24px;">
+           <button class="btn secondary" id="loadMoreBtn" style="display:none;">Load More Photos <i class="fa-solid fa-chevron-down"></i></button>
+         </div>
+      </div>
+
+      <div class="card" style="margin-top:24px;">
+        <div class="row" style="justify-content:space-between; margin-bottom:16px;">
+          <h3>Leads / Matches</h3>
+          <button class="btn secondary" id="refreshLeads"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>Guest Info</th><th>Selfie</th><th>Found Photos</th><th>Action</th></tr></thead>
+            <tbody id="leadRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- VIEW: SUPERADMIN -->
+    <div class="view" id="viewSuper">
+      <div class="card">
+        <div class="row" style="justify-content:space-between; margin-bottom:20px;">
+           <h2>Super Admin Console</h2>
+           <button class="btn primary" id="newPhotog"><i class="fa-solid fa-user-plus"></i> Add Photographer</button>
+        </div>
+        <div class="tableWrap">
+          <table>
+            <thead><tr><th>User Email</th><th>Limit</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="saRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: GUEST SEARCH -->
+    <div class="view" id="viewGuest">
+      <div class="grid" style="grid-template-columns: 1fr; max-width:600px; margin:0 auto;">
+        
+        <div class="card" style="text-align:center;">
+          <h2 style="margin-bottom:8px;">Find Your Photos</h2>
+          <p class="muted">Upload a selfie to find all your photos from the event.</p>
+          
+          <div style="margin: 24px auto; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.05); border:2px dashed var(--border-color); display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative;">
+            <i class="fa-solid fa-camera" style="font-size:32px; color:var(--text-muted)"></i>
+            <img id="gPreview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none;" />
+            <input id="gSelfie" type="file" accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;" onchange="const f=this.files[0]; if(f){ const u=URL.createObjectURL(f); document.getElementById('gPreview').src=u; document.getElementById('gPreview').style.display='block'; }"/>
+          </div>
+          
+          <input id="gLinkId" placeholder="Paste Event Link ID here" style="text-align:center; margin-bottom:16px;" />
+
+          <button class="btn primary" id="gSearchBtn" style="width:100%; justify-content:center; padding:16px; font-size:16px;">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Find My Photos
+          </button>
+          
+          <div id="gStat" style="margin-top:16px; font-weight:600; color:var(--primary)"></div>
+        </div>
+
+        <div class="card">
+          <h3>Results</h3>
+          <div class="gallery" id="gResults">
+            <div class="muted" style="grid-column:1/-1; text-align:center; padding:20px;">Results will appear here</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div> <!-- End Wrap -->
+
+  <!-- MODAL: PHOTO VIEWER -->
+  <div class="drawer" id="photoModal">
+    <div class="box" style="text-align:center; position:relative;">
+      
+      <div class="row" style="justify-content:space-between; margin-bottom:16px;">
+        <div id="pmTitle" style="font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%;">Photo</div>
+        <div class="row">
+           <a class="btn primary" id="pmDownload" download><i class="fa-solid fa-download"></i></a>
+           <button class="btn danger" id="pmClose"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      
+      <div style="background:#000; border-radius:var(--radius-sm); overflow:hidden; display:flex; align-items:center; justify-content:center; min-height:300px;">
+        <img id="pmImg" src="" alt="View" />
+      </div>
+      
+      <div class="row" style="margin-top:16px; justify-content:center;">
+        <span class="pill" id="pmMeta" style="background:var(--bg-panel)">Details</span>
       </div>
     </div>
   </div>
 
-  <div class="toast" id="toast"><div class="dot"></div><div id="toastText"></div></div>
-
+<!-- JAVASCRIPT Logic -->
 <script>
-  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-  const FIND_MATCHES_API = `${API_BASE}/search`;
-  const SAVE_DETAILS_API = `${API_BASE}/save-details`;
+/** ===================== CONFIG (from your existing pages) ===================== **/
+const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
+const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
 
-  const $ = (id)=>document.getElementById(id);
+// Dashboard endpoints
+const GET_COLLECTIONS_API = `${API_BASE}/get-collections`;
+const UPSERT_COLLECTION_API = `${API_BASE}/upsert-collection`;
+const DELETE_COLLECTION_API = `${API_BASE}/delete-collection`;
+const GET_ACCOUNT_STATUS_API = `${API_BASE}/account-status`;
 
-  let selfieBase64 = "";
-  let matches = [];
-  const selected = new Set();
+// Collection endpoints
+const GET_EVENTS_API      = `${API_BASE}/get-events`;
+const GET_PHOTOS_API      = `${API_BASE}/get-photos`;
+const UPSERT_EVENT_API    = `${API_BASE}/upsert-event`;
+const DELETE_EVENT_API    = `${API_BASE}/delete-event`;
+const UPLOAD_URLS_API     = `${API_BASE}/generate-upload-urls`;
+const REGISTER_PHOTO_API  = `${API_BASE}/register-photo`;
+const GENERATE_LINK_API   = `${API_BASE}/generate-search-link`;
+const SAVE_DETAILS_API    = `${API_BASE}/save-details`;
+const SEARCH_API          = `${API_BASE}/search`;
 
-  function toast(msg){
-    $('toastText').textContent = msg;
-    $('toast').classList.add('show');
-    setTimeout(()=> $('toast').classList.remove('show'), 1800);
+/** ===================== STATE ===================== **/
+let idToken = localStorage.getItem('idToken') || null;
+let me = null;
+
+let dashCollections = [];
+let cd = { id:null, name:null, events:[], photos:[], next:null, leads:[], editingEventId:null };
+let guest = { linkId:null, results:[] };
+
+/** ===================== UI helpers ===================== **/
+const $ = (id)=>document.getElementById(id);
+const toast = $('toast');
+const loader = $('loader');
+const whoPill = $('whoPill');
+
+function showLoader(on=true){ loader.classList.toggle('on', !!on); }
+function showToast(msg, type='success'){
+  toast.textContent = msg;
+  toast.className = `toast ${type==='error'?'error':''}`.trim();
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 3000);
+}
+function escapeHtml(text) {
+  if (!text) return text;
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+function fmtDate(d){
+  try{ if(!d) return '-'; return new Date(d).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}); }catch{return d||'-'}
+}
+function formatBytes(bytes=0, decimals=2){
+  if(!+bytes) return '0 B';
+  const k=1024, dm=decimals<0?0:decimals, sizes=['Bytes','KB','MB','GB','TB'];
+  const i=Math.floor(Math.log(bytes)/Math.log(k));
+  return `${parseFloat((bytes/Math.pow(k,i)).toFixed(dm))} ${sizes[i]}`;
+}
+function parseJwt(token){
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) { return {}; }
+}
+function authHeader(){
+  if(!idToken) return {};
+  return { 'Authorization': `Bearer ${idToken}` };
+}
+async function apiFetch(url, opts={}){
+  const o = Object.assign({headers:{}}, opts);
+  o.headers = Object.assign({}, o.headers, authHeader());
+  return fetch(url, o);
+}
+async function apiPostJson(url, data){
+  const res = await apiFetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  if(!res.ok) {
+     const err = await res.json().catch(()=>({}));
+     throw new Error(err.message || err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/** ===================== ROUTER ===================== **/
+const views = {
+  login: $('viewLogin'),
+  dashboard: $('viewDashboard'),
+  collection: $('viewCollection'),
+  superadmin: $('viewSuper'),
+  guest: $('viewGuest'),
+};
+
+function setView(name){
+  Object.values(views).forEach(v=>v.classList.remove('on'));
+  (views[name]||views.login).classList.add('on');
+  window.scrollTo(0,0);
+}
+
+function getHashRoute(){
+  const h = location.hash || '#/login';
+  const [path, q] = h.replace(/^#\/?/, '').split('?');
+  const params = new URLSearchParams(q||'');
+  return { path: (path||'login').toLowerCase(), params };
+}
+
+window.addEventListener('hashchange', ()=>route());
+document.addEventListener('DOMContentLoaded', ()=>route());
+
+/** ===================== AUTH FLOW ===================== **/
+async function handleAuthFromQuery(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  if(!code) return;
+
+  const redirectUri = location.origin + location.pathname;
+
+  showLoader(true);
+  whoPill.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging in...';
+
+  try{
+    const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({
+        grant_type:'authorization_code',
+        client_id: CLIENT_ID,
+        code,
+        redirect_uri: redirectUri
+      })
+    });
+
+    const tokens = await res.json();
+    if(!res.ok) throw new Error(tokens?.error_description || 'Auth failed');
+
+    idToken = tokens.id_token;
+    localStorage.setItem('idToken', idToken);
+
+    history.replaceState({}, document.title, location.pathname + location.hash);
+    showToast('Login successful!');
+  }catch(e){
+    console.error(e);
+    localStorage.removeItem('idToken');
+    idToken = null;
+    showToast('Login failed. Check Callback URLs.', 'error');
+  }finally{
+    showLoader(false);
+  }
+}
+
+function ensureLoggedIn(){
+  if(!idToken) return false;
+  try{
+    const payload = parseJwt(idToken);
+    if(Date.now() > payload.exp*1000) throw new Error('Token expired');
+    me = payload;
+    whoPill.innerHTML = `<i class="fa-solid fa-user-check" style="color:var(--primary)"></i> ${payload.email?.split('@')[0] || 'User'}`;
+    return true;
+  }catch(e){
+    console.warn(e);
+    localStorage.removeItem('idToken');
+    idToken = null;
+    me = null;
+    whoPill.innerHTML = '<i class="fa-regular fa-user"></i> Guest';
+    return false;
+  }
+}
+
+function isMasterAdmin(){
+  const groups = (me && me['cognito:groups']) || [];
+  return Array.isArray(groups) ? groups.includes('MasterAdmins') : String(groups).includes('MasterAdmins');
+}
+
+/** ===================== LOGIN UI ===================== **/
+$('btnLogin').addEventListener('click', ()=>{
+  const redirectUri = location.origin + location.pathname;
+  const scopes = "openid profile email aws.cognito.signin.user.admin";
+  const loginUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
+  location.href = loginUrl;
+});
+
+/** ===================== LOGOUT ===================== **/
+$('logoutBtn').addEventListener('click', ()=>{
+  localStorage.clear();
+  idToken = null; me=null;
+  whoPill.innerHTML = 'Not logged in';
+  const logoutUri = location.origin + location.pathname + '#/login';
+  const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  location.href = logoutUrl;
+});
+
+/** ===================== DASHBOARD LOGIC ===================== **/
+$('colSave').addEventListener('click', ()=>saveCollection());
+$('colCancel').addEventListener('click', ()=>resetColForm());
+$('colSearch').addEventListener('input', ()=>renderCollections());
+
+function resetColForm(){
+  $('colName').value = '';
+  $('colIdEdit').value = '';
+  $('colSaveTxt').textContent = 'Create Collection';
+  $('colCancel').style.display = 'none';
+}
+
+async function loadAccountStatus(){
+  try{
+    const res = await apiFetch(GET_ACCOUNT_STATUS_API);
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    $('kData').textContent = data.storage_limit_bytes > 0
+      ? `${formatBytes(data.total_storage_used_bytes||0)} / ${formatBytes(data.storage_limit_bytes)}`
+      : `${formatBytes(data.total_storage_used_bytes||0)} (Unlimited)`;
+    $('kExp').textContent = data.expiry_date ? new Date(data.expiry_date).toLocaleDateString('en-IN') : 'Lifetime';
+  }catch(e){
+    console.error(e);
+    $('kData').textContent = '-';
+    $('kExp').textContent = '-';
+  }
+}
+
+async function loadCollections(){
+  $('colRows').innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center">Loading...</td></tr>`;
+  try{
+    const res = await apiFetch(GET_COLLECTIONS_API);
+    if(!res.ok) throw new Error('Failed to fetch collections');
+    const data = await res.json();
+    dashCollections = (data.Items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+    renderCollections();
+  }catch(e){
+    console.error(e);
+    $('colRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderCollections(){
+  const q = ($('colSearch').value||'').toLowerCase();
+  const rows = dashCollections.filter(c => (c.name||'').toLowerCase().includes(q));
+  if(!rows.length){
+    $('colRows').innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center">No collections found</td></tr>`;
+    return;
+  }
+  $('colRows').innerHTML = rows.map(c => {
+    const nameEsc = encodeURIComponent(c.name||'Collection');
+    return `
+      <tr>
+        <td>
+          <a href="#/collection?id=${encodeURIComponent(c.collection_id)}&name=${nameEsc}" style="display:flex; align-items:center; gap:10px;">
+            <div style="background:rgba(99,102,241,0.2); padding:8px; border-radius:8px;"><i class="fa-regular fa-folder-open" style="color:var(--accent)"></i></div>
+            <span style="font-weight:700; color:#fff">${escapeHtml(c.name||'-')}</span>
+          </a>
+        </td>
+        <td class="muted">${fmtDate(c.created_at)}</td>
+        <td>
+           <span class="tag" title="Events"><i class="fa-solid fa-calendar-days" style="margin-right:4px"></i> ${c.event_count||0}</span>
+           <span class="tag" title="Photos"><i class="fa-regular fa-image" style="margin-right:4px"></i> ${c.total_photo_count||0}</span>
+        </td>
+        <td class="muted">${formatBytes(c.storage_bytes||0)}</td>
+        <td>
+          <div class="row" style="gap:6px">
+            <button class="btn secondary" style="padding:6px 10px" onclick="editCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn danger" style="padding:6px 10px" onclick="deleteCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.editCollection = (id, name)=>{
+  $('colName').value = name;
+  $('colIdEdit').value = id;
+  $('colSaveTxt').textContent = 'Update';
+  $('colCancel').style.display = 'inline-flex';
+  $('colName').focus();
+};
+
+async function saveCollection(){
+  const name = ($('colName').value||'').trim();
+  if(!name) return showToast('Name is required', 'error');
+  const payload = { name };
+  const editId = $('colIdEdit').value;
+  if(editId) payload.collection_id = editId;
+
+  showLoader(true);
+  try{
+    const res = await apiFetch(UPSERT_COLLECTION_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed to save');
+    resetColForm();
+    await loadCollections();
+    showToast(editId ? 'Collection updated!' : 'Collection created!');
+  }catch(e){
+    console.error(e);
+    showToast(e.message, 'error');
+  }finally{
+    showLoader(false);
+  }
+}
+
+window.deleteCollection = async (id, name)=>{
+  if(!confirm(`Delete "${name}" and all its photos?`)) return;
+  showLoader(true);
+  try{
+    const res = await apiFetch(DELETE_COLLECTION_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({collection_id:id})
+    });
+    if(!res.ok) throw new Error('Delete failed');
+    await loadCollections();
+    showToast('Collection Deleted');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{
+    showLoader(false);
+  }
+};
+
+/** ===================== COLLECTION DETAILS ===================== **/
+$('backDash').addEventListener('click', ()=> location.hash = '#/dashboard');
+$('evSave').addEventListener('click', ()=> upsertEvent());
+$('genLinkBtn').addEventListener('click', ()=> generateGuestLink());
+if($('copyLinkBtn')) $('copyLinkBtn').addEventListener('click', ()=>{ const t=$('generatedLink')?.textContent||''; if(!t) return; navigator.clipboard.writeText(t).then(()=>showToast('Copied')).catch(()=>showToast('Copy failed','error')); });
+$('uploadBtn').addEventListener('click', ()=> startUpload());
+$('photoSearch').addEventListener('input', ()=> renderPhotos());
+$('photoEventFilter').addEventListener('change', ()=> renderPhotos());
+$('refreshLeads').addEventListener('click', ()=> loadLeads());
+$('loadMoreBtn').addEventListener('click', ()=> loadPhotos(true));
+
+function setCollectionFromRoute(params){
+  cd.id = params.get('id');
+  cd.name = params.get('name') || 'Collection';
+  $('cdId').textContent = cd.id || '-';
+  $('cdName').textContent = cd.name || '-';
+}
+
+async function loadEvents(){
+  $('evRows').innerHTML = `<tr><td colspan="3" class="muted">Loading...</td></tr>`;
+  try{
+    const res = await apiFetch(GET_EVENTS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id })
+    });
+    if(!res.ok) throw new Error('Failed to load events');
+    const data = await res.json();
+    cd.events = data.events || data.Items || data || [];
+    renderEvents();
+    fillEventSelects();
+    renderLinkEventList();
+  }catch(e){
+    console.error(e);
+    $('evRows').innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderEvents(){
+  const evs = Array.isArray(cd.events)?cd.events:[];
+  if(!evs.length){
+    $('evRows').innerHTML = `<tr><td colspan="3" class="muted">No sub-events created</td></tr>`;
+    return;
+  }
+  $('evRows').innerHTML = evs.map(ev=>{
+    const eid = ev.event_id || ev.eventId || ev.id;
+    const nm = ev.name || ev.event_name || ev.eventName || '-';
+    const pc = ev.photo_count || ev.photoCount || 0;
+    return `
+      <tr>
+        <td style="font-weight:700">${escapeHtml(nm)}</td>
+        <td><span class="pill">${pc} Photos</span></td>
+        <td class="row">
+          <button class="btn danger" style="padding:6px 10px" onclick="delEvent('${eid}','${(nm||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function fillEventSelects(){
+  const evs = Array.isArray(cd.events)?cd.events:[];
+  const opt = [`<option value="">All Events</option>`].concat(
+    evs.map(ev=>{
+      const eid = ev.event_id || ev.eventId || ev.id;
+      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
+      return `<option value="${eid}">${escapeHtml(nm)}</option>`;
+    })
+  ).join('');
+  $('photoEventFilter').innerHTML = opt;
+  $('uploadEvent').innerHTML = `<option value="">Select Event to Upload</option>` + evs.map(ev=>{
+      const eid = ev.event_id || ev.eventId || ev.id;
+      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
+      return `<option value="${eid}">${escapeHtml(nm)}</option>`;
+  }).join('');
+}
+
+function renderLinkEventList(){
+  const box = $('linkEventList');
+  if(!box) return;
+  box.innerHTML = '';
+  const evs = Array.isArray(cd.events) ? cd.events : [];
+  if(!evs.length){
+    box.innerHTML = '<div class="muted">No events available</div>';
+    return;
+  }
+  evs.forEach(ev=>{
+    const id = ev.event_id || ev.id;
+    const nm = ev.name || ev.event_name || 'Event';
+    const date = ev.event_date || ev.date || '';
+    const row = document.createElement('label');
+    row.style.display='flex';
+    row.style.gap='10px';
+    row.style.alignItems='center';
+    row.style.padding='8px';
+    row.style.cursor='pointer';
+    row.style.borderBottom = '1px solid var(--border-color)';
+    row.innerHTML = `<input class="linkEventCheck" type="checkbox" value="${escapeHtml(id)}" style="accent-color:var(--primary)"> <span style="font-size:13px">${escapeHtml(nm)} ${date?`<span class="muted">(${date})</span>`:''}</span>`;
+    box.appendChild(row);
+  });
+}
+
+async function upsertEvent(){
+  const name = ($('evName').value||'').trim();
+  const event_date = ($('evDate').value||'').trim();
+  if(!name) return showToast('Event name required','error');
+  if(!event_date) return showToast('Event date required','error');
+
+  showLoader(true);
+  try{
+    const payload = { collection_id: cd.id, name, event_date };
+    const res = await apiFetch(UPSERT_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed');
+
+    $('evName').value='';
+    $('evDate').value='';
+    await loadEvents();
+    showToast('Event added');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+window.delEvent = async (eventId, name)=>{
+  if(!confirm(`Delete event "${name}"?`)) return;
+  showLoader(true);
+  try{
+    const res = await apiFetch(DELETE_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, event_id: eventId })
+    });
+    if(!res.ok) throw new Error('Failed to delete event');
+    await loadEvents();
+    showToast('Event deleted');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+};
+
+/** Photos pagination */
+async function loadPhotos(append=false){
+  if(!append){ cd.photos=[]; cd.next=null; }
+  const eventFilter = $('photoEventFilter').value || '';
+  const payload = { collection_id: cd.id };
+  if(eventFilter) payload.event_id = eventFilter;
+  if(cd.next) payload.nextToken = cd.next;
+
+  showLoader(true);
+  try{
+    const res = await apiFetch(GET_PHOTOS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed to load photos');
+    const data = await res.json();
+    const items = data.Items || data.photos || data.items || [];
+    cd.next = data.nextToken || data.next_token || null;
+    cd.photos = append ? cd.photos.concat(items) : items;
+    renderPhotos();
+    $('loadMoreBtn').style.display = cd.next ? 'inline-flex' : 'none';
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+function renderPhotos(){
+  const q = ($('photoSearch').value||'').toLowerCase();
+  const evSel = $('photoEventFilter').value || '';
+  const filtered = cd.photos.filter(p=>{
+    const fn = (p.filename||p.file_name||p.key||'').toLowerCase();
+    const tags = Array.isArray(p.ai_tags)?p.ai_tags.join(' ').toLowerCase():'';
+    const matchText = !q || fn.includes(q) || tags.includes(q);
+    const pid = p.event_id || p.eventId || '';
+    const matchEv = !evSel || pid===evSel;
+    return matchText && matchEv;
+  });
+
+  if(!filtered.length){
+    $('photoGrid').innerHTML = `<div class="muted" style="grid-column:1/-1; text-align:center; padding:20px;">No photos found</div>`;
+    return;
   }
 
-  function getLinkId(){
-    const u = new URL(location.href);
-    const q = u.searchParams.get('linkId') || u.searchParams.get('link_id');
-    const h = (u.hash||"").replace(/^#\/?/,'');
-    const hp = new URLSearchParams(h);
-    const fromHash = hp.get('linkId') || hp.get('link_id');
-    const v = ($('linkIdInput').value || '').trim();
-    const raw = v || q || fromHash || '';
-    if(raw.includes('http')){
-      try{
-        const uu = new URL(raw);
-        return uu.searchParams.get('linkId') || uu.searchParams.get('link_id') || '';
-      }catch(_){
-        return raw;
+  $('photoGrid').innerHTML = filtered.map(p=>{
+    const url = p.url || p.s3_url || p.photo_url || p.image_url || p.public_url || '';
+    const thumb = p.thumbnail_url || url;
+    const fn = p.filename || p.file_name || 'photo';
+    const faces = (p.face_count ?? (Array.isArray(p.faces)?p.faces.length:null) ?? 0);
+    return `
+      <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','${(fn||'').replace(/'/g,"\\'")}', ${faces})">
+        <img src="${thumb}" loading="lazy" onerror="this.src='https://via.placeholder.com/300?text=Error'"/>
+        <div class="m">
+          <div class="t">${fn}</div>
+          <div class="s"><i class="fa-regular fa-face-smile"></i> ${faces}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.openPhoto = (encUrl, title, faces)=>{
+  const url = decodeURIComponent(encUrl||'');
+  $('pmImg').src = url;
+  $('pmTitle').textContent = title || 'Photo';
+  $('pmDownload').href = url;
+  $('pmMeta').textContent = `Faces detected: ${faces}`;
+  $('photoModal').classList.add('open');
+};
+$('pmClose').addEventListener('click', ()=> $('photoModal').classList.remove('open'));
+$('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') $('photoModal').classList.remove('open'); });
+
+/** Upload */
+async function startUpload(){
+  const eventId = $('uploadEvent').value;
+  const files = Array.from($('filePick').files || []);
+  if(!eventId){ showToast("Please select an event first", "error"); return; }
+  if(!files.length){ showToast("No files selected", "error"); return; }
+
+  $('uploadBtn').disabled = true;
+  $('uploadStat').innerHTML = "";
+
+  const total = files.length;
+  let done = 0, ok = 0, fail = 0;
+
+  const row = (i, name)=> {
+    const d = document.createElement('div');
+    d.className = "upload-row";
+    d.innerHTML = `
+      <div style="font-weight:700; min-width:30px;">#${i+1}</div>
+      <div class="up-name" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(name)}</div>
+      <div class="up-status muted"><i class="fa-solid fa-clock"></i></div>
+    `;
+    $('uploadStat').appendChild(d);
+    return d;
+  };
+
+  const rows = files.map((f,i)=> row(i,f.name));
+
+  const setStatus = (i, text, cls="muted")=>{
+    const el = rows[i].querySelector('.up-status');
+    el.className = "up-status " + cls;
+    el.innerHTML = text;
+  };
+
+  const setOverall = ()=>{
+    const pct = Math.round((done/total)*100);
+    $('uploadProgressBar').style.width = pct + "%";
+    $('uploadProgressText').textContent = `${pct}% (${done}/${total})`;
+  };
+
+  if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "block";
+  setOverall();
+
+  try{
+    // Step 1: get URLs
+    const fileNames = files.map(f => f.name);
+    const meta = await apiPostJson(UPLOAD_URLS_API, { 
+      collection_id: cd.id, // Fixed: Added collection_id
+      event_id: eventId, 
+      count: total,
+      file_names: fileNames // Fixed: Added file_names array
+    });
+
+    const urls = meta.urls || meta.uploadUrls || meta.items || [];
+    
+    // Step 2: Concurrency
+    const CONCURRENCY = 3;
+    let cursor = 0;
+
+    const worker = async ()=>{
+      while(cursor < total){
+        const i = cursor++;
+        const file = files[i];
+        const u = urls[i];
+
+        if(!u || (!u.uploadURL && !u.url)){
+          setStatus(i, '<i class="fa-solid fa-triangle-exclamation"></i> Err', "danger");
+          fail++; done++; setOverall();
+          continue;
+        }
+
+        const putUrl = u.uploadURL || u.uploadUrl || u.url;
+        const objectKey = u.objectKey || u.key || u.object_key;
+        
+        setStatus(i, '<i class="fa-solid fa-spinner fa-spin"></i>', "muted");
+
+        try{
+          await fetch(putUrl, {
+             method:"PUT",
+             headers:{ "Content-Type": file.type || "application/octet-stream" },
+             body: file
+          });
+          
+          // Step 3: Register
+          try {
+             // Backend expects registration to index the photo
+             await apiPostJson(REGISTER_PHOTO_API, { 
+               collection_id: cd.id,
+               event_id: eventId, 
+               object_key: objectKey, 
+               filename: file.name, 
+               size: file.size 
+             });
+          } catch(err){ console.warn('Registration skip/fail', err); }
+
+          ok++;
+          setStatus(i, '<i class="fa-solid fa-check"></i>', "success");
+        }catch(err){
+          console.error(err);
+          fail++;
+          setStatus(i, '<i class="fa-solid fa-xmark"></i>', "danger");
+        }finally{
+          done++;
+          setOverall();
+        }
       }
-    }
-    return raw;
+    };
+
+    await Promise.all(Array.from({length: CONCURRENCY}, ()=>worker()));
+
+    showToast(`Upload Complete: ${ok} success`);
+    setTimeout(()=>{ loadEvents(); loadPhotos(); }, 1500);
+
+  }catch(e){
+    console.error(e);
+    showToast("Upload start failed: " + (e.message), "error");
+  }finally{
+    $('uploadBtn').disabled = false;
   }
+}
 
-  function render(){
-    $('matchStat').textContent = `Matches: ${matches.length}`;
-    $('selStat').textContent = `Selected: ${selected.size}`;
+/** Guest link */
+async function generateGuestLink(){
+  showLoader(true);
+  try{
+    const checked = document.querySelectorAll('.linkEventCheck:checked');
+    const eventIds = Array.from(checked).map(x=>x.value);
+    if(!eventIds.length){
+      showToast('Select at least one event','error');
+      return;
+    }
+    const expiry_hours = parseInt(($('expiryHours')?.value||'0'),10) || 24;
+    const password = ($('linkPassword')?.value||'').trim();
 
-    const grid = $('photosGrid');
-    grid.innerHTML = "";
-    $('emptyMsg').style.display = matches.length ? "none" : "block";
-
-    matches.forEach((p)=>{
-      const url = p.url || p.thumbnail_url || p.thumbnailUrl;
-      if(!url) return;
-      const d = document.createElement('div');
-      d.className = 'ph' + (selected.has(url) ? ' selected' : '');
-      d.innerHTML = `<img src="${url}" loading="lazy" alt="photo"/>
-                     <div class="tick">${selected.has(url) ? '✓' : ''}</div>`;
-      d.onclick = ()=>{
-        if(selected.has(url)) selected.delete(url);
-        else selected.add(url);
-        render();
-      };
-      grid.appendChild(d);
+    const res = await apiFetch(GENERATE_LINK_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, event_ids: eventIds, expiry_hours, password })
     });
-  }
+    
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const link = data.searchUrl || data.link || data.url;
 
-  function fileToBase64(file){
-    return new Promise((resolve,reject)=>{
-      const r = new FileReader();
-      r.onload = ()=> resolve(String(r.result||""));
-      r.onerror = reject;
-      r.readAsDataURL(file);
+    if($('generatedLink')){
+      $('generatedLink').href = link;
+      $('generatedLink').textContent = link;
+      $('linkResult').style.display = 'block';
+    }
+    
+    showToast('Link Generated!');
+  }catch(e){
+    console.error(e);
+    showToast('Generate failed: '+(e.message||e),'error');
+  }finally{ showLoader(false); }
+}
+
+async function loadLeads(){
+  try{
+    const tbody = $('leadRows');
+    tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">Loading...</td></tr>';
+
+    const res = await fetch(SAVE_DETAILS_API, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'list', collection_id: cd.id })
     });
-  }
 
-  async function postTextPlain(url, obj){
-    const res = await fetch(url, {
-      method:"POST",
-      headers:{ "Content-Type":"text/plain" },
-      body: JSON.stringify(obj)
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    cd.leads = Array.isArray(data) ? data : (data.items || []);
+
+    renderLeads();
+  }catch(e){
+    console.error(e);
+    $('leadRows').innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center">Error loading leads</td></tr>`;
+  }
+}
+
+function renderLeads(){
+  const leads = Array.isArray(cd.leads)?cd.leads:[];
+  if(!leads.length){
+    $('leadRows').innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center">No leads captured yet</td></tr>`;
+    return;
+  }
+  $('leadRows').innerHTML = leads.map(l=>{
+    const name = l.name || l.guest_name || '-';
+    const phone = l.phone || l.mobile || '';
+    const selfie = l.selfie_url || l.selfie || '';
+    const matched = l.match_count || (Array.isArray(l.photo_urls)?l.photo_urls.length:0) || 0;
+    
+    return `
+      <tr>
+        <td>
+           <div style="font-weight:700">${escapeHtml(name)}</div>
+           <div class="muted" style="font-size:12px">${escapeHtml(phone)}</div>
+        </td>
+        <td>
+           <img src="${selfie}" style="width:48px; height:48px; object-fit:cover; border-radius:50%; border:2px solid var(--border-color);" onerror="this.src='https://via.placeholder.com/50'"/>
+        </td>
+        <td><span class="pill" style="background:var(--primary-dim); color:var(--primary)">${matched} Photos</span></td>
+        <td>
+           <button class="btn secondary" style="padding:6px 10px" onclick="openLead('${encodeURIComponent(JSON.stringify(l))}')"><i class="fa-solid fa-eye"></i></button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.openLead = (enc)=>{
+  let l = {};
+  try{ l = JSON.parse(decodeURIComponent(enc)); }catch{}
+  const photos = l.photo_urls || l.matched_photos || [];
+  if(Array.isArray(photos) && photos.length){
+    openPhoto(encodeURIComponent(photos[0]), `Matched for ${l.name}`, photos.length);
+  }else{
+    alert('No matched photos found for this lead.');
+  }
+};
+
+/** ===================== SUPERADMIN ===================== **/
+$('newPhotog').addEventListener('click', ()=>openNewPhotog());
+async function loadSuperAdmin(){
+  $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers`);
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const rows = Array.isArray(data)?data:[];
+    $('saRows').innerHTML = rows.map(u=>{
+      const status = u.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--primary)">Active</span>';
+      return `
+        <tr>
+          <td style="font-weight:700">${escapeHtml(u.email||'-')}</td>
+          <td>${u.storage_limit_gb || 5} GB</td>
+          <td>${u.expiry_date||'Lifetime'}</td>
+          <td>${status}</td>
+          <td>
+            <div class="row" style="gap:6px;">
+              <button class="btn danger" style="padding:6px" onclick="saDelete('${u.user_id}')"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn secondary" style="padding:6px" onclick="saToggle('${u.user_id}', ${!!u.disabled})"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="5" class="muted">No users</td></tr>`;
+  }catch(e){
+    console.error(e);
+    $('saRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }finally{ showLoader(false); }
+}
+
+function openNewPhotog(){
+  const email = prompt('Photographer Email:');
+  if(!email) return;
+  const limitGb = parseInt(prompt('Storage Limit (GB):', '5')||'5', 10);
+  const expiry = prompt('Expiry (YYYY-MM-DD):', '');
+  saSave({ email, storage_limit_gb: limitGb, expiry_date: expiry });
+}
+
+async function saSave(payload){
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
     });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
-    return data;
+    if(!res.ok) throw new Error('Failed');
+    showToast('User Saved');
+    await loadSuperAdmin();
+  }catch(e){
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+window.saDelete = async (userId)=>{
+  if(!confirm('Delete this user?')) return;
+  showLoader(true);
+  try{
+    await apiFetch(`${API_BASE}/photographers/${userId}`, { method:'DELETE' });
+    showToast('User Deleted');
+    await loadSuperAdmin();
+  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+};
+
+window.saToggle = async (userId, current)=>{
+  showLoader(true);
+  try{
+    await apiFetch(`${API_BASE}/photographers/${userId}/toggle`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ disabled: !current })
+    });
+    showToast('Status Updated');
+    await loadSuperAdmin();
+  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+};
+
+/** ===================== GUEST ===================== **/
+$('gSearchBtn').addEventListener('click', ()=>guestSearch());
+
+async function guestSearch(){
+  const linkId = ($('gLinkId').value||'').trim();
+  const file = $('gSelfie').files?.[0];
+  if(!linkId) return showToast('Link ID is required','error');
+  if(!file) return showToast('Please select a selfie','error');
+
+  $('gStat').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Searching...';
+  showLoader(true);
+  
+  try{
+    const fd = new FormData();
+    fd.append('linkId', linkId);
+    fd.append('selfie', file);
+
+    let res = await fetch(SEARCH_API, { method:'POST', body: fd });
+    if(!res.ok){
+       // Fallback: JSON Base64 if FormData not supported by backend
+       const b64 = await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result.split(',')[1]); fr.readAsDataURL(file); });
+       res = await fetch(SEARCH_API, {
+         method:'POST',
+         headers:{'Content-Type':'application/json'},
+         body: JSON.stringify({ linkId, selfie_base64: b64 })
+       });
+    }
+    
+    if(!res.ok) throw new Error('No match found or invalid link');
+    const data = await res.json();
+    const photos = data.photos || data.Items || data.matches || [];
+    
+    guest.results = photos;
+    renderGuestResults();
+    $('gStat').innerHTML = `<span style="color:var(--primary)"><i class="fa-solid fa-check"></i> Found ${photos.length} photos</span>`;
+  }catch(e){
+    console.error(e);
+    $('gStat').textContent = '';
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+function renderGuestResults(){
+  const photos = guest.results || [];
+  if(!photos.length){
+    $('gResults').innerHTML = `<div class="muted" style="grid-column:1/-1; text-align:center;">No matching photos found.</div>`;
+    return;
+  }
+  $('gResults').innerHTML = photos.map(p=>{
+    const url = p.url || p.photo_url || '';
+    return `
+      <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','My Photo', 1)">
+        <img src="${url}" loading="lazy"/>
+      </div>
+    `;
+  }).join('');
+}
+
+/** ===================== ROUTER MAIN ===================== **/
+async function route(){
+  await handleAuthFromQuery();
+  const ok = ensureLoggedIn();
+  const { path, params } = getHashRoute();
+
+  if(path==='login'){ setView('login'); return; }
+  
+  // Public Guest
+  if(path==='guest'){
+    setView('guest');
+    $('gLinkId').value = params.get('linkId') || '';
+    return;
   }
 
-  document.addEventListener('DOMContentLoaded', ()=>{
-    const id = getLinkId();
-    if(id) {
-      $('linkIdInput').value = id;
-      $('linkPill').textContent = 'linkId: ' + id;
-    }
-  });
+  // Protected
+  if(!ok){ setView('login'); location.hash = '#/login'; return; }
 
-  $('selfieFile').addEventListener('change', async (e)=>{
-    const f = e.target.files?.[0];
-    if(!f) return;
-    selfieBase64 = await fileToBase64(f);
-    $('previewBox').innerHTML = `<img src="${selfieBase64}" alt="selfie"/>`;
-  });
+  if(path==='superadmin'){
+    if(!isMasterAdmin()){ showToast('Access Denied','error'); location.hash='#/dashboard'; return; }
+    setView('superadmin'); await loadSuperAdmin(); return;
+  }
 
-  $('findBtn').addEventListener('click', async ()=>{
-    const linkId = getLinkId();
-    $('linkPill').textContent = 'linkId: ' + (linkId||'—');
+  if(path==='collection'){
+    setView('collection');
+    setCollectionFromRoute(params);
+    loadEvents();
+    loadPhotos(false);
+    loadLeads();
+    return;
+  }
 
-    if(!linkId) return toast("linkId missing");
-    if(!selfieBase64) return toast("Selfie upload करो");
-
-    $('findBtn').disabled = true;
-    selected.clear();
-    try{
-      const pin = ($('pinInput').value||'').trim();
-      const data = await postTextPlain(FIND_MATCHES_API, {
-        linkId,
-        selfie_image: selfieBase64,
-        pin
-      });
-      matches = data.matches || [];
-      matches.forEach(p=>{ if(p.url) selected.add(p.url); });
-      render();
-      toast(`Found ${matches.length} photos`);
-    }catch(e){
-      console.error(e);
-      matches = [];
-      render();
-      toast(e.message || "Search failed");
-    }finally{
-      $('findBtn').disabled = false;
-    }
-  });
-
-  $('saveBtn').addEventListener('click', async ()=>{
-    const linkId = getLinkId();
-    const name = ($('guestName').value||'').trim();
-    const mobile = ($('guestMobile').value||'').trim();
-
-    if(!linkId) return toast("linkId missing");
-    if(!name) return toast("Name डालो");
-    if(mobile.length < 10) return toast("Valid mobile डालो");
-
-    try{
-      await postTextPlain(SAVE_DETAILS_API, {
-        name, mobile,
-        linkId,
-        selfie_image: selfieBase64 || "",
-        photo_count: matches.length
-      });
-      toast("Saved ✅");
-      const share = `🎉 मेरी ${matches.length} photos मिली!\nTry here: ${location.href}`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(share)}`, "_blank");
-    }catch(e){
-      console.error(e);
-      toast(e.message || "Save failed");
-    }
-  });
-
-  $('selectAllBtn').addEventListener('click', ()=>{
-    if(!matches.length) return;
-    const allCount = matches.filter(p=>p.url).length;
-    const allSelected = selected.size === allCount;
-    selected.clear();
-    if(!allSelected) matches.forEach(p=>{ if(p.url) selected.add(p.url); });
-    render();
-  });
-
-  $('downloadBtn').addEventListener('click', ()=>{
-    if(!selected.size) return toast("Select photos first");
-    let opened = 0;
-    for(const url of selected){
-      if(opened >= 8) break;
-      window.open(url, "_blank");
-      opened++;
-    }
-    toast(opened < selected.size ? "Opened first 8 downloads" : "Opened downloads");
-  });
-
-  $('copyLinkBtn').addEventListener('click', ()=>{
-    navigator.clipboard?.writeText(location.href).then(()=>toast("Copied")).catch(()=>toast("Copy failed"));
-  });
-
-  $('resetBtn').addEventListener('click', ()=>{
-    matches=[]; selected.clear(); selfieBase64="";
-    $('selfieFile').value="";
-    $('previewBox').innerHTML = '<div class="muted small">Preview</div>';
-    render();
-  });
+  // Default
+  setView('dashboard');
+  loadCollections();
+  loadAccountStatus();
+}
 </script>
 </body>
 </html>

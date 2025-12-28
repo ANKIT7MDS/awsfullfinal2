@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>EventLens Pro – Modern UI</title>
+  <title>EventLens Pro – Modern Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -69,7 +69,7 @@
       max-width: 1280px;
       margin: 0 auto;
       padding: 20px 24px;
-      padding-bottom: 80px; /* Space for bottom interaction on mobile */
+      padding-bottom: 80px;
     }
 
     /* Top Navigation Bar */
@@ -137,7 +137,6 @@
     }
     
     .btn i { font-size: 14px; }
-    
     .btn:active { transform: scale(0.96); }
 
     .btn.primary {
@@ -192,8 +191,6 @@
       position: relative;
       overflow: hidden;
     }
-    
-    /* Subtle glow on cards */
     .card::before {
       content:''; position: absolute; top:0; left:0; right:0; height:1px;
       background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
@@ -226,7 +223,6 @@
       font-size: 14px;
       transition: 0.2s;
     }
-    
     input:focus, select:focus {
       border-color: var(--primary);
       background: rgba(0,0,0,0.5);
@@ -718,7 +714,7 @@
     </div>
   </div>
 
-<!-- JAVASCRIPT Logic (UNCHANGED) -->
+<!-- JAVASCRIPT Logic -->
 <script>
 /** ===================== CONFIG (from your existing pages) ===================== **/
 const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
@@ -737,7 +733,7 @@ const GET_PHOTOS_API      = `${API_BASE}/get-photos`;
 const UPSERT_EVENT_API    = `${API_BASE}/upsert-event`;
 const DELETE_EVENT_API    = `${API_BASE}/delete-event`;
 const UPLOAD_URLS_API     = `${API_BASE}/generate-upload-urls`;
-const REGISTER_PHOTO_API  = `${API_BASE}/register-photo`; // Assuming this exists or is part of upload flow
+const REGISTER_PHOTO_API  = `${API_BASE}/register-photo`;
 const GENERATE_LINK_API   = `${API_BASE}/generate-search-link`;
 const SAVE_DETAILS_API    = `${API_BASE}/save-details`;
 const SEARCH_API          = `${API_BASE}/search`;
@@ -1308,7 +1304,14 @@ async function startUpload(){
 
   try{
     // Step 1: get URLs
-    const meta = await apiPostJson(UPLOAD_URLS_API, { event_id: eventId, count: total });
+    const fileNames = files.map(f => f.name);
+    const meta = await apiPostJson(UPLOAD_URLS_API, { 
+      collection_id: cd.id, // Fixed: Added collection_id
+      event_id: eventId, 
+      count: total,
+      file_names: fileNames // Fixed: Added file_names array
+    });
+
     const urls = meta.urls || meta.uploadUrls || meta.items || [];
     
     // Step 2: Concurrency
@@ -1341,8 +1344,14 @@ async function startUpload(){
           
           // Step 3: Register
           try {
-             // Optional: If your backend needs explicit registration after S3 PUT
-             // await apiPostJson(REGISTER_PHOTO_API, { event_id: eventId, object_key: objectKey, filename: file.name, size: file.size });
+             // Backend expects registration to index the photo
+             await apiPostJson(REGISTER_PHOTO_API, { 
+               collection_id: cd.id,
+               event_id: eventId, 
+               object_key: objectKey, 
+               filename: file.name, 
+               size: file.size 
+             });
           } catch(err){ console.warn('Registration skip/fail', err); }
 
           ok++;

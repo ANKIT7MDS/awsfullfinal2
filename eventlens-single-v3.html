@@ -1440,7 +1440,7 @@ async function startUpload(){
                 await fetch(url, { 
                     method: 'PUT', 
                     headers: { 
-                        'Content-Type': item.file.type,
+                        'Content-Type': 'image/jpeg', // Always JPEG as per processFile
                         'x-amz-meta-original-hash': item.hash 
                     },
                     body: item.file
@@ -1455,19 +1455,39 @@ async function startUpload(){
                     object_key: u.object_key || u.key, // Fallback
                     filename: u.filename || item.file.name,
                     size: item.file.size,
-                    content_type: item.file.type,
+                    content_type: 'image/jpeg', // Force JPEG
                     hash: u.hash || item.hash
                 };
 
                 // Validate critical fields
                 if(!regPayload.object_key) throw new Error("Server didn't return object_key");
 
-                await apiPostJson(REGISTER_PHOTO_API, regPayload);
+                // Retry Logic with Backoff
+                let registered = false;
+                let attempts = 0;
+                while(!registered && attempts < 3){
+                   attempts++;
+                   try {
+                     await apiPostJson(REGISTER_PHOTO_API, regPayload);
+                     registered = true;
+                   } catch(err){ 
+                     console.warn(`Register attempt ${attempts} failed for ${item.file.name}:`, err);
+                     // If duplicate entry or success-but-network-fail, we might want to stop retrying?
+                     // For now, simple backoff: 2s, 4s, etc.
+                     if(attempts < 3) await new Promise(r => setTimeout(r, 2000 * attempts)); 
+                   }
+                }
                 
-                item.status = 'done';
-                if (el) { 
-                    el.innerHTML = '<i class="fa-solid fa-check"></i> Done'; 
-                    el.className = 'up-status success'; 
+                if(registered){
+                    item.status = 'done';
+                    if (el) { 
+                        el.innerHTML = '<i class="fa-solid fa-check"></i> Done'; 
+                        el.className = 'up-status success'; 
+                    }
+                } else {
+                    // Even if register "failed" in UI, it might be in DB. 
+                    // Mark as error but log it.
+                    throw new Error('Registration failed after 3 attempts'); 
                 }
 
              } catch (err) {
@@ -1758,3 +1778,4 @@ async function route(){
 </script>
 </body>
 </html>
+</script>

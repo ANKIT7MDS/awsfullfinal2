@@ -1432,8 +1432,12 @@ async function startUpload(){
              try {
                 // 1️⃣ S3 Upload
                 if(el) el.innerHTML = 'Sending...';
+                
+                // Fallback for upload URL property
+                const url = u.uploadURL || u.uploadUrl || u.url;
+                if(!url) throw new Error("Missing upload URL");
 
-                await fetch(u.uploadURL, { 
+                await fetch(url, { 
                     method: 'PUT', 
                     headers: { 
                         'Content-Type': item.file.type,
@@ -1445,15 +1449,20 @@ async function startUpload(){
                 if (el) el.innerHTML = 'Indexing...';
                 
                 // 2️⃣ Register Photo
-                await apiPostJson(REGISTER_PHOTO_API, { 
+                const regPayload = { 
                     collection_id: cd.id,
                     event_id: eventId,
-                    object_key: u.object_key,   // ✅ FIXED
+                    object_key: u.object_key || u.key, // Fallback
                     filename: u.filename || item.file.name,
                     size: item.file.size,
                     content_type: item.file.type,
                     hash: u.hash || item.hash
-                });
+                };
+
+                // Validate critical fields
+                if(!regPayload.object_key) throw new Error("Server didn't return object_key");
+
+                await apiPostJson(REGISTER_PHOTO_API, regPayload);
                 
                 item.status = 'done';
                 if (el) { 

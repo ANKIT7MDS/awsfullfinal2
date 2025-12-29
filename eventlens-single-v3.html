@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>EventLens Pro – Admin (Debug Mode)</title>
+  <title>EventLens Pro – Deep Trace</title>
   
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,463 +11,290 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Image Processing Libs -->
-  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
   <style>
-    /* ... Previous Styles ... */
-    :root {
-      --bg-dark: #030305; --bg-panel: #0f0f12; --primary: #00e676; --primary-dim: rgba(0, 230, 118, 0.1);
-      --accent: #6366f1; --danger: #ff4757; --warning: #ffb142; --text-main: #ffffff; --text-muted: #94949e;
-      --border-color: rgba(255, 255, 255, 0.08); --radius-md: 14px; --radius-full: 9999px;
+    :root { --bg:#030305; --panel:#0f0f12; --green:#00e676; --red:#ff4757; --text:#fff; --border:rgba(255,255,255,0.1); }
+    body { background:var(--bg); color:var(--text); font-family:"Plus Jakarta Sans",sans-serif; margin:0; padding:20px; }
+    
+    .card { background:var(--panel); border:1px solid var(--border); padding:20px; border-radius:12px; margin-bottom:20px; }
+    .btn { background:var(--green); color:#000; border:none; padding:10px 20px; border-radius:50px; font-weight:700; cursor:pointer; }
+    .btn.sec { background:transparent; border:1px solid var(--border); color:#fff; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    
+    input, select { background:rgba(0,0,0,0.3); border:1px solid var(--border); color:#fff; padding:10px; border-radius:8px; width:100%; margin-bottom:10px; }
+    
+    /* Log Console */
+    #console { 
+        background:#000; border:1px solid #333; color:#0f0; 
+        font-family:'Courier New', monospace; font-size:12px; 
+        height:400px; overflow-y:scroll; padding:15px; 
+        white-space:pre-wrap; word-break:break-all;
     }
-    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; background-color: var(--bg-dark); color: var(--text-main); font-family: "Plus Jakarta Sans", sans-serif; font-size: 14px; min-height: 100vh; }
-    a { text-decoration: none; color: inherit; }
-    
-    .wrap { max-width: 1280px; margin: 0 auto; padding: 20px; padding-bottom: 80px; }
-    .btn { border: none; border-radius: var(--radius-full); padding: 10px 18px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
-    .btn.primary { background: var(--primary); color: #000; }
-    .btn.secondary { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border-color); }
-    .btn.danger { background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid var(--danger); }
-    
-    .card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    input, select { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; padding: 10px; border-radius: 8px; width: 100%; }
-    
-    /* Upload & Log Specific */
-    .upload-list { max-height: 200px; overflow-y: auto; margin-top: 10px; }
-    .upload-row { display: flex; justify-content: space-between; padding: 8px; background: rgba(255,255,255,0.02); margin-bottom: 4px; border-radius: 4px; font-size: 12px; }
-    .up-status.success { color: var(--primary); }
-    .up-status.danger { color: var(--danger); }
-    
-    #debugLog {
-        background: #000; color: #0f0; font-family: monospace; padding: 15px; 
-        border-radius: 8px; height: 250px; overflow-y: auto; font-size: 11px;
-        border: 1px solid #333; margin-top: 20px; white-space: pre-wrap;
-    }
-    .log-err { color: #ff4757; font-weight: bold; }
-    .log-warn { color: #ffb142; }
-    .log-info { color: #70a1ff; }
+    .log-row { border-bottom:1px solid #222; padding:4px 0; }
+    .c-sent { color:#70a1ff; } /* Blue for Request */
+    .c-recv { color:#eccc68; } /* Yellow for Response */
+    .c-err { color:#ff4757; font-weight:bold; }
+    .c-ok { color:#2ed573; }
 
-    /* Layout Utility */
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media(max-width:800px){ .grid { grid-template-columns: 1fr; } }
-    .hidden { display: none; }
-    .view { display: none; }
-    .view.on { display: block; }
+    .view { display:none; }
+    .view.active { display:block; }
   </style>
 </head>
 <body>
 
-<div class="wrap">
-  <!-- Nav -->
-  <div class="row" style="justify-content:space-between; margin-bottom:20px;">
-    <h2 style="margin:0; color:var(--primary);">EventLens <span style="color:#fff; font-weight:300;">Debug</span></h2>
-    <div>
-        <button class="btn secondary" onclick="setView('dashboard')">Dashboard</button>
-        <button class="btn danger" onclick="logout()">Logout</button>
+  <div style="max-width:1000px; margin:0 auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2>EventLens <span style="color:var(--green)">Deep Trace</span></h2>
+        <button class="btn sec" onclick="localStorage.clear(); location.reload()">Logout</button>
     </div>
-  </div>
 
-  <!-- VIEW: LOGIN -->
-  <div id="viewLogin" class="view">
-    <div class="card" style="text-align:center; max-width:400px; margin:50px auto;">
-        <h3>Admin Login</h3>
-        <button class="btn primary" id="btnLogin">Login with Cognito</button>
-    </div>
-  </div>
-
-  <!-- VIEW: DASHBOARD -->
-  <div id="viewDashboard" class="view">
-    <div class="grid">
-        <!-- Collection List -->
-        <div class="card">
-            <h3>Collections</h3>
-            <div id="colList">Loading...</div>
+    <!-- LOGIN -->
+    <div id="vLogin" class="view">
+        <div class="card" style="text-align:center;">
+            <h3>Login Required</h3>
+            <button class="btn" onclick="login()">Login with Cognito</button>
         </div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="vMain" class="view">
         
-        <!-- Create Collection -->
-        <div class="card" style="height:fit-content">
-            <h3>New Collection</h3>
-            <input id="newColName" placeholder="Name" style="margin-bottom:10px;">
-            <button class="btn primary" onclick="createCollection()">Create</button>
-        </div>
-    </div>
-  </div>
-
-  <!-- VIEW: COLLECTION -->
-  <div id="viewCollection" class="view">
-    <button class="btn secondary" onclick="setView('dashboard')" style="margin-bottom:15px;">&larr; Back</button>
-    
-    <div class="grid">
-        <!-- Events & Upload -->
         <div class="card">
-            <h3 id="colTitle">Collection</h3>
+            <h3>1. Target</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                    <label>Collection</label>
+                    <select id="colSelect" onchange="loadEvents(this.value)"><option>Loading...</option></select>
+                </div>
+                <div>
+                    <label>Event</label>
+                    <select id="evSelect"><option>Select Collection First</option></select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>2. Upload Test</h3>
             
-            <div style="margin:15px 0; border-top:1px solid #333; padding-top:15px;">
-                <h4>1. Select/Create Event</h4>
-                <div class="row">
-                    <select id="eventSelect"></select>
-                    <input id="newEventName" placeholder="New Event Name" style="flex:1;">
-                    <button class="btn secondary" onclick="createEvent()">Add</button>
+            <div style="margin-bottom:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="skipProcess" style="width:auto; margin:0;"> 
+                    <span style="font-weight:bold; color:var(--red);">Skip Processing (Send Raw File)</span>
+                </label>
+                <div style="font-size:11px; color:#aaa; margin-left:24px;">
+                    Check this if normal upload returns "0 URLs". It sends the file without canvas/hash changes.
                 </div>
             </div>
 
-            <div style="margin:15px 0; border-top:1px solid #333; padding-top:15px;">
-                <h4>2. Upload Photos (Debug Mode)</h4>
-                <div style="border:2px dashed #333; padding:20px; text-align:center; position:relative; border-radius:10px;">
-                    <p style="color:var(--text-muted)">Click to select photos</p>
-                    <input type="file" id="fileInput" multiple accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
-                </div>
-                <div id="uploadList" class="upload-list"></div>
-                <button class="btn primary" id="startUploadBtn" style="width:100%; margin-top:15px;" disabled>Start Upload</button>
-            </div>
+            <input type="file" id="fileIn" multiple accept="image/*">
+            <button class="btn" id="upBtn" onclick="runUpload()" disabled>Start Upload Trace</button>
         </div>
 
-        <!-- Debug Logger -->
         <div class="card">
-            <h3>Live System Logs</h3>
-            <p style="font-size:11px; color:#666;">This log shows exactly what is happening with the server.</p>
-            <div id="debugLog">System Ready...</div>
-            <button class="btn secondary" onclick="$('debugLog').textContent='Cleared\n'" style="margin-top:10px; font-size:11px;">Clear Log</button>
+            <div style="display:flex; justify-content:space-between;">
+                <h3>System Log</h3>
+                <button class="btn sec" onclick="$('console').innerHTML=''">Clear</button>
+            </div>
+            <div id="console">Ready. Select files to begin.</div>
         </div>
+
     </div>
   </div>
-
-</div>
-
-<!-- TOAST -->
-<div id="toast" style="position:fixed; top:20px; right:20px; background:#333; color:#fff; padding:10px 20px; border-radius:8px; display:none;"></div>
 
 <script>
 /** CONFIG */
-const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+const API = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+const AUTH = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
 const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
-const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
 
-let idToken = localStorage.getItem('idToken');
-let currentCol = null;
-let selectedFiles = [];
-
-const $ = (id) => document.getElementById(id);
-const log = (msg, type='info') => {
-    const d = new Date().toLocaleTimeString();
-    const el = $('debugLog');
-    const color = type==='error' ? '#ff4757' : (type==='success'?'#00e676':'#a4b0be');
-    el.innerHTML += `<div style="color:${color}">[${d}] ${msg}</div>`;
-    el.scrollTop = el.scrollHeight;
-    console.log(`[${type.toUpperCase()}] ${msg}`);
+let token = localStorage.getItem('idToken');
+const $ = id => document.getElementById(id);
+const log = (msg, cls='') => {
+    const d = new Date().toISOString().split('T')[1].split('.')[0];
+    $('console').innerHTML += `<div class="log-row ${cls}">[${d}] ${msg}</div>`;
+    $('console').scrollTop = $('console').scrollHeight;
 };
 
-/** AUTH */
-if(location.hash.includes('access_token') || location.search.includes('code')){
-    handleAuth();
-} else if(idToken){
-    checkAuth();
-} else {
-    setView('login');
-}
-
-$('btnLogin').onclick = () => {
-    const redirect = location.origin + location.pathname;
-    location.href = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirect)}`;
-};
-
-async function handleAuth(){
+/** AUTH & INIT */
+if(location.search.includes('code')){
     const code = new URLSearchParams(location.search).get('code');
-    if(code){
-        log('Exchanging code for token...');
-        try {
-            const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
-                method:'POST',
-                headers:{'Content-Type':'application/x-www-form-urlencoded'},
-                body: new URLSearchParams({
-                    grant_type:'authorization_code', client_id: CLIENT_ID, code, redirect_uri: location.origin + location.pathname
-                })
-            });
-            const data = await res.json();
-            if(data.id_token){
-                localStorage.setItem('idToken', data.id_token);
-                idToken = data.id_token;
-                window.history.replaceState({}, document.title, window.location.pathname);
-                checkAuth();
-            } else { throw new Error(JSON.stringify(data)); }
-        } catch(e) { log('Auth Fail: '+e.message, 'error'); }
-    }
+    fetch(`${AUTH}/oauth2/token`, {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: `grant_type=authorization_code&client_id=${CLIENT_ID}&code=${code}&redirect_uri=${location.origin+location.pathname}`
+    }).then(r=>r.json()).then(d=>{
+        if(d.id_token) { localStorage.setItem('idToken', d.id_token); location.href = location.pathname; }
+        else alert('Login failed');
+    });
+} else if(token) {
+    $('vMain').classList.add('active');
+    initData();
+} else {
+    $('vLogin').classList.add('active');
 }
 
-function checkAuth(){
-    if(!idToken) return setView('login');
-    setView('dashboard');
-    loadCollections();
+function login(){
+    location.href = `${AUTH}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${location.origin+location.pathname}`;
 }
 
-function logout(){ localStorage.clear(); location.reload(); }
-
-function setView(id){
-    document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
-    $(id ? 'view'+id.charAt(0).toUpperCase()+id.slice(1) : 'viewLogin').classList.add('on');
-}
-
-/** API HELPER */
-async function api(endpoint, method='GET', body=null){
+/** DATA LOADING */
+async function api(path, method='GET', body){
+    log(`${method} ${path}`, 'c-sent');
     try {
-        const opts = {
+        const res = await fetch(API+path, {
             method,
-            headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' }
-        };
-        if(body) opts.body = JSON.stringify(body);
-        const res = await fetch(`${API_BASE}${endpoint}`, opts);
-        if(!res.ok) {
-            const txt = await res.text();
-            throw new Error(`API ${res.status}: ${txt}`);
-        }
-        return await res.json();
+            headers: { 'Authorization':`Bearer ${token}`, 'Content-Type':'application/json' },
+            body: body ? JSON.stringify(body) : undefined
+        });
+        const txt = await res.text();
+        log(`RESPONSE (${res.status}): ${txt.substring(0, 200)}...`, res.ok?'c-recv':'c-err');
+        return JSON.parse(txt);
     } catch(e) {
+        log(`NET ERROR: ${e.message}`, 'c-err');
         throw e;
     }
 }
 
-/** DASHBOARD */
-async function loadCollections(){
-    log('Fetching collections...');
-    try {
-        const res = await api('/get-collections');
-        const items = res.Items || [];
-        $('colList').innerHTML = items.map(c => `
-            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;">
-                <b>${c.name}</b>
-                <button class="btn secondary" onclick="openCol('${c.collection_id}', '${c.name}')">Manage</button>
-            </div>
-        `).join('') || 'No collections.';
-        log(`Loaded ${items.length} collections.`);
-    } catch(e) { log(e.message, 'error'); }
+async function initData(){
+    const data = await api('/get-collections');
+    const cols = data.Items || [];
+    $('colSelect').innerHTML = '<option value="">Select Collection</option>' + 
+        cols.map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
 }
 
-async function createCollection(){
-    const name = $('newColName').value;
-    if(!name) return;
-    try {
-        await api('/upsert-collection', 'POST', { name });
-        $('newColName').value = '';
-        loadCollections();
-        log('Collection created.', 'success');
-    } catch(e){ log(e.message, 'error'); }
+async function loadEvents(cid){
+    if(!cid) return;
+    const data = await api('/get-events', 'POST', { collection_id: cid });
+    const evs = data.events || [];
+    $('evSelect').innerHTML = '<option value="">Select Event</option>' + 
+        evs.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
 }
 
-/** COLLECTION VIEW */
-async function openCol(id, name){
-    currentCol = { id, name };
-    $('colTitle').innerText = name + ` (${id})`;
-    setView('collection');
-    loadEvents();
-}
-
-async function loadEvents(){
-    try {
-        const res = await api('/get-events', 'POST', { collection_id: currentCol.id });
-        const events = res.events || [];
-        $('eventSelect').innerHTML = '<option value="">-- Select Event --</option>' + 
-            events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
-        log('Events loaded.');
-    } catch(e){ log(e.message, 'error'); }
-}
-
-async function createEvent(){
-    const name = $('newEventName').value;
-    if(!name) return;
-    try {
-        await api('/upsert-event', 'POST', { 
-            collection_id: currentCol.id, 
-            name, 
-            event_date: new Date().toISOString().split('T')[0] 
-        });
-        $('newEventName').value = '';
-        loadEvents();
-        log('Event created.', 'success');
-    } catch(e){ log(e.message, 'error'); }
-}
-
-/** ==================== UPLOAD CORE (DEBUG VERSION) ==================== */
-
-// 1. File Selection & Canvas Processing
-$('fileInput').onchange = async (e) => {
-    const files = Array.from(e.target.files);
-    if(!files.length) return;
-    
-    files.forEach(f => {
-        const id = Math.random().toString(36).substr(2,5);
-        selectedFiles.push({ id, raw: f, status:'waiting' });
-        $('uploadList').innerHTML += `<div id="row-${id}" class="upload-row"><span>${f.name}</span><span class="st">Waiting</span></div>`;
-    });
-    
-    $('startUploadBtn').disabled = false;
-    $('startUploadBtn').innerText = `Upload ${selectedFiles.length} Photos`;
-    log(`Selected ${files.length} files. Total queue: ${selectedFiles.length}`);
+$('fileIn').onchange = (e) => {
+    $('upBtn').disabled = e.target.files.length === 0;
+    $('upBtn').innerText = `Upload ${e.target.files.length} Files`;
 };
 
-// 2. Start Upload
-$('startUploadBtn').onclick = async () => {
-    const eventId = $('eventSelect').value;
-    if(!eventId) return alert('Select an event first!');
-    if(!selectedFiles.length) return;
+/** === UPLOAD CORE === */
+async function runUpload(){
+    const cid = $('colSelect').value;
+    const eid = $('evSelect').value;
+    const files = Array.from($('fileIn').files);
+    const skipProc = $('skipProcess').checked;
 
-    $('startUploadBtn').disabled = true;
-    log('--- STARTING UPLOAD BATCH ---');
-
-    // Process 3 at a time
-    const BATCH_SIZE = 3;
+    if(!cid || !eid) return alert('Select Collection and Event');
     
-    while(true){
-        const batch = selectedFiles.filter(x => x.status === 'waiting').slice(0, BATCH_SIZE);
-        if(batch.length === 0) break;
+    $('upBtn').disabled = true;
+    log('--- STARTING TRACE ---');
+    log(`Mode: ${skipProc ? 'RAW (No Processing)' : 'PROCESSED (Canvas+Hash)'}`);
 
-        log(`Processing batch of ${batch.length}...`);
-
-        // Step A: Convert to Safe JPG & Hash
-        await Promise.all(batch.map(async (item) => {
-            try {
-                updateStatus(item.id, 'Processing...');
-                item.file = await processImage(item.raw); // Converts to JPG Blob
-                item.hash = await cryptoHash(item.file);
-                log(`Processed: ${item.raw.name} -> Size: ${item.file.size} bytes`);
-                item.status = 'ready';
-            } catch(err){
-                log(`Process Error ${item.raw.name}: ${err.message}`, 'error');
-                item.status = 'error';
-                updateStatus(item.id, 'Proc Fail', 'danger');
-            }
-        }));
-
-        const readyItems = batch.filter(x => x.status === 'ready');
-        if(!readyItems.length) continue;
-
-        // Step B: Get URLs
+    for(let f of files){
         try {
-            log('Requesting Upload URLs...');
-            const payload = {
-                collection_id: currentCol.id,
-                event_id: eventId,
-                files: readyItems.map(x => ({
-                    name: x.file.name,
-                    type: 'image/jpeg', // FORCE JPEG
-                    size: x.file.size,
-                    hash: x.hash
-                }))
+            let fileToSend = f;
+            let fileHash = "raw_hash_skipped";
+
+            // 1. Pre-processing
+            if(!skipProc){
+                log(`Processing ${f.name}...`);
+                fileToSend = await processFile(f);
+                fileHash = await computeHash(fileToSend);
+                log(`Hash Generated: ${fileHash.substring(0,10)}...`);
+            }
+
+            // 2. Prepare Payload
+            // FIX: Sending BOTH 'type' and 'content_type' to be safe
+            const fileMeta = {
+                name: fileToSend.name,
+                type: 'image/jpeg',         // Standard
+                content_type: 'image/jpeg', // Cognito/Lambda might prefer this
+                size: fileToSend.size,
+                hash: fileHash
             };
 
+            const payload = {
+                collection_id: cid,
+                event_id: eid,
+                files: [fileMeta] // Sending 1 by 1 for trace clarity
+            };
+
+            log(`PAYLOAD SENT:\n${JSON.stringify(payload, null, 2)}`, 'c-sent');
+
+            // 3. Get URL
             const urlRes = await api('/generate-upload-urls', 'POST', payload);
+            log(`RAW RESPONSE:\n${JSON.stringify(urlRes, null, 2)}`, 'c-recv');
+
+            // 4. Analyze
+            if(urlRes.skipped && urlRes.skipped.includes(0)){
+                log('RESULT: Backend says DUPLICATE.', 'c-err');
+                continue;
+            }
+
+            if(!urlRes.items || urlRes.items.length === 0){
+                log('RESULT: Backend returned 0 URLs. Something is wrong with Input format.', 'c-err');
+                continue;
+            }
+
+            // 5. Upload
+            const item = urlRes.items[0];
+            log(`Uploading to S3... (${item.uploadUrl.substring(0,30)}...)`);
             
-            // Handle Skipped
-            if(urlRes.skipped){
-                urlRes.skipped.forEach(idx => {
-                    const it = readyItems[idx];
-                    it.status = 'skipped';
-                    updateStatus(it.id, 'Duplicate', 'warning');
-                    log(`Skipped (Duplicate): ${it.file.name}`, 'warn');
-                });
-            }
+            const s3Res = await fetch(item.uploadUrl, {
+                method: 'PUT',
+                body: fileToSend,
+                headers: { 'Content-Type': 'image/jpeg' }
+            });
 
-            // Step C: Upload & Register
-            const uploads = urlRes.items || [];
-            if(uploads.length === 0 && (!urlRes.skipped || urlRes.skipped.length===0)) {
-                log('WARNING: Backend returned 0 URLs and 0 skipped. Something is wrong with payload?', 'error');
-            }
+            if(!s3Res.ok) throw new Error(`S3 Error: ${s3Res.status}`);
+            log('S3 Upload: OK', 'c-ok');
 
-            await Promise.all(uploads.map(async (u) => {
-                const item = readyItems[u.index];
-                try {
-                    // C1: PUT to S3
-                    updateStatus(item.id, 'Uploading...');
-                    log(`PUT S3: ${u.key}`);
-                    
-                    const s3Res = await fetch(u.uploadUrl, {
-                        method: 'PUT',
-                        body: item.file,
-                        headers: { 'Content-Type': 'image/jpeg' }
-                    });
+            // 6. Register
+            log('Registering...');
+            await api('/register-photo', 'POST', {
+                collection_id: cid,
+                event_id: eid,
+                object_key: item.key,
+                filename: fileToSend.name,
+                size: fileToSend.size,
+                content_type: 'image/jpeg',
+                hash: fileHash
+            });
+            log('Register: OK. Photo should be visible now.', 'c-ok');
 
-                    if(!s3Res.ok) throw new Error(`S3 Rejected: ${s3Res.status} ${s3Res.statusText}`);
-                    log(`S3 Success: ${item.file.name}`, 'success');
-
-                    // C2: Register
-                    updateStatus(item.id, 'Indexing...');
-                    const regRes = await api('/register-photo', 'POST', {
-                        collection_id: currentCol.id,
-                        event_id: eventId,
-                        object_key: u.key,
-                        filename: item.file.name,
-                        size: item.file.size,
-                        content_type: 'image/jpeg',
-                        hash: item.hash
-                    });
-                    
-                    log(`Register API Success: ${JSON.stringify(regRes)}`, 'success');
-                    item.status = 'done';
-                    updateStatus(item.id, 'Done', 'success');
-
-                } catch(err) {
-                    log(`Upload/Reg Fail ${item.file.name}: ${err.message}`, 'error');
-                    updateStatus(item.id, 'Fail', 'danger');
-                }
-            }));
-
-        } catch(err) {
-            log(`Batch API Error: ${err.message}`, 'error');
+        } catch(e) {
+            log(`FATAL ERROR: ${e.message}`, 'c-err');
         }
     }
-
-    $('startUploadBtn').disabled = false;
-    $('startUploadBtn').innerText = 'Upload Complete';
-    log('--- BATCH COMPLETE ---');
-};
+    
+    $('upBtn').disabled = false;
+    log('--- TRACE COMPLETE ---');
+}
 
 /** HELPERS */
-function updateStatus(id, text, cls=''){
-    const el = document.querySelector(`#row-${id} .st`);
-    if(el) {
-        el.innerText = text;
-        if(cls) el.className = `st up-status ${cls}`;
-    }
+function processFile(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle="#FFF"; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img, 0, 0);
+        // Force Rename
+        const newName = file.name.split('.')[0].replace(/[^a-z0-9]/gi,'_') + ".jpg";
+        canvas.toBlob(b => resolve(new File([b], newName, {type:'image/jpeg'})), 'image/jpeg', 0.9);
+      };
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
-function processImage(file){
-    return new Promise((resolve, reject) => {
-        // Read file
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                // Force name sanitization
-                let cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-z0-9]/gi, '_') + ".jpg";
-                
-                canvas.toBlob((blob) => {
-                    if(!blob) reject(new Error('Canvas blob failed'));
-                    resolve(new File([blob], cleanName, { type: 'image/jpeg' }));
-                }, 'image/jpeg', 0.9);
-            };
-            img.onerror = () => reject(new Error('Invalid Image'));
-        };
-    });
+async function computeHash(file) {
+  const buf = await file.arrayBuffer();
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-
-async function cryptoHash(file) {
-    const buffer = await file.arrayBuffer();
-    const hashBuf = await crypto.subtle.digest('SHA-256', buffer);
-    return Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
 </script>
 </body>
 </html>

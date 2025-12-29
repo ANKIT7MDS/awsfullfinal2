@@ -1,1067 +1,863 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EventLens Pro • SPA</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>EventLens Pro – AI Photo Distribution</title>
 
-  <!-- Icons + Fonts -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <style>
-    :root{
-      --bg:#07070b;
-      --card:#12121b;
-      --border:rgba(255,255,255,.09);
-      --text:#fff;
-      --muted:#a3a3b2;
-      --brand:#6366f1;
-      --brand2:#8b5cf6;
-      --ok:#10b981;
-      --warn:#f59e0b;
-      --bad:#ef4444;
-      --shadow:0 18px 60px rgba(0,0,0,.55);
-      --r12:12px; --r16:16px; --r22:22px;
-      --t: all .22s cubic-bezier(.2,.8,.2,1);
-      --glass: rgba(18,18,27,.65);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:"Plus Jakarta Sans",system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      color:var(--text);
-      background:
-        radial-gradient(900px 500px at 10% 30%, rgba(99,102,241,.18), transparent 55%),
-        radial-gradient(900px 500px at 90% 20%, rgba(139,92,246,.14), transparent 55%),
-        var(--bg);
-      min-height:100vh;
-    }
-    a{color:inherit}
-    .hide{display:none !important}
-    .wrap{max-width:1240px; margin:0 auto; padding:22px}
-    .topbar{
-      position:sticky; top:0; z-index:50;
-      backdrop-filter: blur(10px);
-      background: rgba(7,7,11,.55);
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .topbar .inner{
-      max-width:1240px; margin:0 auto; padding:14px 22px;
-      display:flex; align-items:center; justify-content:space-between; gap:14px;
-    }
-    .brand{
-      display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px;
-    }
-    .brand .dot{
-      width:12px; height:12px; border-radius:99px;
-      background: linear-gradient(135deg,var(--brand),var(--brand2));
-      box-shadow: 0 0 20px rgba(99,102,241,.4);
-    }
-    .navbtns{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
-    .btn{
-      border:none; cursor:pointer;
-      border-radius:999px;
-      padding:10px 14px;
-      font-weight:800; font-size:13px;
-      background: rgba(255,255,255,.06);
-      color:var(--text);
-      border:1px solid rgba(255,255,255,.10);
-      transition:var(--t);
-      display:inline-flex; align-items:center; gap:10px;
-      user-select:none;
-    }
-    .btn:hover{transform:translateY(-2px); border-color:rgba(255,255,255,.18)}
-    .btn.primary{
-      background: linear-gradient(135deg,var(--brand),var(--brand2));
-      border:none;
-      box-shadow: 0 10px 30px rgba(99,102,241,.25);
-    }
-    .btn.primary:hover{box-shadow: 0 14px 40px rgba(99,102,241,.33)}
-    .btn.danger{background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.28); color:#ffd2d2}
-    .pill{
-      font-size:12px; padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      color:var(--muted);
-      display:inline-flex; align-items:center; gap:6px;
-    }
-    .grid2{display:grid; grid-template-columns:1.2fr .8fr; gap:18px}
-    @media (max-width: 980px){ .grid2{grid-template-columns:1fr} }
-    .card{
-      background: var(--glass);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: var(--r22);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .card .pad{padding:22px}
-    .h1{
-      font-size:44px; line-height:1.06; margin:0 0 12px; letter-spacing:-.6px;
-      background: linear-gradient(90deg,#fff,#b9b9c7);
-      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-    }
-    .sub{color:var(--muted); font-size:15px; line-height:1.6}
-    .hero{
-      padding:34px 22px 22px;
-      background:
-        radial-gradient(1200px 600px at 40% 0%, rgba(99,102,241,.16), transparent 60%),
-        radial-gradient(900px 500px at 90% 0%, rgba(236,72,153,.08), transparent 55%),
-        rgba(255,255,255,.02);
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .plans{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px}
-    @media(max-width:980px){.plans{grid-template-columns:1fr}}
-    .plan{
-      background: rgba(0,0,0,.25);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius: var(--r16);
-      padding:16px;
-      transition:var(--t);
-    }
-    .plan:hover{transform:translateY(-3px); border-color: rgba(99,102,241,.35)}
-    .plan h3{margin:0 0 6px; font-size:16px}
-    .price{font-size:26px; font-weight:800}
-    .muted{color:var(--muted)}
-    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-    .input{
-      width:100%;
-      padding:12px 14px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.25);
-      color:var(--text);
-      outline:none;
-      transition:var(--t);
-      font-size:14px;
-    }
-    .input:focus{border-color: rgba(99,102,241,.65); box-shadow: 0 0 0 4px rgba(99,102,241,.18)}
-    .sectionTitle{
-      display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
-      margin:0 0 12px;
-    }
-    .sectionTitle h2{margin:0; font-size:18px}
-    .table{
-      width:100%; border-collapse:collapse;
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:16px; overflow:hidden;
-    }
-    .table th,.table td{
-      padding:12px 12px; border-bottom:1px solid rgba(255,255,255,.07);
-      text-align:left; font-size:13px;
-    }
-    .table th{color:var(--muted); background: rgba(255,255,255,.03); font-weight:800}
-    .table tr:hover td{background: rgba(255,255,255,.03)}
-    .toast{
-      position:fixed; right:18px; top:18px; z-index:9999;
-      background: rgba(0,0,0,.78);
-      border:1px solid rgba(255,255,255,.12);
-      padding:12px 14px; border-radius:14px;
-      box-shadow: var(--shadow);
-      max-width: min(460px, calc(100vw - 36px));
-      display:none;
-    }
-    .toast.show{display:block}
-    .toast .t1{font-weight:900; margin-bottom:2px}
-    .toast .t2{color:var(--muted); font-size:13px; line-height:1.45}
-    .tabs{display:flex; gap:8px; flex-wrap:wrap}
-    .tab{
-      padding:10px 12px; border-radius:999px; cursor:pointer;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      color:var(--muted);
-      font-weight:900; font-size:13px;
-      transition:var(--t);
-      user-select:none;
-    }
-    .tab.active{color:#fff; border-color: rgba(99,102,241,.55); background: rgba(99,102,241,.15)}
-    .split{display:grid; grid-template-columns: 1fr 1fr; gap:14px}
-    @media(max-width:980px){.split{grid-template-columns:1fr}}
-    .small{font-size:12px; color:var(--muted)}
-    .hr{height:1px; background: rgba(255,255,255,.08); margin:14px 0}
-    .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
-    @media(max-width:980px){.kpi{grid-template-columns:repeat(2,1fr)}}
-    .k{background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09); border-radius:16px; padding:12px}
-    .k .v{font-size:22px; font-weight:900}
-    .k .l{color:var(--muted); font-size:12px; margin-top:2px}
-  </style>
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        /* ================= THEME VARIABLES ================= */
+        :root {
+            --bg-dark: #050507;
+            --bg-panel: #0f0f12;
+            --primary: #00e676;       
+            --primary-glow: rgba(0, 230, 118, 0.25);
+            --accent: #6366f1;        
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --border: rgba(255,255,255,0.08);
+            --radius: 12px;
+            --font-head: 'Outfit', sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+        body { margin: 0; background: var(--bg-dark); color: var(--text-main); font-family: var(--font-body); overflow-x: hidden; font-size: 14px; }
+        a { text-decoration: none; color: inherit; transition: 0.3s; cursor: pointer; }
+        
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        /* ================= UTILITY CLASSES ================= */
+        .hidden { display: none !important; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        .flex-between { display: flex; align-items: center; justify-content: space-between; }
+        .flex-col { display: flex; flex-direction: column; }
+        .gap-10 { gap: 10px; } .gap-20 { gap: 20px; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .w-full { width: 100%; }
+
+        /* ================= COMPONENTS ================= */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px;
+            font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-family: var(--font-head);
+            font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .btn-primary { background: var(--primary); color: #000; box-shadow: 0 0 15px var(--primary-glow); }
+        .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        .btn-sm { padding: 6px 12px; font-size: 11px; }
+
+        input, select, textarea {
+            width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            border-radius: 8px; color: #fff; font-family: var(--font-body); transition: 0.3s; margin-bottom: 10px; font-size: 14px;
+        }
+        input:focus, select:focus { border-color: var(--primary); }
+
+        /* CARDS & STATS */
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 16px; padding: 24px; position: relative; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(145deg, #15151a, #0f0f12); padding: 20px; border-radius: 16px; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: flex-start; }
+        .stat-val { font-size: 28px; font-weight: 800; color: var(--primary); font-family: var(--font-head); line-height: 1.2; }
+        .stat-label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+
+        /* TABLES & LISTS */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
+        .data-table td { padding: 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* TABS */
+        .tabs { display: flex; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; overflow-x: auto; }
+        .tab-btn { padding: 8px 16px; background: transparent; border-radius: 6px; cursor: pointer; color: var(--text-muted); font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+        .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .tab-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+
+        /* UPLOAD & DROPZONE */
+        .dropzone { 
+            border: 2px dashed var(--border); border-radius: 16px; padding: 40px; text-align: center; 
+            transition: 0.3s; cursor: pointer; background: rgba(255,255,255,0.01);
+        }
+        .dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: rgba(0, 230, 118, 0.05); }
+        .upload-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.02); margin-bottom: 5px; border-radius: 6px; font-size: 13px; }
+        .progress-bar { height: 4px; background: #333; border-radius: 2px; width: 100%; margin-top: 5px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+
+        /* GUEST SEARCH */
+        .search-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-size: cover; background-position: center; position: relative; }
+        .search-overlay { position: absolute; inset: 0; background: linear-gradient(to top, #000 0%, rgba(0,0,0,0.6) 100%); z-index: 1; }
+        .search-content { position: relative; z-index: 2; width: 90%; max-width: 450px; text-align: center; padding: 30px; background: rgba(10,10,10,0.8); backdrop-filter: blur(20px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .face-scanner { width: 160px; height: 160px; border-radius: 50%; border: 3px solid var(--border); margin: 0 auto 20px; overflow: hidden; position: relative; background: #000; display: flex; align-items: center; justify-content: center; }
+        .face-scanner.scanning::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--primary); box-shadow: 0 0 15px var(--primary); animation: scan 1.5s infinite ease-in-out; }
+        @keyframes scan { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        /* PHOTO GRID */
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        .photo-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #000; position: relative; cursor: pointer; }
+        .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        .photo-item:hover img { transform: scale(1.05); }
+
+        /* MODALS */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-panel); width: 95%; max-width: 500px; padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+
+        /* TOAST */
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #fff; color: #000; padding: 12px 24px; border-radius: 8px; font-weight: 600; transform: translateY(100px); transition: 0.3s; z-index: 3000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .toast.show { transform: translateY(0); }
+        .toast.error { background: var(--danger); color: #fff; }
+    </style>
 </head>
-
 <body>
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="inner">
-      <div class="brand" role="button" onclick="goto('#/')">
-        <span class="dot"></span>
-        <span>EventLens Pro</span>
-        <span class="pill" id="whoPill" style="margin-left:8px;" class="hide">Guest</span>
-      </div>
-      <div class="navbtns">
-        <button class="btn" id="navHome" onclick="goto('#/')"><i class="fa-solid fa-house"></i> Home</button>
-        <button class="btn" id="navLogin" onclick="goto('#/login')"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
-        <button class="btn hide" id="navApp" onclick="goto('#/app')"><i class="fa-solid fa-gauge-high"></i> Dashboard</button>
-        <button class="btn danger hide" id="navLogout" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
-      </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar" style="position:fixed; top:0; width:100%; padding:15px 0; background:rgba(5,5,7,0.9); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); z-index:1000;" id="main-nav">
+        <div class="container flex-between">
+            <div class="flex-center gap-10">
+                <i class="fa-solid fa-camera-retro" style="color:var(--primary); font-size:20px;"></i>
+                <span style="font-family:var(--font-head); font-weight:700; font-size:20px;">EventLens <span style="font-size:10px; background:var(--accent); padding:2px 5px; border-radius:4px;">PRO</span></span>
+            </div>
+            <div id="nav-actions" class="flex-center gap-10">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </nav>
+
+    <!-- APP CONTAINER -->
+    <main id="app-view" style="padding-top:80px; min-height:100vh;">
+        <!-- Views injected here -->
+    </main>
+
+    <!-- MODAL -->
+    <div id="generic-modal" class="modal">
+        <div class="modal-content">
+            <div class="flex-between" style="margin-bottom:20px;">
+                <h3 id="modal-title" style="margin:0; font-family:var(--font-head);">Title</h3>
+                <button onclick="ui.closeModal()" style="background:none; border:none; color:#aaa; cursor:pointer;"><i class="fa-solid fa-xmark fa-lg"></i></button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
     </div>
-  </div>
-
-  <div class="wrap">
-    <!-- ROUTE: Landing -->
-    <section id="routeLanding" class="card">
-      <div class="hero">
-        <div class="grid2">
-          <div>
-            <div class="pill"><i class="fa-solid fa-sparkles"></i> Smart AI Gallery + Selfie Search</div>
-            <h1 class="h1" style="margin-top:12px;">PhotoOwl-style Premium Landing, <br/>EventLens-style Powerful Backend</h1>
-            <p class="sub">
-              Photographer के लिए Admin Dashboard, Events & Upload,
-              और Guests के लिए Selfie Search – सब clean, fast और brandable.
-            </p>
-            <div class="row" style="margin-top:14px;">
-              <button class="btn primary" onclick="goto('#/login')"><i class="fa-solid fa-lock"></i> Login</button>
-              <button class="btn" onclick="scrollToId('contactCard')"><i class="fa-solid fa-headset"></i> Contact</button>
-              <span class="pill"><i class="fa-solid fa-shield"></i> Cognito + JWT</span>
-              <span class="pill"><i class="fa-solid fa-bolt"></i> API Gateway + Lambda</span>
-            </div>
-          </div>
-          <div class="card" style="border-radius:22px;">
-            <div class="pad">
-              <div class="sectionTitle">
-                <h2><i class="fa-solid fa-crown" style="color:var(--brand)"></i> Plans</h2>
-                <span class="small">demo numbers — तुम बदल देना</span>
-              </div>
-              <div class="plans">
-                <div class="plan">
-                  <h3>Starter</h3>
-                  <div class="price">₹499<span class="small">/month</span></div>
-                  <div class="muted">1 event • 5GB • basic branding</div>
-                </div>
-                <div class="plan">
-                  <h3>Pro</h3>
-                  <div class="price">₹1499<span class="small">/month</span></div>
-                  <div class="muted">10 events • 50GB • custom links</div>
-                </div>
-                <div class="plan">
-                  <h3>Studio</h3>
-                  <div class="price">₹3999<span class="small">/month</span></div>
-                  <div class="muted">Unlimited • priority support</div>
-                </div>
-              </div>
-              <div class="hr"></div>
-              <div class="small">
-                CTA: Login करके dashboard खोलो, collection बनाओ, event बनाओ, upload करो, फिर guest link share करो.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="pad" id="contactCard">
-        <div class="sectionTitle">
-          <h2><i class="fa-solid fa-address-card" style="color:var(--brand)"></i> Contact / Demo</h2>
-          <span class="pill"><i class="fa-solid fa-envelope"></i> support@eventlens</span>
-        </div>
-        <div class="split">
-          <div class="plan">
-            <b>What you get</b>
-            <div class="muted" style="margin-top:8px; line-height:1.65">
-              ✅ Photographer dashboard (collections/events/photos/leads) <br/>
-              ✅ Guest selfie search page (per link custom theme) <br/>
-              ✅ SuperAdmin panel for photographers + platform settings <br/>
-              ✅ S3 presigned uploads + Rekognition face matches (backend)
-            </div>
-          </div>
-          <div class="plan">
-            <b>Quick Actions</b>
-            <div class="row" style="margin-top:10px;">
-              <button class="btn primary" onclick="goto('#/login')"><i class="fa-solid fa-right-to-bracket"></i> Start Login</button>
-              <button class="btn" onclick="prefillDemo()"><i class="fa-solid fa-wand-magic-sparkles"></i> Fill Demo Config</button>
-            </div>
-            <div class="small" style="margin-top:10px;">
-              (Config नीचे login screen में दिखेगा — तुम अपने domain/API से replace कर देना)
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ROUTE: Login -->
-    <section id="routeLogin" class="card hide">
-      <div class="pad">
-        <div class="sectionTitle">
-          <h2><i class="fa-solid fa-lock" style="color:var(--brand)"></i> Secure Login</h2>
-          <span class="pill"><i class="fa-solid fa-circle-info"></i> Hosted UI → code → token</span>
-        </div>
-
-        <div class="split">
-          <div class="plan">
-            <div class="small">Cognito Domain</div>
-            <input class="input" id="COGNITO_DOMAIN" placeholder="https://xxxx.auth.ap-south-1.amazoncognito.com" />
-            <div class="small" style="margin-top:10px;">Client ID</div>
-            <input class="input" id="COGNITO_CLIENT_ID" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxx" />
-            <div class="small" style="margin-top:10px;">API Base (Execute-API)</div>
-            <input class="input" id="API_BASE" placeholder="https://xxxx.execute-api.ap-south-1.amazonaws.com/prod" />
-            <div class="row" style="margin-top:12px;">
-              <button class="btn primary" onclick="startHostedLogin()"><i class="fa-solid fa-right-to-bracket"></i> Login with Cognito</button>
-              <button class="btn" onclick="saveConfig()"><i class="fa-solid fa-floppy-disk"></i> Save Config</button>
-            </div>
-            <div class="small" style="margin-top:10px;">
-              NOTE: Callback URL में <b>/app.html</b> या जहाँ तुम deploy करोगे वो add होना चाहिए.
-            </div>
-          </div>
-
-          <div class="plan">
-            <b>Auto exchange (if ?code=)</b>
-            <div class="muted" style="margin-top:8px; line-height:1.65">
-              Login के बाद Cognito redirect करेगा: <code>?code=...</code><br/>
-              SPA अपने आप token exchange करेगा और dashboard खोल देगा.
-            </div>
-            <div class="hr"></div>
-            <div class="small">
-              Role routing: अगर token में group <b>MasterAdmins</b> है → SuperAdmin view, else Photographer view.
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ROUTE: App (single page: superadmin + dashboard + collection detail) -->
-    <section id="routeApp" class="card hide">
-      <div class="pad">
-        <div class="sectionTitle">
-          <h2><i class="fa-solid fa-gauge-high" style="color:var(--brand)"></i> App</h2>
-          <div class="row">
-            <span class="pill" id="rolePill"><i class="fa-solid fa-user"></i> role: -</span>
-            <span class="pill" id="emailPill"><i class="fa-solid fa-envelope"></i> -</span>
-          </div>
-        </div>
-
-        <div class="tabs" id="appTabs">
-          <div class="tab active" data-tab="photographer" onclick="switchTab('photographer')"><i class="fa-solid fa-camera"></i> Photographer</div>
-          <div class="tab" data-tab="collection" onclick="switchTab('collection')"><i class="fa-solid fa-layer-group"></i> Collection Details</div>
-          <div class="tab" data-tab="superadmin" onclick="switchTab('superadmin')"><i class="fa-solid fa-crown"></i> SuperAdmin</div>
-        </div>
-
-        <!-- Photographer -->
-        <div id="tabPhotographer">
-          <div class="kpi" style="margin-top:10px;">
-            <div class="k"><div class="v" id="kCollections">-</div><div class="l">Collections</div></div>
-            <div class="k"><div class="v" id="kEvents">-</div><div class="l">Events</div></div>
-            <div class="k"><div class="v" id="kPhotos">-</div><div class="l">Photos</div></div>
-            <div class="k"><div class="v" id="kLeads">-</div><div class="l">Guest Leads</div></div>
-          </div>
-
-          <div class="hr"></div>
-
-          <div class="split">
-            <div class="plan">
-              <b>Create Collection</b>
-              <div class="small" style="margin-top:8px;">Collection Name</div>
-              <input class="input" id="newCollectionName" placeholder="e.g. Raghav Wedding" />
-              <div class="row" style="margin-top:10px;">
-                <button class="btn primary" onclick="createCollection()"><i class="fa-solid fa-plus"></i> Create</button>
-                <button class="btn" onclick="loadDashboard()"><i class="fa-solid fa-rotate"></i> Refresh</button>
-              </div>
-            </div>
-            <div class="plan">
-              <b>Collections List</b>
-              <div class="small" style="margin-top:8px;">Search</div>
-              <input class="input" id="collectionSearch" placeholder="type to filter..." oninput="renderCollectionsTable()" />
-              <div class="small" style="margin-top:8px;">Tip: Open collection to manage Events/Photos/Links.</div>
-            </div>
-          </div>
-
-          <div style="margin-top:14px;">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Collection ID</th>
-                  <th>Events</th>
-                  <th>Photos</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="collectionsRows"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Collection Details -->
-        <div id="tabCollection" class="hide">
-          <div class="plan">
-            <b>Selected Collection</b>
-            <div class="muted" style="margin-top:8px;" id="selCollectionMeta">No collection selected.</div>
-            <div class="row" style="margin-top:10px;">
-              <button class="btn" onclick="backToCollections()"><i class="fa-solid fa-arrow-left"></i> Back</button>
-              <button class="btn" onclick="loadCollectionDetails()"><i class="fa-solid fa-rotate"></i> Refresh</button>
-              <button class="btn primary" onclick="openGuestBrandingPanel()"><i class="fa-solid fa-palette"></i> Guest Branding</button>
-            </div>
-          </div>
-
-          <div class="split" style="margin-top:14px;">
-            <div class="plan">
-              <b>Create Event</b>
-              <div class="small" style="margin-top:8px;">Event Name</div>
-              <input class="input" id="newEventName" placeholder="e.g. Haldi Night" />
-              <div class="small" style="margin-top:8px;">Event Date</div>
-              <input class="input" id="newEventDate" type="date" />
-              <div class="row" style="margin-top:10px;">
-                <button class="btn primary" onclick="createEvent()"><i class="fa-solid fa-calendar-plus"></i> Add Event</button>
-              </div>
-            </div>
-
-            <div class="plan">
-              <b>Generate Guest Link (per event/custom)</b>
-              <div class="small" style="margin-top:8px;">Select Event IDs (comma)</div>
-              <input class="input" id="linkEventIds" placeholder="eventId1,eventId2" />
-              <div class="small" style="margin-top:8px;">Expiry Hours</div>
-              <input class="input" id="linkExpiry" type="number" value="72" />
-              <div class="small" style="margin-top:8px;">Optional PIN</div>
-              <input class="input" id="linkPin" placeholder="e.g. 1234" />
-              <div class="row" style="margin-top:10px;">
-                <button class="btn primary" onclick="generateGuestLink()"><i class="fa-solid fa-link"></i> Create Link</button>
-                <button class="btn" onclick="copyLastLink()"><i class="fa-solid fa-copy"></i> Copy Last</button>
-              </div>
-              <div class="small" style="margin-top:10px;" id="lastLinkBox"></div>
-            </div>
-          </div>
-
-          <div class="hr"></div>
-
-          <div class="split">
-            <div>
-              <div class="sectionTitle"><h2><i class="fa-solid fa-list" style="color:var(--brand)"></i> Events</h2></div>
-              <table class="table">
-                <thead><tr><th>Name</th><th>Date</th><th>Event ID</th></tr></thead>
-                <tbody id="eventsRows"></tbody>
-              </table>
-            </div>
-
-            <div>
-              <div class="sectionTitle"><h2><i class="fa-solid fa-users" style="color:var(--brand)"></i> Leads</h2></div>
-              <div class="small" style="margin-bottom:10px;">(Loaded from /save-details action=list)</div>
-              <table class="table">
-                <thead><tr><th>Name</th><th>Mobile</th><th>Matches</th><th>Selfie</th></tr></thead>
-                <tbody id="leadsRows"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- SuperAdmin -->
-        <div id="tabSuperadmin" class="hide">
-          <div class="plan">
-            <b>SuperAdmin Controls</b>
-            <div class="muted" style="margin-top:8px;">
-              यहाँ से तुम platform-wide theme/config, photographers list, limits/expiry manage कर सकते हो.
-              (Backend endpoints जो तुमने दिए थे: <code>/photographers</code>, toggle, delete etc.)
-            </div>
-            <div class="row" style="margin-top:10px;">
-              <button class="btn primary" onclick="loadPhotographers()"><i class="fa-solid fa-rotate"></i> Load Photographers</button>
-            </div>
-          </div>
-
-          <div class="hr"></div>
-
-          <table class="table">
-            <thead><tr><th>Email</th><th>Limit(GB)</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="photographersRows"></tbody>
-          </table>
-        </div>
-
-      </div>
-    </section>
-  </div>
-
-  <!-- Branding Modal -->
-  <div id="brandModal" class="hide" style="position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:999; display:flex; align-items:center; justify-content:center; padding:18px;">
-    <div class="card" style="width:min(980px,96vw); max-height:92vh; overflow:auto;">
-      <div class="pad">
-        <div class="sectionTitle">
-          <h2><i class="fa-solid fa-palette" style="color:var(--brand)"></i> Guest Search Branding (Per Link)</h2>
-          <button class="btn" onclick="closeBrandModal()"><i class="fa-solid fa-xmark"></i> Close</button>
-        </div>
-
-        <div class="split">
-          <div class="plan">
-            <b>Look & Feel</b>
-            <div class="small" style="margin-top:8px;">Brand Name</div>
-            <input class="input" id="b_brand" placeholder="e.g. PhotoOwl Studio" />
-            <div class="small" style="margin-top:8px;">Tagline</div>
-            <input class="input" id="b_tagline" placeholder="e.g. Find your moments instantly" />
-            <div class="small" style="margin-top:8px;">Primary Color</div>
-            <input class="input" id="b_primary" placeholder="#6366f1" />
-            <div class="small" style="margin-top:8px;">Accent Color</div>
-            <input class="input" id="b_accent" placeholder="#8b5cf6" />
-          </div>
-
-          <div class="plan">
-            <b>Header / Footer</b>
-            <div class="small" style="margin-top:8px;">Logo URL</div>
-            <input class="input" id="b_logo" placeholder="https://.../logo.png" />
-            <div class="small" style="margin-top:8px;">Header Image URL</div>
-            <input class="input" id="b_headerImg" placeholder="https://.../banner.jpg" />
-            <div class="small" style="margin-top:8px;">Footer Text</div>
-            <input class="input" id="b_footer" placeholder="© 2026 Your Studio. All rights reserved." />
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div class="row">
-          <button class="btn primary" onclick="applyBrandPreview()"><i class="fa-solid fa-wand-magic-sparkles"></i> Preview (In Link)</button>
-          <span class="small">Preview creates a safe link payload (base64 JSON) — backend save optional.</span>
-        </div>
-
-        <div class="small" style="margin-top:10px;">
-          Generated payload will be attached as <code>&theme=...</code> in guest link, so each link can have unique UI.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast -->
-  <div class="toast" id="toast">
-    <div class="t1" id="toastT1">OK</div>
-    <div class="t2" id="toastT2">…</div>
-  </div>
-
-<script>
-/* =========================================================
-   CONFIG (saved in localStorage)
-========================================================= */
-const CFG_KEY = "eventlens_cfg_v1";
-function getCfg(){
-  const raw = localStorage.getItem(CFG_KEY);
-  if(raw){
-    try { return JSON.parse(raw); } catch(e){}
-  }
-  // default from your login.html (replace if needed)
-  return {
-    COGNITO_DOMAIN: "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com",
-    COGNITO_CLIENT_ID: "6j3gec3kk0q0ktkals8cr8s367",
-    API_BASE: "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod"
-  };
-}
-function setCfg(cfg){
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-}
-function saveConfig(){
-  const cfg = {
-    COGNITO_DOMAIN: document.getElementById("COGNITO_DOMAIN").value.trim(),
-    COGNITO_CLIENT_ID: document.getElementById("COGNITO_CLIENT_ID").value.trim(),
-    API_BASE: document.getElementById("API_BASE").value.trim()
-  };
-  setCfg(cfg);
-  toast("Saved", "Config stored in browser");
-}
-
-/* =========================================================
-   ROUTER
-========================================================= */
-function goto(hash){ location.hash = hash; }
-function showRoute(name){
-  const map = {
-    landing: "routeLanding",
-    login: "routeLogin",
-    app: "routeApp"
-  };
-  Object.values(map).forEach(id => document.getElementById(id).classList.add("hide"));
-  document.getElementById(map[name]).classList.remove("hide");
-}
-window.addEventListener("hashchange", route);
-function route(){
-  const h = (location.hash || "#/").replace("#/","");
-  if(h.startsWith("login")){ showRoute("login"); hydrateLogin(); return; }
-  if(h.startsWith("app")){ showRoute("app"); ensureAuthedAndLoad(); return; }
-  showRoute("landing");
-}
-function scrollToId(id){ document.getElementById(id)?.scrollIntoView({behavior:"smooth"}); }
-
-/* =========================================================
-   AUTH + TOKEN EXCHANGE
-========================================================= */
-const TOK_KEY = "idToken";
-let idToken = localStorage.getItem(TOK_KEY) || "";
-let session = { role:"-", email:"-", groups:[] };
-
-function parseJwt(token){
-  try{
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-    return JSON.parse(jsonPayload);
-  }catch(e){ return null; }
-}
-
-async function exchangeCodeForToken(code){
-  const cfg = getCfg();
-  const REDIRECT_URI = window.location.origin + window.location.pathname; // app.html
-  const tokenUrl = `${cfg.COGNITO_DOMAIN}/oauth2/token`;
-
-  const body = new URLSearchParams();
-  body.append("grant_type","authorization_code");
-  body.append("client_id", cfg.COGNITO_CLIENT_ID);
-  body.append("code", code);
-  body.append("redirect_uri", REDIRECT_URI);
-
-  const res = await fetch(tokenUrl, {
-    method:"POST",
-    headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body: body.toString()
-  });
-  if(!res.ok){
-    const t = await res.text();
-    throw new Error("Token exchange failed: " + t);
-  }
-  const data = await res.json();
-  if(!data.id_token) throw new Error("No id_token in response");
-  localStorage.setItem(TOK_KEY, data.id_token);
-  idToken = data.id_token;
-  // clean URL
-  const url = new URL(window.location.href);
-  url.searchParams.delete("code");
-  url.searchParams.delete("state");
-  history.replaceState({}, "", url.toString());
-}
-
-function startHostedLogin(){
-  const cfg = getCfg();
-  const REDIRECT_URI = window.location.origin + window.location.pathname; // app.html
-  const SCOPES = "openid profile email aws.cognito.signin.user.admin";
-  const loginUrl = `${cfg.COGNITO_DOMAIN}/login?response_type=code&client_id=${cfg.COGNITO_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
-  window.location.href = loginUrl;
-}
-
-function logout(){
-  localStorage.removeItem(TOK_KEY);
-  idToken = "";
-  session = { role:"-", email:"-", groups:[] };
-  syncNav();
-  goto("#/");
-}
-
-/* =========================================================
-   NAV / UI
-========================================================= */
-function toast(t1, t2){
-  const el = document.getElementById("toast");
-  document.getElementById("toastT1").textContent = t1;
-  document.getElementById("toastT2").textContent = t2 || "";
-  el.classList.add("show");
-  setTimeout(()=>el.classList.remove("show"), 3200);
-}
-function hydrateLogin(){
-  const cfg = getCfg();
-  document.getElementById("COGNITO_DOMAIN").value = cfg.COGNITO_DOMAIN || "";
-  document.getElementById("COGNITO_CLIENT_ID").value = cfg.COGNITO_CLIENT_ID || "";
-  document.getElementById("API_BASE").value = cfg.API_BASE || "";
-}
-function prefillDemo(){
-  setCfg(getCfg());
-  goto("#/login");
-  setTimeout(()=>toast("Demo config", "Config loaded. Replace with your production values."), 200);
-}
-function syncNav(){
-  const authed = !!idToken;
-  document.getElementById("navApp").classList.toggle("hide", !authed);
-  document.getElementById("navLogout").classList.toggle("hide", !authed);
-  document.getElementById("navLogin").classList.toggle("hide", authed);
-  document.getElementById("whoPill").textContent = authed ? "Logged In" : "Guest";
-  document.getElementById("whoPill").classList.remove("hide");
-}
-
-/* =========================================================
-   API HELPERS
-========================================================= */
-async function api(path, {method="GET", body=null, headers={}} = {}){
-  const cfg = getCfg();
-  const url = path.startsWith("http") ? path : (cfg.API_BASE + path);
-  const h = {
-    "Content-Type":"application/json",
-    ...headers
-  };
-  if(idToken) h["Authorization"] = "Bearer " + idToken;
-
-  const res = await fetch(url, { method, headers: h, body: body ? JSON.stringify(body) : null });
-  const text = await res.text();
-  let data = null;
-  try{ data = text ? JSON.parse(text) : null; }catch(e){ data = text; }
-  if(!res.ok){
-    const msg = (data && data.message) ? data.message : (typeof data === "string" ? data : "API error");
-    throw new Error(msg);
-  }
-  return data;
-}
-
-/* =========================================================
-   ROLE ROUTING + INITIAL LOAD
-========================================================= */
-async function ensureAuthedAndLoad(){
-  syncNav();
-
-  // if redirected from hosted UI with code
-  const url = new URL(window.location.href);
-  const code = url.searchParams.get("code");
-  if(code && !idToken){
-    toast("Logging in…", "Exchanging code for token");
-    try{
-      await exchangeCodeForToken(code);
-      toast("Success", "Token received");
-    }catch(e){
-      console.error(e);
-      toast("Login Failed", e.message);
-      goto("#/login");
-      return;
-    }
-  }
-
-  if(!idToken){
-    toast("Please login", "No session token found");
-    goto("#/login");
-    return;
-  }
-
-  // decode token
-  const claims = parseJwt(idToken) || {};
-  const groups = claims["cognito:groups"] || [];
-  const email = claims.email || claims["cognito:username"] || "-";
-  const isSuper = Array.isArray(groups) && groups.includes("MasterAdmins");
-
-  session = {
-    role: isSuper ? "superadmin" : "photographer",
-    email,
-    groups
-  };
-
-  document.getElementById("rolePill").innerHTML = `<i class="fa-solid fa-user"></i> role: ${session.role}`;
-  document.getElementById("emailPill").innerHTML = `<i class="fa-solid fa-envelope"></i> ${session.email}`;
-
-  // show/hide super tab
-  const superTab = document.querySelector('.tab[data-tab="superadmin"]');
-  superTab.classList.toggle("hide", !isSuper);
-
-  // default tab
-  if(isSuper){
-    switchTab("superadmin");
-    await loadPhotographers().catch(e=>toast("SuperAdmin error", e.message));
-  }else{
-    switchTab("photographer");
-    await loadDashboard().catch(e=>toast("Dashboard error", e.message));
-  }
-}
-
-function switchTab(which){
-  document.querySelectorAll("#appTabs .tab").forEach(t => t.classList.toggle("active", t.dataset.tab === which));
-  document.getElementById("tabPhotographer").classList.toggle("hide", which !== "photographer");
-  document.getElementById("tabCollection").classList.toggle("hide", which !== "collection");
-  document.getElementById("tabSuperadmin").classList.toggle("hide", which !== "superadmin");
-}
-
-/* =========================================================
-   PHOTOGRAPHER: dashboard.html logic (SPA)
-========================================================= */
-let collectionsCache = [];
-let selectedCollection = null;
-let lastGuestLink = "";
-
-async function loadDashboard(){
-  syncNav();
-  // account status
-  // (your mapping shows GET /account-status)
-  let status = null;
-  try { status = await api("/account-status", { method:"GET" }); } catch(e){ /* ignore */ }
-
-  // collections
-  const cols = await api("/get-collections", { method:"GET" });
-  collectionsCache = (cols && (cols.Items || cols.items)) ? (cols.Items || cols.items) : (Array.isArray(cols) ? cols : []);
-  renderCollectionsTable();
-
-  // KPIs (best effort)
-  document.getElementById("kCollections").textContent = collectionsCache.length;
-  document.getElementById("kEvents").textContent = "-";
-  document.getElementById("kPhotos").textContent = "-";
-  document.getElementById("kLeads").textContent = "-";
-
-  toast("Loaded", "Dashboard refreshed");
-}
-
-function renderCollectionsTable(){
-  const q = (document.getElementById("collectionSearch").value || "").toLowerCase().trim();
-  const rows = document.getElementById("collectionsRows");
-  rows.innerHTML = "";
-  const list = collectionsCache.filter(c => !q || (c.name||"").toLowerCase().includes(q) || (c.collection_id||"").toLowerCase().includes(q));
-  if(!list.length){
-    rows.innerHTML = `<tr><td colspan="5" class="muted">No collections</td></tr>`;
-    return;
-  }
-  for(const c of list){
-    rows.insertAdjacentHTML("beforeend", `
-      <tr>
-        <td><b>${escapeHtml(c.name || "-")}</b></td>
-        <td><code>${escapeHtml(c.collection_id || "-")}</code></td>
-        <td>${c.event_count ?? "-"}</td>
-        <td>${c.total_photo_count ?? "-"}</td>
-        <td>
-          <button class="btn" onclick="openCollection('${c.collection_id}','${escapeAttr(c.name||"")}')"><i class="fa-solid fa-folder-open"></i> Open</button>
-        </td>
-      </tr>
-    `);
-  }
-}
-
-async function createCollection(){
-  const name = (document.getElementById("newCollectionName").value || "").trim();
-  if(!name) return toast("Missing", "Collection name required");
-  try{
-    await api("/upsert-collection", { method:"POST", body:{ name } });
-    document.getElementById("newCollectionName").value = "";
-    await loadDashboard();
-  }catch(e){
-    toast("Create failed", e.message);
-  }
-}
-
-function openCollection(collection_id, name){
-  selectedCollection = { collection_id, name };
-  document.getElementById("selCollectionMeta").innerHTML = `
-    <div><b>${escapeHtml(name || "-")}</b></div>
-    <div class="small">collection_id: <code>${escapeHtml(collection_id)}</code></div>
-  `;
-  switchTab("collection");
-  loadCollectionDetails().catch(e=>toast("Collection error", e.message));
-}
-
-function backToCollections(){
-  selectedCollection = null;
-  lastGuestLink = "";
-  document.getElementById("selCollectionMeta").textContent = "No collection selected.";
-  switchTab("photographer");
-}
-
-async function loadCollectionDetails(){
-  if(!selectedCollection?.collection_id) return;
-
-  // events
-  const ev = await api("/get-events", { method:"POST", body:{ collection_id: selectedCollection.collection_id }});
-  const events = (ev && (ev.events || ev.Items || ev.items)) ? (ev.events || ev.Items || ev.items) : (Array.isArray(ev) ? ev : []);
-  const er = document.getElementById("eventsRows");
-  er.innerHTML = "";
-  for(const e of events){
-    er.insertAdjacentHTML("beforeend", `
-      <tr>
-        <td><b>${escapeHtml(e.name || "-")}</b></td>
-        <td>${escapeHtml(e.event_date || e.date || "-")}</td>
-        <td><code>${escapeHtml(e.event_id || "-")}</code></td>
-      </tr>
-    `);
-  }
-  document.getElementById("kEvents").textContent = events.length;
-
-  // leads (admin list via save-details)
-  let leads = [];
-  try{
-    leads = await api("/save-details", { method:"POST", body:{ action:"list", collection_id: selectedCollection.collection_id }});
-    if(!Array.isArray(leads)) leads = [];
-  }catch(e){
-    // fallback may exist GET /save-details?collection_id=...
-    try{
-      const cfg = getCfg();
-      const url = `${cfg.API_BASE}/save-details?collection_id=${encodeURIComponent(selectedCollection.collection_id)}`;
-      const res = await fetch(url, { headers: { Authorization: "Bearer " + idToken } });
-      const text = await res.text();
-      leads = JSON.parse(text);
-      if(!Array.isArray(leads)) leads = [];
-    }catch(_){ leads = []; }
-  }
-  renderLeads(leads);
-  document.getElementById("kLeads").textContent = leads.length;
-
-  toast("Loaded", "Collection details updated");
-}
-
-function renderLeads(items){
-  const lr = document.getElementById("leadsRows");
-  lr.innerHTML = "";
-  if(!items.length){
-    lr.innerHTML = `<tr><td colspan="4" class="muted">No leads yet</td></tr>`;
-    return;
-  }
-  for(const it of items){
-    const img = it.selfie_url ? `<a href="${escapeAttr(it.selfie_url)}" target="_blank">open</a>` : "-";
-    lr.insertAdjacentHTML("beforeend", `
-      <tr>
-        <td><b>${escapeHtml(it.name || "-")}</b></td>
-        <td>${escapeHtml(it.mobile || it.phone || "-")}</td>
-        <td>${it.match_count ?? "-"}</td>
-        <td>${img}</td>
-      </tr>
-    `);
-  }
-}
-
-async function createEvent(){
-  if(!selectedCollection?.collection_id) return toast("Select", "Select a collection first");
-  const name = (document.getElementById("newEventName").value || "").trim();
-  const event_date = (document.getElementById("newEventDate").value || "").trim();
-  if(!name) return toast("Missing", "Event name required");
-
-  try{
-    await api("/upsert-event", { method:"POST", body:{ collection_id: selectedCollection.collection_id, name, event_date }});
-    document.getElementById("newEventName").value = "";
-    await loadCollectionDetails();
-  }catch(e){
-    toast("Event failed", e.message);
-  }
-}
-
-/* =========================================================
-   BRANDING → Guest Link (per link custom)
-   Works even if backend does NOT store branding.
-========================================================= */
-function openGuestBrandingPanel(){
-  if(!selectedCollection?.collection_id) return toast("Select", "Select a collection first");
-  document.getElementById("brandModal").classList.remove("hide");
-}
-function closeBrandModal(){
-  document.getElementById("brandModal").classList.add("hide");
-}
-function getBranding(){
-  return {
-    brand: (document.getElementById("b_brand").value || "").trim(),
-    tagline: (document.getElementById("b_tagline").value || "").trim(),
-    primary: (document.getElementById("b_primary").value || "#6366f1").trim(),
-    accent: (document.getElementById("b_accent").value || "#8b5cf6").trim(),
-    logo: (document.getElementById("b_logo").value || "").trim(),
-    headerImage: (document.getElementById("b_headerImg").value || "").trim(),
-    footer: (document.getElementById("b_footer").value || "").trim()
-  };
-}
-function applyBrandPreview(){
-  toast("Branding ready", "अब guest link generate करते समय theme attach हो जाएगी");
-  closeBrandModal();
-}
-
-function b64urlEncode(obj){
-  const json = JSON.stringify(obj);
-  const b64 = btoa(unescape(encodeURIComponent(json)));
-  return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
-
-async function generateGuestLink(){
-  if(!selectedCollection?.collection_id) return toast("Select", "Select a collection first");
-  const eventIdsRaw = (document.getElementById("linkEventIds").value || "").trim();
-  const expiry_hours = parseInt(document.getElementById("linkExpiry").value || "72", 10);
-  const pin = (document.getElementById("linkPin").value || "").trim();
-
-  const event_ids = eventIdsRaw ? eventIdsRaw.split(",").map(s=>s.trim()).filter(Boolean) : [];
-
-  const branding = getBranding();
-  const themePayload = b64urlEncode(branding);
-
-  // 1) Ask backend for link_id (preferred)
-  // If your generate-search-link lambda stores theme fields, it will also persist branding.
-  // If it ignores, we still attach theme to URL (fallback).
-  try{
-    const body = { collection_id: selectedCollection.collection_id, event_ids, expiry_hours };
-    if(pin) body.password = pin; // backend may hash
-    body.branding = branding;    // optional (if backend stores)
-    const out = await api("/generate-search-link", { method:"POST", body });
-    const link = out?.url || out?.link || out?.share_url || "";
-    if(!link) throw new Error("No url returned from generate-search-link");
-
-    // attach theme safely
-    const u = new URL(link);
-    u.searchParams.set("theme", themePayload);
-    if(pin) u.searchParams.set("pin", pin); // guest page will send pin to /search
-    lastGuestLink = u.toString();
-
-  }catch(e){
-    // 2) Fallback: if backend endpoint is missing, create "synthetic link" (still usable if guest.html expects linkId param)
-    // You can replace this with your real link format.
-    lastGuestLink = `${window.location.origin}/guest.html?collection_id=${encodeURIComponent(selectedCollection.collection_id)}&theme=${themePayload}${pin ? `&pin=${encodeURIComponent(pin)}` : ""}`;
-    toast("Backend link issue", "Fallback guest link created (backend generate-search-link not responding).");
-  }
-
-  document.getElementById("lastLinkBox").innerHTML = `<b>Guest Link:</b><br><a href="${escapeAttr(lastGuestLink)}" target="_blank">${escapeHtml(lastGuestLink)}</a>`;
-  toast("Link Ready", "Guest search link generated");
-}
-
-function copyLastLink(){
-  if(!lastGuestLink) return toast("No link", "Generate guest link first");
-  navigator.clipboard.writeText(lastGuestLink);
-  toast("Copied", "Guest link copied");
-}
-
-/* =========================================================
-   SUPERADMIN (best effort; uses your super-admin.html endpoints)
-========================================================= */
-async function loadPhotographers(){
-  if(session.role !== "superadmin") return toast("Denied","SuperAdmin only");
-  const cfg = getCfg();
-  const url = cfg.API_BASE + "/photographers";
-  const res = await fetch(url, { headers: { Authorization: "Bearer " + idToken }});
-  if(!res.ok) throw new Error("Failed to load photographers");
-  const data = await res.json();
-  const items = Array.isArray(data) ? data : (data.items || data.Items || []);
-  const pr = document.getElementById("photographersRows");
-  pr.innerHTML = "";
-  if(!items.length){
-    pr.innerHTML = `<tr><td colspan="5" class="muted">No photographers</td></tr>`;
-    return;
-  }
-  for(const p of items){
-    pr.insertAdjacentHTML("beforeend", `
-      <tr>
-        <td><b>${escapeHtml(p.email || p.user_email || "-")}</b></td>
-        <td>${escapeHtml(String(p.limit_gb ?? p.limit ?? "-"))}</td>
-        <td>${escapeHtml(p.expiry || p.expiry_date || "-")}</td>
-        <td>${escapeHtml(p.status || (p.is_active ? "active":"inactive") || "-")}</td>
-        <td class="row">
-          <button class="btn" onclick="togglePhotographer('${escapeAttr(p.user_id || p.userId || "")}')"><i class="fa-solid fa-toggle-on"></i> Toggle</button>
-          <button class="btn danger" onclick="deletePhotographer('${escapeAttr(p.user_id || p.userId || "")}')"><i class="fa-solid fa-trash"></i> Delete</button>
-        </td>
-      </tr>
-    `);
-  }
-  toast("Loaded", "Photographers refreshed");
-}
-
-async function togglePhotographer(userId){
-  if(!userId) return toast("Missing","userId not found");
-  const cfg = getCfg();
-  const url = cfg.API_BASE + `/photographers/${encodeURIComponent(userId)}/toggle`;
-  const res = await fetch(url, { method:"POST", headers:{ Authorization:"Bearer " + idToken }});
-  if(!res.ok) return toast("Failed","Toggle failed");
-  toast("Updated","Photographer toggled");
-  loadPhotographers();
-}
-async function deletePhotographer(userId){
-  if(!userId) return toast("Missing","userId not found");
-  const cfg = getCfg();
-  const url = cfg.API_BASE + `/photographers/${encodeURIComponent(userId)}`;
-  const res = await fetch(url, { method:"DELETE", headers:{ Authorization:"Bearer " + idToken }});
-  if(!res.ok) return toast("Failed","Delete failed");
-  toast("Deleted","Photographer deleted");
-  loadPhotographers();
-}
-
-/* =========================================================
-   UTIL
-========================================================= */
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
-function escapeAttr(s){ return escapeHtml(s).replace(/`/g,"&#096;"); }
-
-/* =========================================================
-   BOOT
-========================================================= */
-(async function boot(){
-  syncNav();
-  // If ?code= exists, go app and exchange
-  const url = new URL(window.location.href);
-  if(url.searchParams.get("code")) goto("#/app");
-  route();
-})();
-</script>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast">Action Successful</div>
+
+    <!-- SCRIPTS -->
+    <script>
+        // CONFIGURATION
+        const CONFIG = {
+            API_BASE: 'https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod',
+            COGNITO_DOMAIN: 'https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com',
+            CLIENT_ID: '6j3gec3kk0q0ktkals8cr8s367',
+            REDIRECT_URI: window.location.origin + window.location.pathname
+        };
+
+        // GLOBAL STATE
+        const state = {
+            user: null,
+            token: localStorage.getItem('idToken'),
+            collections: [],
+            currentCollection: null,
+            events: [],
+            photos: [],
+            isMasterAdmin: false,
+            uploadQueue: [],
+            uploading: false
+        };
+
+        // UTILITIES
+        const utils = {
+            showToast: (msg, type = 'success') => {
+                const t = document.getElementById('toast');
+                t.textContent = msg;
+                t.className = `toast ${type} show`;
+                setTimeout(() => t.classList.remove('show'), 3000);
+            },
+            formatBytes: (bytes) => {
+                if (!bytes) return '0 B';
+                const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            },
+            apiCall: async (endpoint, method = 'GET', body = null) => {
+                if (!state.token) { auth.logout(); throw new Error("Session Expired"); }
+                const headers = { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' };
+                const opts = { method, headers };
+                if (body) opts.body = JSON.stringify(body);
+                try {
+                    const res = await fetch(`${CONFIG.API_BASE}${endpoint}`, opts);
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.message || 'API Error');
+                    return data;
+                } catch (e) {
+                    utils.showToast(e.message, 'error');
+                    throw e;
+                }
+            },
+            // Helper for parallel uploads
+            asyncPool: async (poolLimit, array, iteratorFn) => {
+                const ret = [];
+                const executing = [];
+                for (const item of array) {
+                    const p = Promise.resolve().then(() => iteratorFn(item));
+                    ret.push(p);
+                    if (poolLimit <= array.length) {
+                        const e = p.then(() => executing.splice(executing.indexOf(e), 1));
+                        executing.push(e);
+                        if (executing.length >= poolLimit) await Promise.race(executing);
+                    }
+                }
+                return Promise.all(ret);
+            }
+        };
+
+        // AUTH
+        const auth = {
+            init: async () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                if (code) {
+                    try {
+                        const res = await fetch(`${CONFIG.COGNITO_DOMAIN}/oauth2/token`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({ grant_type: 'authorization_code', client_id: CONFIG.CLIENT_ID, code, redirect_uri: CONFIG.REDIRECT_URI })
+                        });
+                        const data = await res.json();
+                        if (data.id_token) {
+                            localStorage.setItem('idToken', data.id_token);
+                            state.token = data.id_token;
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            router.navigate('/dashboard');
+                        }
+                    } catch (e) { utils.showToast('Login Failed', 'error'); }
+                }
+
+                if (state.token) {
+                    try {
+                        const payload = JSON.parse(atob(state.token.split('.')[1]));
+                        if (Date.now() >= payload.exp * 1000) { auth.logout(); return; }
+                        state.user = payload;
+                        state.isMasterAdmin = (payload['cognito:groups'] || []).includes('MasterAdmins');
+                        ui.updateNav(true);
+                    } catch (e) { auth.logout(); }
+                } else {
+                    ui.updateNav(false);
+                }
+            },
+            login: () => {
+                const scope = "openid profile email aws.cognito.signin.user.admin";
+                window.location.href = `${CONFIG.COGNITO_DOMAIN}/login?response_type=code&client_id=${CONFIG.CLIENT_ID}&redirect_uri=${encodeURIComponent(CONFIG.REDIRECT_URI)}&scope=${encodeURIComponent(scope)}`;
+            },
+            logout: () => {
+                localStorage.clear();
+                window.location.href = `${CONFIG.COGNITO_DOMAIN}/logout?client_id=${CONFIG.CLIENT_ID}&logout_uri=${encodeURIComponent(CONFIG.REDIRECT_URI)}`;
+            }
+        };
+
+        // ROUTER
+        const router = {
+            routes: {
+                '/': views => views.landing(),
+                '/login': () => auth.login(),
+                '/dashboard': views => views.dashboard(),
+                '/superadmin': views => views.superadmin(),
+                '/collection/:id': (views, params) => views.collection(params.id),
+                '/search/:linkId': (views, params) => views.guestSearch(params.linkId)
+            },
+            navigate: (path) => { window.location.hash = path; },
+            handleRoute: () => {
+                const hash = window.location.hash.slice(1) || '/';
+                const main = document.getElementById('app-view');
+                
+                if (hash.startsWith('/search/')) {
+                    document.getElementById('main-nav').style.display = 'none';
+                    main.style.paddingTop = '0';
+                } else {
+                    document.getElementById('main-nav').style.display = 'block';
+                    main.style.paddingTop = '80px';
+                }
+
+                let matched = false;
+                for (let route in router.routes) {
+                    const regex = new RegExp('^' + route.replace(/:\w+/g, '([^/]+)') + '$');
+                    const match = hash.match(regex);
+                    if (match) {
+                        const params = {};
+                        const keys = route.match(/:\w+/g);
+                        if (keys) keys.forEach((key, i) => params[key.substring(1)] = match[i + 1]);
+                        router.routes[route](views, params);
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) views.landing();
+            }
+        };
+
+        // VIEWS
+        const views = {
+            landing: () => {
+                document.getElementById('app-view').innerHTML = `
+                    <div class="container text-center" style="padding-top:100px;">
+                        <h1 style="font-size:64px; font-family:var(--font-head); margin-bottom:20px;">
+                            Deliver Photos <br> <span style="color:var(--primary)">Lightning Fast</span>
+                        </h1>
+                        <p style="color:var(--text-muted); font-size:20px; margin-bottom:40px;">AI Face Recognition for Professional Photographers.</p>
+                        <button onclick="auth.login()" class="btn btn-primary" style="padding:15px 30px; font-size:16px;">Launch Dashboard</button>
+                    </div>
+                `;
+            },
+            
+            dashboard: async () => {
+                if (state.isMasterAdmin) { router.navigate('/superadmin'); return; }
+                document.getElementById('app-view').innerHTML = `
+                    <div class="container">
+                        <div id="dashboard-stats" class="stat-grid"></div>
+                        <div class="flex-between" style="margin-bottom:20px;">
+                            <h2 style="font-family:var(--font-head)">My Collections</h2>
+                            <button onclick="ui.modals.collection()" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Collection</button>
+                        </div>
+                        <div class="card">
+                            <input type="text" placeholder="Search collections..." onkeyup="ui.filterTable('coll-table', this.value)">
+                            <table class="data-table" id="coll-table">
+                                <thead><tr><th>Name</th><th>Date</th><th>Events</th><th>Photos</th><th>Storage</th><th>Actions</th></tr></thead>
+                                <tbody id="collections-list"><tr><td colspan="6" class="text-center">Loading...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                try {
+                    const data = await utils.apiCall('/get-collections');
+                    state.collections = data.Items || [];
+                    ui.renderDashboard();
+                } catch (e) {
+                    document.getElementById('collections-list').innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>`;
+                }
+            },
+
+            superadmin: async () => {
+                document.getElementById('app-view').innerHTML = `<div class="container"><h1>Super Admin</h1><div id="sa-content">Loading...</div></div>`;
+                // Implementation for Super Admin List...
+            },
+
+            collection: async (id) => {
+                state.currentCollection = id;
+                document.getElementById('app-view').innerHTML = `
+                    <div class="container">
+                        <div class="flex-between" style="margin-bottom:20px;">
+                            <div class="flex-center gap-10">
+                                <button onclick="router.navigate('/dashboard')" class="btn btn-outline btn-sm"><i class="fa-solid fa-arrow-left"></i></button>
+                                <h2 id="col-title" style="margin:0">Loading...</h2>
+                            </div>
+                            <div class="flex-center gap-10">
+                                <span class="badge" style="background:var(--bg-panel); border:1px solid var(--border); padding:5px 10px; border-radius:5px; font-size:12px;" id="col-stats"></span>
+                                <button onclick="ui.modals.deleteCollection('${id}')" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i> Delete</button>
+                            </div>
+                        </div>
+
+                        <div class="tabs">
+                            <button class="tab-btn active" onclick="ui.switchTab('photos')">Photos</button>
+                            <button class="tab-btn" onclick="ui.switchTab('events')">Events (Manage)</button>
+                            <button class="tab-btn" onclick="ui.switchTab('upload')">Upload & Index</button>
+                            <button class="tab-btn" onclick="ui.switchTab('links')">Generate Links</button>
+                            <button class="tab-btn" onclick="ui.switchTab('settings')">Settings</button>
+                        </div>
+
+                        <!-- PHOTOS TAB -->
+                        <div id="tab-photos" class="tab-content">
+                            <div class="flex-between" style="margin-bottom:15px;">
+                                <input type="text" placeholder="Search by filename..." style="width:250px; margin:0;" onkeyup="ui.filterPhotos(this.value)">
+                                <span style="color:var(--text-muted); font-size:12px;">Displaying <span id="photo-count">0</span> photos</span>
+                            </div>
+                            <div class="photo-grid" id="photo-grid"></div>
+                        </div>
+
+                        <!-- EVENTS TAB -->
+                        <div id="tab-events" class="tab-content hidden">
+                            <div class="card">
+                                <div class="flex-between" style="margin-bottom:15px;">
+                                    <h3>Event List</h3>
+                                    <button onclick="ui.modals.event()" class="btn btn-primary btn-sm">Add Event</button>
+                                </div>
+                                <table class="data-table">
+                                    <thead><tr><th>Event Name</th><th>Date</th><th>Photos</th><th>Actions</th></tr></thead>
+                                    <tbody id="event-list-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- UPLOAD TAB -->
+                        <div id="tab-upload" class="tab-content hidden">
+                            <div class="card">
+                                <h3 style="margin-top:0">Upload Photos</h3>
+                                <div class="flex-between" style="margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+                                    <select id="upload-event-select" style="max-width:300px; margin:0;"><option value="">Select Event (Required)</option></select>
+                                    <div style="font-size:12px; color:var(--text-muted);">
+                                        <i class="fa-solid fa-info-circle"></i> Supports JPG, PNG, HEIC. Max 20MB.
+                                    </div>
+                                </div>
+                                
+                                <div class="dropzone" id="dropzone">
+                                    <i class="fa-solid fa-cloud-arrow-up" style="font-size:40px; color:var(--text-muted); margin-bottom:15px;"></i>
+                                    <p style="margin:0; font-weight:600;">Drag & Drop photos here</p>
+                                    <p style="margin:5px 0 15px; font-size:12px; color:var(--text-muted)">or click to browse</p>
+                                    <input type="file" id="file-input" multiple class="hidden" accept="image/jpeg,image/png,image/heic">
+                                    <button onclick="document.getElementById('file-input').click()" class="btn btn-outline btn-sm">Browse Files</button>
+                                </div>
+
+                                <div id="upload-progress-area" style="margin-top:20px; display:none;">
+                                    <div class="flex-between" style="margin-bottom:10px;">
+                                        <span style="font-weight:700">Upload Queue</span>
+                                        <span id="upload-stats-text" style="font-size:12px;">0/0</span>
+                                    </div>
+                                    <div class="progress-bar"><div class="progress-fill" id="master-progress"></div></div>
+                                    <div id="upload-list" style="max-height:300px; overflow-y:auto; margin-top:15px;"></div>
+                                </div>
+                                <button id="start-upload-btn" onclick="uploadManager.start()" class="btn btn-primary w-full hidden" style="margin-top:20px;">Start Upload & Indexing</button>
+                            </div>
+                        </div>
+
+                        <!-- LINKS TAB -->
+                        <div id="tab-links" class="tab-content hidden">
+                            <div class="card">
+                                <h3>Generate Guest Search Link</h3>
+                                <div class="stat-grid" style="grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
+                                    <div>
+                                        <label>Select Events</label>
+                                        <div id="link-events-list" style="max-height:150px; overflow-y:auto; border:1px solid var(--border); padding:10px; border-radius:8px;"></div>
+                                    </div>
+                                    <div>
+                                        <label>Link Expiry</label>
+                                        <select id="link-expiry">
+                                            <option value="24">24 Hours</option>
+                                            <option value="72">3 Days</option>
+                                            <option value="168">1 Week</option>
+                                            <option value="0" selected>Lifetime</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button onclick="ui.generateLink()" class="btn btn-primary">Create Link</button>
+                                <div id="generated-links-container" style="margin-top:20px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- SETTINGS TAB -->
+                        <div id="tab-settings" class="tab-content hidden">
+                            <div class="card">
+                                <h3>Custom Branding</h3>
+                                <p style="font-size:12px; color:var(--text-muted)">Customize the look of the Guest Search page.</p>
+                                <label>Brand Color</label>
+                                <input type="color" id="brand-color" value="#00e676" style="height:40px;">
+                                <label>Logo URL</label>
+                                <input type="text" id="brand-logo" placeholder="https://your-website.com/logo.png">
+                                <label>Banner Image URL</label>
+                                <input type="text" id="brand-banner" placeholder="https://...">
+                                <button onclick="ui.saveSettings()" class="btn btn-primary">Save Settings</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                await ui.loadCollectionData(id);
+            },
+
+            guestSearch: async (linkId) => {
+                // Correct Flow: 1. Landing with Branding -> 2. Selfie -> 3. Search -> 4. Results
+                document.getElementById('app-view').innerHTML = `
+                    <div class="search-page" id="guest-bg">
+                        <div class="search-overlay"></div>
+                        
+                        <!-- STEP 1: LANDING & SELFIE -->
+                        <div class="search-content" id="step-scan">
+                            <img id="guest-logo" class="hidden" style="height:60px; margin-bottom:20px; object-fit:contain;">
+                            <h1 style="font-family:var(--font-head); margin-bottom:10px;">Find Your Photos</h1>
+                            <p style="color:#ccc; margin-bottom:30px;">Upload a selfie to instantly find your photos from the event.</p>
+                            
+                            <label for="guest-file" class="face-scanner" id="scanner-ui">
+                                <i class="fa-solid fa-camera" style="font-size:40px; color:#555;"></i>
+                            </label>
+                            <input type="file" id="guest-file" accept="image/*" class="hidden" capture="user" onchange="guestManager.handleSelfie(this.files[0], '${linkId}')">
+                            <p style="font-size:12px; color:#666;">Tap the circle to start</p>
+                        </div>
+
+                        <!-- STEP 2: RESULTS -->
+                        <div class="container hidden" id="step-results" style="position:relative; z-index:2; padding-top:40px;">
+                            <div class="flex-between" style="margin-bottom:20px;">
+                                <h2 style="font-family:var(--font-head)">Found <span id="match-count" style="color:var(--primary)">0</span> Photos</h2>
+                                <button onclick="location.reload()" class="btn btn-outline btn-sm">New Search</button>
+                            </div>
+                            <div class="photo-grid" id="guest-grid"></div>
+                        </div>
+                    </div>
+                `;
+                // Apply mock branding if needed (normally fetched via API)
+            }
+        };
+
+        // UI LOGIC
+        const ui = {
+            updateNav: (loggedIn) => {
+                const nav = document.getElementById('nav-actions');
+                if (loggedIn) {
+                    nav.innerHTML = `
+                        <button onclick="router.navigate('/dashboard')" class="btn btn-outline btn-sm">Dashboard</button>
+                        <button onclick="auth.logout()" class="btn btn-danger btn-sm"><i class="fa-solid fa-power-off"></i></button>
+                    `;
+                } else {
+                    nav.innerHTML = `<button onclick="auth.login()" class="btn btn-primary btn-sm">Login</button>`;
+                }
+            },
+            switchTab: (t) => {
+                document.querySelectorAll('.tab-content').forEach(e => e.classList.add('hidden'));
+                document.getElementById(`tab-${t}`).classList.remove('hidden');
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                event.target.classList.add('active');
+            },
+            modals: {
+                collection: () => {
+                    document.getElementById('modal-title').textContent = 'New Collection';
+                    document.getElementById('modal-body').innerHTML = `
+                        <label>Collection Name</label><input type="text" id="m-col-name">
+                        <button onclick="ui.actions.createCol()" class="btn btn-primary w-full">Create</button>
+                    `;
+                    document.getElementById('generic-modal').classList.add('active');
+                },
+                event: () => {
+                    document.getElementById('modal-title').textContent = 'Add Event';
+                    document.getElementById('modal-body').innerHTML = `
+                        <label>Event Name</label><input type="text" id="m-ev-name">
+                        <label>Date</label><input type="date" id="m-ev-date">
+                        <button onclick="ui.actions.createEv()" class="btn btn-primary w-full">Save</button>
+                    `;
+                    document.getElementById('generic-modal').classList.add('active');
+                },
+                deleteCollection: (id) => {
+                    if(!confirm('Are you sure? This will delete all photos and events.')) return;
+                    ui.actions.deleteCol(id);
+                }
+            },
+            closeModal: () => document.getElementById('generic-modal').classList.remove('active'),
+            
+            // Dashboard Logic
+            renderDashboard: () => {
+                // Calculate Stats
+                let totalPhotos = 0, totalStorage = 0, totalEvents = 0;
+                state.collections.forEach(c => {
+                    totalPhotos += (c.total_photo_count || 0);
+                    totalStorage += (c.storage_bytes || 0);
+                    totalEvents += (c.event_count || 0);
+                });
+
+                document.getElementById('dashboard-stats').innerHTML = `
+                    <div class="stat-card"><span class="stat-label">Total Photos</span><span class="stat-val">${totalPhotos}</span></div>
+                    <div class="stat-card"><span class="stat-label">Events</span><span class="stat-val">${totalEvents}</span></div>
+                    <div class="stat-card"><span class="stat-label">Storage Used</span><span class="stat-val">${utils.formatBytes(totalStorage)}</span></div>
+                    <div class="stat-card"><span class="stat-label">Collections</span><span class="stat-val">${state.collections.length}</span></div>
+                `;
+
+                const tbody = document.getElementById('collections-list');
+                if(!state.collections.length) { tbody.innerHTML = `<tr><td colspan="6" class="text-center">No Collections Found</td></tr>`; return; }
+                
+                tbody.innerHTML = state.collections.map(c => `
+                    <tr>
+                        <td style="font-weight:600; color:#fff;"><a href="#/collection/${c.collection_id}">${c.name}</a></td>
+                        <td>${new Date(c.created_at).toLocaleDateString()}</td>
+                        <td>${c.event_count || 0}</td>
+                        <td>${c.total_photo_count || 0}</td>
+                        <td>${utils.formatBytes(c.storage_bytes)}</td>
+                        <td><button onclick="router.navigate('/collection/${c.collection_id}')" class="btn btn-outline btn-sm">Manage</button></td>
+                    </tr>
+                `).join('');
+            },
+
+            // Collection Load Logic
+            loadCollectionData: async (id) => {
+                try {
+                    // Fetch Details
+                    const [evRes, phRes] = await Promise.all([
+                        utils.apiCall('/get-events', 'POST', { collection_id: id }),
+                        utils.apiCall('/get-photos', 'POST', { collection_id: id })
+                    ]);
+                    
+                    state.events = evRes.events || [];
+                    state.photos = phRes.photos || [];
+
+                    // Update UI
+                    document.getElementById('col-title').textContent = state.collections.find(c => c.collection_id === id)?.name || 'Collection';
+                    document.getElementById('col-stats').textContent = `${state.photos.length} Photos • ${state.events.length} Events`;
+                    document.getElementById('photo-count').textContent = state.photos.length;
+
+                    // Render Photos
+                    const grid = document.getElementById('photo-grid');
+                    grid.innerHTML = state.photos.map(p => `<div class="photo-item"><img src="${p.thumbnail_url || p.url}" loading="lazy"></div>`).join('');
+
+                    // Render Events List
+                    document.getElementById('event-list-body').innerHTML = state.events.map(e => `
+                        <tr>
+                            <td>${e.name}</td>
+                            <td>${e.event_date}</td>
+                            <td>${e.photo_count || 0}</td>
+                            <td>
+                                <button onclick="ui.actions.deleteEv('${e.event_id}')" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    // Populate Upload Select
+                    const sel = document.getElementById('upload-event-select');
+                    sel.innerHTML = `<option value="">Select Event (Required)</option>` + state.events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+
+                    // Populate Link Events List
+                    document.getElementById('link-events-list').innerHTML = state.events.map(e => `
+                        <div style="margin-bottom:5px;"><input type="checkbox" value="${e.event_id}" id="chk-${e.event_id}"> <label for="chk-${e.event_id}">${e.name}</label></div>
+                    `).join('');
+
+                } catch (e) {
+                    utils.showToast("Failed to load collection details", 'error');
+                }
+            },
+
+            actions: {
+                createCol: async () => {
+                    const name = document.getElementById('m-col-name').value;
+                    if(!name) return;
+                    await utils.apiCall('/upsert-collection', 'POST', { name });
+                    ui.closeModal(); router.navigate('/dashboard');
+                },
+                deleteCol: async (id) => {
+                    await utils.apiCall('/delete-collection', 'POST', { collection_id: id });
+                    router.navigate('/dashboard');
+                },
+                createEv: async () => {
+                    const name = document.getElementById('m-ev-name').value;
+                    const date = document.getElementById('m-ev-date').value;
+                    if(!name || !date) return;
+                    await utils.apiCall('/upsert-event', 'POST', { collection_id: state.currentCollection, name, event_date: date });
+                    ui.closeModal(); ui.loadCollectionData(state.currentCollection);
+                },
+                deleteEv: async (eid) => {
+                    if(!confirm('Delete event?')) return;
+                    await utils.apiCall('/delete-event', 'POST', { collection_id: state.currentCollection, event_id: eid });
+                    ui.loadCollectionData(state.currentCollection);
+                }
+            },
+
+            generateLink: async () => {
+                const checked = Array.from(document.querySelectorAll('#link-events-list input:checked')).map(c => c.value);
+                if(!checked.length) return utils.showToast('Select at least one event', 'error');
+                const expiry = parseInt(document.getElementById('link-expiry').value);
+                
+                try {
+                    const res = await utils.apiCall('/generate-search-link', 'POST', {
+                        collection_id: state.currentCollection,
+                        event_ids: checked,
+                        expiry_hours: expiry
+                    });
+                    const link = res.searchUrl || res.url;
+                    // Shorten link visually
+                    document.getElementById('generated-links-container').innerHTML = `
+                        <div style="background:#222; padding:15px; border-radius:12px; display:flex; gap:10px; align-items:center; border:1px solid var(--primary);">
+                            <div style="flex:1;">
+                                <div style="font-size:11px; color:var(--primary); text-transform:uppercase; font-weight:700;">Guest Link</div>
+                                <div style="font-family:monospace; color:#fff; word-break:break-all;">${link}</div>
+                            </div>
+                            <button onclick="navigator.clipboard.writeText('${link}').then(()=>utils.showToast('Copied'))" class="btn btn-primary btn-sm">Copy</button>
+                        </div>
+                    `;
+                } catch(e) { utils.showToast('Failed to create link', 'error'); }
+            }
+        };
+
+        // UPLOAD MANAGER
+        const uploadManager = {
+            queue: [],
+            init: () => {
+                const dz = document.getElementById('dropzone');
+                if(!dz) return;
+                
+                dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+                dz.addEventListener('dragleave', e => { e.preventDefault(); dz.classList.remove('dragover'); });
+                dz.addEventListener('drop', e => {
+                    e.preventDefault(); dz.classList.remove('dragover');
+                    uploadManager.processFiles(e.dataTransfer.files);
+                });
+                document.getElementById('file-input').addEventListener('change', e => uploadManager.processFiles(e.target.files));
+            },
+            
+            processFiles: async (files) => {
+                const list = document.getElementById('upload-list');
+                const area = document.getElementById('upload-progress-area');
+                area.style.display = 'block';
+                document.getElementById('start-upload-btn').classList.remove('hidden');
+
+                for (let file of files) {
+                    // Validate MIME
+                    if (!['image/jpeg', 'image/png', 'image/heic'].includes(file.type)) {
+                        utils.showToast(`Skipped ${file.name} (Invalid Type)`, 'error');
+                        continue;
+                    }
+
+                    const id = Math.random().toString(36).substr(2, 9);
+                    const item = { id, file, status: 'pending' };
+                    state.uploadQueue.push(item);
+                    
+                    const div = document.createElement('div');
+                    div.id = `up-${id}`;
+                    div.className = 'upload-item';
+                    div.innerHTML = `<span>${file.name} (${utils.formatBytes(file.size)})</span><span class="status" style="color:#aaa">Pending</span>`;
+                    list.appendChild(div);
+                }
+                uploadManager.updateStats();
+            },
+
+            updateStats: () => {
+                const total = state.uploadQueue.length;
+                const done = state.uploadQueue.filter(i => i.status === 'done').length;
+                document.getElementById('upload-stats-text').textContent = `${done}/${total}`;
+                document.getElementById('master-progress').style.width = `${(done/total)*100}%`;
+            },
+
+            start: async () => {
+                const eventId = document.getElementById('upload-event-select').value;
+                if (!eventId) return utils.showToast('Please select an event first', 'error');
+                if (state.uploading) return;
+                state.uploading = true;
+                
+                document.getElementById('start-upload-btn').disabled = true;
+                document.getElementById('start-upload-btn').textContent = "Uploading...";
+
+                // Process batch (5 concurrent)
+                const pending = state.uploadQueue.filter(i => i.status === 'pending');
+                
+                await utils.asyncPool(5, pending, async (item) => {
+                    const uiEl = document.getElementById(`up-${item.id}`).querySelector('.status');
+                    uiEl.textContent = "Processing...";
+                    uiEl.style.color = "var(--warning)";
+
+                    try {
+                        let blob = item.file;
+                        // HEIC Conversion
+                        if (item.file.name.toLowerCase().endsWith('.heic')) {
+                            uiEl.textContent = "Converting...";
+                            blob = await heic2any({ blob: item.file, toType: "image/jpeg", quality: 0.8 });
+                        }
+
+                        // Get Presigned URL
+                        uiEl.textContent = "Getting URL...";
+                        const res = await utils.apiCall('/generate-upload-urls', 'POST', {
+                            collection_id: state.currentCollection,
+                            event_id: eventId,
+                            files: [{ name: item.file.name, type: 'image/jpeg' }] // Always upload as JPEG if converted or orig
+                        });
+                        
+                        if (res.skipped && res.skipped.length) {
+                            item.status = 'done';
+                            uiEl.textContent = "Duplicate";
+                            uiEl.style.color = "var(--text-muted)";
+                            return;
+                        }
+
+                        const { uploadURL } = res.urls[0];
+                        
+                        // Upload S3
+                        uiEl.textContent = "Uploading...";
+                        await fetch(uploadURL, { method: 'PUT', body: blob, headers: {'Content-Type': 'image/jpeg'} });
+                        
+                        // Success
+                        item.status = 'done';
+                        uiEl.textContent = "Indexed";
+                        uiEl.style.color = "var(--primary)";
+                        
+                    } catch (e) {
+                        item.status = 'error';
+                        uiEl.textContent = "Failed";
+                        uiEl.style.color = "var(--danger)";
+                    } finally {
+                        uploadManager.updateStats();
+                    }
+                });
+
+                state.uploading = false;
+                document.getElementById('start-upload-btn').disabled = false;
+                document.getElementById('start-upload-btn').textContent = "Upload Complete";
+                
+                // Refresh Grid
+                setTimeout(() => ui.loadCollectionData(state.currentCollection), 1000);
+            }
+        };
+
+        // GUEST SEARCH MANAGER
+        const guestManager = {
+            handleSelfie: async (file, linkId) => {
+                if(!file) return;
+                
+                const scanner = document.getElementById('scanner-ui');
+                scanner.classList.add('scanning');
+                
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const base64 = reader.result.split(',')[1]; // Remove prefix
+                    try {
+                        const res = await fetch(`${CONFIG.API_BASE}/search`, {
+                            method: 'POST',
+                            body: JSON.stringify({ image: base64, link_id: linkId }) // Assuming backend uses link_id to resolve collection
+                        });
+                        const data = await res.json();
+                        
+                        // Switch View
+                        document.getElementById('step-scan').classList.add('hidden');
+                        document.getElementById('step-results').classList.remove('hidden');
+                        
+                        const matches = data.matches || []; // Assume backend returns { matches: [{url:..}] }
+                        document.getElementById('match-count').textContent = matches.length;
+                        document.getElementById('guest-grid').innerHTML = matches.map(m => `
+                            <div class="photo-item"><a href="${m.url}" target="_blank"><img src="${m.thumbnail || m.url}"></a></div>
+                        `).join('');
+
+                    } catch (e) {
+                        utils.showToast('No match found or Error', 'error');
+                        scanner.classList.remove('scanning');
+                    }
+                };
+            }
+        };
+
+        // INIT
+        window.addEventListener('hashchange', router.handleRoute);
+        window.addEventListener('DOMContentLoaded', async () => {
+            await auth.init();
+            router.handleRoute();
+            
+            // Re-bind upload events if view loaded
+            const obs = new MutationObserver(() => {
+                if(document.getElementById('dropzone')) uploadManager.init();
+            });
+            obs.observe(document.getElementById('app-view'), { childList: true, subtree: true });
+        });
+
+    </script>
 </body>
 </html>

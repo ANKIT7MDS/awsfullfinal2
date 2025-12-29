@@ -142,6 +142,7 @@
     .up-status.success { color: var(--primary); }
     .up-status.danger { color: var(--danger); }
     .up-status.skipped { color: var(--warning); }
+    .up-status.waiting { color: var(--text-muted); }
     
     /* Toast & Loaders */
     .toast { position: fixed; top: 24px; right: 24px; background: var(--text-dark); color: var(--text-main); padding: 12px 20px; border-radius: var(--radius-md); font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 300; transform: translateX(120%); transition: transform 0.4s var(--ease); border: 1px solid var(--border-color); }
@@ -505,16 +506,18 @@
 
 <!-- JAVASCRIPT Logic -->
 <script>
-/** ===================== CONFIG ===================== **/
+/** ===================== CONFIG (from your existing pages) ===================== **/
 const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
 const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
 const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
 
-// Endpoints
+// Dashboard endpoints
 const GET_COLLECTIONS_API = `${API_BASE}/get-collections`;
 const UPSERT_COLLECTION_API = `${API_BASE}/upsert-collection`;
 const DELETE_COLLECTION_API = `${API_BASE}/delete-collection`;
 const GET_ACCOUNT_STATUS_API = `${API_BASE}/account-status`;
+
+// Collection endpoints
 const GET_EVENTS_API      = `${API_BASE}/get-events`;
 const GET_PHOTOS_API      = `${API_BASE}/get-photos`;
 const UPSERT_EVENT_API    = `${API_BASE}/upsert-event`;
@@ -523,19 +526,22 @@ const UPLOAD_URLS_API     = `${API_BASE}/generate-upload-urls`;
 const REGISTER_PHOTO_API  = `${API_BASE}/register-photo`;
 const GENERATE_LINK_API   = `${API_BASE}/generate-search-link`;
 const SAVE_DETAILS_API    = `${API_BASE}/save-details`;
+const SEARCH_API          = `${API_BASE}/search`;
 const LIST_PEOPLE_API     = `${API_BASE}/list_people`;
 const SAVE_FACE_NAME_API  = `${API_BASE}/save-face-name`;
 
 /** ===================== STATE ===================== **/
 let idToken = localStorage.getItem('idToken') || null;
 let me = null;
+
 let dashCollections = [];
 let cd = { id:null, name:null, events:[], photos:[], next:null, leads:[] };
-let selectedFiles = [];
-let currentSelectedFaceId = null;
+let guest = { linkId:null, results:[] };
 let faceGroups = [];
+let currentSelectedFaceId = null;
+let selectedFiles = [];
 
-/** ===================== HELPER UI ===================== **/
+/** ===================== UI helpers ===================== **/
 const $ = (id)=>document.getElementById(id);
 const toast = $('toast');
 const loader = $('loader');
@@ -555,7 +561,9 @@ function escapeHtml(text) {
   if (!text) return text;
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
-function fmtDate(d){ try{ if(!d) return '-'; return new Date(d).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}); }catch{return d||'-'} }
+function fmtDate(d){
+  try{ if(!d) return '-'; return new Date(d).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}); }catch{return d||'-'}
+}
 function formatBytes(bytes=0, decimals=2){
   if(!+bytes) return '0 B';
   const k=1024, dm=decimals<0?0:decimals, sizes=['Bytes','KB','MB','GB','TB'];
@@ -566,12 +574,16 @@ function parseJwt(token){
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(decodeURIComponent(window.atob(base64).split('').map(function(c) {
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join('')));
+    }).join(''));
+    return JSON.parse(jsonPayload);
   } catch (e) { return {}; }
 }
-function authHeader(){ return idToken ? { 'Authorization': `Bearer ${idToken}` } : {}; }
+function authHeader(){
+  if(!idToken) return {};
+  return { 'Authorization': `Bearer ${idToken}` };
+}
 async function apiFetch(url, opts={}){
   const o = Object.assign({headers:{}}, opts);
   o.headers = Object.assign({}, o.headers, authHeader());
@@ -591,18 +603,26 @@ async function apiPostJson(url, data){
 }
 
 /** ===================== ROUTER ===================== **/
-const views = { login: $('viewLogin'), dashboard: $('viewDashboard'), collection: $('viewCollection'), superadmin: $('viewSuper') };
+const views = {
+  login: $('viewLogin'),
+  dashboard: $('viewDashboard'),
+  collection: $('viewCollection'),
+  superadmin: $('viewSuper')
+};
+
 function setView(name){
   Object.values(views).forEach(v=>v.classList.remove('on'));
   (views[name]||views.login).classList.add('on');
   window.scrollTo(0,0);
 }
+
 function getHashRoute(){
   const h = location.hash || '#/login';
   const [path, q] = h.replace(/^#\/?/, '').split('?');
   const params = new URLSearchParams(q||'');
   return { path: (path||'login').toLowerCase(), params };
 }
+
 window.addEventListener('hashchange', ()=>route());
 document.addEventListener('DOMContentLoaded', ()=>{
   // Add listener for file picker count
@@ -617,26 +637,47 @@ document.addEventListener('DOMContentLoaded', ()=>{
   route();
 });
 
-/** ===================== AUTH ===================== **/
+/** ===================== SECTION: AUTH FLOW ===================== **/
 async function handleAuthFromQuery(){
   const params = new URLSearchParams(location.search);
   const code = params.get('code');
   if(!code) return;
+
+  const redirectUri = location.origin + location.pathname;
+
   showLoader(true);
+  whoPill.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Logging in...';
+
   try{
     const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
       method:'POST',
       headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({ grant_type:'authorization_code', client_id: CLIENT_ID, code, redirect_uri: location.origin + location.pathname })
+      body: new URLSearchParams({
+        grant_type:'authorization_code',
+        client_id: CLIENT_ID,
+        code,
+        redirect_uri: redirectUri
+      })
     });
+
     const tokens = await res.json();
     if(!res.ok) throw new Error(tokens?.error_description || 'Auth failed');
+
     idToken = tokens.id_token;
     localStorage.setItem('idToken', idToken);
+
     history.replaceState({}, document.title, location.pathname + location.hash);
     showToast('Login successful!');
-  }catch(e){ showToast('Login failed', 'error'); }finally{ showLoader(false); }
+  }catch(e){
+    console.error(e);
+    localStorage.removeItem('idToken');
+    idToken = null;
+    showToast('Login failed. Check Callback URLs.', 'error');
+  }finally{
+    showLoader(false);
+  }
 }
+
 function ensureLoggedIn(){
   if(!idToken) return false;
   try{
@@ -646,67 +687,102 @@ function ensureLoggedIn(){
     whoPill.innerHTML = `<i class="fa-solid fa-user-check" style="color:var(--primary)"></i> ${payload.email?.split('@')[0] || 'User'}`;
     return true;
   }catch(e){
-    localStorage.removeItem('idToken'); idToken = null; me = null;
+    console.warn(e);
+    localStorage.removeItem('idToken');
+    idToken = null;
+    me = null;
     whoPill.innerHTML = '<i class="fa-regular fa-user"></i> Guest';
     return false;
   }
 }
+
 function isMasterAdmin(){
   const groups = (me && me['cognito:groups']) || [];
   return Array.isArray(groups) ? groups.includes('MasterAdmins') : String(groups).includes('MasterAdmins');
 }
+
+/** ===================== LOGIN UI ===================== **/
 $('btnLogin').addEventListener('click', ()=>{
   const redirectUri = location.origin + location.pathname;
-  location.href = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid+profile+email+aws.cognito.signin.user.admin`;
-});
-$('logoutBtn').addEventListener('click', ()=>{
-  localStorage.clear(); idToken=null; me=null;
-  location.href = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(location.origin + location.pathname + '#/login')}`;
+  const scopes = "openid profile email aws.cognito.signin.user.admin";
+  const loginUrl = `${COGNITO_DOMAIN}/login?response_type=code&client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
+  location.href = loginUrl;
 });
 
-/** ===================== DASHBOARD ===================== **/
+/** ===================== LOGOUT ===================== **/
+$('logoutBtn').addEventListener('click', ()=>{
+  localStorage.clear();
+  idToken = null; me=null;
+  whoPill.innerHTML = 'Not logged in';
+  const logoutUri = location.origin + location.pathname + '#/login';
+  const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  location.href = logoutUrl;
+});
+
+/** ===================== SECTION: DASHBOARD LOGIC ===================== **/
 $('colSave').addEventListener('click', ()=>saveCollection());
 $('colCancel').addEventListener('click', ()=>resetColForm());
 $('colSearch').addEventListener('input', ()=>renderCollections());
 
-function resetColForm(){ $('colName').value = ''; $('colIdEdit').value = ''; $('colSaveTxt').textContent = 'Create Collection'; $('colCancel').style.display = 'none'; }
+function resetColForm(){
+  $('colName').value = '';
+  $('colIdEdit').value = '';
+  $('colSaveTxt').textContent = 'Create Collection';
+  $('colCancel').style.display = 'none';
+}
 
 async function loadAccountStatus(){
   try{
     const res = await apiFetch(GET_ACCOUNT_STATUS_API);
-    if(res.ok) {
-        const data = await res.json();
-        $('kData').textContent = data.storage_limit_bytes > 0 ? `${formatBytes(data.total_storage_used_bytes||0)} / ${formatBytes(data.storage_limit_bytes)}` : `${formatBytes(data.total_storage_used_bytes||0)} (Unlimited)`;
-        $('kExp').textContent = data.expiry_date ? new Date(data.expiry_date).toLocaleDateString('en-IN') : 'Lifetime';
-    }
-  }catch(e){ console.error(e); }
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    $('kData').textContent = data.storage_limit_bytes > 0
+      ? `${formatBytes(data.total_storage_used_bytes||0)} / ${formatBytes(data.storage_limit_bytes)}`
+      : `${formatBytes(data.total_storage_used_bytes||0)} (Unlimited)`;
+    $('kExp').textContent = data.expiry_date ? new Date(data.expiry_date).toLocaleDateString('en-IN') : 'Lifetime';
+  }catch(e){
+    console.error(e);
+    $('kData').textContent = '-';
+    $('kExp').textContent = '-';
+  }
 }
 
 async function loadCollections(){
   $('colRows').innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center">Loading...</td></tr>`;
   try{
     const res = await apiFetch(GET_COLLECTIONS_API);
-    if(!res.ok) throw new Error('Failed');
+    if(!res.ok) throw new Error('Failed to fetch collections');
     const data = await res.json();
     dashCollections = (data.Items || []).slice().sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
     renderCollections();
-  }catch(e){ $('colRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`; }
+  }catch(e){
+    console.error(e);
+    $('colRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }
 }
 
 function renderCollections(){
   const q = ($('colSearch').value||'').toLowerCase();
   const rows = dashCollections.filter(c => (c.name||'').toLowerCase().includes(q));
-  if(!rows.length){ $('colRows').innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center">No collections found</td></tr>`; return; }
-  $('colRows').innerHTML = rows.map(c => `
+  if(!rows.length){
+    $('colRows').innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center">No collections found</td></tr>`;
+    return;
+  }
+  $('colRows').innerHTML = rows.map(c => {
+    const nameEsc = encodeURIComponent(c.name||'Collection');
+    return `
       <tr>
         <td>
-          <a href="#/collection?id=${encodeURIComponent(c.collection_id)}&name=${encodeURIComponent(c.name||'Collection')}" style="display:flex; align-items:center; gap:10px;">
+          <a href="#/collection?id=${encodeURIComponent(c.collection_id)}&name=${nameEsc}" style="display:flex; align-items:center; gap:10px;">
             <div style="background:rgba(99,102,241,0.2); padding:8px; border-radius:8px;"><i class="fa-regular fa-folder-open" style="color:var(--accent)"></i></div>
             <span style="font-weight:700; color:#fff">${escapeHtml(c.name||'-')}</span>
           </a>
         </td>
         <td class="muted">${fmtDate(c.created_at)}</td>
-        <td><span class="tag"><i class="fa-solid fa-calendar-days"></i> ${c.event_count||0}</span> <span class="tag"><i class="fa-regular fa-image"></i> ${c.total_photo_count||0}</span></td>
+        <td>
+           <span class="tag" title="Events"><i class="fa-solid fa-calendar-days" style="margin-right:4px"></i> ${c.event_count||0}</span>
+           <span class="tag" title="Photos"><i class="fa-regular fa-image" style="margin-right:4px"></i> ${c.total_photo_count||0}</span>
+        </td>
         <td class="muted">${formatBytes(c.storage_bytes||0)}</td>
         <td>
           <div class="row" style="gap:6px">
@@ -714,337 +790,944 @@ function renderCollections(){
             <button class="btn danger" style="padding:6px 10px" onclick="deleteCollection('${c.collection_id}','${(c.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
           </div>
         </td>
-      </tr>`).join('');
+      </tr>
+    `;
+  }).join('');
 }
 
-window.editCollection = (id, name)=>{ $('colName').value = name; $('colIdEdit').value = id; $('colSaveTxt').textContent = 'Update'; $('colCancel').style.display = 'inline-flex'; $('colName').focus(); };
+window.editCollection = (id, name)=>{
+  $('colName').value = name;
+  $('colIdEdit').value = id;
+  $('colSaveTxt').textContent = 'Update';
+  $('colCancel').style.display = 'inline-flex';
+  $('colName').focus();
+};
 
 async function saveCollection(){
   const name = ($('colName').value||'').trim();
-  if(!name) return showToast('Name required', 'error');
+  if(!name) return showToast('Name is required', 'error');
+  const payload = { name };
+  const editId = $('colIdEdit').value;
+  if(editId) payload.collection_id = editId;
+
   showLoader(true);
   try{
-    await apiPostJson(UPSERT_COLLECTION_API, { name, collection_id: $('colIdEdit').value || undefined });
-    resetColForm(); await loadCollections(); showToast('Collection saved');
-  }catch(e){ showToast(e.message, 'error'); }finally{ showLoader(false); }
+    const res = await apiFetch(UPSERT_COLLECTION_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed to save');
+    resetColForm();
+    await loadCollections();
+    showToast(editId ? 'Collection updated!' : 'Collection created!');
+  }catch(e){
+    console.error(e);
+    showToast(e.message, 'error');
+  }finally{
+    showLoader(false);
+  }
 }
 
 window.deleteCollection = async (id, name)=>{
-  if(!confirm(`Delete "${name}"?`)) return;
+  if(!confirm(`Delete "${name}" and all its photos? This action cannot be undone.`)) return;
   showLoader(true);
-  try{ await apiPostJson(DELETE_COLLECTION_API, {collection_id:id}); await loadCollections(); showToast('Deleted'); }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+  try{
+    const res = await apiFetch(DELETE_COLLECTION_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({collection_id:id})
+    });
+    if(!res.ok) throw new Error('Delete failed');
+    await loadCollections();
+    showToast('Collection Deleted');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{
+    showLoader(false);
+  }
 };
 
-/** ===================== COLLECTION DETAILS ===================== **/
+/** ===================== SECTION: COLLECTION DETAILS ===================== **/
 $('backDash').addEventListener('click', ()=> location.hash = '#/dashboard');
 $('evSave').addEventListener('click', ()=> upsertEvent());
 $('createLinkBtn').addEventListener('click', ()=> generateGuestLink());
+if($('copyLinkBtn')) $('copyLinkBtn').addEventListener('click', ()=>{ const t=$('generatedLink')?.textContent||''; if(!t) return; navigator.clipboard.writeText(t).then(()=>showToast('Copied')).catch(()=>showToast('Copy failed','error')); });
+
+// FIX: Changed 'uploadBtn' to 'startUploadBtn' to match HTML ID
 $('startUploadBtn').addEventListener('click', ()=> startUpload());
+
 $('photoSearch').addEventListener('input', ()=> renderPhotos());
 $('photoEventFilter').addEventListener('change', ()=> renderPhotos());
 $('photoTagFilter').addEventListener('change', ()=> renderPhotos());
 $('refreshLeads').addEventListener('click', ()=> loadLeads());
 $('loadMoreBtn').addEventListener('click', ()=> loadPhotos(true));
+
+// Face Naming Handlers
 $('saveFaceBtn').addEventListener('click', ()=>saveFaceName());
 $('cancelFaceBtn').addEventListener('click', ()=> { $('faceNamingHeader').style.display='none'; });
+
+// Added listener for New Photographer button in SuperAdmin view
 if($('newPhotog')) $('newPhotog').addEventListener('click', openNewPhotog);
 
-function setCollectionFromRoute(params){ cd.id = params.get('id'); cd.name = params.get('name') || 'Collection'; $('cdId').textContent = cd.id || '-'; $('cdName').textContent = cd.name || '-'; }
+function setCollectionFromRoute(params){
+  cd.id = params.get('id');
+  cd.name = params.get('name') || 'Collection';
+  $('cdId').textContent = cd.id || '-';
+  $('cdName').textContent = cd.name || '-';
+}
 
 async function loadEvents(){
   $('evRows').innerHTML = `<tr><td colspan="3" class="muted">Loading...</td></tr>`;
   try{
-    const data = await apiPostJson(GET_EVENTS_API, { collection_id: cd.id });
-    cd.events = data.events || data.Items || [];
-    renderEvents(); fillEventSelects(); renderLinkEventList();
-  }catch(e){ $('evRows').innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Error: ${e.message}</td></tr>`; }
+    const res = await apiFetch(GET_EVENTS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id })
+    });
+    if(!res.ok) throw new Error('Failed to load events');
+    const data = await res.json();
+    cd.events = data.events || data.Items || data || [];
+    renderEvents();
+    fillEventSelects();
+    renderLinkEventList();
+  }catch(e){
+    console.error(e);
+    $('evRows').innerHTML = `<tr><td colspan="3" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }
 }
 
 function renderEvents(){
-  if(!cd.events.length) { $('evRows').innerHTML = `<tr><td colspan="3" class="muted">No events</td></tr>`; return; }
-  $('evRows').innerHTML = cd.events.map(ev => `
+  const evs = Array.isArray(cd.events)?cd.events:[];
+  if(!evs.length){
+    $('evRows').innerHTML = `<tr><td colspan="3" class="muted">No sub-events created</td></tr>`;
+    return;
+  }
+  $('evRows').innerHTML = evs.map(ev=>{
+    const eid = ev.event_id || ev.eventId || ev.id;
+    const nm = ev.name || ev.event_name || ev.eventName || '-';
+    const pc = ev.photo_count || ev.photoCount || 0;
+    return `
       <tr>
-        <td style="font-weight:700">${escapeHtml(ev.name)}</td>
-        <td><span class="pill">${ev.photo_count||0} Photos</span></td>
+        <td style="font-weight:700">${escapeHtml(nm)}</td>
+        <td><span class="pill">${pc} Photos</span></td>
         <td class="row">
-          <button class="btn secondary" style="padding:6px 10px" onclick="editEvent('${ev.event_id}', '${escapeHtml(ev.name)}', '${ev.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn danger" style="padding:6px 10px" onclick="delEvent('${ev.event_id}','${(ev.name||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn secondary" style="padding:6px 10px; margin-right:4px;" onclick="editEvent('${eid}', '${escapeHtml(nm)}', '${ev.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn danger" style="padding:6px 10px" onclick="delEvent('${eid}','${(nm||'').replace(/'/g,"\\'")}')"><i class="fa-solid fa-trash"></i></button>
         </td>
-      </tr>`).join('');
+      </tr>
+    `;
+  }).join('');
 }
 
-window.editEvent = (id, name, date) => { $('evEditId').value = id; $('evEditName').value = name; $('evEditDate').value = date; $('evAddForm').style.display = 'none'; $('evEditForm').style.display = 'block'; };
-window.cancelEventEdit = () => { $('evEditId').value = ''; $('evEditName').value = ''; $('evEditDate').value = ''; $('evEditForm').style.display = 'none'; $('evAddForm').style.display = 'flex'; };
-window.updateEvent = async () => { upsertEvent(true); };
+// Edit Event Logic
+window.editEvent = (id, name, date) => {
+  $('evEditId').value = id;
+  $('evEditName').value = name;
+  $('evEditDate').value = date;
+  $('evAddForm').style.display = 'none';
+  $('evEditForm').style.display = 'block';
+};
 
-async function upsertEvent(isEdit=false){
-  const name = isEdit ? $('evEditName').value : $('evName').value;
-  const date = isEdit ? $('evEditDate').value : $('evDate').value;
-  const eid = isEdit ? $('evEditId').value : undefined;
-  if(!name) return showToast('Name required','error');
+window.cancelEventEdit = () => {
+  $('evEditId').value = '';
+  $('evEditName').value = '';
+  $('evEditDate').value = '';
+  $('evEditForm').style.display = 'none';
+  $('evAddForm').style.display = 'flex';
+};
+
+window.updateEvent = async () => {
+  const id = $('evEditId').value;
+  const name = $('evEditName').value;
+  const date = $('evEditDate').value;
+  if(!id || !name) return;
+  
+  // Reuse upsert API but include ID
   showLoader(true);
   try{
-    await apiPostJson(UPSERT_EVENT_API, { collection_id: cd.id, event_id: eid, name, event_date: date });
-    if(isEdit) cancelEventEdit(); else { $('evName').value=''; $('evDate').value=''; }
-    await loadEvents(); showToast('Event saved');
-  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
-}
-
-window.delEvent = async (eid, name)=>{
-  if(!confirm(`Delete "${name}"?`)) return;
-  showLoader(true);
-  try{ await apiPostJson(DELETE_EVENT_API, { collection_id: cd.id, event_id: eid }); await loadEvents(); showToast('Deleted'); }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+    const payload = { collection_id: cd.id, event_id: id, name, event_date: date };
+    const res = await apiFetch(UPSERT_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed');
+    
+    cancelEventEdit();
+    await loadEvents();
+    showToast('Event updated');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
 };
 
 function fillEventSelects(){
-  const opt = [`<option value="">All Events</option>`].concat(cd.events.map(ev=>`<option value="${ev.event_id}">${escapeHtml(ev.name)}</option>`)).join('');
+  const evs = Array.isArray(cd.events)?cd.events:[];
+  const opt = [`<option value="">All Events</option>`].concat(
+    evs.map(ev=>{
+      const eid = ev.event_id || ev.eventId || ev.id;
+      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
+      return `<option value="${eid}">${escapeHtml(nm)}</option>`;
+    })
+  ).join('');
   $('photoEventFilter').innerHTML = opt;
-  $('uploadEventSelect').innerHTML = `<option value="">Select Event to Upload</option>` + cd.events.map(ev=>`<option value="${ev.event_id}">${escapeHtml(ev.name)}</option>`).join('');
-}
-function renderLinkEventList(){
-  $('linkEventSelect').innerHTML = '<option value="">All Events (Entire Collection)</option>' + cd.events.map(ev=>`<option value="${ev.event_id}">${escapeHtml(ev.name)}</option>`).join('');
+  $('uploadEventSelect').innerHTML = `<option value="">Select Event to Upload</option>` + evs.map(ev=>{
+      const eid = ev.event_id || ev.eventId || ev.id;
+      const nm = ev.name || ev.event_name || ev.eventName || 'Event';
+      return `<option value="${eid}">${escapeHtml(nm)}</option>`;
+  }).join('');
 }
 
-/** UPLOAD LOGIC (FIXED) **/
+function renderLinkEventList(){
+  // UPDATED: Now populates the new Dropdown instead of checkboxes
+  const select = $('linkEventSelect');
+  if(!select) return;
+  
+  const evs = Array.isArray(cd.events) ? cd.events : [];
+  let html = '<option value="">All Events (Entire Collection)</option>';
+  
+  evs.forEach(ev=>{
+    const id = ev.event_id || ev.id;
+    const nm = ev.name || ev.event_name || 'Event';
+    html += `<option value="${escapeHtml(id)}">${escapeHtml(nm)}</option>`;
+  });
+  
+  select.innerHTML = html;
+}
+
+async function upsertEvent(){
+  const name = ($('evName').value||'').trim();
+  const event_date = ($('evDate').value||'').trim();
+  if(!name) return showToast('Event name required','error');
+  if(!event_date) return showToast('Event date required','error');
+
+  showLoader(true);
+  try{
+    const payload = { collection_id: cd.id, name, event_date };
+    const res = await apiFetch(UPSERT_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed');
+
+    $('evName').value='';
+    $('evDate').value='';
+    await loadEvents();
+    showToast('Event added');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+window.delEvent = async (eventId, name)=>{
+  if(!confirm(`Delete event "${name}"? Photos inside will also be deleted.`)) return;
+  showLoader(true);
+  try{
+    const res = await apiFetch(DELETE_EVENT_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, event_id: eventId })
+    });
+    if(!res.ok) throw new Error('Failed to delete event');
+    await loadEvents();
+    showToast('Event deleted');
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+};
+
+/** Photos pagination & Logic (Full Features from v3) */
+async function loadPhotos(append=false){
+  if(!append){ cd.photos=[]; cd.next=null; }
+  const eventFilter = $('photoEventFilter').value || '';
+  const payload = { collection_id: cd.id };
+  if(eventFilter) payload.event_id = eventFilter;
+  if(cd.next) payload.nextToken = cd.next;
+
+  showLoader(true);
+  try{
+    const res = await apiFetch(GET_PHOTOS_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed to load photos');
+    const data = await res.json();
+    const items = data.Items || data.photos || data.items || [];
+    cd.next = data.nextToken || data.next_token || null;
+    cd.photos = append ? cd.photos.concat(items) : items;
+    
+    // Extract unique tags for filter
+    updateTagFilter(cd.photos);
+    
+    // Also load Faces from list_people if not loaded
+    if(!append) loadFaceGroups();
+
+    renderPhotos();
+    $('loadMoreBtn').style.display = cd.next ? 'inline-flex' : 'none';
+  }catch(e){
+    console.error(e);
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+function updateTagFilter(photos){
+  const tags = new Set();
+  photos.forEach(p => {
+    if(Array.isArray(p.ai_tags)) p.ai_tags.forEach(t => tags.add(t));
+  });
+  
+  const select = $('photoTagFilter');
+  const currentVal = select.value;
+  let html = '<option value="">All Tags</option>';
+  tags.forEach(t => {
+    html += `<option value="${t}">${t}</option>`;
+  });
+  select.innerHTML = html;
+  select.value = currentVal; 
+}
+
+function renderPhotos(){
+  const q = ($('photoSearch').value||'').toLowerCase();
+  const evSel = $('photoEventFilter').value || '';
+  const tagSel = $('photoTagFilter').value || ''; 
+  
+  const filtered = cd.photos.filter(p=>{
+    const fn = (p.filename||p.file_name||p.key||'').toLowerCase();
+    
+    const matchText = !q || fn.includes(q);
+    const pid = p.event_id || p.eventId || '';
+    const matchEv = !evSel || pid===evSel;
+    const matchTag = !tagSel || (p.ai_tags && p.ai_tags.includes(tagSel));
+    const matchFace = !currentSelectedFaceId || photoHasFace(p, currentSelectedFaceId); // Face Filter Logic
+    
+    return matchText && matchEv && matchTag && matchFace;
+  });
+
+  if(!filtered.length){
+    $('photoGrid').innerHTML = `<div class="muted" style="grid-column:1/-1; text-align:center; padding:20px;">No photos found</div>`;
+    return;
+  }
+
+  $('photoGrid').innerHTML = filtered.map(p=>{
+    const url = p.url || p.s3_url || p.photo_url || p.image_url || p.public_url || '';
+    const thumb = p.thumbnail_url || url;
+    const fn = p.filename || p.file_name || 'photo';
+    const faces = (p.face_count ?? (Array.isArray(p.faces)?p.faces.length:null) ?? 0);
+    return `
+      <div class="ph" onclick="openPhoto('${encodeURIComponent(url)}','${(fn||'').replace(/'/g,"\\'")}', ${faces})">
+        <img src="${thumb}" loading="lazy" onerror="this.src='https://via.placeholder.com/300?text=Error'"/>
+        <div class="m">
+          <div class="t">${fn}</div>
+          <div class="s"><i class="fa-regular fa-face-smile"></i> ${faces}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Logic to check if photo belongs to selected face
+function photoHasFace(photo, faceId){
+    if(!faceId) return true;
+    // Check person_ids first (if grouped)
+    if(photo.person_ids && photo.person_ids.includes(faceId)) return true;
+    // Check face_ids fallback
+    if(photo.face_ids && photo.face_ids.includes(faceId)) return true;
+    return false;
+}
+
+window.openPhoto = (encUrl, title, faces)=>{
+  const url = decodeURIComponent(encUrl||'');
+  $('pmImg').src = url;
+  $('pmTitle').textContent = title || 'Photo';
+  $('pmDownload').href = url;
+  $('pmMeta').textContent = `Faces detected: ${faces}`;
+  $('photoModal').classList.add('open');
+};
+$('pmClose').addEventListener('click', ()=> $('photoModal').classList.remove('open'));
+$('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') $('photoModal').classList.remove('open'); });
+
+/** ===================== SECTION: FACE RECOGNITION (from v3) ===================== **/
+async function loadFaceGroups(){
+  try{
+    const res = await apiFetch(LIST_PEOPLE_API, {
+       method:'POST',
+       headers:{'Content-Type':'application/json'},
+       body: JSON.stringify({ collection_id: cd.id })
+    });
+    // Fallback logic if API fails or returns different structure handled here
+    const data = await res.json().catch(()=>({}));
+    const people = data.people || data.items || [];
+    
+    faceGroups = people; 
+    renderFaceIcons();
+  }catch(e){
+    console.warn('Face groups load error (might be empty):', e);
+  }
+}
+
+function renderFaceIcons(){
+    const bar = $('faceIconsBar');
+    bar.innerHTML = '';
+    
+    // "All" Icon
+    const allItem = document.createElement('div');
+    allItem.className = 'face-item';
+    allItem.innerHTML = `
+        <div class="face-icon-wrapper ${!currentSelectedFaceId?'selected':''}" style="display:flex;align-items:center;justify-content:center;background:rgba(99,102,241,0.2)">
+            <i class="fa-solid fa-users" style="color:#fff"></i>
+        </div>
+        <div class="face-name-label">All</div>
+    `;
+    allItem.onclick = () => { currentSelectedFaceId=null; renderFaceIcons(); renderPhotos(); };
+    bar.appendChild(allItem);
+
+    faceGroups.forEach(p => {
+        const thumb = p.face_thumbnail_url || p.thumbnail || '';
+        const name = p.name || p.FaceName || 'Unknown';
+        const id = p.person_id || p.FaceId;
+        
+        const item = document.createElement('div');
+        item.className = 'face-item';
+        
+        // Double click to rename logic
+        item.ondblclick = (e) => {
+             e.stopPropagation();
+             startFaceNaming(id, name, thumb);
+        };
+
+        item.onclick = () => {
+            currentSelectedFaceId = (currentSelectedFaceId === id) ? null : id;
+            renderFaceIcons();
+            renderPhotos();
+        };
+
+        item.innerHTML = `
+           <div class="face-icon-wrapper ${currentSelectedFaceId===id?'selected':''}" 
+                style="background-image:url('${thumb}');">
+           </div>
+           <div class="face-name-label">${name}</div>
+        `;
+        bar.appendChild(item);
+    });
+}
+
+function startFaceNaming(id, currentName, thumb){
+    $('faceNamingHeader').style.display = 'block';
+    $('faceHeaderImg').src = thumb || '';
+    $('faceNameInput').value = currentName === 'Unknown' ? '' : currentName;
+    
+    // Store temporarily
+    $('faceNameInput').dataset.faceId = id;
+}
+
+async function saveFaceName(){
+    const id = $('faceNameInput').dataset.faceId;
+    const name = $('faceNameInput').value;
+    if(!id || !name) return;
+    
+    showLoader(true);
+    try{
+       await apiFetch(SAVE_FACE_NAME_API, {
+           method: 'POST',
+           headers: {'Content-Type':'application/json'},
+           body: JSON.stringify({ collection_id: cd.id, face_id: id, name: name })
+       });
+       showToast('Name saved');
+       $('faceNamingHeader').style.display='none';
+       await loadFaceGroups(); // Refresh faces
+    }catch(e){
+       showToast(e.message,'error');
+    }finally{ showLoader(false); }
+}
+
+/** ===================== SECTION: UPLOAD LOGIC (Optimized + Re-Encoding Bypass) ===================== **/
+// Helper to convert any image to JPEG Blob (ALWAYS RE-ENCODE TO NEW HASH)
 function processFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = function(event) {
       const img = new Image();
-      img.onload = () => {
+      img.onload = function() {
+        // Create canvas
         const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        canvas.width = img.width;
+        canvas.height = img.height;
+        // Draw image (handles transparency by making background white/black if needed, but JPEG is opaque)
+        ctx.fillStyle = "#FFFFFF"; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
-        // Clean Name
-        let cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_.\-:]/g, "_") + ".jpg";
+        
+        // Convert to standard JPEG (This re-compression changes the hash!)
         canvas.toBlob((blob) => {
-          if(!blob) return reject(new Error('Canvas error'));
-          resolve(new File([blob], cleanName, { type: "image/jpeg" }));
-        }, 'image/jpeg', 0.85); 
+          if(!blob) { reject(new Error('Conversion failed')); return; }
+          
+          // Create new File object with proper name
+          // SANITIZATION: Remove spaces and invalid characters
+          let rawName = file.name.replace(/\.[^/.]+$/, ""); 
+          rawName = rawName.replace(/[^a-zA-Z0-9_.\-:]/g, "_"); 
+          const newName = rawName + ".jpg";
+          
+          const newFile = new File([blob], newName, { type: "image/jpeg" });
+          resolve(newFile);
+        }, 'image/jpeg', 0.85); // 85% Quality - ensures unique bytes from original raw
       };
-      img.onerror = reject;
+      img.onerror = (e) => reject(e);
       img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   });
 }
 
+// Compute Hash for duplicate check
 async function computeHash(file) {
   const buffer = await file.arrayBuffer();
-  const hash = await crypto.subtle.digest('SHA-256', buffer);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 $('fileInput').onchange = (e) => {
   const files = Array.from(e.target.files);
   if(!files.length) return;
+  
   files.forEach(f => {
     const id = Math.random().toString(36).substr(2, 9);
+    // Add UI Row
     const row = document.createElement('div');
-    row.className = 'upload-row'; row.id = `file-${id}`;
-    row.innerHTML = `<div class="up-name">${f.name}</div><div class="up-status waiting">Waiting</div><button class="btn danger" onclick="removeFile('${id}')">X</button>`;
+    row.className = 'upload-row';
+    row.id = `file-${id}`;
+    row.innerHTML = `
+      <div class="up-name">${f.name}</div>
+      <div class="up-status waiting"><i class="fa-regular fa-clock"></i> Waiting</div>
+      <button class="btn danger" style="padding:4px 8px; margin-left:10px;" onclick="removeFile('${id}')"><i class="fa-solid fa-times"></i></button>
+    `;
     $('uploadList').appendChild(row);
-    selectedFiles.push({ id, rawFile: f, status: 'waiting' });
+
+    // Add to Global Queue (Status 'waiting')
+    // Store rawFile. 'file' and 'hash' will be computed just before upload
+    selectedFiles.push({ id, rawFile: f, file: null, hash: null, status: 'waiting' });
   });
-  $('startUploadBtn').disabled = false; $('startUploadBtn').textContent = `Start Upload (${selectedFiles.length})`; $('fileInput').value = '';
+  
+  $('startUploadBtn').disabled = false;
+  $('startUploadBtn').textContent = `Start Upload (${selectedFiles.length})`;
+  $('fileInput').value = '';
 };
 
-window.removeFile = (id) => { document.getElementById(`file-${id}`).remove(); selectedFiles = selectedFiles.filter(x => x.id !== id); $('startUploadBtn').textContent = `Start Upload (${selectedFiles.length})`; };
+window.removeFile = (id) => {
+  const el = document.getElementById(`file-${id}`);
+  if(el) el.remove();
+  selectedFiles = selectedFiles.filter(x => x.id !== id);
+  $('startUploadBtn').textContent = `Start Upload (${selectedFiles.length})`;
+};
 
+// Batch Processing Function
 async function startUpload(){
   const eventId = $('uploadEventSelect').value;
-  if(!eventId){ showToast("Select event", "error"); return; }
-  if(!selectedFiles.length){ showToast("No files", "error"); return; }
-  $('startUploadBtn').disabled = true; $('startUploadBtn').textContent = "Uploading...";
-  if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "block";
-  const updateStatus = (id, msg, cls='waiting') => { const el = document.getElementById(`file-${id}`).querySelector('.up-status'); if(el) { el.innerHTML = msg; el.className=`up-status ${cls}`; } };
-  
-  const BATCH_SIZE = 3;
-  try {
-    while(true) {
-        const batch = selectedFiles.filter(f => f.status === 'waiting').slice(0, BATCH_SIZE);
-        if(batch.length === 0) break;
+  if(!eventId){ showToast("Please select an event first", "error"); return; }
+  if(!selectedFiles.length){ showToast("No files selected", "error"); return; }
+  if(!cd.id) { showToast("Collection ID missing. Please refresh.", "error"); return; }
 
+  $('startUploadBtn').disabled = true;
+  $('startUploadBtn').textContent = "Uploading...";
+  if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "block";
+  
+  const setOverall = (pct, text) => {
+    $('uploadProgressBar').style.width = pct + "%";
+    $('uploadProgressText').textContent = text;
+  };
+
+  const BATCH_SIZE = 3; // Reduced batch size since we are doing canvas work now
+  
+  try {
+    // Main Queue Loop
+    while(true) {
+        // 1. Pick next batch of 'waiting' files
+        const batch = selectedFiles.filter(f => f.status === 'waiting').slice(0, BATCH_SIZE);
+        if(batch.length === 0) break; // All done
+
+        // 2. Process this batch (Convert & Hash)
+        setOverall(10, `Processing batch of ${batch.length}...`);
+        
+        // Parallel process within batch
         await Promise.all(batch.map(async (item) => {
-            updateStatus(item.id, 'Processing...');
+            const el = document.getElementById(`file-${item.id}`).querySelector('.up-status');
+            if(el) { el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; el.className='up-status waiting'; }
+            
             try {
+                // HEIC check first
                 let processedFile = item.rawFile;
                 if(item.rawFile.name.toLowerCase().endsWith('.heic')){
                     const blob = await heic2any({ blob: item.rawFile, toType: "image/jpeg", quality: 0.8 });
                     processedFile = new File([blob], item.rawFile.name.replace(/\.heic$/i, '.jpg'), { type: "image/jpeg" });
                 }
+                
+                // FORCE RE-ENCODE (To change Hash)
                 item.file = await processFile(processedFile);
+                
+                // Hash the NEW file
                 item.hash = await computeHash(item.file);
-                item.status = 'ready';
-            } catch(e) { item.status = 'error'; updateStatus(item.id, 'Error', 'danger'); }
+                item.status = 'ready_to_upload';
+            } catch(e) {
+                console.error(e);
+                item.status = 'error';
+                if(el) { el.innerHTML = 'Error'; el.className = 'up-status danger'; }
+            }
         }));
 
-        const readyBatch = batch.filter(x => x.status === 'ready');
-        if(readyBatch.length > 0) {
-            const filesPayload = readyBatch.map(f => ({ name: f.file.name, type: 'image/jpeg', size: f.file.size, hash: f.hash }));
-            const meta = await apiPostJson(UPLOAD_URLS_API, { collection_id: cd.id, event_id: eventId, files: filesPayload });
-            
-            // Handle Skipped
-            if(meta.skipped) meta.skipped.forEach(idx => { const it = readyBatch[idx]; it.status='skipped'; updateStatus(it.id, 'Exists', 'skipped'); });
+        // Filter out errors
+        const readyBatch = batch.filter(x => x.status === 'ready_to_upload');
+        if(readyBatch.length === 0) continue; // Skip to next if all failed
 
-            // Handle Uploads (Support both 'urls' and 'items')
-            const uploads = meta.urls || meta.items || [];
-            await Promise.all(uploads.map(async (u, i) => {
-                 // Try mapping by name if index is unreliable, else fallback to index
-                 let item = readyBatch.find(r => r.file.name === (u.filename || u.originalName));
-                 if(!item) item = readyBatch[i]; 
-                 if(!item || item.status === 'skipped') return;
+        // 3. Get URLs for this batch
+        setOverall(30, `Checking duplicates...`);
+        const filesPayload = readyBatch.map(f => ({
+            name: f.file.name,
+            type: f.file.type || 'application/octet-stream',
+            size: f.file.size,
+            hash: f.hash // This hash is now GUARANTEED to be different from original Raw file
+        }));
 
-                 const targetUrl = u.uploadURL || u.uploadUrl;
-                 const targetKey = u.object_key || u.key;
-                 updateStatus(item.id, 'Sending...');
-                 try {
-                    const s3Res = await fetch(targetUrl, { method: 'PUT', body: item.file, headers: { 'Content-Type': 'image/jpeg' } });
-                    if(!s3Res.ok) throw new Error('S3 Error');
-                    updateStatus(item.id, 'Indexing...');
-                    await apiPostJson(REGISTER_PHOTO_API, { collection_id: cd.id, event_id: eventId, object_key: targetKey, filename: item.file.name, size: item.file.size, content_type: 'image/jpeg', hash: item.hash });
-                    item.status = 'done'; updateStatus(item.id, 'Done', 'success');
-                 } catch(e){ item.status='error'; updateStatus(item.id, 'Fail', 'danger'); }
-            }));
+        const meta = await apiPostJson(UPLOAD_URLS_API, { 
+            collection_id: cd.id, 
+            event_id: eventId, 
+            files: filesPayload 
+        });
+
+        // Mark Skipped (Duplicates)
+        if(meta.skipped && meta.skipped.length){
+            meta.skipped.forEach(idx => {
+                const item = readyBatch[idx];
+                if(item) {
+                    item.status = 'skipped';
+                    const el = document.getElementById(`file-${item.id}`).querySelector('.up-status');
+                    if(el) { el.innerHTML = '<i class="fa-solid fa-forward"></i> Exists'; el.className = 'up-status skipped'; }
+                }
+            });
         }
+
+        // 4. Upload actual files
+        const uploads = meta.items || [];
+        await Promise.all(uploads.map(async (u) => {
+             const idx = u.index;
+             const item = readyBatch[idx];
+             const el = document.getElementById(`file-${item.id}`).querySelector('.up-status');
+             
+             if(el) el.innerHTML = 'Sending...';
+             
+             try {
+                await fetch(u.uploadUrl, { method: 'PUT', body: item.file, headers: { 'Content-Type': item.file.type } });
+                
+                // Register
+                if(el) el.innerHTML = 'Indexing...';
+                
+                let registered = false;
+                let attempts = 0;
+                while(!registered && attempts < 3){
+                   attempts++;
+                   try {
+                     await apiPostJson(REGISTER_PHOTO_API, { 
+                        collection_id: cd.id, event_id: eventId, object_key: u.key,
+                        filename: item.file.name, size: item.file.size,
+                        content_type: item.file.type, hash: item.hash 
+                     });
+                     registered = true;
+                   } catch(err){ if(attempts < 3) await new Promise(r => setTimeout(r, 1000)); }
+                }
+                
+                if(registered){
+                    item.status = 'done';
+                    if(el) { el.innerHTML = '<i class="fa-solid fa-check"></i> Done'; el.className = 'up-status success'; }
+                } else { throw new Error('Reg Failed'); }
+             } catch(e){
+                item.status = 'error';
+                if(el) { el.innerHTML = 'Fail'; el.className = 'up-status danger'; }
+             }
+        }));
+
+        // Batch Done. Loop continues to next batch.
+        const total = selectedFiles.length;
+        const doneCount = selectedFiles.filter(x => x.status === 'done' || x.status === 'skipped' || x.status === 'error').length;
+        setOverall((doneCount/total)*100, `Completed ${doneCount}/${total}`);
     }
-    showToast('Upload Complete');
-    setTimeout(()=>{ $('uploadList').innerHTML=''; selectedFiles=[]; $('startUploadBtn').textContent='Start Upload'; $('startUploadBtn').disabled=false; loadEvents(); loadPhotos(); loadFaceGroups(); }, 1500);
-  }catch(e){ console.error(e); showToast(e.message, 'error'); $('startUploadBtn').disabled=false; }
+
+    // All Batches Done
+    showToast('All uploads processed');
+    
+    // Auto Clear
+    setTimeout(()=>{ 
+       $('uploadList').innerHTML = '';
+       selectedFiles = [];
+       $('startUploadBtn').textContent = 'Start Upload';
+       $('filePickLabel').textContent = 'Click to select photos';
+       if($('uploadProgressWrap')) $('uploadProgressWrap').style.display = "none";
+       loadEvents(); loadPhotos(); loadFaceGroups(); 
+    }, 2000);
+
+  }catch(e){
+    console.error(e);
+    showToast("Upload Process Interrupted: " + e.message, "error");
+  }finally{
+    $('startUploadBtn').disabled = false;
+  }
 }
 
-/** ===================== GUEST LINK ===================== **/
+/** ===================== SECTION: GUEST LINK LOGIC ===================== **/
 async function generateGuestLink(){
   showLoader(true);
   try{
-    const eid = $('linkEventSelect').value ? [$('linkEventSelect').value] : [];
-    const expiry = parseInt($('linkExpiry').value);
-    const pwd = $('linkPin').value;
-    const res = await apiPostJson(GENERATE_LINK_API, { collection_id: cd.id, event_ids: eid, expiry_hours: expiry, password: pwd });
-    let link = res.searchUrl || res.link || res.url;
-    if (link && !link.includes('cid=')) link += (link.includes('?') ? '&' : '?') + `cid=${encodeURIComponent(cd.id)}`;
-    $('finalLink').href = link; $('finalLink').textContent = link; $('finalLinkBtn').href = link; $('linkResultBox').style.display = 'block';
-    showToast('Link Generated');
-  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
-}
-window.copyLink = () => { navigator.clipboard.writeText($('finalLink').href); showToast('Copied'); };
+    const eventSelect = $('linkEventSelect');
+    const selectedEventId = eventSelect ? eventSelect.value : '';
+    const eventIds = selectedEventId ? [selectedEventId] : [];
+    
+    const expiry_hours = parseInt(($('linkExpiry')?.value||'0'),10) || 24;
+    const password = ($('linkPin')?.value||'').trim();
 
-/** ===================== PHOTOS & FACES ===================== **/
-async function loadPhotos(append=false){
-  if(!append){ cd.photos=[]; cd.next=null; }
-  showLoader(true);
-  try{
-    const body = { collection_id: cd.id, event_id: $('photoEventFilter').value || undefined, nextToken: cd.next };
-    const data = await apiPostJson(GET_PHOTOS_API, body);
-    const items = data.Items || data.photos || [];
-    cd.next = data.nextToken;
-    cd.photos = append ? cd.photos.concat(items) : items;
-    if(!append) loadFaceGroups();
-    renderPhotos(); updateTagFilter();
-    $('loadMoreBtn').style.display = cd.next ? 'inline-flex' : 'none';
-  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
-}
+    const res = await apiFetch(GENERATE_LINK_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ collection_id: cd.id, event_ids: eventIds, expiry_hours, password })
+    });
+    
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    let link = data.searchUrl || data.link || data.url;
 
-function updateTagFilter(){
-  const tags = new Set(); cd.photos.forEach(p => { if(p.ai_tags) p.ai_tags.forEach(t => tags.add(t)); });
-  const sel = $('photoTagFilter'); const curr = sel.value;
-  sel.innerHTML = '<option value="">All Tags</option>' + Array.from(tags).map(t=>`<option value="${t}">${t}</option>`).join('');
-  sel.value = curr;
-}
+    // FIX: Automatically append current collection_id to the generated link
+    if (link && cd.id && !link.includes('cid=')) {
+        const separator = link.includes('?') ? '&' : '?';
+        link += `${separator}cid=${encodeURIComponent(cd.id)}`;
+    }
 
-function renderPhotos(){
-  const q = ($('photoSearch').value||'').toLowerCase();
-  const ev = $('photoEventFilter').value;
-  const tag = $('photoTagFilter').value;
-  const filtered = cd.photos.filter(p => {
-     const hasFace = !currentSelectedFaceId || (p.face_ids && p.face_ids.includes(currentSelectedFaceId)) || (p.person_ids && p.person_ids.includes(currentSelectedFaceId));
-     return (!q || p.filename.toLowerCase().includes(q)) && (!ev || p.event_id===ev) && (!tag || (p.ai_tags && p.ai_tags.includes(tag))) && hasFace;
-  });
-  $('photoGrid').innerHTML = filtered.map(p => `
-    <div class="ph" onclick="openPhoto('${encodeURIComponent(p.url)}','${p.filename}')">
-      <img src="${p.thumbnail_url||p.url}" loading="lazy"/>
-      <div class="m"><div class="t">${p.filename}</div></div>
-    </div>`).join('') || '<div class="muted">No photos</div>';
+    // UPDATED ID HERE: Check for 'finalLink' instead of 'generatedLink'
+    if($('finalLink')){
+      $('finalLink').href = link;
+      $('finalLink').textContent = link;
+      $('finalLinkBtn').href = link;
+      $('linkResultBox').style.display = 'block';
+    }
+    
+    showToast('Link Generated!');
+  }catch(e){
+    console.error(e);
+    showToast('Generate failed: '+(e.message||e),'error');
+  }finally{ showLoader(false); }
 }
 
-window.openPhoto = (u,t)=>{ $('pmImg').src=decodeURIComponent(u); $('pmTitle').textContent=t; $('pmDownload').href=decodeURIComponent(u); $('photoModal').classList.add('open'); };
-$('pmClose').onclick=()=>$('photoModal').classList.remove('open');
-
-async function loadFaceGroups(){
-  try{
-    const res = await apiPostJson(LIST_PEOPLE_API, { collection_id: cd.id });
-    faceGroups = res.people || res.items || [];
-    renderFaceIcons();
-  }catch(e){}
-}
-
-function renderFaceIcons(){
-  const bar = $('faceIconsBar'); bar.innerHTML = '';
-  const allDiv = document.createElement('div'); allDiv.className = 'face-item';
-  allDiv.innerHTML = `<div class="face-icon-wrapper ${!currentSelectedFaceId?'selected':''}"><i class="fa-solid fa-users"></i></div><div class="face-name-label">All</div>`;
-  allDiv.onclick = ()=>{ currentSelectedFaceId=null; renderFaceIcons(); renderPhotos(); };
-  bar.appendChild(allDiv);
-  faceGroups.forEach(p => {
-     const div = document.createElement('div'); div.className = 'face-item';
-     div.innerHTML = `<div class="face-icon-wrapper ${currentSelectedFaceId===p.FaceId?'selected':''}" style="background-image:url('${p.face_thumbnail_url}')"></div><div class="face-name-label">${p.name||'Unknown'}</div>`;
-     div.onclick = ()=>{ currentSelectedFaceId = (currentSelectedFaceId===p.FaceId)?null:p.FaceId; renderFaceIcons(); renderPhotos(); };
-     div.ondblclick = (e)=>{ e.stopPropagation(); $('faceNamingHeader').style.display='block'; $('faceHeaderImg').src=p.face_thumbnail_url; $('faceNameInput').dataset.id=p.FaceId; $('faceNameInput').value=(p.name!=='Unknown'?p.name:''); };
-     bar.appendChild(div);
-  });
-}
-
-async function saveFaceName(){
-  const id = $('faceNameInput').dataset.id; const name = $('faceNameInput').value;
-  if(!id || !name) return;
-  try{ await apiPostJson(SAVE_FACE_NAME_API, {collection_id: cd.id, face_id: id, name}); $('faceNamingHeader').style.display='none'; await loadFaceGroups(); showToast('Saved'); }catch(e){ showToast(e.message,'error'); }
-}
-
-/** ===================== SUPER ADMIN & LEADS ===================== **/
 async function loadLeads(){
   try{
-    const res = await apiPostJson(SAVE_DETAILS_API, { action:'list', collection_id: cd.id });
-    const leads = res.items || res.leads || [];
-    $('leadRows').innerHTML = leads.map(l => `<tr>
-        <td><b>${l.name}</b><br><small class="muted">${l.phone}</small></td>
-        <td><img src="${l.selfie_url}" style="width:40px;border-radius:50%"></td>
-        <td>${l.match_count||0} Photos</td>
-        <td><button class="btn secondary" onclick="openGuestMatchesModal('Matches','',${JSON.stringify(l.photo_urls||[])})"><i class="fa-solid fa-eye"></i></button></td>
-    </tr>`).join('') || `<tr><td colspan="4" class="muted">No leads</td></tr>`;
-  }catch(e){ $('leadRows').innerHTML=`<tr><td colspan="4">Error</td></tr>`; }
+    const tbody = $('leadRows');
+    tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">Loading...</td></tr>';
+    
+    const res = await apiFetch(SAVE_DETAILS_API, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'list', collection_id: cd.id })
+    });
+
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    
+    // Handle different response structures
+    let items = [];
+    if(Array.isArray(data)) items = data;
+    else if(data.items) items = data.items;
+    else if(data.leads) items = data.leads;
+
+    cd.leads = items;
+    renderLeads();
+  }catch(e){
+    console.error(e);
+    $('leadRows').innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center">Error loading leads</td></tr>`;
+  }
 }
 
-function openGuestMatchesModal(t, i, urls){
-    const g = $('guestMatchesGrid'); g.innerHTML = urls.map(u=>`<div class="ph" onclick="window.open('${u}')"><img src="${u}"></div>`).join('') || 'No photos';
+function renderLeads(){
+  const leads = Array.isArray(cd.leads)?cd.leads:[];
+  if(!leads.length){
+    $('leadRows').innerHTML = `<tr><td colspan="4" class="muted" style="text-align:center">No leads captured yet</td></tr>`;
+    return;
+  }
+  $('leadRows').innerHTML = leads.map(l=>{
+    const name = l.name || l.guest_name || '-';
+    const phone = l.phone || l.mobile || '';
+    const selfie = l.selfie_url || l.selfie || '';
+    const matched = l.match_count || (Array.isArray(l.photo_urls)?l.photo_urls.length:0) || 0;
+    
+    return `
+      <tr>
+        <td>
+           <div style="font-weight:700">${escapeHtml(name)}</div>
+           <div class="muted" style="font-size:12px">${escapeHtml(phone)}</div>
+        </td>
+        <td>
+           <img src="${selfie}" style="width:48px; height:48px; object-fit:cover; border-radius:50%; border:2px solid var(--border-color);" onerror="this.src='https://via.placeholder.com/50'"/>
+        </td>
+        <td><span class="pill" style="background:var(--primary-dim); color:var(--primary)">${matched} Photos</span></td>
+        <td>
+           <button class="btn secondary" style="padding:6px 10px" onclick="openGuestMatchesModal('Guest Matches', '${escapeHtml(name)}', ${JSON.stringify(l.photo_urls || [])})"><i class="fa-solid fa-eye"></i></button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Guest Matches Modal Helper (New Logic from V3)
+function openGuestMatchesModal(title, info, matches){
+    const grid = $('guestMatchesGrid');
+    grid.innerHTML = '';
+    
+    if(!matches || !matches.length){
+        grid.innerHTML = '<div class="muted">No matches found data in lead.</div>';
+        $('guestMatchesModal').classList.add('open');
+        return;
+    }
+
+    matches.forEach(url => {
+        const div = document.createElement('div');
+        div.className = 'ph';
+        div.onclick = () => window.open(url, '_blank');
+        div.innerHTML = `<img src="${url}" loading="lazy">`;
+        grid.appendChild(div);
+    });
+
     $('guestMatchesModal').classList.add('open');
 }
-$('guestMatchesCloseBtn').onclick=()=>$('guestMatchesModal').classList.remove('open');
 
+$('guestMatchesCloseBtn').addEventListener('click', ()=> $('guestMatchesModal').classList.remove('open'));
+
+
+/** ===================== SECTION: SUPERADMIN ===================== **/
 async function loadSuperAdmin(){
+  $('saRows').innerHTML = `<tr><td colspan="5" class="muted">Loading...</td></tr>`;
+  showLoader(true);
   try{
     const res = await apiFetch(`${API_BASE}/photographers`);
-    const users = await res.json();
-    $('saRows').innerHTML = users.map(u => `<tr>
-        <td>${u.email}</td><td>${u.storage_limit_gb} GB</td><td>${u.expiry_date}</td><td>${u.disabled?'Disabled':'Active'}</td>
-        <td><button class="btn danger" onclick="saDelete('${u.user_id}')">Del</button></td>
-    </tr>`).join('');
-  }catch(e){}
+    if(!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const rows = Array.isArray(data)?data:[];
+    $('saRows').innerHTML = rows.map(u=>{
+      const status = u.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--primary)">Active</span>';
+      return `
+        <tr>
+          <td style="font-weight:700">${escapeHtml(u.email||'-')}</td>
+          <td>${u.storage_limit_gb || 5} GB</td>
+          <td>${u.expiry_date||'Lifetime'}</td>
+          <td>${status}</td>
+          <td>
+            <div class="row" style="gap:6px;">
+              <button class="btn danger" style="padding:6px" onclick="saDelete('${u.user_id}')"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn secondary" style="padding:6px" onclick="saToggle('${u.user_id}', ${!!u.disabled})"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('') || `<tr><td colspan="5" class="muted">No users</td></tr>`;
+  }catch(e){
+    console.error(e);
+    $('saRows').innerHTML = `<tr><td colspan="5" style="color:var(--danger)">Error: ${e.message}</td></tr>`;
+  }finally{ showLoader(false); }
 }
-window.saDelete = async (id)=>{ if(confirm('Delete?')) { await apiFetch(`${API_BASE}/photographers/${id}`, {method:'DELETE'}); loadSuperAdmin(); }};
 
-/** ===================== INIT ===================== **/
+function openNewPhotog(){
+  const email = prompt('Photographer Email:');
+  if(!email) return;
+  const limitGb = parseInt(prompt('Storage Limit (GB):', '5')||'5', 10);
+  const expiry = prompt('Expiry (YYYY-MM-DD):', '');
+  saSave({ email, storage_limit_gb: limitGb, expiry_date: expiry });
+}
+
+async function saSave(payload){
+  showLoader(true);
+  try{
+    const res = await apiFetch(`${API_BASE}/photographers`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Failed');
+    showToast('User Saved');
+    await loadSuperAdmin();
+  }catch(e){
+    showToast(e.message,'error');
+  }finally{ showLoader(false); }
+}
+
+window.saDelete = async (userId)=>{
+  if(!confirm('Delete this user?')) return;
+  showLoader(true);
+  try{
+    await apiFetch(`${API_BASE}/photographers/${userId}`, { method:'DELETE' });
+    showToast('User Deleted');
+    await loadSuperAdmin();
+  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+};
+
+window.saToggle = async (userId, current)=>{
+  showLoader(true);
+  try{
+    await apiFetch(`${API_BASE}/photographers/${userId}/toggle`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ disabled: !current })
+    });
+    showToast('Status Updated');
+    await loadSuperAdmin();
+  }catch(e){ showToast(e.message,'error'); }finally{ showLoader(false); }
+};
+
+/** ===================== HELPER ===================== **/
+window.copyLink = () => {
+  const link = $('finalLink').href;
+  if(navigator.clipboard){
+      navigator.clipboard.writeText(link).then(()=>showToast('Copied')).catch(e=>console.error(e));
+  } else {
+      // Fallback for iframe/insecure contexts
+      const ta = document.createElement('textarea');
+      ta.value = link;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Copied');
+  }
+};
+
+/** ===================== ROUTER MAIN ===================== **/
 async function route(){
   await handleAuthFromQuery();
   const ok = ensureLoggedIn();
   const { path, params } = getHashRoute();
+
   if(path==='login'){ setView('login'); return; }
-  if(!ok){ location.hash = '#/login'; return; }
-  if(path==='superadmin'){ if(isMasterAdmin()){ setView('superadmin'); loadSuperAdmin(); } else location.hash='#/dashboard'; return; }
-  if(path==='collection'){ setView('collection'); setCollectionFromRoute(params); loadEvents(); loadPhotos(); loadLeads(); return; }
-  setView('dashboard'); loadCollections(); loadAccountStatus();
+
+  if(!ok){ setView('login'); location.hash = '#/login'; return; }
+
+  if(path==='superadmin'){
+    if(!isMasterAdmin()){ showToast('Access Denied','error'); location.hash='#/dashboard'; return; }
+    setView('superadmin'); await loadSuperAdmin(); return;
+  }
+
+  if(path==='collection'){
+    setView('collection');
+    setCollectionFromRoute(params);
+    loadEvents();
+    loadPhotos(false);
+    loadLeads();
+    return;
+  }
+
+  setView('dashboard');
+  loadCollections();
+  loadAccountStatus();
 }
 </script>
 </body>
 </html>
-

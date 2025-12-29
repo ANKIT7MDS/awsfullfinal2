@@ -1,834 +1,2264 @@
-<!DOCTYPE html>
+<!--
+EVENTLENS PRO — SINGLE FILE SPA (Admin + Photographer + Collection + Upload + Guest Search)
+✅ One-file SPA (copy-paste)
+✅ Uses your existing backend endpoints (API_BASE / Cognito settings taken from your dashboard.html & collection-details.html)
+✅ Upload module included (bulk upload + progress + duplicate-safe sha256 keys style)
+✅ Guest search included as route (#/guest?linkId=xxxx) and auto-loads branding from ClientGalleryHandler settings
+
+IMPORTANT:
+1) This file assumes your API_BASE is:
+   https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod
+   (same as your existing pages)  [oai_citation:0‡collection-details.html](sediment://file_000000005e1c7207b272f6c2feaddfbd)
+
+2) Cognito config is copied from your dashboard.html:
+   COGNITO_DOMAIN, CLIENT_ID, REDIRECT_URI  [oai_citation:1‡dashboard.html](sediment://file_000000003d28720793e8d87a7ccd6bbb)
+   If you deploy this file on a NEW URL, update REDIRECT_URI + Cognito Allowed Callback URLs.
+
+3) Guest page customization:
+   Uses /client-api (ClientGalleryHandler) and stores settings in Gallery table as:
+   action: save_settings, payload: {collection_id, settings}  [oai_citation:2‡12_LAMBDA_CODE_FULL_EXPORT.txt](sediment://file_0000000063d87207ab411cf7a09f3e83)
+   This means: per collection branding is supported out-of-the-box.
+   Per-link/per-event branding is NOT in backend right now (backend stores link_id->event_ids/collection_id)  [oai_citation:3‡12_LAMBDA_CODE_FULL_EXPORT.txt](sediment://file_0000000063d87207ab411cf7a09f3e83)
+   So we do: collection-level branding (best possible without backend change).
+
+4) Guest search flow:
+   Guest uploads selfie -> POST /search (selfie-search-find-matches)  [oai_citation:4‡01_API_ENDPOINTS_TO_LAMBDAS.txt](sediment://file_0000000006407207a06c7a35cb865f07)
+   Then guest fills details -> POST /save-details (selfie-search-save-details)  [oai_citation:5‡01_API_ENDPOINTS_TO_LAMBDAS.txt](sediment://file_0000000006407207a06c7a35cb865f07)
+
+5) Link generation supports multi-event selection (checkboxes) + expiry hours + optional password  [oai_citation:6‡collection-details.html](sediment://file_000000005e1c7207b272f6c2feaddfbd)
+-->
+
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>EventLens Pro – AI Photo Distribution</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>EventLens Pro | SPA</title>
 
-    <!-- Fonts & Icons -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-    <!-- Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="https://unpkg.com/scrollreveal"></script>
+  <style>
+    :root{
+      --bg:#07080b;
+      --card:#0e1117;
+      --card2:#0b0f14;
+      --text:#ffffff;
+      --muted:#a3a3a3;
+      --muted2:#8b93a7;
+      --border:#202737;
+      --brand:#6366f1;
+      --brand2:#4f46e5;
+      --good:#00d084;
+      --bad:#ff4d4d;
+      --warn:#ffb020;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --r: 18px;
+      --r2: 14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:"Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(900px 600px at 15% 10%, rgba(99,102,241,.18), transparent 60%),
+                  radial-gradient(900px 600px at 85% 20%, rgba(0,208,132,.10), transparent 60%),
+                  radial-gradient(900px 600px at 50% 90%, rgba(255,176,32,.08), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+    }
+    a{color:inherit}
+    .hidden{display:none !important}
 
-    <style>
-        /* ================= THEME VARIABLES ================= */
-        :root {
-            --bg-dark: #050507;
-            --bg-panel: #0f0f12;
-            --primary: #00e676;       /* Default Green - Dynamic in Search */
-            --primary-glow: rgba(0, 230, 118, 0.25);
-            --accent: #6366f1;        /* AI Purple */
-            --danger: #ef4444;
-            --text-main: #ffffff;
-            --text-muted: #9ca3af;
-            --border: rgba(255,255,255,0.08);
-            --radius: 16px;
-            --font-head: 'Outfit', sans-serif;
-            --font-body: 'Plus Jakarta Sans', sans-serif;
-        }
+    /* Layout */
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(12px);
+      background: rgba(7,8,11,.55);
+      border-bottom:1px solid rgba(32,39,55,.7);
+    }
+    .topbar-inner{
+      max-width:1200px;
+      margin:0 auto;
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;
+      font-weight:900;
+      letter-spacing:.3px;
+    }
+    .brand-badge{
+      width:34px;height:34px;border-radius:12px;
+      background: linear-gradient(135deg, rgba(99,102,241,1), rgba(0,208,132,.9));
+      display:grid;place-items:center;
+      box-shadow: 0 10px 30px rgba(99,102,241,.25);
+    }
+    .brand small{display:block;font-weight:600;color:var(--muted2);letter-spacing:0}
 
-        * { box-sizing: border-box; outline: none; }
-        body { margin: 0; background: var(--bg-dark); color: var(--text-main); font-family: var(--font-body); overflow-x: hidden; }
-        a { text-decoration: none; color: inherit; transition: 0.3s; cursor: pointer; }
-        
-        /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-dark); }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+    .nav-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .chip{
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(32,39,55,.9);
+      background: rgba(14,17,23,.65);
+      color:#d7def0;
+      font-size:12px;
+      display:inline-flex;gap:8px;align-items:center;
+    }
+    .btn{
+      border:none;
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      border:1px solid rgba(32,39,55,.9);
+      padding:10px 14px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:800;
+      letter-spacing:.2px;
+      display:inline-flex;align-items:center;gap:8px;
+      transition: transform .05s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+      text-decoration:none;
+      font-size:13px;
+    }
+    .btn:hover{background: rgba(255,255,255,.09); border-color: rgba(99,102,241,.55)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(99,102,241,1), rgba(79,70,229,1));
+      border-color: transparent;
+      box-shadow: 0 14px 40px rgba(99,102,241,.25);
+    }
+    .btn.primary:hover{filter: brightness(1.05)}
+    .btn.danger{background: rgba(255,77,77,.10); border-color: rgba(255,77,77,.35)}
+    .btn.good{background: rgba(0,208,132,.10); border-color: rgba(0,208,132,.35)}
+    .btn.ghost{background:transparent}
 
-        /* ================= UTILITY CLASSES ================= */
-        .hidden { display: none !important; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-        .glass { background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(12px); border: 1px solid var(--border); }
-        .flex-center { display: flex; align-items: center; justify-content: center; }
-        .flex-between { display: flex; align-items: center; justify-content: space-between; }
-        .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .container{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{
+      display:grid; gap:14px;
+      grid-template-columns: 1.3fr .7fr;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr}
+    }
+    .card{
+      background: rgba(14,17,23,.70);
+      border:1px solid rgba(32,39,55,.85);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      padding:16px;
+      overflow:hidden;
+    }
+    .card.soft{background: rgba(14,17,23,.55)}
+    .card-head{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+      padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid rgba(32,39,55,.7);
+    }
+    .card-title{
+      font-weight:900;
+      margin:0;
+      font-size:16px;
+      letter-spacing:.2px;
+    }
+    .card-sub{margin:6px 0 0;color:var(--muted2);font-size:12px}
+    .kpi{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 980px){ .kpi{grid-template-columns: repeat(2, 1fr)} }
+    .kpi .box{
+      background: rgba(11,15,20,.75);
+      border:1px solid rgba(32,39,55,.75);
+      border-radius: 16px;
+      padding:12px;
+      min-height:76px;
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .kpi .box .label{color:var(--muted2); font-size:12px; font-weight:700}
+    .kpi .box .val{font-size:18px; font-weight:900}
+    .kpi .box .hint{color:rgba(163,163,163,.9); font-size:11px}
 
-        /* ================= BUTTONS & INPUTS ================= */
-        .btn {
-            display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 50px;
-            font-weight: 700; cursor: pointer; border: none; transition: 0.3s; font-family: var(--font-head);
-            font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .btn-primary { background: var(--primary); color: #000; box-shadow: 0 0 15px var(--primary-glow); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 25px var(--primary-glow); opacity: 0.9; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-        .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-        .btn-sm { padding: 8px 16px; font-size: 12px; }
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .row > *{flex:1}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-size:12px;color:var(--muted2);font-weight:800}
+    input,select,textarea{
+      background: rgba(0,0,0,.35);
+      border:1px solid rgba(32,39,55,.9);
+      color:var(--text);
+      padding:11px 12px;
+      border-radius: 14px;
+      outline:none;
+      font-weight:700;
+    }
+    textarea{min-height:100px; resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color: rgba(99,102,241,.75)}
+    .help{color:var(--muted2); font-size:12px; line-height:1.45}
 
-        input, select, textarea {
-            width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-            border-radius: 12px; color: #fff; font-family: var(--font-body); transition: 0.3s; margin-bottom: 10px;
-        }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-glow); }
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      overflow:hidden;
+      border-radius: 16px;
+      border:1px solid rgba(32,39,55,.85);
+    }
+    .table th,.table td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(32,39,55,.55);
+      font-size:12px;
+      vertical-align:top;
+    }
+    .table th{color:#dfe6ff; text-align:left; background: rgba(11,15,20,.65)}
+    .table tr:hover td{background: rgba(255,255,255,.02)}
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(32,39,55,.9);
+      background: rgba(0,0,0,.25);
+      color:#d7def0;
+      font-weight:900;
+      font-size:11px;
+    }
+    .badge.good{border-color: rgba(0,208,132,.35); background: rgba(0,208,132,.10)}
+    .badge.bad{border-color: rgba(255,77,77,.35); background: rgba(255,77,77,.10)}
+    .badge.warn{border-color: rgba(255,176,32,.35); background: rgba(255,176,32,.10)}
+    .muted{color:var(--muted2)}
+    .sep{height:1px;background: rgba(32,39,55,.65); margin:12px 0}
 
-        /* ================= LAYOUT COMPONENTS ================= */
-        /* NAVBAR */
-        .navbar { position: fixed; top: 0; width: 100%; z-index: 1000; padding: 15px 0; transition: 0.3s; }
-        .navbar.scrolled { background: rgba(5,5,7,0.95); padding: 10px 0; border-bottom: 1px solid var(--border); }
-        .nav-brand { font-family: var(--font-head); font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-        .nav-brand i { color: var(--primary); }
+    /* Gallery */
+    .gallery-grid{
+      display:grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap:10px;
+    }
+    @media(max-width:1100px){.gallery-grid{grid-template-columns: repeat(4, 1fr)}}
+    @media(max-width:700px){.gallery-grid{grid-template-columns: repeat(2, 1fr)}}
+    .photo{
+      position:relative;
+      border-radius: 16px;
+      overflow:hidden;
+      border:1px solid rgba(32,39,55,.85);
+      background: rgba(0,0,0,.35);
+      cursor:pointer;
+      min-height:120px;
+    }
+    .photo img{width:100%; height:100%; object-fit:cover; display:block}
+    .photo .pbadges{
+      position:absolute; left:8px; bottom:8px;
+      display:flex; gap:6px; flex-wrap:wrap;
+    }
 
-        /* VIEWS CONTAINER */
-        #app-view { padding-top: 80px; min-height: 100vh; }
-        .view-section { animation: fadeIn 0.4s ease-out; }
+    /* Modals */
+    .modal{
+      position:fixed; inset:0; display:none;
+      background: rgba(0,0,0,.55);
+      z-index:100;
+      padding:18px;
+      align-items:center;
+      justify-content:center;
+    }
+    .modal.open{display:flex}
+    .modal .box{
+      width:min(980px, 100%);
+      background: rgba(14,17,23,.95);
+      border:1px solid rgba(32,39,55,.95);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modal .box .head{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:14px 14px;
+      border-bottom:1px solid rgba(32,39,55,.7);
+      background: rgba(11,15,20,.7);
+    }
+    .modal .box .body{padding:14px}
+    .toast{
+      position:fixed; right:16px; bottom:16px;
+      padding:10px 14px;
+      border-radius: 14px;
+      border:1px solid rgba(32,39,55,.9);
+      background: rgba(14,17,23,.9);
+      color:#fff;
+      box-shadow: var(--shadow);
+      display:none;
+      z-index:200;
+      font-weight:900;
+      font-size:13px;
+    }
+    .toast.show{display:block}
+    .toast.good{border-color: rgba(0,208,132,.45); background: rgba(0,208,132,.12)}
+    .toast.bad{border-color: rgba(255,77,77,.45); background: rgba(255,77,77,.12)}
+    .toast.warn{border-color: rgba(255,176,32,.45); background: rgba(255,176,32,.12)}
 
-        /* CARDS */
-        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 20px; padding: 24px; margin-bottom: 20px; }
-        .card h2 { font-family: var(--font-head); margin-top: 0; display: flex; align-items: center; gap: 10px; }
-        
-        /* TABLES */
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-size: 13px; text-transform: uppercase; }
-        td { padding: 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        tr:hover td { background: rgba(255,255,255,0.02); }
-
-        /* MODALS */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal.active { display: flex; }
-        .modal-content { background: var(--bg-panel); width: 90%; max-width: 500px; padding: 30px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-
-        /* TOAST */
-        .toast { position: fixed; bottom: 30px; right: 30px; background: #fff; color: #000; padding: 12px 24px; border-radius: 10px; font-weight: 600; transform: translateY(100px); transition: 0.3s; z-index: 3000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .toast.show { transform: translateY(0); }
-        .toast.error { background: var(--danger); color: #fff; }
-        .toast.success { background: var(--primary); color: #000; }
-
-        /* ================= LANDING PAGE SPECIFIC ================= */
-        .hero h1 { font-size: 64px; line-height: 1.1; font-family: var(--font-head); background: linear-gradient(to right, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero p { font-size: 20px; color: var(--text-muted); max-width: 600px; margin: 20px auto; }
-        
-        /* ================= DASHBOARD SPECIFIC ================= */
-        .stat-card { background: linear-gradient(145deg, #15151a, #0f0f12); padding: 20px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
-        .stat-val { font-size: 32px; font-weight: 800; color: var(--primary); font-family: var(--font-head); }
-        .stat-label { color: var(--text-muted); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-
-        /* ================= COLLECTION DETAILS ================= */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; }
-        .tab-btn { padding: 10px 20px; background: rgba(255,255,255,0.03); border-radius: 30px; cursor: pointer; color: var(--text-muted); font-weight: 600; white-space: nowrap; transition: 0.3s; }
-        .tab-btn.active { background: var(--primary); color: #000; }
-        
-        /* Photo Grid */
-        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-        .photo-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid var(--border); background: #000; }
-        .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
-        .photo-item:hover img { transform: scale(1.05); }
-
-        /* ================= GUEST SEARCH (Customizable) ================= */
-        .search-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 100px; background-size: cover; background-position: center; position: relative; }
-        .search-page::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.3), #000); z-index: 1; }
-        .search-content { position: relative; z-index: 2; width: 90%; max-width: 500px; text-align: center; }
-        .custom-logo { height: 60px; margin-bottom: 20px; object-fit: contain; }
-        .face-scan-box { width: 200px; height: 200px; border: 2px dashed var(--primary); border-radius: 50%; margin: 30px auto; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: rgba(0,0,0,0.5); cursor: pointer; }
-        .face-scan-box.scanning::after { content: ''; position: absolute; width: 100%; height: 4px; background: var(--primary); top: 0; animation: scan 1.5s infinite linear; box-shadow: 0 0 10px var(--primary); }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    </style>
+    /* Landing hero */
+    .hero{
+      padding:28px 16px;
+      border-radius: 22px;
+      border:1px solid rgba(32,39,55,.8);
+      background:
+        radial-gradient(700px 420px at 10% 0%, rgba(99,102,241,.18), transparent 60%),
+        radial-gradient(700px 420px at 90% 10%, rgba(0,208,132,.12), transparent 60%),
+        rgba(14,17,23,.55);
+      box-shadow: var(--shadow);
+    }
+    .hero h1{margin:0;font-size:34px;letter-spacing:-.6px}
+    .hero p{margin:10px 0 0;color:#cfd6ee;max-width:820px;line-height:1.55}
+    .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+    @media(max-width:980px){.pricing{grid-template-columns:1fr}}
+    .plan{
+      padding:14px;
+      border-radius: 18px;
+      border:1px solid rgba(32,39,55,.85);
+      background: rgba(11,15,20,.65);
+    }
+    .plan h3{margin:0;font-size:16px}
+    .plan .price{margin:8px 0 0;font-weight:900;font-size:22px}
+    .plan ul{margin:10px 0 0;padding-left:18px;color:#cfd6ee;line-height:1.7}
+    .plan .tag{display:inline-flex; margin-top:10px; font-size:11px; font-weight:900; padding:6px 10px; border-radius:999px; border:1px solid rgba(99,102,241,.45); background: rgba(99,102,241,.12)}
+  </style>
 </head>
+
 <body>
-
-    <!-- ================= NAVBAR ================= -->
-    <nav class="navbar" id="main-nav">
-        <div class="container flex-between">
-            <a href="#/" class="nav-brand">
-                <i class="fa-solid fa-camera-retro"></i> EventLens <span style="font-size:12px; background:var(--accent); padding:2px 6px; border-radius:4px; color:#fff">PRO</span>
-            </a>
-            
-            <!-- Landing Links -->
-            <div id="nav-landing-links" class="flex-center" style="gap:20px;">
-                <a href="#/" class="hidden-mobile">Home</a>
-                <a href="#/features" class="hidden-mobile">Features</a>
-                <button onclick="router.navigate('/login')" class="btn btn-outline btn-sm">Login</button>
-            </div>
-
-            <!-- App Links (Authenticated) -->
-            <div id="nav-app-links" class="flex-center hidden" style="gap:15px;">
-                <span id="user-badge" style="font-size:12px; color:var(--text-muted)"></span>
-                <button onclick="router.navigate('/dashboard')" class="btn btn-outline btn-sm"><i class="fa-solid fa-grid-2"></i> Dashboard</button>
-                <button onclick="auth.logout()" class="btn btn-danger btn-sm"><i class="fa-solid fa-power-off"></i></button>
-            </div>
+  <!-- Topbar (hidden on guest route) -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-inner">
+      <div class="brand" role="button" onclick="go('#/')" title="Go Home">
+        <div class="brand-badge"><i class="fa-solid fa-sparkles"></i></div>
+        <div>
+          EventLens Pro
+          <small id="topSubtitle">Premium AI Gallery</small>
         </div>
-    </nav>
+      </div>
+      <div class="nav-actions">
+        <span class="chip" id="whoChip"><i class="fa-regular fa-user"></i> <span id="whoText">Guest</span></span>
+        <a class="btn" id="btnGoDashboard" href="#/dashboard"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <a class="btn" id="btnGoSuper" href="#/superadmin"><i class="fa-solid fa-shield"></i> Super Admin</a>
+        <button class="btn danger" id="btnLogout" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </div>
+    </div>
+  </div>
 
-    <!-- ================= MAIN APP VIEW ================= -->
-    <main id="app-view">
-        <!-- Views will be injected here via JavaScript -->
-    </main>
+  <div class="container" id="app"></div>
 
-    <!-- ================= TOAST NOTIFICATION ================= -->
-    <div id="toast" class="toast">Action Successful</div>
-
-    <!-- ================= MODALS (Generic Structure) ================= -->
-    <div id="generic-modal" class="modal">
-        <div class="modal-content">
-            <div class="flex-between" style="margin-bottom:20px;">
-                <h3 id="modal-title" style="margin:0">Modal Title</h3>
-                <button onclick="ui.closeModal()" style="background:none; border:none; color:#fff; cursor:pointer;"><i class="fa-solid fa-xmark fa-lg"></i></button>
-            </div>
-            <div id="modal-body"></div>
+  <!-- Photo details modal -->
+  <div class="modal" id="photoModal">
+    <div class="box">
+      <div class="head">
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="badge"><i class="fa-regular fa-image"></i> Photo Details</span>
+          <span class="muted" id="pmMeta"></span>
         </div>
+        <button class="btn" onclick="closePhotoModal()"><i class="fa-solid fa-xmark"></i> Close</button>
+      </div>
+      <div class="body">
+        <div class="grid" style="grid-template-columns: 1fr 1fr">
+          <div class="card soft">
+            <img id="pmImg" src="" alt="" style="width:100%;border-radius:16px;border:1px solid rgba(32,39,55,.85)"/>
+          </div>
+          <div class="card soft">
+            <div class="row">
+              <div class="field">
+                <label>Filename</label>
+                <input id="pmFile" disabled/>
+              </div>
+              <div class="field">
+                <label>Uploaded</label>
+                <input id="pmDate" disabled/>
+              </div>
+            </div>
+            <div class="sep"></div>
+            <div class="field">
+              <label>Event</label>
+              <input id="pmEvent" disabled/>
+            </div>
+            <div class="sep"></div>
+            <div class="field">
+              <label>People (Faces)</label>
+              <div id="pmPeople" class="row"></div>
+            </div>
+            <div class="sep"></div>
+            <div class="field">
+              <label>AI Tags</label>
+              <div id="pmTags" class="row"></div>
+            </div>
+            <div class="sep"></div>
+            <div class="row">
+              <a class="btn primary" id="pmDownload" target="_blank"><i class="fa-solid fa-download"></i> Download</a>
+              <button class="btn" onclick="copyText(document.getElementById('pmDownload').href)"><i class="fa-regular fa-copy"></i> Copy Link</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+  CONFIG (from your existing working frontend)
+========================================================= */
+const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod"; //  [oai_citation:7‡collection-details.html](sediment://file_000000005e1c7207b272f6c2feaddfbd)
+const API_CLIENT = `${API_BASE}/client-api`; // client-gallery.html  [oai_citation:8‡client-gallery.html](sediment://file_00000000ea1c7207bf4a35789c1a7cb1)
+
+// Auth (from dashboard.html)  [oai_citation:9‡dashboard.html](sediment://file_000000003d28720793e8d87a7ccd6bbb)
+const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
+// NOTE: If you host this SPA at a new URL, update REDIRECT_URI accordingly in Cognito callback URLs.
+const REDIRECT_URI = "https://selfiphotos.netlify.app/dashboard.html";
+
+// Endpoints
+const GET_ACCOUNT_STATUS_API = `${API_BASE}/account-status`;
+const GET_COLLECTIONS_API    = `${API_BASE}/get-collections`;
+const UPSERT_COLLECTION_API  = `${API_BASE}/upsert-collection`;
+const DELETE_COLLECTION_API  = `${API_BASE}/delete-collection`;
+
+const GET_EVENTS_API         = `${API_BASE}/get-events`;
+const GET_PHOTOS_API         = `${API_BASE}/get-photos`;
+const UPSERT_EVENT_API       = `${API_BASE}/upsert-event`;
+const DELETE_EVENT_API       = `${API_BASE}/delete-event`;
+
+const UPLOAD_URLS_API        = `${API_BASE}/generate-upload-urls`;
+const GENERATE_LINK_API      = `${API_BASE}/generate-search-link`;
+const GET_LEADS_API          = `${API_BASE}/save-details`; // GET/POST as per mapping  [oai_citation:10‡01_API_ENDPOINTS_TO_LAMBDAS.txt](sediment://file_0000000006407207a06c7a35cb865f07)
+const SEARCH_API             = `${API_BASE}/search`;       // guest selfie match  [oai_citation:11‡01_API_ENDPOINTS_TO_LAMBDAS.txt](sediment://file_0000000006407207a06c7a35cb865f07)
+const GET_LINKS_API          = `${API_BASE}/get-links`;    // mapping exists  [oai_citation:12‡01_API_ENDPOINTS_TO_LAMBDAS.txt](sediment://file_0000000006407207a06c7a35cb865f07)
+
+/* =========================================================
+  STATE
+========================================================= */
+const $ = (id)=>document.getElementById(id);
+const app = $("app");
+const toast = $("toast");
+let idToken = localStorage.getItem("idToken") || null;
+let userPayload = null;
+
+let cacheCollections = [];
+let cacheAccount = {};
+let cacheEvents = [];
+let cachePhotos = [];
+let cacheLeads = [];
+let faceNameMap = {}; // optional, if you later connect list_people or save-face-name
+
+// Upload state
+const SUPPORTED_FORMATS = {
+  'image/jpeg': 'JPG','image/png': 'PNG','image/heic': 'HEIC','image/heif': 'HEIF',
+  'image/webp': 'WEBP','image/gif': 'GIF','image/bmp': 'BMP','image/tiff': 'TIFF'
+}; // from quick-upload.html  [oai_citation:13‡quick-upload.html](sediment://file_000000000e507207b3a1510488e46565)
+let uploadQueue = [];
+let uploadAbort = false;
+
+/* =========================================================
+  UTIL
+========================================================= */
+function showToast(msg, type="good"){
+  toast.className = `toast show ${type==="good"?"good":type==="bad"?"bad":"warn"}`;
+  toast.textContent = msg;
+  setTimeout(()=>toast.classList.remove("show"), 3200);
+}
+function escapeHtml(s=""){return String(s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));}
+function fmtDate(d){
+  try{ if(!d) return "-"; return new Date(d).toLocaleString("en-IN"); }catch{ return d||"-"; }
+}
+function formatBytes(bytes=0){
+  bytes = Number(bytes)||0;
+  if (!bytes) return "0 Bytes";
+  const k=1024, sizes=["Bytes","KB","MB","GB","TB"];
+  const i = Math.floor(Math.log(bytes)/Math.log(k));
+  return `${(bytes/Math.pow(k,i)).toFixed(i?2:0)} ${sizes[i]}`;
+}
+function copyText(t){
+  if(!t) return;
+  navigator.clipboard.writeText(String(t)).then(()=>showToast("Copied")).catch(()=>showToast("Copy failed","bad"));
+}
+function parseJwt(token){
+  try{ return JSON.parse(atob(token.split(".")[1])); }catch{ return null; }
+}
+function setTopbarVisible(v){
+  $("topbar").style.display = v ? "block" : "none";
+}
+
+/* =========================================================
+  API HELPERS
+========================================================= */
+async function apiFetch(url, {method="GET", body=null, auth=true, headers={}}={}){
+  const h = {"Content-Type":"application/json", ...headers};
+  if(auth){
+    const t = localStorage.getItem("idToken");
+    if(t) h["Authorization"] = `Bearer ${t}`;
+  }
+  const res = await fetch(url, {method, headers:h, body: body ? JSON.stringify(body) : null});
+  const data = await res.json().catch(()=> ({}));
+  if(!res.ok){
+    const msg = data?.message || data?.error || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/* =========================================================
+  ROUTER
+========================================================= */
+window.addEventListener("hashchange", renderRoute);
+document.addEventListener("DOMContentLoaded", async ()=>{
+  // If Cognito redirects back with ?code= we can exchange it here
+  await handleAuthCodeIfPresent();
+  renderRoute();
+});
+
+function go(hash){ location.hash = hash; }
+
+function renderRoute(){
+  const hash = location.hash || "#/";
+  const [path, qs] = hash.split("?");
+  const q = new URLSearchParams(qs || "");
+
+  // Guest route => hide admin topbar completely
+  if(path.startsWith("#/guest")){
+    setTopbarVisible(false);
+    renderGuest(q);
+    return;
+  }
+  setTopbarVisible(true);
+
+  // update who chip
+  idToken = localStorage.getItem("idToken") || null;
+  userPayload = idToken ? parseJwt(idToken) : null;
+  const isMaster = !!(userPayload && (userPayload["cognito:groups"]||[]).includes("MasterAdmins")); // dashboard.html logic  [oai_citation:14‡dashboard.html](sediment://file_000000003d28720793e8d87a7ccd6bbb)
+  $("whoText").textContent = userPayload ? (isMaster ? "Super Admin" : (userPayload.email || "User")) : "Guest";
+  $("btnLogout").style.display = userPayload ? "inline-flex" : "none";
+  $("btnGoSuper").style.display = isMaster ? "inline-flex" : "none";
+  $("btnGoDashboard").style.display = userPayload ? "inline-flex" : "none";
+
+  if(path==="#/" || path==="#/landing") return renderLanding();
+  if(path==="#/login") return renderLogin();
+  if(path==="#/dashboard") return renderDashboard();
+  if(path==="#/superadmin") return renderSuperAdmin();
+  if(path.startsWith("#/collection/")){
+    const cid = path.split("#/collection/")[1] || "";
+    return renderCollection(cid);
+  }
+  // fallback
+  renderLanding();
+}
+
+/* =========================================================
+  AUTH
+========================================================= */
+async function handleAuthCodeIfPresent(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get("code");
+  if(!code) return;
+
+  try{
+    // Same flow as dashboard.html  [oai_citation:15‡dashboard.html](sediment://file_000000003d28720793e8d87a7ccd6bbb)
+    const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+      method: "POST",
+      headers: {"Content-Type":"application/x-www-form-urlencoded"},
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: CLIENT_ID,
+        code,
+        redirect_uri: REDIRECT_URI
+      })
+    });
+    const tokens = await res.json();
+    if(!res.ok) throw new Error("Auth failed");
+    localStorage.setItem("idToken", tokens.id_token);
+    // clean URL
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  }catch(e){
+    console.error(e);
+    localStorage.removeItem("idToken");
+  }
+}
+
+function loginHostedUI(){
+  const url =
+    `${COGNITO_DOMAIN}/login?client_id=${encodeURIComponent(CLIENT_ID)}&response_type=code&scope=${encodeURIComponent("openid email profile")}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+  location.href = url;
+}
+
+function logout(){
+  localStorage.clear();
+  const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent("https://selfiphotos.netlify.app/login.html")}`;
+  location.href = logoutUrl;
+}
+
+/* =========================================================
+  UI: LANDING (PhotoOwl-ish)
+========================================================= */
+function renderLanding(){
+  app.innerHTML = `
+    <div class="hero">
+      <div class="row" style="align-items:flex-end">
+        <div style="flex:1.4">
+          <h1>EventLens Pro</h1>
+          <p>
+            AI-powered event gallery: bulk photo upload, face search, guest selfie search links, leads, analytics,
+            premium dashboards & client gallery customization.
+          </p>
+          <div class="row" style="margin-top:14px; gap:10px">
+            <button class="btn primary" onclick="go('#/login')"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+            <a class="btn" href="#/guest" onclick="event.preventDefault(); go('#/guest')"><i class="fa-solid fa-magnifying-glass"></i> Guest Search</a>
+            <button class="btn" onclick="showToast('Contact: WhatsApp / Call (add your number in UI)','warn')"><i class="fa-solid fa-phone"></i> Contact</button>
+          </div>
+          <div class="sep"></div>
+          <div class="kpi">
+            <div class="box"><div class="label">Upload</div><div class="val">Bulk</div><div class="hint">Progress + duplicate-safe hashing</div></div>
+            <div class="box"><div class="label">Search</div><div class="val">Selfie</div><div class="hint">Guest link → upload selfie → results</div></div>
+            <div class="box"><div class="label">Admin</div><div class="val">Control</div><div class="hint">Collections, events, leads, link expiry</div></div>
+            <div class="box"><div class="label">Branding</div><div class="val">Custom</div><div class="hint">Per collection UI via client-api</div></div>
+          </div>
+        </div>
+        <div style="flex:.6">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3 class="card-title">Quick Start</h3>
+                <div class="card-sub">Admin/Photographer → Login → Dashboard → Collection → Upload</div>
+              </div>
+            </div>
+            <ol class="help" style="margin:0; padding-left:18px">
+              <li>Login using Hosted UI</li>
+              <li>Create collection + events (with dates)</li>
+              <li>Bulk upload photos (any format)</li>
+              <li>Generate guest search link (expiry + password optional)</li>
+              <li>Guest uploads selfie → gets results → submits lead</li>
+            </ol>
+            <div class="sep"></div>
+            <button class="btn primary" style="width:100%" onclick="go('#/login')"><i class="fa-solid fa-unlock"></i> Login Now</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pricing">
+        <div class="plan">
+          <h3>Starter</h3>
+          <div class="price">₹ —</div>
+          <ul>
+            <li>1–2 events</li><li>Basic upload + guest search</li><li>Standard support</li>
+          </ul>
+          <div class="tag">Best for small weddings</div>
+        </div>
+        <div class="plan" style="border-color: rgba(99,102,241,.6)">
+          <h3>Pro</h3>
+          <div class="price">₹ —</div>
+          <ul>
+            <li>Unlimited events</li><li>Premium UI + analytics</li><li>Branding customization</li>
+          </ul>
+          <div class="tag">Most popular</div>
+        </div>
+        <div class="plan">
+          <h3>Enterprise</h3>
+          <div class="price">₹ —</div>
+          <ul>
+            <li>Multi-client</li><li>Master admin controls</li><li>Custom integrations</li>
+          </ul>
+          <div class="tag">For agencies</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+  UI: LOGIN
+========================================================= */
+function renderLogin(){
+  app.innerHTML = `
+    <div class="grid">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">Login</h3>
+            <div class="card-sub">Cognito Hosted UI (same as your existing flow)</div>
+          </div>
+        </div>
+        <div class="help">
+          Use your username/password. Super Admin accounts (group: MasterAdmins) will open Super Admin panel automatically (same logic as dashboard.html).  [oai_citation:16‡dashboard.html](sediment://file_000000003d28720793e8d87a7ccd6bbb)
+        </div>
+        <div class="sep"></div>
+        <button class="btn primary" onclick="loginHostedUI()"><i class="fa-solid fa-right-to-bracket"></i> Continue with Login</button>
+        <button class="btn" style="margin-left:8px" onclick="go('#/')"><i class="fa-solid fa-house"></i> Back</button>
+      </div>
+      <div class="card soft">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">Troubleshoot</h3>
+            <div class="card-sub">If you get redirect errors</div>
+          </div>
+        </div>
+        <ul class="help" style="margin:0; padding-left:18px">
+          <li>Make sure Cognito Allowed Callback URLs includes your hosting URL</li>
+          <li>Update <b>REDIRECT_URI</b> in this file if deployed elsewhere</li>
+          <li>Clear localStorage if token is corrupted</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+  DATA LOAD: Dashboard
+========================================================= */
+async function loadDashboardData(){
+  if(!localStorage.getItem("idToken")) throw new Error("Please login first");
+
+  // token expired check (same idea as dashboard.html)
+  const p = parseJwt(localStorage.getItem("idToken"));
+  if(!p || Date.now() > (p.exp*1000)){
+    localStorage.removeItem("idToken");
+    throw new Error("Session expired. Please login again.");
+  }
+
+  cacheCollections = await apiFetch(GET_COLLECTIONS_API, {method:"GET"});
+  // endpoint returns list; keep robust
+  if(!Array.isArray(cacheCollections)) cacheCollections = cacheCollections?.collections || [];
+
+  cacheAccount = await apiFetch(GET_ACCOUNT_STATUS_API, {method:"GET"}).catch(()=>({}));
+
+  userPayload = p;
+  const isMaster = (p["cognito:groups"]||[]).includes("MasterAdmins"); //  [oai_citation:17‡dashboard.html](sediment://file_000000003d28720793e8d87a7ccd6bbb)
+  if(isMaster) go("#/superadmin");
+}
+
+/* =========================================================
+  UI: DASHBOARD (Collections)
+========================================================= */
+function renderDashboard(){
+  if(!localStorage.getItem("idToken")){ go("#/login"); return; }
+
+  app.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h3 class="card-title">Dashboard</h3>
+          <div class="card-sub">Collections + totals</div>
+        </div>
+        <div class="row" style="max-width:520px; justify-content:flex-end">
+          <button class="btn" onclick="refreshDashboard()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <button class="btn primary" onclick="openCreateCollection()"><i class="fa-solid fa-plus"></i> Create Collection</button>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="box"><div class="label">Total Collections</div><div class="val" id="kCollections">—</div><div class="hint">Your workspaces</div></div>
+        <div class="box"><div class="label">Total Events</div><div class="val" id="kEvents">—</div><div class="hint">Across collections</div></div>
+        <div class="box"><div class="label">Total Photos</div><div class="val" id="kPhotos">—</div><div class="hint">Across collections</div></div>
+        <div class="box"><div class="label">Data Used</div><div class="val" id="kBytes">—</div><div class="hint" id="kExpiry">—</div></div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="row">
+        <div class="field" style="flex:1.4">
+          <label>Search Collections</label>
+          <input id="colSearch" placeholder="Type to filter..." oninput="renderCollectionsTable()"/>
+        </div>
+        <div class="field" style="flex:.6">
+          <label>Quick Actions</label>
+          <div class="row" style="gap:10px">
+            <button class="btn" onclick="go('#/landing')"><i class="fa-solid fa-globe"></i> Landing</button>
+            <button class="btn" onclick="go('#/login')"><i class="fa-solid fa-key"></i> Login Page</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="card soft">
+        <div class="card-head">
+          <div>
+            <h3 class="card-title">Your Collections</h3>
+            <div class="card-sub">Open collection to manage events, upload photos, leads, links.</div>
+          </div>
+        </div>
+        <div style="overflow:auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:36%">Name</th>
+                <th>Created</th>
+                <th>Events</th>
+                <th>Photos</th>
+                <th>Storage</th>
+                <th style="width:22%">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="colRows"><tr><td colspan="6" class="muted">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- ================= SCRIPTS ================= -->
-    <script>
-        /**
-         * CONFIGURATION
-         */
-        const CONFIG = {
-            API_BASE: 'https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod',
-            COGNITO_DOMAIN: 'https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com',
-            CLIENT_ID: '6j3gec3kk0q0ktkals8cr8s367',
-            REDIRECT_URI: window.location.origin + window.location.pathname
-        };
+    <!-- Create/Edit Collection Modal -->
+    <div class="modal" id="colModal">
+      <div class="box">
+        <div class="head">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="badge"><i class="fa-solid fa-layer-group"></i> <span id="cmTitle">Create Collection</span></span>
+            <span class="muted" id="cmHint"></span>
+          </div>
+          <button class="btn" onclick="closeColModal()"><i class="fa-solid fa-xmark"></i> Close</button>
+        </div>
+        <div class="body">
+          <div class="row">
+            <div class="field" style="flex:1.2">
+              <label>Collection Name</label>
+              <input id="cmName" placeholder="e.g. Rahul & Priya Wedding"/>
+              <input id="cmId" type="hidden"/>
+            </div>
+            <div class="field" style="flex:.8">
+              <label>Default Branding (Guest UI)</label>
+              <select id="cmBrandPreset">
+                <option value="indigo">Indigo Premium</option>
+                <option value="emerald">Emerald Clean</option>
+                <option value="amber">Amber Warm</option>
+                <option value="mono">Mono Minimal</option>
+              </select>
+            </div>
+          </div>
 
-        /**
-         * STATE MANAGEMENT
-         */
-        const state = {
-            user: null,
-            token: localStorage.getItem('idToken'),
-            collections: [],
-            currentCollection: null,
-            events: [],
-            photos: [],
-            isMasterAdmin: false
-        };
+          <div class="sep"></div>
 
-        /**
-         * UTILS
-         */
-        const utils = {
-            showToast: (msg, type = 'success') => {
-                const t = document.getElementById('toast');
-                t.textContent = msg;
-                t.className = `toast ${type} show`;
-                setTimeout(() => t.classList.remove('show'), 3000);
-            },
-            formatBytes: (bytes) => {
-                if (!bytes) return '0 B';
-                const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            },
-            apiCall: async (endpoint, method = 'GET', body = null) => {
-                if (!state.token) {
-                    auth.logout(); 
-                    throw new Error("No token");
-                }
-                const headers = { 'Authorization': `Bearer ${state.token}`, 'Content-Type': 'application/json' };
-                const opts = { method, headers };
-                if (body) opts.body = JSON.stringify(body);
-                
-                try {
-                    const res = await fetch(`${CONFIG.API_BASE}${endpoint}`, opts);
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.message || 'API Error');
-                    return data;
-                } catch (e) {
-                    utils.showToast(e.message, 'error');
-                    throw e;
-                }
-            }
-        };
+          <div class="grid" style="grid-template-columns:1fr 1fr">
+            <div class="card soft">
+              <div class="card-head">
+                <div>
+                  <h3 class="card-title">Guest Page Branding</h3>
+                  <div class="card-sub">Saved via client-api → Gallery table (CONFIG)  [oai_citation:18‡12_LAMBDA_CODE_FULL_EXPORT.txt](sediment://file_0000000063d87207ab411cf7a09f3e83)</div>
+                </div>
+              </div>
+              <div class="field">
+                <label>Brand Title</label>
+                <input id="cmBrandTitle" placeholder="e.g. Rahul ♥ Priya Wedding"/>
+              </div>
+              <div class="field">
+                <label>Tagline</label>
+                <input id="cmBrandTag" placeholder="e.g. Find your photos instantly"/>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label>Header Image URL</label>
+                  <input id="cmHeaderImg" placeholder="https://..."/>
+                </div>
+                <div class="field">
+                  <label>Logo URL</label>
+                  <input id="cmLogo" placeholder="https://..."/>
+                </div>
+              </div>
+              <div class="field">
+                <label>Footer Text</label>
+                <input id="cmFooter" placeholder="e.g. Powered by EventLens Pro"/>
+              </div>
+              <div class="help">Note: This is per <b>collection</b>. Per event/per link branding needs backend support (not present in current lambdas).</div>
+            </div>
 
-        /**
-         * AUTHENTICATION
-         */
-        const auth = {
-            init: async () => {
-                // Check for auth code in URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const code = urlParams.get('code');
-                
-                if (code) {
-                    try {
-                        const res = await fetch(`${CONFIG.COGNITO_DOMAIN}/oauth2/token`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: new URLSearchParams({ 
-                                grant_type: 'authorization_code', 
-                                client_id: CONFIG.CLIENT_ID, 
-                                code: code, 
-                                redirect_uri: CONFIG.REDIRECT_URI 
-                            })
-                        });
-                        const data = await res.json();
-                        if (data.id_token) {
-                            localStorage.setItem('idToken', data.id_token);
-                            state.token = data.id_token;
-                            window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
-                            router.navigate('/dashboard');
-                        }
-                    } catch (e) {
-                        utils.showToast('Login Failed', 'error');
-                    }
-                }
+            <div class="card soft">
+              <div class="card-head">
+                <div>
+                  <h3 class="card-title">Options</h3>
+                  <div class="card-sub">Client gallery flags</div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label>Allow Download</label>
+                  <select id="cmAllowDownload">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Show Watermark</label>
+                  <select id="cmShowWatermark">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Allow Selection</label>
+                  <select id="cmAllowSelection">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
+              </div>
 
-                if (state.token) {
-                    // Decode token to check role
-                    try {
-                        const payload = JSON.parse(atob(state.token.split('.')[1]));
-                        if (Date.now() >= payload.exp * 1000) {
-                            auth.logout();
-                            return;
-                        }
-                        state.user = payload;
-                        state.isMasterAdmin = (payload['cognito:groups'] || []).includes('MasterAdmins');
-                        
-                        document.getElementById('nav-landing-links').classList.add('hidden');
-                        document.getElementById('nav-app-links').classList.remove('hidden');
-                        document.getElementById('user-badge').textContent = payload.email;
-                    } catch (e) {
-                        auth.logout();
-                    }
-                }
-            },
-            login: () => {
-                const scope = "openid profile email aws.cognito.signin.user.admin";
-                window.location.href = `${CONFIG.COGNITO_DOMAIN}/login?response_type=code&client_id=${CONFIG.CLIENT_ID}&redirect_uri=${encodeURIComponent(CONFIG.REDIRECT_URI)}&scope=${encodeURIComponent(scope)}`;
-            },
-            logout: () => {
-                localStorage.clear();
-                state.token = null;
-                state.user = null;
-                window.location.href = `${CONFIG.COGNITO_DOMAIN}/logout?client_id=${CONFIG.CLIENT_ID}&logout_uri=${encodeURIComponent(CONFIG.REDIRECT_URI)}`;
-            }
-        };
+              <div class="sep"></div>
+              <div class="help">
+                These settings are used by your existing client-gallery logic via <b>client-api</b>.
+                You can reuse them for guest search theme too.
+              </div>
+            </div>
+          </div>
 
-        /**
-         * ROUTER
-         */
-        const router = {
-            routes: {
-                '/': views => views.landing(),
-                '/login': () => auth.login(), // Direct redirect
-                '/dashboard': views => views.dashboard(),
-                '/superadmin': views => views.superadmin(),
-                '/collection/:id': (views, params) => views.collection(params.id),
-                '/search/:linkId': (views, params) => views.guestSearch(params.linkId)
-            },
-            navigate: (path) => {
-                window.location.hash = path;
-            },
-            handleRoute: () => {
-                const hash = window.location.hash.slice(1) || '/';
-                const main = document.getElementById('app-view');
-                const nav = document.getElementById('main-nav');
-                
-                // Hide Nav for Guest Search
-                if (hash.startsWith('/search/')) {
-                    nav.style.display = 'none';
-                    main.style.paddingTop = '0';
-                } else {
-                    nav.style.display = 'block';
-                    main.style.paddingTop = '80px';
-                }
+          <div class="sep"></div>
 
-                // Simple route matching
-                let matched = false;
-                for (let route in router.routes) {
-                    // Regex for params like :id
-                    const regex = new RegExp('^' + route.replace(/:\w+/g, '([^/]+)') + '$');
-                    const match = hash.match(regex);
-                    
-                    if (match) {
-                        const params = {};
-                        const keys = route.match(/:\w+/g);
-                        if (keys) {
-                            keys.forEach((key, i) => {
-                                params[key.substring(1)] = match[i + 1];
-                            });
-                        }
-                        // Execute view function
-                        router.routes[route](views, params);
-                        matched = true;
-                        break;
-                    }
-                }
-                if (!matched) views.landing(); // Default
-            }
-        };
+          <div class="row" style="justify-content:flex-end">
+            <button class="btn" onclick="closeColModal()">Cancel</button>
+            <button class="btn primary" onclick="saveCollectionAndBranding()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
-        /**
-         * VIEWS (The UI Logic)
-         */
-        const views = {
-            landing: () => {
-                const html = `
-                    <header class="hero container" style="text-align:center; padding:100px 0;">
-                        <h1>Simplify Photo Delivery <br><span style="color:var(--primary)">Events & Weddings</span></h1>
-                        <p>Upload thousands of photos. AI sorts them by face. Guests find photos instantly.</p>
-                        <button onclick="auth.login()" class="btn btn-primary">Get Started</button>
-                        <div class="grid-auto" style="margin-top:60px; text-align:left;">
-                            <div class="card"><h3><i class="fa-solid fa-bolt" style="color:var(--primary)"></i> Instant</h3><p style="color:#aaa">Real-time delivery during events.</p></div>
-                            <div class="card"><h3><i class="fa-solid fa-face-smile" style="color:var(--accent)"></i> AI Face Search</h3><p style="color:#aaa">99.9% accurate face recognition.</p></div>
-                            <div class="card"><h3><i class="fa-solid fa-lock" style="color:var(--danger)"></i> Secure</h3><p style="color:#aaa">Privacy-first sharing for guests.</p></div>
-                        </div>
-                    </header>
-                `;
-                document.getElementById('app-view').innerHTML = html;
-            },
+  refreshDashboard();
+}
 
-            dashboard: async () => {
-                if (state.isMasterAdmin) { router.navigate('/superadmin'); return; }
-                
-                const html = `
-                    <div class="container view-section">
-                        <div class="flex-between" style="margin-bottom:30px;">
-                            <h1>My Collections</h1>
-                            <button onclick="ui.openCreateCollectionModal()" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Collection</button>
-                        </div>
-                        <div class="card">
-                            <input type="text" id="search-coll" placeholder="Search collections..." onkeyup="ui.filterCollections(this.value)">
-                            <table style="margin-top:20px;">
-                                <thead><tr><th>Name</th><th>Created</th><th>Events</th><th>Photos</th><th>Storage</th><th>Action</th></tr></thead>
-                                <tbody id="collections-list"><tr><td colspan="6" style="text-align:center">Loading...</td></tr></tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('app-view').innerHTML = html;
-                
-                // Fetch Data
-                try {
-                    const data = await utils.apiCall('/get-collections');
-                    state.collections = data.Items || [];
-                    ui.renderCollections(state.collections);
-                } catch (e) {
-                    document.getElementById('collections-list').innerHTML = `<tr><td colspan="6" style="text-align:center; color:red">Error loading data</td></tr>`;
-                }
-            },
+async function refreshDashboard(){
+  try{
+    showToast("Loading dashboard...", "warn");
+    await loadDashboardData();
 
-            superadmin: async () => {
-                const html = `
-                    <div class="container view-section">
-                        <h1>Super Admin Panel</h1>
-                        <div class="card">
-                            <div class="flex-between">
-                                <h3>Manage Photographers</h3>
-                                <button onclick="ui.openCreateUserModal()" class="btn btn-primary">Create User</button>
-                            </div>
-                            <table style="margin-top:20px;">
-                                <thead><tr><th>Email</th><th>Limit (GB)</th><th>Status</th><th>Actions</th></tr></thead>
-                                <tbody id="users-list"><tr><td colspan="4">Loading...</td></tr></tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('app-view').innerHTML = html;
-                try {
-                    const users = await utils.apiCall('/master/photographers');
-                    const tbody = document.getElementById('users-list');
-                    tbody.innerHTML = users.map(u => `
-                        <tr>
-                            <td>${u.email}</td>
-                            <td>${u.storage_limit_gb} GB</td>
-                            <td><span style="color:${u.disabled ? 'red' : 'green'}">${u.disabled ? 'Disabled' : 'Active'}</span></td>
-                            <td>
-                                <button onclick="ui.toggleUser('${u.user_id}', ${u.disabled})" class="btn btn-sm btn-outline">${u.disabled ? 'Enable' : 'Disable'}</button>
-                            </td>
-                        </tr>
-                    `).join('');
-                } catch (e) { console.error(e); }
-            },
+    // KPIs
+    const cols = cacheCollections || [];
+    const totalEvents = cols.reduce((a,c)=>a+Number(c.event_count||0),0);
+    const totalPhotos = cols.reduce((a,c)=>a+Number(c.total_photo_count||0),0);
+    const totalBytes  = cols.reduce((a,c)=>a+Number(c.storage_bytes||0),0);
 
-            collection: async (id) => {
-                const html = `
-                    <div class="container view-section">
-                        <div class="flex-between" style="margin-bottom:20px;">
-                            <button onclick="router.navigate('/dashboard')" class="btn btn-outline btn-sm"><i class="fa-solid fa-arrow-left"></i> Back</button>
-                            <h2 id="col-name">Loading...</h2>
-                            <div></div>
-                        </div>
-                        
-                        <div class="tabs">
-                            <button class="tab-btn active" onclick="ui.switchTab('photos')">Photos</button>
-                            <button class="tab-btn" onclick="ui.switchTab('events')">Events</button>
-                            <button class="tab-btn" onclick="ui.switchTab('upload')">Upload</button>
-                            <button class="tab-btn" onclick="ui.switchTab('settings')">Settings (Brand)</button>
-                            <button class="tab-btn" onclick="ui.switchTab('links')">Links</button>
-                        </div>
+    $("kCollections").textContent = cols.length;
+    $("kEvents").textContent = totalEvents;
+    $("kPhotos").textContent = totalPhotos;
+    $("kBytes").textContent = formatBytes(totalBytes);
+    $("kExpiry").textContent = cacheAccount?.expiry_date ? `Expiry: ${fmtDate(cacheAccount.expiry_date)}` : "—";
 
-                        <!-- PHOTOS TAB -->
-                        <div id="tab-photos" class="tab-content">
-                            <div class="card">
-                                <div class="flex-between" style="margin-bottom:15px;">
-                                    <h3>Gallery</h3>
-                                    <div class="flex-center" style="gap:10px;">
-                                        <input type="text" placeholder="Search by AI Tag..." style="margin:0; width:200px;" onkeyup="ui.filterPhotos(this.value)">
-                                    </div>
-                                </div>
-                                <div class="photo-grid" id="photo-grid"></div>
-                            </div>
-                        </div>
+    renderCollectionsTable();
+    showToast("Dashboard loaded", "good");
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Failed", "bad");
+    if(String(e.message||"").toLowerCase().includes("login")) go("#/login");
+  }
+}
 
-                        <!-- UPLOAD TAB -->
-                        <div id="tab-upload" class="tab-content hidden">
-                            <div class="card" style="text-align:center; border:2px dashed var(--border);">
-                                <i class="fa-solid fa-cloud-arrow-up" style="font-size:48px; color:var(--primary); margin-bottom:20px;"></i>
-                                <h3>Drag & Drop Photos Here</h3>
-                                <p style="color:var(--text-muted)">Supports JPG, PNG, HEIC. (Max 20MB)</p>
-                                <select id="upload-event-select" style="max-width:300px; margin:20px auto;"><option>Select Event</option></select>
-                                <input type="file" id="file-input" multiple class="hidden" onchange="upload.handleFiles(this.files)">
-                                <button onclick="document.getElementById('file-input').click()" class="btn btn-primary">Browse Files</button>
-                                
-                                <div id="upload-queue" style="text-align:left; margin-top:20px;"></div>
-                                <button id="start-upload-btn" class="btn btn-primary hidden" onclick="upload.startBatch()" style="margin-top:20px;">Start Upload</button>
-                            </div>
-                        </div>
+function renderCollectionsTable(){
+  const q = ($("colSearch")?.value||"").trim().toLowerCase();
+  const rows = $("colRows");
+  let cols = cacheCollections || [];
+  if(q) cols = cols.filter(c => String(c.name||"").toLowerCase().includes(q));
 
-                        <!-- SETTINGS TAB (Customization) -->
-                        <div id="tab-settings" class="tab-content hidden">
-                            <div class="card">
-                                <h3>Customize Guest Experience</h3>
-                                <p style="color:var(--text-muted)">Customize how the search page looks for your clients.</p>
-                                <div class="grid-auto">
-                                    <div>
-                                        <label>Brand Color</label>
-                                        <input type="color" id="brand-color" style="height:50px;">
-                                    </div>
-                                    <div>
-                                        <label>Logo URL</label>
-                                        <input type="text" id="brand-logo" placeholder="https://...">
-                                    </div>
-                                    <div>
-                                        <label>Banner Image URL</label>
-                                        <input type="text" id="brand-banner" placeholder="https://...">
-                                    </div>
-                                </div>
-                                <button onclick="ui.saveCollectionSettings()" class="btn btn-primary" style="margin-top:20px;">Save Settings</button>
-                            </div>
-                        </div>
-                        
-                        <!-- LINKS TAB -->
-                        <div id="tab-links" class="tab-content hidden">
-                             <div class="card">
-                                <h3>Generate Search Link</h3>
-                                <button onclick="ui.generateLink()" class="btn btn-primary">Create Guest Link</button>
-                                <div id="generated-links-list" style="margin-top:20px;"></div>
-                             </div>
-                        </div>
+  if(!cols.length){
+    rows.innerHTML = `<tr><td colspan="6" class="muted">No collections</td></tr>`;
+    return;
+  }
 
-                         <!-- EVENTS TAB -->
-                        <div id="tab-events" class="tab-content hidden">
-                            <div class="card">
-                                <div class="flex-between">
-                                    <h3>Events</h3>
-                                    <button onclick="ui.createEvent()" class="btn btn-primary">Add Event</button>
-                                </div>
-                                <ul id="event-list" style="list-style:none; padding:0; margin-top:15px;"></ul>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('app-view').innerHTML = html;
-                state.currentCollection = id;
-                
-                // Fetch details
-                await ui.loadCollectionData(id);
-            },
+  rows.innerHTML = cols.map(col=>{
+    const cid = escapeHtml(col.collection_id || "");
+    const name = escapeHtml(col.name || "Untitled");
+    const created = fmtDate(col.created_at || col.created || "");
+    const ev = Number(col.event_count||0);
+    const ph = Number(col.total_photo_count||0);
+    const bytes = formatBytes(col.storage_bytes||0);
 
-            guestSearch: async (linkId) => {
-                // This is a specialized view that loads customizations
-                document.getElementById('app-view').innerHTML = `
-                    <div id="guest-ui" class="search-page">
-                        <div class="search-content">
-                            <img id="guest-logo" class="custom-logo hidden" src="" alt="Logo">
-                            <h1 id="guest-title" style="font-family:var(--font-head); font-size:36px; margin-bottom:10px;">Find Your Photos</h1>
-                            <p style="color:rgba(255,255,255,0.7)">Take a selfie to find all your photos from the event.</p>
-                            
-                            <label for="selfie-input" class="face-scan-box" id="scan-box">
-                                <i class="fa-solid fa-camera" style="font-size:40px; color:rgba(255,255,255,0.5)"></i>
-                            </label>
-                            <input type="file" id="selfie-input" accept="image/*" class="hidden" capture="user" onchange="guest.handleSelfie(this.files[0], '${linkId}')">
-                            
-                            <div id="guest-results" class="photo-grid" style="margin-top:40px;"></div>
-                        </div>
-                    </div>
-                `;
+    return `
+      <tr>
+        <td><b>${name}</b><div class="muted" style="font-size:11px;margin-top:3px">${cid}</div></td>
+        <td>${created}</td>
+        <td><span class="badge">${ev}</span></td>
+        <td><span class="badge">${ph}</span></td>
+        <td>${bytes}</td>
+        <td>
+          <div class="row" style="gap:8px">
+            <button class="btn" onclick="openEditCollection('${cid}', '${escapeHtml(col.name||"")}')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+            <button class="btn danger" onclick="deleteCollection('${cid}','${escapeHtml(col.name||"")}')"><i class="fa-solid fa-trash"></i> Delete</button>
+            <button class="btn primary" onclick="go('#/collection/${cid}')"><i class="fa-solid fa-folder-open"></i> Open</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
 
-                // Fetch customization from the Link ID (Mocking logic as backend usually returns config with link metadata)
-                // In a real scenario, you'd GET /link-metadata/:linkId first.
-                // Here assuming we fetch collection details associated with the link.
-                // For demo, let's pretend we fetched it:
-                try {
-                    // This endpoint conceptually fetches public config
-                    // const config = await utils.apiCallPublic(`/public/link-config/${linkId}`);
-                    // Since that endpoint might not exist in your specific backend dump, 
-                    // we will check if we have state loaded, else standard style.
-                    // For the "Full Code" requested, I will implement standard behavior but allow injection if you have the API.
-                } catch(e) {}
-            }
-        };
+function openCreateCollection(){
+  $("cmTitle").textContent = "Create Collection";
+  $("cmHint").textContent = "";
+  $("cmName").value = "";
+  $("cmId").value = "";
+  // defaults
+  $("cmBrandPreset").value = "indigo";
+  $("cmBrandTitle").value = "";
+  $("cmBrandTag").value = "";
+  $("cmHeaderImg").value = "";
+  $("cmLogo").value = "";
+  $("cmFooter").value = "Powered by EventLens Pro";
+  $("cmAllowDownload").value = "false";
+  $("cmShowWatermark").value = "true";
+  $("cmAllowSelection").value = "true";
+  $("colModal").classList.add("open");
+}
 
-        /**
-         * UI CONTROLLER
-         */
-        const ui = {
-            openCreateCollectionModal: () => {
-                const html = `
-                    <label>Collection Name</label>
-                    <input type="text" id="new-col-name" placeholder="e.g. Wedding 2025">
-                    <button onclick="ui.createCollection()" class="btn btn-primary" style="width:100%">Create</button>
-                `;
-                document.getElementById('modal-title').textContent = 'New Collection';
-                document.getElementById('modal-body').innerHTML = html;
-                document.getElementById('generic-modal').classList.add('active');
-            },
-            closeModal: () => document.getElementById('generic-modal').classList.remove('active'),
-            
-            createCollection: async () => {
-                const name = document.getElementById('new-col-name').value;
-                if(!name) return;
-                try {
-                    await utils.apiCall('/upsert-collection', 'POST', { name });
-                    ui.closeModal();
-                    views.dashboard(); // Reload
-                    utils.showToast('Collection Created');
-                } catch(e) {}
-            },
+function openEditCollection(id, name){
+  $("cmTitle").textContent = "Edit Collection";
+  $("cmHint").textContent = `Editing: ${name}`;
+  $("cmName").value = name;
+  $("cmId").value = id;
 
-            filterCollections: (term) => {
-                const rows = document.getElementById('collections-list').getElementsByTagName('tr');
-                term = term.toLowerCase();
-                for (let row of rows) {
-                    const txt = row.textContent.toLowerCase();
-                    row.style.display = txt.includes(term) ? '' : 'none';
-                }
-            },
+  // try load saved branding from client-api
+  loadBranding(id).finally(()=> $("colModal").classList.add("open"));
+}
 
-            renderCollections: (cols) => {
-                const tbody = document.getElementById('collections-list');
-                if(!cols.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No Collections</td></tr>'; return; }
-                tbody.innerHTML = cols.map(c => `
-                    <tr>
-                        <td style="font-weight:700"><a href="#/collection/${c.collection_id}">${c.name}</a></td>
-                        <td>${new Date(c.created_at).toLocaleDateString()}</td>
-                        <td><span style="background:#222; padding:4px 8px; border-radius:4px;">${c.event_count||0}</span></td>
-                        <td>${c.total_photo_count||0}</td>
-                        <td>${utils.formatBytes(c.storage_bytes)}</td>
-                        <td>
-                            <button onclick="ui.deleteCollection('${c.collection_id}')" class="btn btn-sm btn-danger"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `).join('');
-            },
+function closeColModal(){ $("colModal").classList.remove("open"); }
 
-            deleteCollection: async (id) => {
-                if(!confirm('Delete collection? Photos will be lost.')) return;
-                await utils.apiCall('/delete-collection', 'POST', { collection_id: id });
-                views.dashboard();
-            },
+async function saveCollectionAndBranding(){
+  const name = ($("cmName").value||"").trim();
+  if(!name) return showToast("Name is required","bad");
+  const collection_id = ($("cmId").value||"").trim();
 
-            // Collection Details Logic
-            loadCollectionData: async (id) => {
-                try {
-                    // 1. Get Events (to verify ownership & basic data)
-                    const eventData = await utils.apiCall('/get-events', 'POST', { collection_id: id });
-                    state.events = eventData.events || [];
-                    
-                    // 2. Get Photos
-                    const photoData = await utils.apiCall('/get-photos', 'POST', { collection_id: id });
-                    state.photos = photoData.photos || [];
+  try{
+    // Save collection
+    const payload = { name };
+    if(collection_id) payload.collection_id = collection_id;
+    await apiFetch(UPSERT_COLLECTION_API, {method:"POST", body:payload});
 
-                    // Render
-                    document.getElementById('col-name').textContent = `Collection: ${id.substring(0,8)}...`;
-                    
-                    // Render Photos
-                    ui.renderPhotos(state.photos);
-                    
-                    // Render Events List
-                    const evList = document.getElementById('event-list');
-                    evList.innerHTML = state.events.map(e => `
-                        <li style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;">
-                            <span>${e.name} (${e.event_date})</span>
-                            <span style="color:var(--text-muted)">${e.photo_count||0} photos</span>
-                        </li>
-                    `).join('');
+    // Need collection id for branding save. If created new, refresh list to get it.
+    await refreshDashboard();
 
-                    // Populate Upload Select
-                    const sel = document.getElementById('upload-event-select');
-                    sel.innerHTML = state.events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+    // Resolve final collection id
+    let finalId = collection_id;
+    if(!finalId){
+      const found = (cacheCollections||[]).find(c => c.name===name) || (cacheCollections||[])[0];
+      finalId = found?.collection_id;
+    }
+    if(!finalId) throw new Error("Could not resolve collection_id after save");
 
-                } catch(e) {
-                    console.error(e);
-                }
-            },
+    // Save branding settings via client-api (ClientGalleryHandler)  [oai_citation:19‡12_LAMBDA_CODE_FULL_EXPORT.txt](sediment://file_0000000063d87207ab411cf7a09f3e83)
+    const preset = $("cmBrandPreset").value;
+    const presetColors = ({
+      indigo: {accent:"#6366f1", bg:"#07080b"},
+      emerald:{accent:"#00d084", bg:"#07080b"},
+      amber:  {accent:"#ffb020", bg:"#07080b"},
+      mono:   {accent:"#ffffff", bg:"#07080b"}
+    })[preset] || {accent:"#6366f1", bg:"#07080b"};
 
-            renderPhotos: (photos) => {
-                const grid = document.getElementById('photo-grid');
-                grid.innerHTML = photos.map(p => `
-                    <div class="photo-item">
-                        <img src="${p.thumbnail_url || p.url}" loading="lazy">
-                    </div>
-                `).join('');
-            },
+    const settings = {
+      // existing client-gallery known flags
+      allowDownload: $("cmAllowDownload").value==="true",
+      showWatermark: $("cmShowWatermark").value==="true",
+      allowSelection: $("cmAllowSelection").value==="true",
 
-            switchTab: (tabName) => {
-                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-                document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                event.target.classList.add('active');
-            },
+      // branding used by THIS SPA guest page (safe extra fields)
+      branding: {
+        preset,
+        accent: presetColors.accent,
+        background: presetColors.bg,
+        title: ($("cmBrandTitle").value||"").trim() || name,
+        tagline: ($("cmBrandTag").value||"").trim() || "Find your photos instantly",
+        headerImage: ($("cmHeaderImg").value||"").trim(),
+        logo: ($("cmLogo").value||"").trim(),
+        footer: ($("cmFooter").value||"").trim() || "Powered by EventLens Pro"
+      }
+    };
 
-            createEvent: () => {
-                const html = `
-                    <label>Event Name</label> <input type="text" id="ev-name">
-                    <label>Date</label> <input type="date" id="ev-date">
-                    <button onclick="ui.submitEvent()" class="btn btn-primary" style="width:100%">Save</button>
-                `;
-                document.getElementById('modal-title').textContent = 'Add Event';
-                document.getElementById('modal-body').innerHTML = html;
-                document.getElementById('generic-modal').classList.add('active');
-            },
+    await fetch(API_CLIENT, {
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ action:"save_settings", payload:{ collection_id: finalId, settings }})
+    }).then(r=>r.json().catch(()=>({}))).then(()=>{});
 
-            submitEvent: async () => {
-                const name = document.getElementById('ev-name').value;
-                const date = document.getElementById('ev-date').value;
-                await utils.apiCall('/upsert-event', 'POST', { collection_id: state.currentCollection, name, event_date: date });
-                ui.closeModal();
-                ui.loadCollectionData(state.currentCollection);
-            },
-            
-            saveCollectionSettings: async () => {
-                // In a real app, this would save to a 'settings' table or metadata in collection
-                // For now, we mock success
-                utils.showToast('Branding Settings Saved');
-            },
+    showToast("Saved (collection + branding)", "good");
+    closeColModal();
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Save failed", "bad");
+  }
+}
 
-            generateLink: async () => {
-                 // Call /generate-search-link
-                 const eventIds = state.events.map(e => e.event_id);
-                 if(!eventIds.length) return utils.showToast('Create an event first', 'error');
-                 
-                 const res = await utils.apiCall('/generate-search-link', 'POST', {
-                     collection_id: state.currentCollection,
-                     event_ids: eventIds,
-                     expiry_hours: 0
-                 });
-                 const link = res.searchUrl || res.url;
-                 document.getElementById('generated-links-list').innerHTML = `
-                    <div style="background:#222; padding:10px; border-radius:8px; display:flex; justify-content:space-between;">
-                        <span style="font-family:monospace; color:var(--primary); overflow:hidden; text-overflow:ellipsis;">${link}</span>
-                        <button onclick="navigator.clipboard.writeText('${link}')" class="btn btn-sm btn-outline">Copy</button>
-                    </div>
-                 `;
-            }
-        };
+async function deleteCollection(id, name){
+  if(!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try{
+    await apiFetch(DELETE_COLLECTION_API, {method:"POST", body:{collection_id:id}});
+    await refreshDashboard();
+    showToast("Deleted", "good");
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Delete failed","bad");
+  }
+}
 
-        /**
-         * UPLOAD MANAGER
-         */
-        const upload = {
-            files: [],
-            handleFiles: (files) => {
-                upload.files = Array.from(files);
-                document.getElementById('upload-queue').innerHTML = `<p>${upload.files.length} files selected.</p>`;
-                document.getElementById('start-upload-btn').classList.remove('hidden');
-            },
-            startBatch: async () => {
-                const eventId = document.getElementById('upload-event-select').value;
-                if(!eventId) return utils.showToast('Select an event', 'error');
-                
-                const btn = document.getElementById('start-upload-btn');
-                btn.textContent = 'Uploading...';
-                btn.disabled = true;
+async function loadBranding(collectionId){
+  // We can fetch client-api get_client_view (it returns settings + collection name in your client-gallery)  [oai_citation:20‡client-gallery.html](sediment://file_00000000ea1c7207bf4a35789c1a7cb1)
+  try{
+    const res = await fetch(API_CLIENT, {
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ action:"get_client_view", payload:{ collection_id: collectionId }})
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data?.message || "Failed to load branding");
 
-                try {
-                    // 1. Get Presigned URLs
-                    const payload = {
-                        collection_id: state.currentCollection,
-                        event_id: eventId,
-                        files: upload.files.map(f => ({ name: f.name, type: f.type }))
-                    };
-                    const res = await utils.apiCall('/generate-upload-urls', 'POST', payload);
-                    const urls = res.urls;
+    const settings = data.settings || {};
+    const branding = settings.branding || {};
+    $("cmBrandPreset").value = branding.preset || "indigo";
+    $("cmBrandTitle").value = branding.title || (data.collection_name||"");
+    $("cmBrandTag").value = branding.tagline || "";
+    $("cmHeaderImg").value = branding.headerImage || "";
+    $("cmLogo").value = branding.logo || "";
+    $("cmFooter").value = branding.footer || "Powered by EventLens Pro";
+    $("cmAllowDownload").value = String(!!settings.allowDownload);
+    $("cmShowWatermark").value = String(settings.showWatermark !== false);
+    $("cmAllowSelection").value = String(settings.allowSelection !== false);
+  }catch(e){
+    // silent
+  }
+}
 
-                    // 2. Upload to S3
-                    let success = 0;
-                    for(let i=0; i<urls.length; i++) {
-                        const file = upload.files[i];
-                        const url = urls[i].uploadURL;
-                        await fetch(url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-                        success++;
-                        document.getElementById('upload-queue').innerHTML = `<p>Uploaded ${success}/${urls.length}</p>`;
-                    }
-                    
-                    utils.showToast(`Uploaded ${success} photos`);
-                    ui.loadCollectionData(state.currentCollection); // Refresh
+/* =========================================================
+  UI: SUPER ADMIN (minimal embed)
+  NOTE: Your super-admin.html actually calls /photographers routes, not /master/* (older vs newer).
+  We'll keep a minimal redirect approach: open your existing super-admin.html in same domain,
+  OR render a light UI to show "use existing" if needed.
+========================================================= */
+function renderSuperAdmin(){
+  if(!localStorage.getItem("idToken")){ go("#/login"); return; }
+  const p = parseJwt(localStorage.getItem("idToken"));
+  const isMaster = !!(p && (p["cognito:groups"]||[]).includes("MasterAdmins"));
+  if(!isMaster){
+    app.innerHTML = `<div class="card"><h3 class="card-title">Access Denied</h3><p class="help">This section is for MasterAdmins only.</p></div>`;
+    return;
+  }
 
-                } catch(e) {
-                    utils.showToast('Upload Failed', 'error');
-                } finally {
-                    btn.textContent = 'Start Upload';
-                    btn.disabled = false;
-                }
-            }
-        };
+  app.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h3 class="card-title">Super Admin</h3>
+          <div class="card-sub">Master admin controls (photographers)</div>
+        </div>
+        <div class="row" style="justify-content:flex-end">
+          <a class="btn primary" href="super-admin.html" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Full Super Admin</a>
+        </div>
+      </div>
+      <div class="help">
+        Your existing <b>super-admin.html</b> already has create/edit/delete/toggle and uses <code>/photographers</code> APIs.  [oai_citation:21‡super-admin.html](sediment://file_0000000037387207acd9e401d1510fb3)
+        <br/>This SPA focuses on Dashboard + Collection + Upload + Guest.
+      </div>
+    </div>
+  `;
+}
 
-        /**
-         * GUEST SEARCH LOGIC
-         */
-        const guest = {
-            handleSelfie: async (file, linkId) => {
-                if(!file) return;
-                const box = document.getElementById('scan-box');
-                box.classList.add('scanning');
-                
-                // Convert to Base64
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = async () => {
-                    const base64 = reader.result;
-                    try {
-                        // Call Search API
-                        // Note: Using a public or specific endpoint. 
-                        // Assuming /search is protected, guest flow usually uses a dedicated Lambda without Auth or uses the LinkID as auth.
-                        // For this demo, we assume the backend handles LinkID verification.
-                        
-                        // We need a way to call API without the Photographer Token if it's a guest.
-                        // Temporary: Showing Alert as backend specific auth for guests needs 'linkId' logic.
-                        
-                        utils.showToast('Searching Faces... (Demo)');
-                        
-                        // Simulating Result
-                        setTimeout(() => {
-                            box.classList.remove('scanning');
-                            document.getElementById('guest-results').innerHTML = `
-                                <div style="color:#fff; width:100%;">
-                                    <h3>Found 0 Photos</h3>
-                                    <p>Backend Search Integration Pending</p>
-                                </div>
-                            `;
-                        }, 2000);
+/* =========================================================
+  COLLECTION PAGE (Events + Upload + Photos + Leads + Links)
+  Uses the same backend endpoints as collection-details.html  [oai_citation:22‡collection-details.html](sediment://file_000000005e1c7207b272f6c2feaddfbd)
+========================================================= */
+async function renderCollection(collectionId){
+  if(!localStorage.getItem("idToken")){ go("#/login"); return; }
 
-                    } catch(e) {
-                        box.classList.remove('scanning');
-                        utils.showToast('Search Failed', 'error');
-                    }
-                };
-            }
-        };
+  app.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h3 class="card-title">Collection</h3>
+          <div class="card-sub"><span class="muted">ID:</span> <span id="cId">${escapeHtml(collectionId)}</span></div>
+        </div>
+        <div class="row" style="justify-content:flex-end; gap:10px; max-width:720px">
+          <button class="btn" onclick="go('#/dashboard')"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <button class="btn" onclick="refreshCollection('${escapeHtml(collectionId)}')"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <button class="btn primary" onclick="openBrandingPanel('${escapeHtml(collectionId)}')"><i class="fa-solid fa-wand-magic-sparkles"></i> Branding</button>
+        </div>
+      </div>
 
-        /**
-         * INITIALIZATION
-         */
-        window.addEventListener('hashchange', router.handleRoute);
-        window.addEventListener('DOMContentLoaded', async () => {
-            await auth.init();
-            router.handleRoute();
-        });
+      <div class="kpi">
+        <div class="box"><div class="label">Events</div><div class="val" id="cEventsK">—</div><div class="hint">Total in collection</div></div>
+        <div class="box"><div class="label">Photos</div><div class="val" id="cPhotosK">—</div><div class="hint">Indexed photos</div></div>
+        <div class="box"><div class="label">Guest Leads</div><div class="val" id="cLeadsK">—</div><div class="hint">Submitted details</div></div>
+        <div class="box"><div class="label">Storage</div><div class="val" id="cBytesK">—</div><div class="hint" id="cNameK">—</div></div>
+      </div>
 
-    </script>
+      <div class="sep"></div>
+
+      <div class="grid">
+        <div class="card soft">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">Events</h3>
+              <div class="card-sub">Create / Edit / Delete (with date)</div>
+            </div>
+            <button class="btn primary" onclick="openCreateEvent('${escapeHtml(collectionId)}')"><i class="fa-solid fa-plus"></i> New Event</button>
+          </div>
+          <div style="overflow:auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Photos</th>
+                  <th>Guests</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="evtRows"><tr><td colspan="5" class="muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="card soft">
+            <div class="card-head">
+              <div>
+                <h3 class="card-title">Generate Guest Search Link</h3>
+                <div class="card-sub">Multi-event selection + expiry hours + optional password  [oai_citation:23‡collection-details.html](sediment://file_000000005e1c7207b272f6c2feaddfbd)</div>
+              </div>
+            </div>
+
+            <div class="help">Select events for which guest can search photos. Link will be shorter as <code>#/guest?linkId=...</code> (we do NOT add long params).</div>
+
+            <div class="sep"></div>
+
+            <div id="linkEventsBox" class="row" style="gap:8px"></div>
+
+            <div class="sep"></div>
+
+            <div class="row">
+              <div class="field">
+                <label>Expiry Hours</label>
+                <select id="expiryHours">
+                  <option value="24">24 Hours</option>
+                  <option value="72">3 Days</option>
+                  <option value="168">7 Days</option>
+                  <option value="720">30 Days</option>
+                  <option value="0">Lifetime</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Password (optional)</label>
+                <input id="linkPassword" placeholder="Optional"/>
+              </div>
+              <div class="field" style="flex:.7; align-self:flex-end">
+                <button class="btn primary" style="width:100%" onclick="generateGuestLink('${escapeHtml(collectionId)}')"><i class="fa-solid fa-link"></i> Generate</button>
+              </div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div id="linkResult" class="card soft hidden">
+              <div class="row" style="align-items:center">
+                <div class="field" style="flex:1.4">
+                  <label>Generated Link</label>
+                  <input id="genLinkText" readonly/>
+                </div>
+                <div style="flex:.6; display:flex; gap:10px; align-items:flex-end">
+                  <button class="btn" onclick="copyText(document.getElementById('genLinkText').value)"><i class="fa-regular fa-copy"></i> Copy</button>
+                  <a class="btn primary" id="genLinkOpen" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card soft">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">Production Upload</h3>
+              <div class="card-sub">Bulk upload + progress + duplicate-safe sha256</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Choose Event</label>
+            <select id="upEvent"></select>
+          </div>
+
+          <div class="field">
+            <label>Select Photos</label>
+            <input id="filePick" type="file" multiple accept="image/*"/>
+            <div class="help">Supported: JPG/PNG/HEIC/HEIF/WEBP/GIF/BMP/TIFF. Backend handles conversion/indexing pipeline.</div>
+          </div>
+
+          <div class="row" style="align-items:center">
+            <button class="btn" onclick="clearUploadQueue()"><i class="fa-solid fa-broom"></i> Clear</button>
+            <button class="btn danger" onclick="cancelUpload()"><i class="fa-solid fa-ban"></i> Cancel</button>
+            <button class="btn primary" onclick="startUpload('${escapeHtml(collectionId)}')"><i class="fa-solid fa-cloud-arrow-up"></i> Start Upload</button>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="field">
+            <label>Queue</label>
+            <div id="upList" class="help" style="max-height:220px;overflow:auto;border:1px solid rgba(32,39,55,.75);border-radius:14px;padding:10px;background:rgba(0,0,0,.25)">No files</div>
+          </div>
+
+          <div class="field">
+            <label>Progress</label>
+            <div class="help" id="upProg">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="grid">
+        <div class="card soft">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">Photos</h3>
+              <div class="card-sub">Click photo to see details</div>
+            </div>
+            <div class="row" style="max-width:520px; justify-content:flex-end">
+              <div class="field" style="flex:1.2">
+                <label>Filter (Event)</label>
+                <select id="photoEventFilter" onchange="renderPhotoGrid()"></select>
+              </div>
+              <div class="field" style="flex:1.2">
+                <label>Search Tag / ID</label>
+                <input id="photoSearch" placeholder="type..." oninput="renderPhotoGrid()"/>
+              </div>
+            </div>
+          </div>
+          <div id="photoGrid" class="gallery-grid"></div>
+        </div>
+
+        <div class="card soft">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">Guest Leads</h3>
+              <div class="card-sub">From /save-details (list)</div>
+            </div>
+            <button class="btn" onclick="refreshLeads('${escapeHtml(collectionId)}')"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          </div>
+          <div style="overflow:auto; max-height:520px">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th><th>Mobile</th><th>Event</th><th>Selfie</th><th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="leadRows"><tr><td colspan="5" class="muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div class="modal" id="evtModal">
+      <div class="box">
+        <div class="head">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="badge"><i class="fa-solid fa-calendar-days"></i> <span id="emTitle">New Event</span></span>
+            <span class="muted" id="emHint"></span>
+          </div>
+          <button class="btn" onclick="closeEvtModal()"><i class="fa-solid fa-xmark"></i> Close</button>
+        </div>
+        <div class="body">
+          <input id="emEventId" type="hidden"/>
+          <div class="row">
+            <div class="field">
+              <label>Event Name</label>
+              <input id="emName" placeholder="e.g. Reception Night"/>
+            </div>
+            <div class="field">
+              <label>Event Date</label>
+              <input id="emDate" type="date"/>
+            </div>
+          </div>
+          <div class="sep"></div>
+          <div class="row" style="justify-content:flex-end">
+            <button class="btn" onclick="closeEvtModal()">Cancel</button>
+            <button class="btn primary" onclick="saveEvent('${escapeHtml(collectionId)}')"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Branding Panel Modal -->
+    <div class="modal" id="brandModal">
+      <div class="box">
+        <div class="head">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="badge"><i class="fa-solid fa-palette"></i> Guest Branding</span>
+            <span class="muted">Saved via client-api (collection level)</span>
+          </div>
+          <button class="btn" onclick="closeBrandingPanel()"><i class="fa-solid fa-xmark"></i> Close</button>
+        </div>
+        <div class="body">
+          <div class="grid" style="grid-template-columns: 1fr 1fr">
+            <div class="card soft">
+              <div class="field"><label>Title</label><input id="bTitle"></div>
+              <div class="field"><label>Tagline</label><input id="bTag"></div>
+              <div class="field"><label>Header Image URL</label><input id="bHeader"></div>
+              <div class="field"><label>Logo URL</label><input id="bLogo"></div>
+              <div class="field"><label>Footer</label><input id="bFooter"></div>
+            </div>
+            <div class="card soft">
+              <div class="field"><label>Accent Preset</label>
+                <select id="bPreset">
+                  <option value="indigo">Indigo Premium</option>
+                  <option value="emerald">Emerald Clean</option>
+                  <option value="amber">Amber Warm</option>
+                  <option value="mono">Mono Minimal</option>
+                </select>
+              </div>
+              <div class="row">
+                <div class="field"><label>Allow Download</label>
+                  <select id="bAllowDownload"><option value="false">No</option><option value="true">Yes</option></select>
+                </div>
+                <div class="field"><label>Show Watermark</label>
+                  <select id="bShowWatermark"><option value="true">Yes</option><option value="false">No</option></select>
+                </div>
+                <div class="field"><label>Allow Selection</label>
+                  <select id="bAllowSelection"><option value="true">Yes</option><option value="false">No</option></select>
+                </div>
+              </div>
+              <div class="sep"></div>
+              <div class="help">
+                Guest search page will auto-apply this theme for that collection.
+              </div>
+            </div>
+          </div>
+          <div class="sep"></div>
+          <div class="row" style="justify-content:flex-end">
+            <button class="btn" onclick="closeBrandingPanel()">Cancel</button>
+            <button class="btn primary" onclick="saveBranding('${escapeHtml(collectionId)}')"><i class="fa-solid fa-floppy-disk"></i> Save Branding</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Hook file picker
+  $("filePick").addEventListener("change", ()=>{
+    addFilesToQueue($("filePick").files);
+    $("filePick").value = "";
+  });
+
+  await refreshCollection(collectionId);
+}
+
+async function refreshCollection(collectionId){
+  try{
+    showToast("Loading collection...", "warn");
+
+    // load events (same payload as collection-details)  [oai_citation:24‡dashboard.html](sediment://file_000000003d28720793e8d87a7ccd6bbb)
+    const evRes = await apiFetch(GET_EVENTS_API, {method:"POST", body:{collection_id: collectionId}});
+    cacheEvents = evRes.events || [];
+    const summary = evRes.collection_summary || {};
+    $("cEventsK").textContent = cacheEvents.length;
+    $("cNameK").textContent = summary.name || "—";
+    $("cPhotosK").textContent = summary.photo_count || 0;
+    $("cLeadsK").textContent  = summary.leads_count || 0;
+    $("cBytesK").textContent  = formatBytes(summary.storage_bytes || 0);
+
+    renderEventsTable(collectionId);
+    populateEventSelects();
+
+    // load photos
+    const phRes = await apiFetch(GET_PHOTOS_API, {method:"POST", body:{collection_id: collectionId, limit: 200}});
+    cachePhotos = phRes.photos || phRes.items || [];
+    renderPhotoGrid();
+
+    // leads
+    await refreshLeads(collectionId);
+
+    showToast("Collection loaded", "good");
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Failed to load collection", "bad");
+  }
+}
+
+function renderEventsTable(collectionId){
+  const rows = $("evtRows");
+  if(!cacheEvents.length){
+    rows.innerHTML = `<tr><td colspan="5" class="muted">No events. Create first.</td></tr>`;
+    $("linkEventsBox").innerHTML = `<span class="muted">No events to generate link.</span>`;
+    return;
+  }
+
+  rows.innerHTML = cacheEvents.map(evt=>{
+    const id = escapeHtml(evt.event_id || evt.id || "");
+    const name = escapeHtml(evt.name || "Untitled");
+    const dt = evt.event_date || evt.date || "";
+    const pcount = Number(evt.photo_count || evt.photos || 0);
+    const gcount = Number(evt.guest_count || evt.leads_count || 0);
+
+    return `
+      <tr>
+        <td><b>${name}</b><div class="muted" style="font-size:11px;margin-top:3px">${id}</div></td>
+        <td>${dt ? escapeHtml(dt) : "-"}</td>
+        <td><span class="badge">${pcount}</span></td>
+        <td><span class="badge">${gcount}</span></td>
+        <td>
+          <div class="row" style="gap:8px">
+            <button class="btn" onclick="openEditEvent('${escapeHtml(collectionId)}','${id}','${escapeHtml(evt.name||"")}','${escapeHtml(dt||"")}')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+            <button class="btn danger" onclick="deleteEvent('${escapeHtml(collectionId)}','${id}','${escapeHtml(evt.name||"")}')"><i class="fa-solid fa-trash"></i> Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  // link events checkboxes (multi select)
+  $("linkEventsBox").innerHTML = cacheEvents.map(evt=>{
+    const id = escapeHtml(evt.event_id || evt.id || "");
+    const name = escapeHtml(evt.name || "Event");
+    return `
+      <label class="badge" style="cursor:pointer; user-select:none">
+        <input class="linkEvt" type="checkbox" value="${id}" style="margin-right:6px; transform: translateY(1px)">
+        ${name}
+      </label>
+    `;
+  }).join("");
+}
+
+function populateEventSelects(){
+  const sel = $("upEvent");
+  const fsel = $("photoEventFilter");
+  sel.innerHTML = cacheEvents.map(e=>{
+    const id = escapeHtml(e.event_id || e.id || "");
+    const name = escapeHtml(e.name || "Event");
+    return `<option value="${id}">${name}</option>`;
+  }).join("") || `<option value="">No events</option>`;
+
+  fsel.innerHTML = `<option value="all">All Events</option>` + (cacheEvents.map(e=>{
+    const id = escapeHtml(e.event_id || e.id || "");
+    const name = escapeHtml(e.name || "Event");
+    return `<option value="${id}">${name}</option>`;
+  }).join(""));
+}
+
+/* =========================================================
+  EVENT CRUD
+========================================================= */
+function openCreateEvent(){
+  $("emTitle").textContent = "New Event";
+  $("emHint").textContent = "";
+  $("emEventId").value = "";
+  $("emName").value = "";
+  $("emDate").value = new Date().toISOString().split("T")[0];
+  $("evtModal").classList.add("open");
+}
+function openEditEvent(collectionId, eventId, name, date){
+  $("emTitle").textContent = "Edit Event";
+  $("emHint").textContent = eventId;
+  $("emEventId").value = eventId;
+  $("emName").value = name || "";
+  $("emDate").value = date || new Date().toISOString().split("T")[0];
+  $("evtModal").classList.add("open");
+}
+function closeEvtModal(){ $("evtModal").classList.remove("open"); }
+
+async function saveEvent(collectionId){
+  const name = ($("emName").value||"").trim();
+  const event_date = ($("emDate").value||"").trim();
+  if(!name) return showToast("Event name required","bad");
+  if(!event_date) return showToast("Event date required","bad");
+
+  const event_id = ($("emEventId").value||"").trim();
+  const payload = { collection_id: collectionId, name, event_date };
+  if(event_id) payload.event_id = event_id;
+
+  try{
+    await apiFetch(UPSERT_EVENT_API, {method:"POST", body:payload});
+    closeEvtModal();
+    await refreshCollection(collectionId);
+    showToast("Event saved","good");
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Save failed","bad");
+  }
+}
+
+async function deleteEvent(collectionId, eventId, name){
+  if(!confirm(`Delete event "${name}"?`)) return;
+  try{
+    await apiFetch(DELETE_EVENT_API, {method:"POST", body:{collection_id: collectionId, event_id: eventId}});
+    await refreshCollection(collectionId);
+    showToast("Event deleted","good");
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Delete failed","bad");
+  }
+}
+
+/* =========================================================
+  LINK GENERATION (multi-event + expiry + password)
+  Backend expects: {collection_id, event_ids, expiry_hours, password}  [oai_citation:25‡collection-details.html](sediment://file_000000005e1c7207b272f6c2feaddfbd)
+========================================================= */
+async function generateGuestLink(collectionId){
+  const checked = Array.from(document.querySelectorAll(".linkEvt:checked")).map(x=>x.value);
+  if(!checked.length) return showToast("Select at least one event","bad");
+
+  const expiry_hours = parseInt(($("expiryHours").value||"24"),10) || 24;
+  const password = ($("linkPassword").value||"").trim();
+
+  try{
+    const data = await apiFetch(GENERATE_LINK_API, {
+      method:"POST",
+      body:{ collection_id, event_ids: checked, expiry_hours, password }
+    });
+
+    // Backend returns searchUrl (points to FRONTEND_URL/?linkId=uuid)  [oai_citation:26‡12_LAMBDA_CODE_FULL_EXPORT.txt](sediment://file_0000000063d87207ab411cf7a09f3e83)
+    // We convert to our SPA guest route (short + stable):
+    const linkId = (data.searchUrl || "").split("linkId=")[1] || "";
+    if(!linkId) throw new Error("No linkId returned");
+    const spaLink = `${location.origin}${location.pathname}#/guest?linkId=${encodeURIComponent(linkId)}`;
+
+    $("genLinkText").value = spaLink;
+    $("genLinkOpen").href = spaLink;
+    $("linkResult").classList.remove("hidden");
+    showToast("Link generated","good");
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Link failed","bad");
+  }
+}
+
+/* =========================================================
+  PHOTOS
+========================================================= */
+function renderPhotoGrid(){
+  const grid = $("photoGrid");
+  if(!grid) return;
+
+  const evFilter = ($("photoEventFilter")?.value||"all");
+  const q = ($("photoSearch")?.value||"").trim().toLowerCase();
+
+  let list = cachePhotos || [];
+  if(evFilter !== "all"){
+    list = list.filter(p => String(p.event_id||p.event||"") === String(evFilter));
+  }
+  if(q){
+    list = list.filter(p => {
+      const pid = String(p.photo_id||p.id||"").toLowerCase();
+      const tags = Array.isArray(p.ai_tags)? p.ai_tags.join(" ").toLowerCase() : "";
+      return pid.includes(q) || tags.includes(q);
+    });
+  }
+
+  if(!list.length){
+    grid.innerHTML = `<div class="card soft" style="grid-column:1/-1"><div class="help">No photos found. Upload to get started.</div></div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(p=>{
+    const thumb = p.thumbnail_url || p.thumb || p.url || "";
+    const faces = Number(p.face_count || (Array.isArray(p.face_ids)?p.face_ids.length:0) || 0);
+    const tags = Array.isArray(p.ai_tags)? p.ai_tags.length : 0;
+    return `
+      <div class="photo" onclick='openPhotoModal(${JSON.stringify(p).replace(/</g,"\\u003c")})'>
+        <img src="${escapeHtml(thumb)}" loading="lazy" onerror="this.style.opacity=.25"/>
+        <div class="pbadges">
+          ${faces? `<span class="badge"><i class="fa-solid fa-user"></i> ${faces}</span>`:""}
+          ${tags? `<span class="badge"><i class="fa-solid fa-robot"></i> ${tags}</span>`:""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function openPhotoModal(photo){
+  try{
+    $("pmImg").src = photo.url || photo.thumbnail_url || "";
+    $("pmMeta").textContent = photo.photo_id || photo.id || "";
+    $("pmFile").value = (photo.photo_id ? String(photo.photo_id).split("___").pop() : (photo.id||""));
+    $("pmDate").value = fmtDate(photo.created_at || photo.uploaded_at || "");
+    $("pmEvent").value = photo.event_id || photo.event || "-";
+    $("pmDownload").href = (photo.url || photo.full_url || photo.thumbnail_url || "#");
+
+    const people = $("pmPeople"); people.innerHTML = "";
+    const ids = Array.isArray(photo.face_ids) ? photo.face_ids : [];
+    if(ids.length){
+      ids.slice(0,8).forEach(fid=>{
+        const nm = faceNameMap[fid] || "Person";
+        const el = document.createElement("span");
+        el.className = "badge";
+        el.innerHTML = `<i class="fa-regular fa-user"></i> ${escapeHtml(nm)}`;
+        people.appendChild(el);
+      });
+    }else{
+      people.innerHTML = `<span class="muted">No faces</span>`;
+    }
+
+    const tags = $("pmTags"); tags.innerHTML = "";
+    const t = Array.isArray(photo.ai_tags) ? photo.ai_tags : [];
+    if(t.length){
+      t.slice(0,12).forEach(x=>{
+        const el = document.createElement("span");
+        el.className = "badge";
+        el.innerHTML = `<i class="fa-solid fa-tag"></i> ${escapeHtml(x)}`;
+        tags.appendChild(el);
+      });
+    }else{
+      tags.innerHTML = `<span class="muted">No AI tags</span>`;
+    }
+
+    $("photoModal").classList.add("open");
+  }catch(e){
+    console.error(e);
+    showToast("Unable to open photo","bad");
+  }
+}
+function closePhotoModal(){ $("photoModal").classList.remove("open"); }
+
+/* =========================================================
+  LEADS (save-details list)
+========================================================= */
+async function refreshLeads(collectionId){
+  const tbody = $("leadRows");
+  try{
+    // Your flowchart notes POST/GET both are used; we do POST action=list first  [oai_citation:27‡10_END_TO_END_FLOWCHART.txt](sediment://file_00000000ff0c7207be2733fe328d7964)
+    let data = null;
+
+    try{
+      data = await apiFetch(GET_LEADS_API, {method:"POST", body:{ action:"list", collection_id: collectionId }, auth:false, headers:{}});
+    }catch{
+      // fallback GET (older path)
+      const res = await fetch(`${GET_LEADS_API}?collection_id=${encodeURIComponent(collectionId)}`, {method:"GET"});
+      data = await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(data?.message || "Failed to load leads");
+    }
+
+    cacheLeads = data.leads || data.items || data.data || [];
+    $("cLeadsK").textContent = cacheLeads.length;
+
+    if(!cacheLeads.length){
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">No leads yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = cacheLeads.map(l=>{
+      const name = escapeHtml(l.name || l.guest_name || "-");
+      const mobile = escapeHtml(l.mobile || l.phone || "-");
+      const eventId = escapeHtml(l.event_id || l.event || "-");
+      const selfie = l.selfie_url || l.selfie || l.selfie_s3_url || "";
+      const t = fmtDate(l.created_at || l.time || l.timestamp || "");
+      const selfieCell = selfie ? `<a class="btn" style="padding:6px 10px;font-size:12px" target="_blank" href="${escapeHtml(selfie)}"><i class="fa-regular fa-image"></i> View</a>` : `<span class="muted">NA</span>`;
+      return `<tr><td>${name}</td><td>${mobile}</td><td>${eventId}</td><td>${selfieCell}</td><td>${t}</td></tr>`;
+    }).join("");
+  }catch(e){
+    console.error(e);
+    tbody.innerHTML = `<tr><td colspan="5" class="muted">Failed to load leads</td></tr>`;
+  }
+}
+
+/* =========================================================
+  PRODUCTION UPLOAD MODULE
+  - Select event
+  - Compute SHA-256 per file to support duplicate-safe keys and backend indexing GSI (collection_id-sha256-index exists)  [oai_citation:28‡12_LAMBDA_CODE_FULL_EXPORT.txt](sediment://file_0000000063d87207ab411cf7a09f3e83)
+  - Request presigned URLs: POST /generate-upload-urls  [oai_citation:29‡01_API_ENDPOINTS_TO_LAMBDAS.txt](sediment://file_0000000006407207a06c7a35cb865f07)
+  - PUT to S3 with returned urls
+  - After upload: poll get-events/get-photos to reflect indexing progress (best frontend-only indicator)
+========================================================= */
+function addFilesToQueue(fileList){
+  const files = Array.from(fileList||[]);
+  if(!files.length) return;
+
+  // filter formats
+  const ok = files.filter(f => f.type.startsWith("image/"));
+  const rejected = files.filter(f => !f.type.startsWith("image/"));
+  if(rejected.length) showToast(`${rejected.length} non-image files ignored`, "warn");
+
+  uploadQueue.push(...ok);
+  renderUploadQueue();
+}
+function clearUploadQueue(){
+  uploadQueue = [];
+  uploadAbort = false;
+  renderUploadQueue();
+  $("upProg").textContent = "—";
+}
+function cancelUpload(){
+  uploadAbort = true;
+  showToast("Upload cancelling...","warn");
+}
+function renderUploadQueue(){
+  const box = $("upList");
+  if(!uploadQueue.length){
+    box.innerHTML = "No files";
+    return;
+  }
+  box.innerHTML = uploadQueue.slice(0,120).map((f,i)=>{
+    const fmt = SUPPORTED_FORMATS[f.type] || f.type || "IMG";
+    return `<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed rgba(32,39,55,.55)">
+      <div style="min-width:0">
+        <b>${escapeHtml(f.name)}</b>
+        <div class="muted" style="font-size:11px">${fmt} • ${formatBytes(f.size)}</div>
+      </div>
+      <span class="badge">${i+1}</span>
+    </div>`;
+  }).join("") + (uploadQueue.length>120 ? `<div class="muted" style="padding-top:8px">+ ${uploadQueue.length-120} more</div>`:"");
+}
+
+async function sha256Hex(file){
+  const buf = await file.arrayBuffer();
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+async function startUpload(collectionId){
+  if(!uploadQueue.length) return showToast("Select files first","bad");
+  const eventId = ($("upEvent").value||"").trim();
+  if(!eventId) return showToast("Select event first","bad");
+
+  uploadAbort = false;
+
+  try{
+    showToast("Preparing upload URLs...", "warn");
+
+    // Build file descriptors for backend
+    // (Backend usually needs: collection_id, event_id, files[{filename,content_type,size,sha256}])
+    // If backend ignores extra fields, it's still safe.
+    const batch = uploadQueue.slice(); // full queue
+    const filesMeta = [];
+
+    $("upProg").textContent = `Hashing ${batch.length} files...`;
+    for(let i=0;i<batch.length;i++){
+      if(uploadAbort) throw new Error("Upload cancelled");
+      const f = batch[i];
+      const sha = await sha256Hex(f);
+      filesMeta.push({
+        filename: f.name,
+        content_type: f.type || "application/octet-stream",
+        size: f.size,
+        sha256: sha
+      });
+      $("upProg").textContent = `Hashing ${i+1}/${batch.length}...`;
+    }
+
+    // Request presigned URLs
+    const upReq = await apiFetch(UPLOAD_URLS_API, {
+      method:"POST",
+      body: { collection_id: collectionId, event_id: eventId, files: filesMeta }
+    });
+
+    // Try to normalize response
+    const items = upReq.uploads || upReq.urls || upReq.items || upReq.data || upReq.presigned || upReq;
+    const list = Array.isArray(items) ? items : (items?.uploads || items?.files || []);
+    if(!Array.isArray(list) || !list.length) throw new Error("Upload URLs not returned by backend");
+
+    // Map by filename or index
+    const byName = {};
+    list.forEach(x=>{
+      const fn = x.filename || x.name || x.original || x.file || "";
+      byName[fn] = x;
+    });
+
+    // Upload each file to its presigned URL
+    let ok=0, fail=0;
+    for(let i=0;i<batch.length;i++){
+      if(uploadAbort) throw new Error("Upload cancelled");
+      const f = batch[i];
+      const meta = byName[f.name] || list[i];
+      const putUrl = meta?.uploadUrl || meta?.upload_url || meta?.url || meta?.presigned_url;
+      if(!putUrl){
+        fail++;
+        $("upProg").textContent = `Missing URL for ${f.name} (${i+1}/${batch.length})`;
+        continue;
+      }
+
+      $("upProg").textContent = `Uploading ${i+1}/${batch.length}...`;
+      const putRes = await fetch(putUrl, {
+        method:"PUT",
+        headers: { "Content-Type": f.type || "application/octet-stream" },
+        body: f
+      });
+      if(putRes.ok) ok++; else fail++;
+      $("upProg").textContent = `Uploaded ${i+1}/${batch.length} • OK ${ok} • FAIL ${fail}`;
+    }
+
+    uploadQueue = [];
+    renderUploadQueue();
+
+    showToast(`Upload done. OK ${ok}, FAIL ${fail}`, fail? "warn":"good");
+
+    // Poll to reflect indexing progress (best frontend indicator)
+    await pollIndexProgress(collectionId, 8);
+
+  }catch(e){
+    console.error(e);
+    showToast(e.message || "Upload failed","bad");
+    $("upProg").textContent = "—";
+  }
+}
+
+async function pollIndexProgress(collectionId, rounds=6){
+  // indexing is async (S3 pipeline). We poll events/photos and update KPIs.
+  for(let i=0;i<rounds;i++){
+    if(uploadAbort) return;
+    $("upProg").textContent = `Indexing... refresh ${i+1}/${rounds}`;
+    await new Promise(r=>setTimeout(r, 2500));
+    await refreshCollection(collectionId);
+  }
+  $("upProg").textContent = "Indexing check completed.";
+}
+
+/* =========================================================
+  BRANDING PANEL (collection level via client-api)
+========================================================= */
+async function openBrandingPanel(collectionId){
+  try{
+    // load existing settings
+    const res = await fetch(API_CLIENT, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ action:"get_client_view", payload:{ collection_id: collectionId }})
+    });
+    const data = await res.json().catch(()=>({}));
+    const settings = data.settings || {};
+    const b = settings.branding || {};
+    $("bPreset").value = b.preset || "indigo";
+    $("bTitle").value = b.title || data.collection_name || "";
+    $("bTag").value = b.tagline || "";
+    $("bHeader").value = b.headerImage || "";
+    $("bLogo").value = b.logo || "";
+    $("bFooter").value = b.footer || "Powered by EventLens Pro";
+    $("bAllowDownload").value = String(!!settings.allowDownload);
+    $("bShowWatermark").value = String(settings.showWatermark !== false);
+    $("bAllowSelection").value = String(settings.allowSelection !== false);
+  }catch(e){ /* ignore */ }
+
+  $("brandModal").classList.add("open");
+}
+function closeBrandingPanel(){ $("brandModal").classList.remove("open"); }
+
+async function saveBranding(collectionId){
+  const preset = $("bPreset").value;
+  const presetColors = ({
+    indigo: {accent:"#6366f1", bg:"#07080b"},
+    emerald:{accent:"#00d084", bg:"#07080b"},
+    amber:  {accent:"#ffb020", bg:"#07080b"},
+    mono:   {accent:"#ffffff", bg:"#07080b"}
+  })[preset] || {accent:"#6366f1", bg:"#07080b"};
+
+  const settings = {
+    allowDownload: $("bAllowDownload").value==="true",
+    showWatermark: $("bShowWatermark").value==="true",
+    allowSelection: $("bAllowSelection").value==="true",
+    branding: {
+      preset,
+      accent: presetColors.accent,
+      background: presetColors.bg,
+      title: ($("bTitle").value||"").trim(),
+      tagline: ($("bTag").value||"").trim(),
+      headerImage: ($("bHeader").value||"").trim(),
+      logo: ($("bLogo").value||"").trim(),
+      footer: ($("bFooter").value||"").trim()
+    }
+  };
+
+  try{
+    await fetch(API_CLIENT, {
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ action:"save_settings", payload:{ collection_id: collectionId, settings }})
+    }).then(r=>r.json().catch(()=>({})));
+    showToast("Branding saved","good");
+    closeBrandingPanel();
+  }catch(e){
+    console.error(e);
+    showToast("Branding save failed","bad");
+  }
+}
+
+/* =========================================================
+  GUEST PAGE
+  Route: #/guest?linkId=xxxx
+  Steps:
+   1) Resolve link (optional) using /get-links (backend exists)  [oai_citation:30‡01_API_ENDPOINTS_TO_LAMBDAS.txt](sediment://file_0000000006407207a06c7a35cb865f07)
+   2) If collection_id found, load settings via client-api get_client_view  [oai_citation:31‡client-gallery.html](sediment://file_00000000ea1c7207bf4a35789c1a7cb1)
+   3) UI: Upload selfie -> POST /search (linkId + selfie base64)
+   4) Show results
+   5) Submit lead -> POST /save-details (name/mobile/event_id/link_id + selfie + results)
+========================================================= */
+async function renderGuest(q){
+  const linkId = q.get("linkId") || q.get("link_id") || "";
+  const guestRoot = document.createElement("div");
+  guestRoot.innerHTML = `
+    <div id="guestWrap" class="hero" style="padding:18px; border-radius:22px">
+      <div id="guestHeader" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+        <div style="display:flex;gap:10px;align-items:center">
+          <div id="gLogoBox" class="brand-badge" style="border-radius:14px;width:40px;height:40px"></div>
+          <div>
+            <div style="font-weight:900;font-size:18px" id="gTitle">Guest Search</div>
+            <div class="muted" style="font-size:12px" id="gTag">Upload your selfie to find your photos</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <a class="btn" href="#/" onclick="setTopbarVisible(true)"><i class="fa-solid fa-house"></i> Home</a>
+          <span class="chip"><i class="fa-solid fa-link"></i> <span id="gLinkId">${escapeHtml(linkId || "—")}</span></span>
+        </div>
+      </div>
+
+      <div id="gHeroImg" class="card soft" style="margin-top:12px; padding:0; overflow:hidden; display:none">
+        <img id="gHeaderImg" src="" style="width:100%;height:220px;object-fit:cover;display:block"/>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="grid" style="grid-template-columns: 1fr .9fr">
+        <div class="card soft">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">1) Upload Selfie</h3>
+              <div class="card-sub">Then we will show your matched photos</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Select Selfie</label>
+            <input id="gSelfie" type="file" accept="image/*"/>
+          </div>
+
+          <div class="row">
+            <button class="btn primary" onclick="guestSearch('${escapeHtml(linkId)}')"><i class="fa-solid fa-magnifying-glass"></i> Find My Photos</button>
+            <button class="btn" onclick="resetGuest()"><i class="fa-solid fa-rotate"></i> Reset</button>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="field">
+            <label>Status</label>
+            <div class="help" id="gStatus">Waiting...</div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="field">
+            <label>Results</label>
+            <div id="gResults" class="gallery-grid" style="grid-template-columns:repeat(4,1fr)"></div>
+          </div>
+        </div>
+
+        <div class="card soft">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">2) Submit Details</h3>
+              <div class="card-sub">Only after you see results</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Your Name</label>
+            <input id="gName" placeholder="Enter name"/>
+          </div>
+          <div class="field">
+            <label>Mobile</label>
+            <input id="gMobile" placeholder="10-digit number"/>
+          </div>
+          <div class="field">
+            <label>Event (optional)</label>
+            <select id="gEvent"><option value="">Auto</option></select>
+          </div>
+
+          <div class="sep"></div>
+
+          <button class="btn primary" style="width:100%" onclick="guestSubmitLead('${escapeHtml(linkId)}')"><i class="fa-solid fa-paper-plane"></i> Submit</button>
+
+          <div class="sep"></div>
+
+          <div class="help" id="gFooter" style="text-align:center">Powered by EventLens Pro</div>
+        </div>
+      </div>
+    </div>
+  `;
+  app.innerHTML = "";
+  app.appendChild(guestRoot);
+
+  // Apply theme
+  const theme = await guestLoadTheme(linkId);
+  applyGuestTheme(theme);
+
+  if(!linkId){
+    $("gStatus").textContent = "Missing linkId. Please open the correct guest link.";
+    $("gStatus").style.color = "var(--bad)";
+  }
+}
+
+function applyGuestTheme(theme){
+  // theme = {accent, title, tagline, headerImage, logo, footer}
+  const accent = theme?.accent || "#6366f1";
+  document.documentElement.style.setProperty("--brand", accent);
+  document.documentElement.style.setProperty("--brand2", accent);
+
+  $("gTitle").textContent = theme?.title || "Guest Search";
+  $("gTag").textContent = theme?.tagline || "Upload your selfie to find your photos";
+  $("gFooter").textContent = theme?.footer || "Powered by EventLens Pro";
+
+  // logo: if url present show image, else icon
+  const lb = $("gLogoBox");
+  lb.style.background = `linear-gradient(135deg, ${accent}, rgba(0,208,132,.9))`;
+  if(theme?.logo){
+    lb.innerHTML = `<img src="${escapeHtml(theme.logo)}" style="width:100%;height:100%;object-fit:cover;border-radius:14px" onerror="this.remove(); lb.innerHTML='<i class=\\'fa-solid fa-sparkles\\'></i>'"/>`;
+  }else{
+    lb.innerHTML = `<i class="fa-solid fa-sparkles"></i>`;
+  }
+
+  if(theme?.headerImage){
+    $("gHeroImg").style.display = "block";
+    $("gHeaderImg").src = theme.headerImage;
+  }else{
+    $("gHeroImg").style.display = "none";
+  }
+}
+
+async function guestLoadTheme(linkId){
+  // Best-effort:
+  // 1) Resolve link -> get collection_id + event_ids (if lambda returns it)
+  // 2) Use client-api get_client_view to get settings.branding  [oai_citation:32‡client-gallery.html](sediment://file_00000000ea1c7207bf4a35789c1a7cb1)
+  let collection_id = null;
+  let event_ids = [];
+  try{
+    if(linkId){
+      const data = await apiFetch(GET_LINKS_API, {method:"POST", body:{ link_id: linkId }, auth:true}).catch(()=>null);
+      // NOTE: your get-links lambda response format is not included in snippets, so we keep robust
+      collection_id = data?.collection_id || data?.item?.collection_id || null;
+      event_ids = data?.event_ids || data?.item?.event_ids || [];
+    }
+  }catch{}
+
+  // If no collection id, return default theme
+  if(!collection_id) return { accent:"#6366f1", title:"Guest Search", tagline:"Upload your selfie to find your photos", footer:"Powered by EventLens Pro" };
+
+  // populate event dropdown (if we got event_ids)
+  try{
+    const sel = $("gEvent");
+    if(Array.isArray(event_ids) && event_ids.length){
+      sel.innerHTML = `<option value="">Auto</option>` + event_ids.map(eid=>`<option value="${escapeHtml(eid)}">${escapeHtml(eid)}</option>`).join("");
+    }
+  }catch{}
+
+  try{
+    const res = await fetch(API_CLIENT, {
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ action:"get_client_view", payload:{ collection_id }})
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error("theme load failed");
+    const settings = data.settings || {};
+    const b = settings.branding || {};
+    return {
+      accent: b.accent || "#6366f1",
+      title: b.title || data.collection_name || "Guest Search",
+      tagline: b.tagline || "Upload your selfie to find your photos",
+      headerImage: b.headerImage || "",
+      logo: b.logo || "",
+      footer: b.footer || "Powered by EventLens Pro"
+    };
+  }catch{
+    return { accent:"#6366f1", title:"Guest Search", tagline:"Upload your selfie to find your photos", footer:"Powered by EventLens Pro" };
+  }
+}
+
+function resetGuest(){
+  $("gSelfie").value = "";
+  $("gName").value = "";
+  $("gMobile").value = "";
+  $("gStatus").textContent = "Waiting...";
+  $("gResults").innerHTML = "";
+  window.__guestLast = null;
+}
+
+async function fileToBase64(file){
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  const chunk = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary += String.fromCharCode(...bytes.subarray(i,i+chunk));
+  }
+  const b64 = btoa(binary);
+  return `data:${file.type||"image/jpeg"};base64,${b64}`;
+}
+
+async function guestSearch(linkId){
+  if(!linkId) return showToast("Invalid linkId","bad");
+  const f = $("gSelfie").files?.[0];
+  if(!f) return showToast("Please select selfie","bad");
+
+  $("gStatus").textContent = "Uploading selfie + searching...";
+  $("gResults").innerHTML = "";
+
+  try{
+    const selfie = await fileToBase64(f);
+
+    // POST /search (selfie-search-find-matches)  [oai_citation:33‡10_END_TO_END_FLOWCHART.txt](sediment://file_00000000ff0c7207be2733fe328d7964)
+    const res = await fetch(SEARCH_API, {
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ link_id: linkId, selfie })
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data?.message || "Search failed");
+
+    const photos = data.photos || data.matches || data.results || [];
+    window.__guestLast = { selfie, photos, raw:data };
+
+    if(!Array.isArray(photos) || !photos.length){
+      $("gStatus").textContent = "No matches found. Try a clearer selfie.";
+      return;
+    }
+
+    $("gStatus").textContent = `Found ${photos.length} photos. Now fill details and submit.`;
+    $("gResults").innerHTML = photos.slice(0,48).map(p=>{
+      const url = p.url || p.signed_url || p.photo_url || p.thumbnail_url || "";
+      return `
+        <div class="photo" onclick="window.open('${escapeHtml(url)}','_blank')">
+          <img src="${escapeHtml(url)}" loading="lazy"/>
+        </div>
+      `;
+    }).join("");
+
+  }catch(e){
+    console.error(e);
+    $("gStatus").textContent = "Error: " + (e.message||"Failed");
+    showToast(e.message||"Search failed","bad");
+  }
+}
+
+async function guestSubmitLead(linkId){
+  if(!linkId) return showToast("Invalid linkId","bad");
+  const last = window.__guestLast;
+  if(!last || !last.photos || !last.photos.length) return showToast("First search selfie & get results","bad");
+
+  const name = ($("gName").value||"").trim();
+  const mobile = ($("gMobile").value||"").trim();
+  const event_id = ($("gEvent").value||"").trim();
+
+  if(!name) return showToast("Name required","bad");
+  if(!/^\d{10}$/.test(mobile)) return showToast("Enter valid 10-digit mobile","bad");
+
+  try{
+    $("gStatus").textContent = "Submitting details...";
+
+    // POST /save-details (selfie-search-save-details)  [oai_citation:34‡10_END_TO_END_FLOWCHART.txt](sediment://file_00000000ff0c7207be2733fe328d7964)
+    const payload = {
+      link_id: linkId,
+      name,
+      mobile,
+
+      event_id: event_id || undefined,
+      selfie: last.selfie,
+      results: last.photos
+    };
+
+    const res = await fetch(GET_LEADS_API, {
+      method:"POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data?.message || "Submit failed");
+
+    $("gStatus").textContent = "Submitted! You can close this page.";
+    showToast("Submitted successfully","good");
+  }catch(e){
+    console.error(e);
+    showToast(e.message||"Submit failed","bad");
+    $("gStatus").textContent = "Error: " + (e.message||"Submit failed");
+  }
+}
+</script>
 </body>
 </html>

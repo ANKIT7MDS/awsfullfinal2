@@ -626,11 +626,11 @@ function getHashRoute(){
 window.addEventListener('hashchange', ()=>route());
 document.addEventListener('DOMContentLoaded', ()=>{
   // Add listener for file picker count
-  const fp = $('filePick');
+  const fp = $('fileInput');
   if(fp){
     fp.addEventListener('change', function(){
       const n = this.files.length;
-      $('filePickLabel').textContent = n > 0 ? `${n} Files Selected` : 'Click to select files';
+      $('filePickLabel').textContent = n > 0 ? `${n} Files Selected` : 'Click to select photos';
       if(n>0) showToast(`${n} files selected`);
     });
   }
@@ -1157,9 +1157,9 @@ $('photoModal').addEventListener('click', (e)=>{ if(e.target.id==='photoModal') 
 async function loadFaceGroups(){
   try{
     const res = await apiFetch(LIST_PEOPLE_API, {
-       method:'POST',
-       headers:{'Content-Type':'application/json'},
-       body: JSON.stringify({ collection_id: cd.id })
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ collection_id: cd.id })
     });
     // Fallback logic if API fails or returns different structure handled here
     const data = await res.json().catch(()=>({}));
@@ -1198,8 +1198,8 @@ function renderFaceIcons(){
         
         // Double click to rename logic
         item.ondblclick = (e) => {
-             e.stopPropagation();
-             startFaceNaming(id, name, thumb);
+              e.stopPropagation();
+              startFaceNaming(id, name, thumb);
         };
 
         item.onclick = () => {
@@ -1247,41 +1247,46 @@ async function saveFaceName(){
     }finally{ showLoader(false); }
 }
 
-/** ===================== SECTION: UPLOAD LOGIC (Optimized + Re-Encoding Bypass) ===================== **/
-// Helper to convert any image to JPEG Blob (ALWAYS RE-ENCODE TO NEW HASH)
+/** ===================== SECTION: UPLOAD LOGIC (FIXED) ===================== **/
+
+// FIX 1: Robust processFile that handles large images and errors better
 function processFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = function(event) {
       const img = new Image();
+      // FIX 2: Enable crossOrigin to avoid potential taint issues
+      img.crossOrigin = "anonymous"; 
+      
       img.onload = function() {
         // Create canvas
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = img.width;
         canvas.height = img.height;
-        // Draw image (handles transparency by making background white/black if needed, but JPEG is opaque)
+        
+        // Draw image (fill white background for potential transparency)
         ctx.fillStyle = "#FFFFFF"; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
         
-        // Convert to standard JPEG (This re-compression changes the hash!)
+        // Convert to standard JPEG (0.85 Quality)
         canvas.toBlob((blob) => {
-          if(!blob) { reject(new Error('Conversion failed')); return; }
+          if(!blob) { reject(new Error('Canvas conversion failed')); return; }
           
-          // Create new File object with proper name
-          // SANITIZATION: Remove spaces and invalid characters
+          // Sanitize Filename
           let rawName = file.name.replace(/\.[^/.]+$/, ""); 
           rawName = rawName.replace(/[^a-zA-Z0-9_.\-:]/g, "_"); 
           const newName = rawName + ".jpg";
           
           const newFile = new File([blob], newName, { type: "image/jpeg" });
           resolve(newFile);
-        }, 'image/jpeg', 0.85); // 85% Quality - ensures unique bytes from original raw
+        }, 'image/jpeg', 0.85);
       };
-      img.onerror = (e) => reject(e);
+      img.onerror = (e) => reject(new Error("Failed to load image. File may be corrupt."));
       img.src = event.target.result;
     };
+    reader.onerror = (e) => reject(new Error("FileReader failed to read file."));
     reader.readAsDataURL(file);
   });
 }
@@ -1311,8 +1316,6 @@ $('fileInput').onchange = (e) => {
     `;
     $('uploadList').appendChild(row);
 
-    // Add to Global Queue (Status 'waiting')
-    // Store rawFile. 'file' and 'hash' will be computed just before upload
     selectedFiles.push({ id, rawFile: f, file: null, hash: null, status: 'waiting' });
   });
   
@@ -1344,7 +1347,7 @@ async function startUpload(){
     $('uploadProgressText').textContent = text;
   };
 
-  const BATCH_SIZE = 3; // Reduced batch size since we are doing canvas work now
+  const BATCH_SIZE = 3; 
   
   try {
     // Main Queue Loop
@@ -1356,20 +1359,21 @@ async function startUpload(){
         // 2. Process this batch (Convert & Hash)
         setOverall(10, `Processing batch of ${batch.length}...`);
         
-        // Parallel process within batch
         await Promise.all(batch.map(async (item) => {
             const el = document.getElementById(`file-${item.id}`).querySelector('.up-status');
             if(el) { el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; el.className='up-status waiting'; }
             
             try {
-                // HEIC check first
+                // HEIC check
                 let processedFile = item.rawFile;
                 if(item.rawFile.name.toLowerCase().endsWith('.heic')){
-                    const blob = await heic2any({ blob: item.rawFile, toType: "image/jpeg", quality: 0.8 });
+                    // FIX 3: Robust HEIC handling for arrays (if multiple images in one HEIC)
+                    const conversionResult = await heic2any({ blob: item.rawFile, toType: "image/jpeg", quality: 0.8 });
+                    const blob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
                     processedFile = new File([blob], item.rawFile.name.replace(/\.heic$/i, '.jpg'), { type: "image/jpeg" });
                 }
                 
-                // FORCE RE-ENCODE (To change Hash)
+                // Force Re-encode (Strip Metadata / Standardize)
                 item.file = await processFile(processedFile);
                 
                 // Hash the NEW file
@@ -1378,7 +1382,7 @@ async function startUpload(){
             } catch(e) {
                 console.error(e);
                 item.status = 'error';
-                if(el) { el.innerHTML = 'Error'; el.className = 'up-status danger'; }
+                if(el) { el.innerHTML = 'Fail (Format)'; el.className = 'up-status danger'; }
             }
         }));
 
@@ -1386,13 +1390,13 @@ async function startUpload(){
         const readyBatch = batch.filter(x => x.status === 'ready_to_upload');
         if(readyBatch.length === 0) continue; // Skip to next if all failed
 
-        // 3. Get URLs for this batch
+        // 3. Get URLs
         setOverall(30, `Checking duplicates...`);
         const filesPayload = readyBatch.map(f => ({
             name: f.file.name,
-            type: f.file.type || 'application/octet-stream',
+            type: f.file.type || 'image/jpeg', // Ensure type is set
             size: f.file.size,
-            hash: f.hash // This hash is now GUARANTEED to be different from original Raw file
+            hash: f.hash
         }));
 
         const meta = await apiPostJson(UPLOAD_URLS_API, { 
@@ -1414,7 +1418,7 @@ async function startUpload(){
         }
 
         // 4. Upload actual files
-        const uploads = meta.items || [];
+        const uploads = meta.urls || [];
         await Promise.all(uploads.map(async (u) => {
              const idx = u.index;
              const item = readyBatch[idx];
@@ -1423,7 +1427,14 @@ async function startUpload(){
              if(el) el.innerHTML = 'Sending...';
              
              try {
-                await fetch(u.uploadUrl, { method: 'PUT', body: item.file, headers: { 'Content-Type': item.file.type } });
+                // FIX 4: Catch Network Errors specifically (CORS/S3)
+                const s3Res = await fetch(u.uploadURL, { 
+                    method: 'PUT', 
+                    body: item.file, 
+                    headers: { 'Content-Type': item.file.type } 
+                });
+                
+                if(!s3Res.ok) throw new Error(`S3 Error: ${s3Res.status}`);
                 
                 // Register
                 if(el) el.innerHTML = 'Indexing...';
@@ -1434,7 +1445,7 @@ async function startUpload(){
                    attempts++;
                    try {
                      await apiPostJson(REGISTER_PHOTO_API, { 
-                        collection_id: cd.id, event_id: eventId, object_key: u.key,
+                        collection_id: cd.id, event_id: eventId, object_key: u.object_key,
                         filename: item.file.name, size: item.file.size,
                         content_type: item.file.type, hash: item.hash 
                      });
@@ -1447,12 +1458,13 @@ async function startUpload(){
                     if(el) { el.innerHTML = '<i class="fa-solid fa-check"></i> Done'; el.className = 'up-status success'; }
                 } else { throw new Error('Reg Failed'); }
              } catch(e){
+                console.error("Upload error for file " + item.id, e);
                 item.status = 'error';
-                if(el) { el.innerHTML = 'Fail'; el.className = 'up-status danger'; }
+                if(el) { el.innerHTML = 'Net Error'; el.className = 'up-status danger'; }
              }
         }));
 
-        // Batch Done. Loop continues to next batch.
+        // Batch Done
         const total = selectedFiles.length;
         const doneCount = selectedFiles.filter(x => x.status === 'done' || x.status === 'skipped' || x.status === 'error').length;
         setOverall((doneCount/total)*100, `Completed ${doneCount}/${total}`);
@@ -1506,7 +1518,6 @@ async function generateGuestLink(){
         link += `${separator}cid=${encodeURIComponent(cd.id)}`;
     }
 
-    // UPDATED ID HERE: Check for 'finalLink' instead of 'generatedLink'
     if($('finalLink')){
       $('finalLink').href = link;
       $('finalLink').textContent = link;

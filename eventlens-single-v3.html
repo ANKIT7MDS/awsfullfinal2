@@ -1372,8 +1372,8 @@ function putWithProgress(url, file, onProgress){
     xhr.ontimeout = () => reject(new Error('Upload timeout'));
     xhr.timeout = 10 * 60 * 1000; // 10 min per file
 
-    // Always JPEG (because processFile forces it)
-    xhr.setRequestHeader('Content-Type', 'image/jpeg');
+    // IMPORTANT: Do NOT set Content-Type or any custom headers for presigned PUT.
+    // Some presigned URLs are not signed for Content-Type and S3 will return 403 SignatureDoesNotMatch.
 
     xhr.send(file);
   });

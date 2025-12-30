@@ -296,10 +296,12 @@ async function doSearch(){
     
     try {
         // Payload construction: 
-        // Backend seems to strictly require "linkId" (or similar variations)
-        // We will send a "Kitchen Sink" payload covering all naming conventions to ensure one hits.
+        // Backend seems to strictly require "selfie_image" and "linkId".
+        // Updated to use "selfie_image" instead of "image_data" based on error report.
         const payload = { 
-            image_data: selfieBase64,
+            selfie_image: selfieBase64, // Corrected Key
+            image_data: selfieBase64,   // Backup Key
+            
             link_id: linkId || cid, // Try snake_case
             linkId: linkId || cid,  // Try camelCase
             collection_id: cid || linkId, // Backup

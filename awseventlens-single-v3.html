@@ -336,7 +336,7 @@
       </div>
     </div>
 
-    <!-- TAB 4: GENERATE LINK -->
+    <!-- TAB 4: GENERATE LINK (FIXED) -->
     <div id="tLink" class="tab-content">
       <div class="card">
         <h3>Generate Guest Link</h3>
@@ -885,7 +885,7 @@ async function computeHash(file) {
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/* ================= LINK GENERATION ================= */
+/* ================= LINK GENERATION (FIXED) ================= */
 async function generateLink(){
   const eid = $('#linkEventSel').value;
   const expiry = $('#linkExpiry').value;
@@ -899,14 +899,20 @@ async function generateLink(){
        password: pin
     });
     
-    // Construct robust URL
+    // CRITICAL FIX: Use the 'link_id' returned by backend to construct URL
+    // Instead of manually hacking 'cid='
+    const linkId = res.link_id || res.id;
+    
+    if(!linkId) throw new Error("Backend did not return a Link ID");
+
+    // Construct URL pointing to index.html with correct param
     const baseUrl = window.location.origin + "/index.html"; 
-    const finalUrl = `${baseUrl}?cid=${curCol.id}`;
+    const finalUrl = `${baseUrl}?linkId=${linkId}`;
     
     $('#finalLink').value = finalUrl;
     $('#finalLinkBtn').href = finalUrl;
     $('#linkRes').classList.remove('hidden');
-    showToast('Link Ready!');
+    showToast('Link Generated Successfully!', 'success');
   } catch(e) { showToast(e.message, 'error'); }
 }
 

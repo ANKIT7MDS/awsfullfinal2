@@ -1,393 +1,201 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EventLens Guest Search</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find My Photos - EventLens</title>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg:#05050a;
-      --card:#11111b;
-      --text:#fff;
-      --muted:#a3a3b2;
-      --primary:#6366f1;
-      --accent:#8b5cf6;
-      --border:rgba(255,255,255,.10);
-      --ok:#10b981;
-      --bad:#ef4444;
-      --shadow:0 18px 60px rgba(0,0,0,.55);
-      --r18:18px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: "Outfit", system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background:
-        radial-gradient(800px 500px at 15% 25%, color-mix(in srgb, var(--primary) 28%, transparent), transparent 60%),
-        radial-gradient(900px 500px at 90% 15%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
-        var(--bg);
-      color:var(--text);
-      min-height:100vh;
-      padding-bottom:90px;
-    }
-    header{
-      position:sticky; top:0; z-index:50;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(10px);
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .bar{
-      max-width:980px; margin:0 auto; padding:14px 16px;
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-    }
-    .brand{
-      display:flex; align-items:center; gap:10px; min-width:0;
-    }
-    .logo{
-      width:38px; height:38px; border-radius:12px;
-      background: linear-gradient(135deg,var(--primary),var(--accent));
-      display:grid; place-items:center;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.12);
-      flex:0 0 auto;
-    }
-    .logo img{width:100%; height:100%; object-fit:cover}
-    .btxt{min-width:0}
-    .bname{
-      font-weight:900; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .btag{
-      font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .wrap{max-width:980px; margin:0 auto; padding:16px}
-    .heroImg{
-      width:100%; height:160px; border-radius:24px; overflow:hidden;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.03);
-      box-shadow: var(--shadow);
-      margin: 10px 0 14px;
-    }
-    .heroImg img{width:100%; height:100%; object-fit:cover}
-    .card{
-      background: rgba(17,17,27,.70);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:24px;
-      box-shadow: var(--shadow);
-      padding:16px;
-      margin-bottom:14px;
-    }
-    .title{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      margin-bottom:10px;
-    }
-    .title h2{margin:0; font-size:16px}
-    .pill{
-      font-size:12px; padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      color:var(--muted);
-    }
-    .row{display:flex; gap:10px; flex-wrap:wrap}
-    .input{
-      width:100%;
-      padding:12px 14px;
-      border-radius: 14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.25);
-      color:var(--text);
-      outline:none;
-      font-size:14px;
-    }
-    .btn{
-      width:100%;
-      padding:12px 14px;
-      border-radius:999px;
-      border:none;
-      font-weight:900;
-      cursor:pointer;
-      background: linear-gradient(135deg,var(--primary),var(--accent));
-      color:#0b0b10;
-      box-shadow: 0 10px 30px rgba(99,102,241,.25);
-      transition: transform .18s ease;
-    }
-    .btn:active{transform:scale(.98)}
-    .btn.secondary{
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      color:var(--text);
-      box-shadow:none;
-    }
-    .preview{
-      width:140px; height:140px;
-      border-radius:999px;
-      object-fit:cover;
-      border:4px solid color-mix(in srgb, var(--primary) 60%, #fff);
-      display:block;
-      margin:14px auto 0;
-      background:#000;
-    }
-    .muted{color:var(--muted); font-size:13px; line-height:1.6}
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(2,1fr);
-      gap:10px;
-      margin-top:10px;
-    }
-    @media (min-width: 820px){
-      .grid{grid-template-columns: repeat(4,1fr);}
-    }
-    .ph{
-      border-radius:14px;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.03);
-      position:relative;
-    }
-    .ph img{width:100%; height:100%; object-fit:cover; display:block}
-    .ph .dl{
-      position:absolute; inset:auto 10px 10px auto;
-      background: rgba(0,0,0,.55);
-      color:#fff;
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:999px;
-      padding:7px 10px;
-      font-size:12px;
-      text-decoration:none;
-      display:inline-flex; gap:8px; align-items:center;
-    }
-    footer{
-      position:fixed; left:0; right:0; bottom:0;
-      background: rgba(0,0,0,.55);
-      border-top:1px solid rgba(255,255,255,.06);
-      backdrop-filter: blur(10px);
-      padding:10px 16px;
-      text-align:center;
-      color:var(--muted);
-      font-size:12px;
-    }
+    body { background: #000; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 600px; text-align: center; }
+    h1 { background: linear-gradient(to right, #00e676, #00b0ff); -webkit-background-clip: text; color: transparent; font-size: 32px; margin-bottom: 10px; }
+    .card { background: #111; border: 1px solid #333; border-radius: 16px; padding: 24px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
+    .btn { background: #00e676; color: #000; border: none; padding: 16px 32px; border-radius: 50px; font-size: 16px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
+    .btn:active { transform: scale(0.98); }
+    .btn.secondary { background: #333; color: #fff; }
+
+    input { width: 100%; padding: 14px; background: #000; border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 12px; font-size: 16px; }
+
+    .hidden { display: none !important; }
+    .loader { border: 4px solid #333; border-top: 4px solid #00e676; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Gallery */
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+    .photo { aspect-ratio: 1; background: #222; border-radius: 8px; overflow: hidden; position: relative; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
   </style>
 </head>
 <body>
-<header>
-  <div class="bar">
-    <div class="brand">
-      <div class="logo" id="logoBox"><i class="fa-solid fa-camera-retro" style="color:white"></i></div>
-      <div class="btxt">
-        <div class="bname" id="brandName">EventLens</div>
-        <div class="btag" id="tagLine">Find your photos instantly</div>
-      </div>
+
+<div class="container">
+  <h1>EventLens</h1>
+  <p style="color: #888;">AI Photo Finder</p>
+
+  <!-- STEP 1: INIT/PIN -->
+  <div id="stepInit" class="card">
+    <h3>Welcome Guest</h3>
+    <p>Please enter the PIN if required.</p>
+    <div id="pinBox" class="hidden">
+       <input type="password" id="pinInput" placeholder="Enter 4-digit PIN">
     </div>
-    <div class="pill" id="statusPill">Ready</div>
+    <button class="btn" onclick="goToUpload()">Find My Photos</button>
   </div>
-</header>
 
-<div class="wrap">
-  <div class="heroImg" id="heroImgBox" style="display:none;"></div>
+  <!-- STEP 2: SELFIE -->
+  <div id="stepSelfie" class="card hidden">
+    <h3>Take a Selfie</h3>
+    <p style="font-size: 13px; color: #aaa; margin-bottom: 20px;">Upload a clear photo of your face.</p>
+    <input type="file" id="selfieInput" accept="image/*">
+    <button class="btn" onclick="processSelfie()">Search</button>
+    <button class="btn secondary" onclick="location.reload()">Cancel</button>
+  </div>
 
-  <div class="card">
-    <div class="title">
-      <h2><i class="fa-solid fa-face-smile" style="color:var(--primary)"></i> Selfie Upload</h2>
-      <span class="pill" id="linkPill">link: -</span>
-    </div>
+  <!-- STEP 3: SCANNING -->
+  <div id="stepScan" class="card hidden">
+    <h3>Scanning Gallery...</h3>
+    <div class="loader"></div>
+    <p>Matching your face with thousands of photos.</p>
+  </div>
 
-    <div class="row">
-      <button class="btn secondary" onclick="pickSelfie()"><i class="fa-solid fa-image"></i> Choose Selfie</button>
-      <input id="selfieInput" type="file" accept="image/*" class="hide" />
-    </div>
-
-    <img id="preview" class="preview" style="display:none;" />
-
-    <div style="margin-top:12px;">
-      <div class="muted">Optional PIN (अगर link पर PIN लगा है)</div>
-      <input class="input" id="pinInput" placeholder="Enter PIN" />
-      <div class="muted" style="margin-top:10px;">Your Name</div>
-      <input class="input" id="nameInput" placeholder="e.g. Ankit" />
-      <div class="muted" style="margin-top:10px;">Mobile</div>
-      <input class="input" id="mobileInput" placeholder="e.g. 9876543210" inputmode="numeric" />
-    </div>
-
-    <div style="margin-top:12px;" class="row">
-      <button class="btn" onclick="searchNow()"><i class="fa-solid fa-magnifying-glass"></i> Search My Photos</button>
-    </div>
-
-    <div class="muted" id="hint" style="margin-top:10px;">
-      Upload selfie → Search → Results appear below → Details auto-save.
+  <!-- STEP 4: DETAILS -->
+  <div id="stepForm" class="card hidden">
+    <h3><span id="matchCount">0</span> Photos Found!</h3>
+    <p>Please enter your details to view them.</p>
+    <div style="margin-top: 20px;">
+        <input id="userName" placeholder="Your Name">
+        <input id="userPhone" type="tel" placeholder="Mobile Number">
+        <button class="btn" onclick="saveAndShow()">View Photos</button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="title">
-      <h2><i class="fa-solid fa-images" style="color:var(--primary)"></i> Results</h2>
-      <span class="pill" id="countPill">0</span>
+  <!-- STEP 5: GALLERY -->
+  <div id="stepGallery" class="hidden" style="width:100%">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+        <h2 style="margin:0">My Photos</h2>
+        <button class="btn secondary" style="width:auto; padding: 10px 20px;" onclick="downloadAll()">Download All</button>
     </div>
-    <div id="grid" class="grid"></div>
-    <div class="muted" id="empty" style="margin-top:8px;">No results yet.</div>
+    <div class="grid" id="photoGrid"></div>
   </div>
+
 </div>
 
-<footer id="footerText">© EventLens. Powered by AI.</footer>
-
 <script>
-/* ====== IMPORTANT: Set API_BASE same as your app ====== */
-const API_BASE = localStorage.getItem("eventlens_cfg_v1")
-  ? (JSON.parse(localStorage.getItem("eventlens_cfg_v1")).API_BASE || "")
-  : "";
+// CONFIG
+const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+const params = new URLSearchParams(location.search);
+const cid = params.get('cid');
 
-// Read link params
-const qp = new URLSearchParams(location.search);
-const linkId = qp.get("linkId") || qp.get("link_id") || "";
-const collectionIdFallback = qp.get("collection_id") || "";
-const theme = qp.get("theme") || "";
-const pinFromLink = qp.get("pin") || "";
+let selfieBase64 = null;
+let foundPhotos = [];
 
-// UI
-const statusPill = document.getElementById("statusPill");
-const linkPill = document.getElementById("linkPill");
-linkPill.textContent = "link: " + (linkId || collectionIdFallback || "-");
-document.getElementById("pinInput").value = pinFromLink;
-
-// Branding apply
-function b64urlDecode(str){
-  try{
-    str = str.replace(/-/g,'+').replace(/_/g,'/');
-    const pad = str.length % 4 ? 4 - (str.length % 4) : 0;
-    str += "=".repeat(pad);
-    const json = decodeURIComponent(escape(atob(str)));
-    return JSON.parse(json);
-  }catch(e){ return null; }
-}
-function applyBrand(b){
-  if(!b) return;
-  if(b.primary) document.documentElement.style.setProperty("--primary", b.primary);
-  if(b.accent) document.documentElement.style.setProperty("--accent", b.accent);
-  if(b.brand) document.getElementById("brandName").textContent = b.brand;
-  if(b.tagline) document.getElementById("tagLine").textContent = b.tagline;
-  if(b.footer) document.getElementById("footerText").textContent = b.footer;
-
-  if(b.logo){
-    const lb = document.getElementById("logoBox");
-    lb.innerHTML = `<img src="${escapeAttr(b.logo)}" alt="logo">`;
-  }
-  if(b.headerImage){
-    const hb = document.getElementById("heroImgBox");
-    hb.style.display = "block";
-    hb.innerHTML = `<img src="${escapeAttr(b.headerImage)}" alt="header">`;
-  }
-}
-applyBrand(b64urlDecode(theme));
-
-// selfie
-let selfieB64 = "";
-const selfieInput = document.getElementById("selfieInput");
-selfieInput.addEventListener("change", async () => {
-  const f = selfieInput.files?.[0];
-  if(!f) return;
-  selfieB64 = await fileToBase64(f);
-  const img = document.getElementById("preview");
-  img.src = selfieB64;
-  img.style.display = "block";
-  statusPill.textContent = "Selfie Ready";
-});
-
-function pickSelfie(){ selfieInput.click(); }
-
-function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
+// Init
+if(!cid) {
+  document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:50px;'>Invalid Link. Collection ID missing.</h2>";
 }
 
-function setStatus(t){ statusPill.textContent = t; }
-function esc(s){return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
-function escapeAttr(s){ return esc(s).replace(/`/g,"&#096;"); }
+function goToUpload(){
+  // (Optional: Validate PIN here if backend supported PIN check API, skipping for now)
+  document.getElementById('stepInit').classList.add('hidden');
+  document.getElementById('stepSelfie').classList.remove('hidden');
+}
 
-async function searchNow(){
-  if(!API_BASE) return setStatus("API_BASE missing");
-  if(!selfieB64) return setStatus("Upload selfie first");
+function processSelfie(){
+  const file = document.getElementById('selfieInput').files[0];
+  if(!file) return alert("Please select a photo");
+  
+  // Convert to Base64
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = function () {
+     selfieBase64 = reader.result.split(',')[1]; // Remove header
+     doSearch();
+  };
+}
 
-  const pin = (document.getElementById("pinInput").value || "").trim();
-  const name = (document.getElementById("nameInput").value || "").trim();
-  const mobile = (document.getElementById("mobileInput").value || "").trim();
+async function doSearch(){
+  document.getElementById('stepSelfie').classList.add('hidden');
+  document.getElementById('stepScan').classList.remove('hidden');
 
-  setStatus("Searching…");
-
-  // 1) Search matches
-  let matches = [];
-  try{
-    const payload = {
-      linkId: linkId || undefined,
-      link_id: linkId || undefined,
-      selfie_image: selfieB64,
-      pin: pin || undefined
-    };
-    // if linkId missing, some backends use collection_id directly (fallback)
-    if(!linkId && collectionIdFallback) payload.collection_id = collectionIdFallback;
-
-    const res = await fetch(API_BASE + "/search", {
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
+  try {
+    const res = await fetch(`${API_BASE}/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collection_id: cid, image_data: selfieBase64 })
     });
+    
+    if(!res.ok) throw new Error("Search Failed");
     const data = await res.json();
-    matches = data.matches || [];
-  }catch(e){
-    console.error(e);
-    setStatus("Search failed");
-    return;
-  }
+    
+    // API returns { urls: [...], ... }
+    foundPhotos = data.urls || [];
+    
+    if(foundPhotos.length === 0){
+       alert("No photos found matching your face.");
+       location.reload();
+       return;
+    }
 
-  render(matches);
-  setStatus("Done");
+    document.getElementById('matchCount').innerText = foundPhotos.length;
+    document.getElementById('stepScan').classList.add('hidden');
+    document.getElementById('stepForm').classList.remove('hidden');
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
-  // confetti on success
-  if(matches.length){
-    try{ confetti({particleCount:120, spread:70, origin:{y:0.6}}); }catch(e){}
-  }
-
-  // 2) Save details (best effort, only if name+mobile)
-  if(name && mobile){
-    try{
-      await fetch(API_BASE + "/save-details", {
-        method:"POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-          name,
-          mobile,
-          linkId: linkId || (collectionIdFallback || "unknown"),
-          selfie_image: selfieB64,
-          photo_count: matches.length,
-          collection_id: collectionIdFallback || undefined
-        })
-      });
-    }catch(e){}
+  } catch(e) {
+    alert(e.message);
+    location.reload();
   }
 }
 
-function render(items){
-  const grid = document.getElementById("grid");
-  const empty = document.getElementById("empty");
-  const countPill = document.getElementById("countPill");
-  grid.innerHTML = "";
-  countPill.textContent = String(items.length);
-  empty.style.display = items.length ? "none" : "block";
-  for(const it of items){
-    const url = it.url || it.signed_url || "";
-    if(!url) continue;
-    grid.insertAdjacentHTML("beforeend", `
-      <div class="ph">
-        <img src="${escapeAttr(url)}" alt="photo" loading="lazy" />
-        <a class="dl" href="${escapeAttr(url)}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
-      </div>
-    `);
-  }
+async function saveAndShow(){
+  const name = document.getElementById('userName').value;
+  const phone = document.getElementById('userPhone').value;
+  
+  if(!name || !phone) return alert("Please fill details");
+
+  // Save Lead (Fire & Forget)
+  fetch(`${API_BASE}/save-details`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+          collection_id: cid,
+          name: name,
+          mobile: phone,
+          match_count: foundPhotos.length,
+          selfie_image: selfieBase64 // Optional: if backend saves selfie from base64
+      })
+  });
+
+  // Render Gallery
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = foundPhotos.map(url => `
+     <div class="photo">
+       <a href="${url}" download>
+         <img src="${url}">
+       </a>
+     </div>
+  `).join('');
+
+  document.getElementById('stepForm').classList.add('hidden');
+  document.getElementById('stepGallery').classList.remove('hidden');
+}
+
+async function downloadAll(){
+    const zip = new JSZip();
+    const folder = zip.folder("MyPhotos");
+    
+    let count = 0;
+    for(const url of foundPhotos){
+        const blob = await fetch(url).then(r => r.blob());
+        folder.file(`photo_${++count}.jpg`, blob);
+    }
+    
+    const content = await zip.generateAsync({type:"blob"});
+    saveAs(content, "EventLens_Photos.zip");
 }
 </script>
 </body>

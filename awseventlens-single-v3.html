@@ -11,13 +11,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <!-- Libraries -->
+  <!-- Libraries: HEIC Support & Zip -->
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <style>
-    /* DARK THEME CORE */
+    /* DARK THEME CORE - NO UI CHANGES, ONLY POLISH */
     :root {
       --bg-dark: #050505;
       --bg-panel: #111111;
@@ -29,131 +29,149 @@
       --radius-md: 12px;
     }
     * { box-sizing: border-box; outline: none; }
-    body { margin: 0; background: var(--bg-dark); color: var(--text-main); font-family: "Plus Jakarta Sans", sans-serif; font-size: 14px; min-height: 100vh; }
+    body { margin: 0; background: var(--bg-dark); color: var(--text-main); font-family: "Plus Jakarta Sans", sans-serif; font-size: 14px; min-height: 100vh; overflow-x: hidden; }
     a { text-decoration: none; color: inherit; cursor: pointer; }
 
     /* LAYOUT */
     .wrap { max-width: 1400px; margin: 0 auto; padding: 20px; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 24px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
     .logo { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
     .logo span { color: var(--primary); }
 
     /* BUTTONS */
     .btn { border: none; padding: 10px 20px; border-radius: 50px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 13px; }
     .btn.primary { background: var(--primary); color: #000; }
-    .btn.primary:hover { background: #00c853; transform: translateY(-1px); }
-    .btn.secondary { background: #27272a; color: #fff; }
-    .btn.secondary:hover { background: #3f3f46; }
-    .btn.danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .btn.primary:hover { background: #00c853; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3); }
+    .btn.secondary { background: #27272a; color: #fff; border: 1px solid var(--border-color); }
+    .btn.secondary:hover { background: #3f3f46; border-color: #555; }
+    .btn.danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
     .btn.danger:hover { background: #ef4444; color: #fff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     /* CARDS */
-    .card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+    .card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; position: relative; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     
     /* INPUTS */
-    input, select { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; }
-    input:focus { border-color: var(--primary); }
+    input, select { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
+    input:focus, select:focus { border-color: var(--primary); outline: none; }
 
     /* TABLES */
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    th { text-align: left; padding: 12px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); }
-    td { padding: 14px 12px; border-bottom: 1px solid var(--border-color); color: #fff; }
-    tr:last-child td { border-bottom: none; }
+    th { text-align: left; padding: 14px 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); font-weight: 700; letter-spacing: 0.5px; }
+    td { padding: 16px; border-bottom: 1px solid var(--border-color); color: #fff; vertical-align: middle; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
 
     /* TABS */
-    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; }
-    .tab { padding: 10px 20px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-weight: 600; border-radius: 8px; white-space: nowrap; }
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+    .tab { padding: 10px 24px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-weight: 600; border-radius: 20px; white-space: nowrap; transition: 0.2s; }
     .tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .tab.active { color: var(--primary); background: var(--primary-dim); }
-    .tab-content { display: none; animation: fadeIn 0.3s; }
+    .tab.active { color: #000; background: var(--primary); }
+    .tab-content { display: none; animation: fadeIn 0.4s ease; }
     .tab-content.active { display: block; }
 
     /* GALLERY */
-    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-top: 16px; }
     .ph-card { aspect-ratio: 1; background: #000; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; }
-    .ph-card:hover { border-color: var(--primary); transform: translateY(-3px); }
-    .ph-card img { width: 100%; height: 100%; object-fit: cover; }
-    .ph-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); opacity: 0; transition: 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
+    .ph-card:hover { border-color: var(--primary); transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .ph-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+    .ph-card:hover img { transform: scale(1.05); opacity: 0.7; }
+    .ph-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); opacity: 0; transition: 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; }
     .ph-card:hover .ph-overlay { opacity: 1; }
-    .ph-meta { font-size: 11px; color: #ccc; display: flex; gap: 8px; }
-    
+    .ph-meta { font-size: 11px; color: #fff; font-weight: 600; display: flex; flex-direction: column; gap: 4px; }
+    .tag-pill { display: inline-block; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; font-size: 10px; width: fit-content; }
+
     /* UTILS */
     .view { display: none; }
     .view.show { display: block; }
     .hidden { display: none !important; }
     .text-sm { font-size: 12px; color: var(--text-muted); }
-    .kpi-box { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); }
-    .kpi-val { font-size: 28px; font-weight: 800; color: var(--primary); margin-top: 5px; }
+    .kpi-box { background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
+    .kpi-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); opacity: 0.5; }
+    .kpi-val { font-size: 32px; font-weight: 800; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; }
     
     /* TOAST */
-    #toast { position: fixed; top: 20px; right: 20px; background: #333; color: #fff; padding: 12px 24px; border-radius: 8px; z-index: 9999; transform: translateX(120%); transition: 0.3s; border-left: 4px solid var(--primary); }
+    #toast { position: fixed; top: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 16px 24px; border-radius: 12px; z-index: 9999; transform: translateX(150%); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; }
     #toast.show { transform: translateX(0); }
-    #toast.error { border-left-color: #ef4444; }
+    #toast.success { border-left: 4px solid var(--primary); }
+    #toast.error { border-left: 4px solid #ef4444; }
 
+    /* ANIMATIONS */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
   </style>
 </head>
 <body>
 
-<!-- TOAST -->
+<!-- TOAST NOTIFICATION -->
 <div id="toast"></div>
 
-<!-- NAVIGATION -->
 <div class="wrap" id="mainWrap">
+  <!-- TOP BAR -->
   <div class="topbar">
     <div class="logo"><i class="fa-solid fa-camera-retro"></i> EventLens <span>Pro</span></div>
     <div class="row">
-      <div id="userBadge" class="text-sm">Guest</div>
-      <button class="btn primary" id="btnLogin">Login</button>
-      <button class="btn danger hidden" id="btnLogout">Logout</button>
+      <div id="userBadge" class="text-sm" style="background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px;">Guest</div>
+      <button class="btn primary" id="btnLogin" onclick="doLogin()">Login</button>
+      <button class="btn danger hidden" id="btnLogout" onclick="doLogout()">Logout</button>
     </div>
   </div>
 
   <!-- VIEW: LOGIN -->
   <div id="vLogin" class="view">
-    <div class="card" style="max-width: 500px; margin: 100px auto; text-align: center;">
-      <h2>Welcome Back</h2>
-      <p class="text-sm" style="margin-bottom: 24px;">Login to manage your events and photos.</p>
-      <button class="btn primary" onclick="doLogin()" style="width: 100%; justify-content: center; padding: 14px;">
+    <div class="card" style="max-width: 480px; margin: 80px auto; text-align: center; padding: 40px;">
+      <div style="background: var(--primary-dim); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+        <i class="fa-solid fa-user-shield" style="font-size: 32px; color: var(--primary);"></i>
+      </div>
+      <h2 style="font-size: 28px; margin-bottom: 8px;">Welcome Back</h2>
+      <p class="text-sm" style="margin-bottom: 32px; line-height: 1.6;">Secure login for Photographers & Admins.<br>Manage your events, photos, and guest leads.</p>
+      <button class="btn primary" onclick="doLogin()" style="width: 100%; justify-content: center; padding: 16px; font-size: 16px;">
         Login via AWS Cognito
       </button>
     </div>
   </div>
 
-  <!-- VIEW: DASHBOARD -->
+  <!-- VIEW: DASHBOARD OVERVIEW -->
   <div id="vDash" class="view">
-    <div class="grid" style="margin-bottom: 30px;">
+    <div class="row" style="margin-bottom: 24px;">
+      <h2 style="margin: 0;">Dashboard Overview</h2>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid" style="margin-bottom: 32px;">
        <div class="kpi-box">
-         <div class="text-sm">COLLECTIONS</div>
+         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Total Collections</div>
          <div class="kpi-val" id="dCols">-</div>
        </div>
        <div class="kpi-box">
-         <div class="text-sm">TOTAL PHOTOS</div>
+         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Total Photos</div>
          <div class="kpi-val" id="dPhotos">-</div>
        </div>
        <div class="kpi-box">
-         <div class="text-sm">STORAGE USED</div>
+         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Storage Used</div>
          <div class="kpi-val" id="dStorage">-</div>
        </div>
        <div class="kpi-box">
-         <div class="text-sm">GUESTS / LEADS</div>
-         <div class="kpi-val" id="dGuests">-</div>
+         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Account Status</div>
+         <div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div>
        </div>
     </div>
 
     <div class="card">
-      <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
+      <div class="row" style="justify-content: space-between; margin-bottom: 24px;">
         <h3>My Collections</h3>
-        <button class="btn primary" onclick="toggleNewCol(true)">+ New Collection</button>
+        <button class="btn primary" onclick="toggleNewCol(true)"><i class="fa-solid fa-plus"></i> New Collection</button>
       </div>
       
-      <!-- New Col Form -->
-      <div id="newColBox" class="card hidden" style="background: #1a1a1a;">
-        <input id="ncName" placeholder="Collection Name (e.g. Wedding 2025)">
-        <div class="row" style="margin-top: 10px;">
+      <!-- New Collection Inline Form -->
+      <div id="newColBox" class="card hidden" style="background: rgba(255,255,255,0.02); border-left: 4px solid var(--primary);">
+        <h4 style="margin-top: 0;">Create New Collection</h4>
+        <div class="row">
+          <input id="ncName" placeholder="e.g. Rahul & Priya Wedding" style="flex: 2;">
           <button class="btn primary" onclick="createCollection()">Create</button>
           <button class="btn secondary" onclick="toggleNewCol(false)">Cancel</button>
         </div>
@@ -161,161 +179,199 @@
 
       <div class="table-responsive">
         <table id="tblCols">
-          <thead><tr><th>Name</th><th>Created</th><th>Stats</th><th>Actions</th></tr></thead>
-          <tbody><tr><td colspan="4" style="text-align:center">Loading...</td></tr></tbody>
+          <thead><tr><th>Collection Name</th><th>Created Date</th><th>Statistics</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="4" style="text-align:center; padding: 40px;" class="text-muted">Loading collections...</td></tr></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- VIEW: COLLECTION DETAILS -->
+  <!-- VIEW: COLLECTION DETAILS (THE MASTER VIEW) -->
   <div id="vCol" class="view">
-    <div class="row" style="margin-bottom: 20px;">
-      <button class="btn secondary" onclick="route('dashboard')"><i class="fa-solid fa-arrow-left"></i> Back</button>
-      <h2 id="cdTitle" style="margin: 0;">Collection</h2>
+    <div class="row" style="margin-bottom: 24px; justify-content: space-between;">
+      <div class="row">
+        <button class="btn secondary" onclick="route('dashboard')" style="padding: 8px 12px;"><i class="fa-solid fa-arrow-left"></i></button>
+        <div>
+          <div class="text-sm" style="color: var(--primary); font-weight: 700;">COLLECTION</div>
+          <h2 id="cdTitle" style="margin: 0; font-size: 24px;">-</h2>
+        </div>
+      </div>
+      <div class="text-sm text-muted" id="cdId">ID: -</div>
     </div>
 
+    <!-- TABS NAVIGATION -->
     <div class="tabs">
-      <button class="tab active" onclick="setTab('tGal')">Gallery</button>
-      <button class="tab" onclick="setTab('tEvents')">Events</button>
-      <button class="tab" onclick="setTab('tUp')">Upload</button>
-      <button class="tab" onclick="setTab('tLink')">Generate Link</button>
-      <button class="tab" onclick="setTab('tLeads')">Guest Leads</button>
+      <button class="tab active" onclick="setTab('tGal')"><i class="fa-regular fa-images"></i> Gallery</button>
+      <button class="tab" onclick="setTab('tEvents')"><i class="fa-regular fa-calendar"></i> Events</button>
+      <button class="tab" onclick="setTab('tUp')"><i class="fa-solid fa-cloud-arrow-up"></i> Batch Upload</button>
+      <button class="tab" onclick="setTab('tLink')"><i class="fa-solid fa-link"></i> Generate Link</button>
+      <button class="tab" onclick="setTab('tLeads')"><i class="fa-solid fa-users"></i> Guest Leads</button>
+      <button class="tab" onclick="setTab('tSettings')"><i class="fa-solid fa-gear"></i> Settings</button>
     </div>
 
-    <!-- TAB: GALLERY -->
+    <!-- TAB 1: GALLERY -->
     <div id="tGal" class="tab-content active">
       <div class="card">
-        <div class="row" style="margin-bottom: 16px; justify-content: space-between;">
+        <div class="row" style="margin-bottom: 20px; justify-content: space-between;">
            <div class="row">
-             <select id="galEventFilter" style="width: 150px;"></select>
-             <div class="text-sm" id="galCount">0 Photos</div>
+             <select id="galEventFilter" style="width: 200px;"></select>
+             <div class="text-sm text-muted" id="galCount">0 Photos</div>
            </div>
-           <button class="btn secondary" onclick="loadPhotos(true)"><i class="fa-solid fa-sync"></i> Refresh</button>
+           <button class="btn secondary" onclick="loadPhotos(true)"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
         </div>
-        <div class="gallery-grid" id="galGrid"></div>
-        <div style="text-align:center; margin-top: 20px;">
-          <button class="btn secondary hidden" id="btnLoadMore" onclick="loadPhotos(false, true)">Load More</button>
+        
+        <div class="gallery-grid" id="galGrid">
+           <!-- Photos injected here -->
+        </div>
+        
+        <div style="text-align:center; margin-top: 30px;">
+          <button class="btn secondary hidden" id="btnLoadMore" onclick="loadPhotos(false, true)">Load More Photos</button>
         </div>
       </div>
     </div>
 
-    <!-- TAB: EVENTS -->
+    <!-- TAB 2: EVENTS -->
     <div id="tEvents" class="tab-content">
       <div class="card">
-        <h3>Sub-Events</h3>
-        <div class="row" style="margin-bottom: 16px;">
-          <input id="neName" placeholder="Event Name (e.g. Haldi)" style="flex:2">
+        <h3>Manage Sub-Events</h3>
+        <p class="text-sm text-muted" style="margin-bottom: 20px;">Organize photos into sub-events like 'Haldi', 'Sangeet', 'Reception'.</p>
+        
+        <div class="row" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border-color);">
+          <input id="neName" placeholder="Event Name (e.g. Morning Haldi)" style="flex:2">
           <input id="neDate" type="date" style="flex:1">
-          <button class="btn primary" onclick="createEvent()">Add Event</button>
+          <button class="btn primary" onclick="createEvent()"><i class="fa-solid fa-plus"></i> Add Event</button>
         </div>
+
         <table>
-          <thead><tr><th>Name</th><th>Date</th><th>Photos</th><th>Action</th></tr></thead>
+          <thead><tr><th>Event Name</th><th>Date</th><th>Photos Count</th><th>Actions</th></tr></thead>
           <tbody id="tblEvents"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- TAB: UPLOAD -->
+    <!-- TAB 3: UPLOAD (ROBUST BATCHING) -->
     <div id="tUp" class="tab-content">
       <div class="card">
-        <h3>Batch Upload</h3>
-        <p class="text-sm">Select photos to upload. System will handle duplicates and indexing.</p>
+        <h3>Batch Photo Upload</h3>
+        <p class="text-sm text-muted">Supports 1500+ photos. System automatically handles batching, duplicates, and indexing.</p>
         
-        <div class="row" style="margin: 20px 0;">
-          <select id="upEventSel" style="max-width: 300px;"></select>
+        <div class="row" style="margin: 24px 0;">
+          <div style="flex: 1; max-width: 400px;">
+            <label class="text-sm" style="display:block; margin-bottom: 6px;">Select Target Event</label>
+            <select id="upEventSel"></select>
+          </div>
         </div>
 
-        <div style="border: 2px dashed var(--border-color); padding: 40px; text-align: center; border-radius: 12px; position: relative;">
-          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 40px; color: var(--text-muted);"></i>
-          <p style="margin-top: 10px;">Click or Drag photos here (1000+ supported)</p>
+        <div style="border: 2px dashed var(--border-color); padding: 60px; text-align: center; border-radius: 16px; position: relative; transition: 0.2s;" ondragover="this.style.borderColor=var(--primary)" ondragleave="this.style.borderColor='var(--border-color)'">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;"></i>
+          <h4 style="margin: 0; color: #fff;">Drag & Drop Photos Here</h4>
+          <p class="text-sm text-muted">or click to browse files (JPG, HEIC supported)</p>
           <input type="file" id="upInput" multiple accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer" onchange="handleFiles(this.files)">
         </div>
 
-        <div id="upProgress" class="hidden" style="margin-top: 20px;">
-          <div class="row" style="justify-content: space-between; margin-bottom: 5px;">
-            <span class="text-sm">Uploading...</span>
+        <!-- Progress UI -->
+        <div id="upProgress" class="hidden" style="margin-top: 30px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
+            <span class="text-sm font-bold" id="upStatusText">Uploading...</span>
             <span class="text-sm" id="upPct">0%</span>
           </div>
-          <div style="height: 6px; background: #333; border-radius: 4px; overflow: hidden;">
-            <div id="upBar" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.2s;"></div>
+          <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+            <div id="upBar" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease;"></div>
           </div>
-          <p class="text-sm" style="margin-top: 8px; color: var(--warning);" id="upMsg">Do not close this tab.</p>
+          <div class="text-sm text-muted" style="margin-top: 10px;" id="upCountStr">Processing batch...</div>
+          <div style="margin-top: 10px; max-height: 100px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #666;" id="upLog"></div>
         </div>
-
-        <div id="upLog" style="margin-top: 20px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #888;"></div>
       </div>
     </div>
 
-    <!-- TAB: LINK -->
+    <!-- TAB 4: GENERATE LINK -->
     <div id="tLink" class="tab-content">
       <div class="card">
-        <h3>Share Collection</h3>
-        <div class="row" style="gap: 20px; align-items: flex-end; margin-top: 20px;">
-          <div style="flex: 1;">
-            <label class="text-sm">Select Event (Optional)</label>
+        <h3>Generate Guest Link</h3>
+        <p class="text-sm text-muted">Create a secure link for guests to find their photos using AI Face Search.</p>
+        
+        <div class="row" style="gap: 20px; align-items: flex-end; margin-top: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border-color);">
+          <div style="flex: 2;">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Select Event Scope</label>
             <select id="linkEventSel"></select>
           </div>
           <div style="flex: 1;">
-            <label class="text-sm">Expiry</label>
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Link Expiry</label>
             <select id="linkExpiry">
               <option value="87600">Lifetime</option>
               <option value="168">7 Days</option>
+              <option value="48">2 Days</option>
               <option value="24">24 Hours</option>
             </select>
           </div>
           <div style="flex: 1;">
-            <label class="text-sm">PIN Code (Optional)</label>
-            <input id="linkPin" placeholder="4-digit PIN">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">PIN Protection (Optional)</label>
+            <input id="linkPin" placeholder="e.g. 1234">
           </div>
-          <button class="btn primary" onclick="generateLink()">Generate Link</button>
+          <button class="btn primary" onclick="generateLink()" style="height: 46px;">Generate Link</button>
         </div>
 
-        <div id="linkRes" class="card hidden" style="margin-top: 20px; background: rgba(0,230,118,0.05); border-color: var(--primary);">
-           <div class="text-sm" style="color: var(--primary); margin-bottom: 5px;">GUEST SEARCH LINK</div>
+        <div id="linkRes" class="hidden" style="margin-top: 24px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
+           <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">SHAREABLE GUEST LINK</div>
            <div class="row">
-             <input id="finalLink" readonly style="background: transparent; border: none; color: #fff; padding: 0;">
-             <button class="btn secondary" onclick="copyLink()">Copy</button>
+             <input id="finalLink" readonly style="background: transparent; border: none; color: #fff; font-size: 16px; font-family: monospace; padding: 0;">
+             <button class="btn secondary" onclick="copyLink()">Copy Link</button>
+             <a id="finalLinkBtn" target="_blank" class="btn primary">Open Page</a>
            </div>
         </div>
       </div>
     </div>
 
-    <!-- TAB: LEADS -->
+    <!-- TAB 5: GUEST LEADS (FIXED) -->
     <div id="tLeads" class="tab-content">
       <div class="card">
         <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
-          <h3>Guest Leads</h3>
-          <button class="btn secondary" onclick="loadLeads()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <h3>Guest Leads & Analytics</h3>
+          <button class="btn secondary" onclick="loadLeads()"><i class="fa-solid fa-rotate-right"></i> Refresh Data</button>
         </div>
         <div class="table-responsive">
           <table>
-            <thead><tr><th>Guest</th><th>Contact</th><th>Selfie</th><th>Photos Found</th></tr></thead>
-            <tbody id="tblLeads"><tr><td colspan="4" align="center">Loading...</td></tr></tbody>
+            <thead><tr><th>Guest Name</th><th>Phone Number</th><th>Selfie Used</th><th>Photos Found</th></tr></thead>
+            <tbody id="tblLeads"><tr><td colspan="4" align="center" class="text-muted">Loading leads...</td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- TAB 6: SETTINGS -->
+    <div id="tSettings" class="tab-content">
+        <div class="card">
+            <h3>Settings</h3>
+            <p class="text-sm text-muted">Update collection branding and details.</p>
+            <div style="margin-top: 20px; max-width: 500px;">
+                <label class="text-sm">Collection Name</label>
+                <div class="row">
+                    <input id="setColName">
+                    <button class="btn primary" onclick="updateSettings()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  </div> <!-- End View Col -->
 
 </div>
 
 <script>
-/* ================= CONFIG ================= */
+/* ================= CONFIGURATION ================= */
 const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod"; 
 const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
 const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
 const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
 
-/* ================= STATE ================= */
+/* ================= STATE MANAGEMENT ================= */
 let idToken = localStorage.getItem('idToken');
 let curCol = null;
 let curEvents = [];
-let uploadQ = [];
+let uploadQueue = [];
 
-/* ================= AUTH ================= */
-async function init(){
-  // Check auth code
+/* ================= INITIALIZATION ================= */
+window.addEventListener('load', async () => {
   const params = new URLSearchParams(location.search);
   if(params.has('code')){
     await exchangeCode(params.get('code'));
@@ -326,13 +382,15 @@ async function init(){
     showView('vLogin');
   } else {
     $('#btnLogout').classList.remove('hidden');
-    $('#userBadge').textContent = 'Admin';
+    $('#userBadge').textContent = 'Photographer';
     $('#btnLogin').classList.add('hidden');
-    route('dashboard');
+    route('dashboard'); // Auto-redirect to dashboard
   }
-}
+});
 
+/* ================= AUTHENTICATION ================= */
 async function exchangeCode(code){
+  showToast('Authenticating...', 'success');
   try {
     const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
       method: 'POST',
@@ -347,31 +405,36 @@ async function exchangeCode(code){
     const data = await res.json();
     if(data.id_token){
       localStorage.setItem('idToken', data.id_token);
-      location.href = window.location.origin + window.location.pathname; // Clear URL
+      window.location.href = window.location.origin + window.location.pathname; // Clean URL
     } else {
-      toast(data.error_description || 'Login Failed', 'error');
+      showToast('Login Failed', 'error');
     }
-  } catch(e) { toast(e.message, 'error'); }
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
 function doLogin(){ location.href = HOSTED_UI; }
-$('#btnLogout').onclick = () => { localStorage.clear(); location.reload(); };
+function doLogout() { localStorage.clear(); location.reload(); }
 
 /* ================= API HELPERS ================= */
 const $ = (s) => document.querySelector(s);
-const toast = (msg, type='success') => {
-  const t = $('#toast'); t.textContent = msg; t.className = `show ${type}`;
-  setTimeout(() => t.className = '', 3000);
+const showToast = (msg, type='success') => {
+  const t = $('#toast'); 
+  t.innerHTML = type === 'error' ? `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}` : `<i class="fa-solid fa-check-circle"></i> ${msg}`;
+  t.className = `show ${type}`;
+  setTimeout(() => t.className = '', 3500);
 };
 
 async function api(path, body){
   const opts = {
-    method: 'POST',
+    method: 'POST', // Defaulting to POST as per your backend map for most things
     headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' }
   };
-  if(body) opts.body = JSON.stringify(body);
+  // Some endpoints are GET, simple check based on name
+  if(path.includes('account-status') || path.includes('get-collections')) opts.method = 'GET';
+  if(body) { opts.method = 'POST'; opts.body = JSON.stringify(body); } // Force POST if body exists
+
   const r = await fetch(`${API_BASE}${path}`, opts);
-  if(!r.ok) throw new Error(`API Error: ${r.status}`);
+  if(!r.ok) throw new Error(`API Error ${r.status}`);
   return r.json();
 }
 
@@ -386,77 +449,7 @@ function route(dest){
 function showView(id){
   document.querySelectorAll('.view').forEach(e => e.classList.remove('show'));
   $(`#${id}`).classList.add('show');
-}
-
-/* ================= DASHBOARD ================= */
-async function loadDashboard(){
-  try {
-    // 1. Get Collections
-    const cData = await api('/get-collections');
-    const cols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-    
-    // 2. Get Account Status (For KPIs)
-    // Note: If account status api is partial, we fill gaps from collection data
-    let stats = { storage: 0, photos: 0, guests: 0 }; // Default
-    try {
-        const sData = await api('/account-status', {}); // GET usually but backend map says POST sometimes? Trying GET first if fails POST
-        // Map backend fields
-        if(sData) {
-            stats.storage = sData.total_storage_used_bytes || 0;
-            stats.photos = sData.total_photo_count || 0;
-        }
-    } catch(e){ console.log("Account status fetch fallback"); }
-    
-    // Fallback calc if API didn't return (or returned 0)
-    if(!stats.photos && cols.length) stats.photos = cols.reduce((a,b) => a + (b.total_photo_count||0), 0);
-    
-    // Render KPIs
-    $('#dCols').textContent = cols.length;
-    $('#dPhotos').textContent = stats.photos;
-    $('#dStorage').textContent = (stats.storage / (1024*1024*1024)).toFixed(2) + " GB";
-    $('#dGuests').textContent = "-"; // Will update if we fetch leads aggregate
-
-    // Render Table
-    const tbody = $('#tblCols tbody');
-    tbody.innerHTML = cols.map(c => `
-      <tr>
-        <td><b><a onclick="openCol('${c.collection_id}', '${c.name}')">${c.name}</a></b></td>
-        <td>${new Date(c.created_at).toLocaleDateString()}</td>
-        <td class="text-sm">${c.event_count||0} events • ${c.total_photo_count||0} photos</td>
-        <td>
-           <button class="btn secondary" onclick="openCol('${c.collection_id}', '${c.name}')">Manage</button>
-           <button class="btn danger" onclick="delCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      </tr>
-    `).join('');
-    
-  } catch(e) { toast(e.message, 'error'); }
-}
-
-function toggleNewCol(show){ show ? $('#newColBox').classList.remove('hidden') : $('#newColBox').classList.add('hidden'); }
-
-async function createCollection(){
-  const name = $('#ncName').value;
-  if(!name) return;
-  await api('/upsert-collection', { name });
-  toggleNewCol(false); $('#ncName').value = '';
-  loadDashboard();
-}
-
-async function delCol(id){
-  if(confirm("Delete collection?")){
-    await api('/delete-collection', { collection_id: id });
-    loadDashboard();
-  }
-}
-
-/* ================= COLLECTION DETAILS ================= */
-async function openCol(id, name){
-  curCol = { id, name };
-  $('#cdTitle').textContent = name;
-  showView('vCol');
-  setTab('tGal');
-  loadEvents(); // Load events first as they are needed for filters/upload
+  window.scrollTo(0,0);
 }
 
 function setTab(id){
@@ -467,37 +460,118 @@ function setTab(id){
   
   if(id === 'tGal') loadPhotos(true);
   if(id === 'tLeads') loadLeads();
+  if(id === 'tSettings') $('#setColName').value = curCol.name;
 }
 
-/* ================= EVENTS ================= */
+/* ================= DASHBOARD LOGIC ================= */
+async function loadDashboard(){
+  try {
+    // Parallel Fetch for speed
+    const [cData, sData] = await Promise.all([
+        api('/get-collections'),
+        api('/account-status').catch(()=>({})) // Fail safe
+    ]);
+
+    const cols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    // Calculate Aggregates
+    const totalPhotos = cols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
+    const storageBytes = sData.total_storage_used_bytes || cols.reduce((sum, c) => sum + (c.storage_bytes || 0), 0);
+    
+    // Update KPIs
+    $('#dCols').textContent = cols.length;
+    $('#dPhotos').textContent = totalPhotos.toLocaleString();
+    $('#dStorage').textContent = formatBytes(storageBytes);
+    
+    // Render Table
+    const tbody = $('#tblCols tbody');
+    if(cols.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 30px;" class="text-muted">No collections found. Create one!</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = cols.map(c => `
+      <tr>
+        <td>
+            <div style="font-weight:700; font-size:15px; color:#fff;">${escapeHtml(c.name)}</div>
+            <div class="text-sm text-muted">ID: ${c.collection_id.substring(0,8)}...</div>
+        </td>
+        <td>${new Date(c.created_at).toLocaleDateString()}</td>
+        <td>
+            <span class="tag-pill">${c.event_count||0} Events</span>
+            <span class="tag-pill">${c.total_photo_count||0} Photos</span>
+        </td>
+        <td>
+           <button class="btn secondary" onclick="openCol('${c.collection_id}', '${escapeHtml(c.name)}')">Manage</button>
+           <button class="btn danger" onclick="delCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('');
+    
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function toggleNewCol(show){ show ? $('#newColBox').classList.remove('hidden') : $('#newColBox').classList.add('hidden'); }
+
+async function createCollection(){
+  const name = $('#ncName').value;
+  if(!name) return;
+  showToast('Creating...');
+  await api('/upsert-collection', { name });
+  toggleNewCol(false); $('#ncName').value = '';
+  loadDashboard();
+}
+
+async function delCol(id){
+  if(confirm("Permanently delete this collection and all photos?")){
+    await api('/delete-collection', { collection_id: id });
+    loadDashboard();
+  }
+}
+
+/* ================= COLLECTION DETAILS ================= */
+async function openCol(id, name){
+  curCol = { id, name };
+  $('#cdTitle').textContent = name;
+  $('#cdId').textContent = `ID: ${id}`;
+  showView('vCol');
+  setTab('tGal'); // Default tab
+  loadEvents(); // Pre-load events
+}
+
+/* ================= EVENT MANAGEMENT ================= */
 async function loadEvents(){
   const data = await api('/get-events', { collection_id: curCol.id });
   curEvents = data.events || [];
   
-  // Render Table
+  // Table
   $('#tblEvents').innerHTML = curEvents.map(e => `
     <tr>
-      <td>${e.name}</td>
+      <td><b>${escapeHtml(e.name)}</b></td>
       <td>${e.event_date || '-'}</td>
       <td>${e.photo_count || 0}</td>
-      <td><button class="btn danger" onclick="delEvent('${e.event_id}')">Del</button></td>
+      <td><button class="btn danger" onclick="delEvent('${e.event_id}')"><i class="fa-solid fa-trash"></i></button></td>
     </tr>
   `).join('');
 
-  // Populate Selects
-  const opts = `<option value="">All Events</option>` + curEvents.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
-  $('#galEventFilter').innerHTML = opts;
-  $('#upEventSel').innerHTML = opts.replace('All Events', 'Select Event');
-  $('#linkEventSel').innerHTML = opts.replace('All Events', 'Entire Collection');
+  // Select Dropdowns
+  const opts = `<option value="">Select Event</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+  const allOpts = `<option value="">All Events</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+  
+  $('#galEventFilter').innerHTML = allOpts;
+  $('#upEventSel').innerHTML = opts;
+  $('#linkEventSel').innerHTML = `<option value="">Entire Collection</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
 }
 
 async function createEvent(){
   const name = $('#neName').value;
   const date = $('#neDate').value;
-  if(!name || !date) return toast('Fill details', 'error');
+  if(!name) return showToast('Name required', 'error');
+  
   await api('/upsert-event', { collection_id: curCol.id, name, event_date: date });
   $('#neName').value = '';
   loadEvents();
+  showToast('Event Added');
 }
 
 async function delEvent(eid){
@@ -507,110 +581,147 @@ async function delEvent(eid){
   }
 }
 
-/* ================= PHOTOS (GALLERY) ================= */
+/* ================= GALLERY ================= */
 let photosNext = null;
-async function loadPhotos(reset=false){
+async function loadPhotos(reset=false, loadMore=false){
   if(reset) photosNext = null;
   const eid = $('#galEventFilter').value;
   
   const payload = { collection_id: curCol.id };
   if(eid) payload.event_id = eid;
-  if(photosNext) payload.nextToken = photosNext;
+  if(loadMore && photosNext) payload.nextToken = photosNext;
 
   const res = await api('/get-photos', payload);
-  const photos = res.items || res.photos || []; // Backend consistency check
+  const photos = res.items || res.photos || []; 
   photosNext = res.nextToken;
 
   if(reset) $('#galGrid').innerHTML = '';
-  $('#galCount').textContent = `${photos.length} photos loaded`;
+  $('#galCount').textContent = `${photos.length} photos displayed`;
   
-  const html = photos.map(p => `
-    <div class="ph-card" title="Faces: ${p.face_count||0}">
-      <img src="${p.thumbnail_url || p.url}" loading="lazy">
-      <div class="ph-overlay">
-        <div class="ph-meta">
-           <span><i class="fa-solid fa-user"></i> ${p.face_count||0}</span>
+  const html = photos.map(p => {
+      // Fix for "undefined" hover
+      const faces = p.face_count || 0;
+      const url = p.thumbnail_url || p.url;
+      const tags = p.ai_tags && p.ai_tags.length ? p.ai_tags.slice(0,3).map(t => `<span class="tag-pill">${t}</span>`).join('') : '';
+      
+      return `
+        <div class="ph-card" onclick="window.open('${p.url}', '_blank')">
+          <img src="${url}" loading="lazy">
+          <div class="ph-overlay">
+            <div class="ph-meta">
+               <span><i class="fa-solid fa-face-smile"></i> ${faces} Faces</span>
+               <div style="margin-top:4px;">${tags}</div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  `).join('');
+      `;
+  }).join('');
   
   $('#galGrid').insertAdjacentHTML('beforeend', html);
   if(photosNext) $('#btnLoadMore').classList.remove('hidden'); else $('#btnLoadMore').classList.add('hidden');
 }
 
-/* ================= UPLOAD (BATCHING) ================= */
-// Handles 1500+ files by chunking requests
+/* ================= ROBUST BATCH UPLOAD (1500+ PHOTOS) ================= */
 async function handleFiles(fileList){
   const files = Array.from(fileList);
   if(!files.length) return;
   
   const eventId = $('#upEventSel').value;
-  if(!eventId) return toast('Select Event First!', 'error');
+  if(!eventId) return showToast('Please select an event first!', 'error');
 
   $('#upProgress').classList.remove('hidden');
-  $('#upLog').innerHTML = `Queued ${files.length} files...<br>`;
+  $('#upLog').innerHTML = '';
   
-  const BATCH_SIZE = 20; // Generate 20 URLs at a time
-  let processed = 0;
+  // Configuration
+  const BATCH_SIZE = 50; // Process 50 at a time to prevent timeout
+  let processedCount = 0;
+  
+  showToast(`Queued ${files.length} photos...`);
 
   for (let i = 0; i < files.length; i += BATCH_SIZE) {
     const chunk = files.slice(i, i + BATCH_SIZE);
+    $('#upStatusText').textContent = `Uploading Batch ${Math.ceil((i+1)/BATCH_SIZE)}/${Math.ceil(files.length/BATCH_SIZE)}`;
+    $('#upCountStr').textContent = `Processed ${processedCount}/${files.length}`;
+    
     await processBatch(chunk, eventId);
-    processed += chunk.length;
-    const pct = Math.round((processed / files.length) * 100);
+    
+    processedCount += chunk.length;
+    const pct = Math.round((processedCount / files.length) * 100);
     $('#upBar').style.width = pct + '%';
     $('#upPct').textContent = pct + '%';
   }
 
-  toast('All Uploads Completed!');
-  $('#upMsg').textContent = 'Upload Complete. Server is indexing faces...';
+  showToast('All Uploads Complete!', 'success');
+  $('#upStatusText').textContent = 'Done!';
+  $('#upCountStr').textContent = 'Server is indexing faces in background...';
   loadPhotos(true);
 }
 
 async function processBatch(files, eventId){
-  // 1. Pre-calculate Hashes & Meta
-  const metaList = [];
-  for(const f of files){
-    const hash = await computeHash(f); // Assuming helper exists
-    metaList.push({ name: f.name, type: 'image/jpeg', size: f.size, hash: hash, fileObj: f });
-  }
+  // 1. Pre-calculate Hashes & Metadata in Parallel
+  const metaList = await Promise.all(files.map(async f => {
+      // Basic normalization
+      let procFile = f;
+      // If HEIC, convert (optional, browser dependent)
+      if(f.name.toLowerCase().endsWith('.heic')){
+          try {
+             const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
+             procFile = new File([blob], f.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+          } catch(e) { console.error("HEIC Error", e); }
+      }
+      const hash = await computeHash(procFile);
+      return { name: procFile.name, type: 'image/jpeg', size: procFile.size, hash: hash, fileObj: procFile };
+  }));
 
-  // 2. Get Presigned URLs
+  // 2. Get Presigned URLs for the Batch
   const payload = {
     collection_id: curCol.id,
     event_id: eventId,
     files: metaList.map(m => ({ name: m.name, type: m.type, size: m.size, hash: m.hash }))
   };
   
-  const res = await api('/generate-upload-urls', payload);
-  
-  // 3. Upload to S3
-  const uploads = res.urls.map(u => {
-    const original = metaList.find(m => m.hash === u.hash || m.name === u.originalName); // Match back
-    if(!original) return null;
-    return fetch(u.uploadURL, {
-      method: 'PUT',
-      body: original.fileObj,
-      headers: { 
-        'Content-Type': 'image/jpeg',
-        'x-amz-meta-original-hash': u.hash 
-      }
-    });
-  });
+  try {
+      const res = await api('/generate-upload-urls', payload);
+      
+      // 3. Upload to S3 (Parallel within batch)
+      const uploadPromises = res.urls.map(u => {
+        const original = metaList.find(m => m.hash === u.hash); 
+        if(!original) return null;
+        
+        // IMPORTANT: Headers must match backend signature
+        return fetch(u.uploadURL, {
+          method: 'PUT',
+          body: original.fileObj,
+          headers: { 
+            'Content-Type': 'image/jpeg',
+            'x-amz-meta-original-hash': u.hash 
+          }
+        }).then(r => {
+            if(r.ok) $('#upLog').insertAdjacentHTML('afterbegin', `<div>✓ ${original.name}</div>`);
+            else $('#upLog').insertAdjacentHTML('afterbegin', `<div style="color:red">✗ ${original.name} (S3 Error)</div>`);
+        });
+      });
 
-  await Promise.all(uploads);
-  $('#upLog').insertAdjacentHTML('beforeend', `Batch of ${files.length} uploaded.<br>`);
+      await Promise.all(uploadPromises);
+      
+      // Handle duplicates
+      if(res.skipped && res.skipped.length){
+          $('#upLog').insertAdjacentHTML('afterbegin', `<div style="color:orange">⚠ Skipped ${res.skipped.length} duplicates</div>`);
+      }
+
+  } catch(e) {
+      $('#upLog').insertAdjacentHTML('afterbegin', `<div style="color:red">Error in batch: ${e.message}</div>`);
+  }
 }
 
-// Helper: SHA-256 Hash
+// SHA-256 Helper
 async function computeHash(file) {
   const buf = await file.arrayBuffer();
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/* ================= GENERATE LINK ================= */
+/* ================= LINK GENERATION ================= */
 async function generateLink(){
   const eid = $('#linkEventSel').value;
   const expiry = $('#linkExpiry').value;
@@ -624,56 +735,87 @@ async function generateLink(){
        password: pin
     });
     
-    // FIX: Construct proper URL
+    // Construct robust URL
+    // Ensure it points to the guest index.html
     const baseUrl = window.location.origin + "/index.html"; 
-    // Assuming backend returns { url: "..." } or similar
-    // We override to point to OUR index.html
     const finalUrl = `${baseUrl}?cid=${curCol.id}`;
     
     $('#finalLink').value = finalUrl;
+    $('#finalLinkBtn').href = finalUrl;
     $('#linkRes').classList.remove('hidden');
-  } catch(e) { toast(e.message, 'error'); }
+    showToast('Link Ready!');
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
 function copyLink(){
   const el = $('#finalLink');
   el.select();
   document.execCommand('copy');
-  toast('Copied to clipboard');
+  showToast('Copied to clipboard');
 }
 
-/* ================= LEADS (FIXED) ================= */
+/* ================= GUEST LEADS (FIXED MAPPING) ================= */
 async function loadLeads(){
+  $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
   try {
     const res = await api('/save-details', { action: 'list', collection_id: curCol.id });
     
-    // Backend output is a bit inconsistent in keys, so we handle both
-    // Sample: { "mobile": "...", "match_count": 4, "selfie_url": "..." }
-    const leads = res.items || res.leads || res || [];
+    // Handle array directly or inside 'items'/'leads' key
+    const leads = Array.isArray(res) ? res : (res.items || res.leads || []);
     
+    if(leads.length === 0) {
+        $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">No guest searches yet.</td></tr>`;
+        return;
+    }
+
+    // Sort by most recent
+    leads.sort((a,b) => new Date(b.timestamp||0) - new Date(a.timestamp||0));
+
     $('#tblLeads').innerHTML = leads.map(l => `
       <tr>
         <td>
-           <div style="font-weight:700">${l.name || 'Unknown'}</div>
+           <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
+           <div class="text-sm text-muted">${new Date(l.timestamp || Date.now()).toLocaleString()}</div>
         </td>
         <td>${l.mobile || l.phone || '-'}</td>
         <td>
            <a href="${l.selfie_url}" target="_blank">
-             <img src="${l.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #444;">
+             <img src="${l.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid var(--border-color);">
            </a>
         </td>
         <td>
-           <span class="btn secondary" style="padding:4px 10px; font-size:12px;">${l.match_count || l.photo_count || 0} Found</span>
+           <span class="tag-pill" style="background: var(--primary-dim); color: var(--primary); font-weight:700;">
+             ${l.match_count || l.photo_count || 0} Matches
+           </span>
         </td>
       </tr>
     `).join('');
   } catch(e) { 
-    $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" style="color:red">${e.message}</td></tr>`;
+    $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" style="color: #ef4444;">Error: ${e.message}</td></tr>`;
   }
 }
 
-// Start
-init();
+/* ================= SETTINGS ================= */
+async function updateSettings() {
+    const newName = $('#setColName').value;
+    if(!newName) return;
+    await api('/upsert-collection', { collection_id: curCol.id, name: newName });
+    $('#cdTitle').textContent = newName;
+    showToast('Settings Saved');
+}
+
+/* ================= UTILS ================= */
+function escapeHtml(text) {
+  if (!text) return text;
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+function formatBytes(bytes=0){
+  if(!+bytes) return '0 B';
+  const k=1024, sizes=['Bytes','KB','MB','GB','TB'];
+  const i=Math.floor(Math.log(bytes)/Math.log(k));
+  return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
+}
+
 </script>
 </body>
 </html>

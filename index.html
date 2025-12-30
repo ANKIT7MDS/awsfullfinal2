@@ -52,6 +52,7 @@
     .btn:active { transform: scale(0.98); opacity: 0.9; }
     .btn.secondary { background: rgba(255,255,255,0.1); color: #fff; }
     .btn.outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 10px; font-size: 13px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* INPUTS */
     input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 12px; margin-bottom: 12px; font-size: 16px; font-family: inherit; transition: 0.2s; }
@@ -126,17 +127,27 @@
        <i class="fa-regular fa-user"></i>
     </div>
 
-    <!-- Camera Button -->
-    <button class="btn" onclick="$('#cameraInput').click()">
-      <i class="fa-solid fa-camera"></i> Take Selfie
-    </button>
-    <input type="file" id="cameraInput" accept="image/*" capture="user" hidden onchange="handleSelfie(this)">
+    <!-- Actions -->
+    <div id="selfieActions">
+      <button class="btn" onclick="$('#cameraInput').click()">
+        <i class="fa-solid fa-camera"></i> Take Selfie
+      </button>
+      <input type="file" id="cameraInput" accept="image/*" capture="user" hidden onchange="handleSelfie(this)">
 
-    <!-- Upload Button -->
-    <button class="btn outline" style="margin-top:12px;" onclick="$('#galleryInput').click()">
-      <i class="fa-solid fa-image"></i> Upload from Gallery
+      <button class="btn outline" style="margin-top:12px;" onclick="$('#galleryInput').click()">
+        <i class="fa-solid fa-image"></i> Upload from Gallery
+      </button>
+      <input type="file" id="galleryInput" accept="image/*" hidden onchange="handleSelfie(this)">
+    </div>
+
+    <!-- Search Button (Initially Hidden) -->
+    <button id="btnSearch" class="btn hidden" style="margin-top:12px;" onclick="doSearch()">
+      Search Photos <i class="fa-solid fa-search"></i>
     </button>
-    <input type="file" id="galleryInput" accept="image/*" hidden onchange="handleSelfie(this)">
+    
+    <button id="btnRetake" class="btn outline hidden" style="margin-top:12px;" onclick="resetSelfie()">
+      Retake
+    </button>
   </div>
 
   <!-- VIEW 3: SCANNING -->
@@ -203,12 +214,14 @@
 // ================= CONFIG =================
 const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
 const params = new URLSearchParams(location.search);
-const cid = params.get('cid'); // Collection ID
+// Backend expects 'link_id' or 'collection_id' depending on endpoint implementation. 
+// Standard flow: Guest link has ?linkId=... or ?cid=...
+const cid = params.get('cid'); 
+const linkId = params.get('linkId') || params.get('id'); // Fallback if link ID used
 
 // ================= STATE =================
 let selfieBase64 = null;
 let foundPhotos = [];
-let collectionData = null;
 let currentPhotoUrl = null;
 
 // ================= UTILS =================
@@ -220,16 +233,14 @@ const show = (id) => {
 
 // ================= INIT =================
 window.onload = async () => {
-    if(!cid) return document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:50px;'>Invalid Link (Missing ID)</h2>";
+    // Basic validation
+    if(!cid && !linkId) {
+        document.body.innerHTML = "<div class='container'><div class='card'><h2 style='color:#ef4444'>Invalid Link</h2><p>Missing Collection ID or Link ID.</p></div></div>";
+        return;
+    }
     
-    // Fetch Collection Info for Branding
-    try {
-       // Since 'get-collections' is protected, we assume 'get-public-info' exists or we use search-link meta.
-       // For now, we simulate fetching branding or use defaults.
-       // Ideally: const res = await fetch(`${API_BASE}/public/collection/${cid}`);
-       // Update UI if we had data:
-       // updateBranding(data);
-    } catch(e) {}
+    // Simulate branding fetch if needed
+    // updateBranding({...});
 };
 
 function updateBranding(data){
@@ -243,7 +254,6 @@ function updateBranding(data){
 
 // ================= FLOW =================
 function startFlow(){
-    // PIN Check Logic (Skipped for demo, assumes PIN correct)
     show('#viewSelfie');
 }
 
@@ -256,33 +266,60 @@ function handleSelfie(input){
         // Show preview
         $('#selfiePreview').innerHTML = `<img src="${e.target.result}">`;
         
-        // Convert for sending
-        selfieBase64 = e.target.result.split(',')[1];
+        // Convert for sending (remove data:image/jpeg;base64, prefix)
+        const base64Str = e.target.result.split(',')[1];
+        selfieBase64 = base64Str;
         
-        // Auto start search after small delay
-        setTimeout(doSearch, 800);
+        // UI State: Show Search button, Hide Upload buttons
+        $('#selfieActions').classList.add('hidden');
+        $('#btnSearch').classList.remove('hidden');
+        $('#btnRetake').classList.remove('hidden');
     };
     reader.readAsDataURL(file);
 }
 
+function resetSelfie(){
+    selfieBase64 = null;
+    $('#selfiePreview').innerHTML = `<i class="fa-regular fa-user"></i>`;
+    $('#selfieActions').classList.remove('hidden');
+    $('#btnSearch').classList.add('hidden');
+    $('#btnRetake').classList.add('hidden');
+    $('#cameraInput').value = '';
+    $('#galleryInput').value = '';
+}
+
 async function doSearch(){
+    if(!selfieBase64) return alert("Please take a selfie first");
+    
     show('#viewScan');
     
     try {
+        // Payload construction: Handle backend expectation of linkId or collection_id
+        const payload = { 
+            image_data: selfieBase64,
+            // If linkId exists, send it. If not, send collection_id as 'collection_id' 
+            // AND potentially as 'linkId' fallback if backend logic is strict on param name.
+            ...(linkId ? { link_id: linkId } : { collection_id: cid }) 
+        };
+
         const res = await fetch(`${API_BASE}/search`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ collection_id: cid, image_data: selfieBase64 })
+            body: JSON.stringify(payload)
         });
         
-        if(!res.ok) throw new Error("Search failed");
         const data = await res.json();
+
+        if(!res.ok) {
+            throw new Error(data.message || data.error || "Search failed");
+        }
         
-        foundPhotos = data.urls || [];
+        foundPhotos = data.urls || []; // Expecting { urls: [...] }
         
         if(foundPhotos.length === 0){
             alert("No matching photos found. Try a clearer selfie.");
             show('#viewSelfie');
+            resetSelfie();
             return;
         }
 
@@ -292,8 +329,10 @@ async function doSearch(){
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
     } catch(e) {
-        alert("Error: " + e.message);
+        console.error(e);
+        alert(`Error: ${e.message}`);
         show('#viewSelfie');
+        resetSelfie();
     }
 }
 
@@ -303,18 +342,23 @@ async function submitDetails(){
     
     if(!name || !phone) return alert("Please enter your name and number.");
     
-    // Save Lead (Fire & Forget)
-    fetch(`${API_BASE}/save-details`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            collection_id: cid,
+    // Save Lead
+    try {
+        const payload = {
+            collection_id: cid, // Save usually needs explicit collection_id
+            link_id: linkId, // Optional tracking
             name: name,
             mobile: phone,
-            match_count: foundPhotos.length,
-            // selfie_image: selfieBase64 (Optional: send if backend saves it)
-        })
-    });
+            match_count: foundPhotos.length
+            // selfie_image: selfieBase64 (Optional)
+        };
+
+        fetch(`${API_BASE}/save-details`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+    } catch(e) { console.error("Lead save error", e); }
 
     renderGallery();
 }
@@ -363,6 +407,7 @@ async function downloadZip(){
     const btn = $('button[onclick="downloadZip()"]');
     const oldText = btn.innerHTML;
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Zipping...`;
+    btn.disabled = true;
     
     let count = 0;
     for(const url of foundPhotos){
@@ -374,7 +419,9 @@ async function downloadZip(){
     
     const content = await zip.generateAsync({type:"blob"});
     saveAs(content, "EventLens_Photos.zip");
+    
     btn.innerHTML = oldText;
+    btn.disabled = false;
 }
 
 function shareLink(){

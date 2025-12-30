@@ -899,18 +899,49 @@ async function generateLink(){
        password: pin
     });
     
-    // CRITICAL FIX: Use the 'link_id' returned by backend to construct URL
-    // Instead of manually hacking 'cid='
-    const linkId = res.link_id || res.id;
+    let searchUrl = "";
     
-    if(!linkId) throw new Error("Backend did not return a Link ID");
+    // Check various response formats to get the correct URL with linkId
+    if (res.searchUrl) {
+       searchUrl = res.searchUrl;
+    } else if (res.url) {
+       searchUrl = res.url;
+    } else if (res.link_id || res.id) {
+       // Fallback: If backend returns ID but not full URL
+       const linkId = res.link_id || res.id;
+       const baseUrl = window.location.origin + "/index.html";
+       searchUrl = `${baseUrl}?linkId=${linkId}`;
+    } else {
+       throw new Error("Backend did not return a valid Link ID or URL");
+    }
 
-    // Construct URL pointing to index.html with correct param
-    const baseUrl = window.location.origin + "/index.html"; 
-    const finalUrl = `${baseUrl}?linkId=${linkId}`;
+    // Ensure it points to our index.html if it's a relative path or just ID
+    if (!searchUrl.startsWith("http")) {
+       const baseUrl = window.location.origin + "/index.html";
+       // Assuming searchUrl might be just query string or relative
+       if (searchUrl.startsWith("?")) {
+          searchUrl = baseUrl + searchUrl;
+       } else {
+          // If it's just ID string
+          searchUrl = `${baseUrl}?linkId=${searchUrl}`;
+       }
+    }
     
-    $('#finalLink').value = finalUrl;
-    $('#finalLinkBtn').href = finalUrl;
+    // Final check to fix domain if backend returns netlify but we are local or different
+    // We replace the backend's base URL with current origin to ensure index.html matches
+    // But only if we want to force index.html
+    const currentOrigin = window.location.origin;
+    if (searchUrl.includes("netlify.app") && !window.location.href.includes("netlify.app")) {
+       // Attempt to replace base domain with current if testing locally
+       // Note: This is optional dev convenience
+       try {
+          const urlObj = new URL(searchUrl);
+          searchUrl = `${currentOrigin}/index.html${urlObj.search}`;
+       } catch(e) {}
+    }
+
+    $('#finalLink').value = searchUrl;
+    $('#finalLinkBtn').href = searchUrl;
     $('#linkRes').classList.remove('hidden');
     showToast('Link Generated Successfully!', 'success');
   } catch(e) { showToast(e.message, 'error'); }

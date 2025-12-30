@@ -295,21 +295,30 @@ async function doSearch(){
     show('#viewScan');
     
     try {
-        // Payload construction: 
-        // 1. If linkId is present, prioritize it (backend should handle mapping)
-        // 2. If no linkId, use collection_id
-        // 3. If events param exists, add event_ids to filter specific events
-        
+        // Payload construction
         const payload = { 
             image_data: selfieBase64
         };
 
+        // Fix for "Missing linkId" 400 Error:
+        // We ensure a 'linkId' key is sent even if we only have a collection ID (cid).
+        // Some backends require the 'linkId' field strictly.
+        
         if(linkId) {
-            payload.link_id = linkId;
-        } else {
+            payload.linkId = linkId;   // Sending camelCase
+            payload.link_id = linkId;  // Sending snake_case backup
+        } else if(cid) {
+            // Case: We only have a Collection ID
             payload.collection_id = cid;
+            payload.collectionId = cid;
+            
+            // Critical Fix: Pass collection_id as 'linkId' too, satisfying backend validation
+            payload.linkId = cid; 
+            payload.link_id = cid;
+            
             if(events) {
-                payload.event_ids = events.split(','); // Convert "ev1,ev2" to ["ev1", "ev2"]
+                payload.event_ids = events.split(',');
+                payload.eventIds = events.split(',');
             }
         }
 
@@ -322,9 +331,9 @@ async function doSearch(){
         const data = await res.json();
 
         if(!res.ok) {
-            // Specifically handle the "Missing linkId" error by showing a friendly message
+            // Handle specific backend error
             if(data.error && data.error.includes("Missing linkId")) {
-                 throw new Error("Invalid Link: System requires a specific Link ID, not just Collection ID.");
+                 throw new Error("System Error: API Link ID mismatch. Please regenerate the link from dashboard.");
             }
             throw new Error(data.message || data.error || "Search failed");
         }
@@ -360,7 +369,7 @@ async function submitDetails(){
     // Save Lead
     try {
         const payload = {
-            collection_id: cid, // Save usually needs explicit collection_id
+            collection_id: cid || linkId, // Ensure ID is sent
             link_id: linkId, // Optional tracking
             name: name,
             mobile: phone,

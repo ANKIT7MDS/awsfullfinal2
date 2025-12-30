@@ -218,6 +218,7 @@ const params = new URLSearchParams(location.search);
 // Standard flow: Guest link has ?linkId=... or ?cid=...
 const cid = params.get('cid'); 
 const linkId = params.get('linkId') || params.get('id'); // Fallback if link ID used
+const events = params.get('events'); // New parameter for comma separated event IDs
 
 // ================= STATE =================
 let selfieBase64 = null;
@@ -294,13 +295,23 @@ async function doSearch(){
     show('#viewScan');
     
     try {
-        // Payload construction: Handle backend expectation of linkId or collection_id
+        // Payload construction: 
+        // 1. If linkId is present, prioritize it (backend should handle mapping)
+        // 2. If no linkId, use collection_id
+        // 3. If events param exists, add event_ids to filter specific events
+        
         const payload = { 
-            image_data: selfieBase64,
-            // If linkId exists, send it. If not, send collection_id as 'collection_id' 
-            // AND potentially as 'linkId' fallback if backend logic is strict on param name.
-            ...(linkId ? { link_id: linkId } : { collection_id: cid }) 
+            image_data: selfieBase64
         };
+
+        if(linkId) {
+            payload.link_id = linkId;
+        } else {
+            payload.collection_id = cid;
+            if(events) {
+                payload.event_ids = events.split(','); // Convert "ev1,ev2" to ["ev1", "ev2"]
+            }
+        }
 
         const res = await fetch(`${API_BASE}/search`, {
             method: 'POST',
@@ -311,6 +322,10 @@ async function doSearch(){
         const data = await res.json();
 
         if(!res.ok) {
+            // Specifically handle the "Missing linkId" error by showing a friendly message
+            if(data.error && data.error.includes("Missing linkId")) {
+                 throw new Error("Invalid Link: System requires a specific Link ID, not just Collection ID.");
+            }
             throw new Error(data.message || data.error || "Search failed");
         }
         

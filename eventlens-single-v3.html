@@ -1353,7 +1353,7 @@ window.retryFile = async (id) => {
 };
 
 // ---- XHR PUT upload with progress ----
-function putWithProgress(url, file, onProgress){
+function putWithProgress(url, file, headers, onProgress){
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', url, true);
@@ -1372,10 +1372,11 @@ function putWithProgress(url, file, onProgress){
     xhr.ontimeout = () => reject(new Error('Upload timeout'));
     xhr.timeout = 10 * 60 * 1000; // 10 min per file
 
-    // FIX: Explicitly set Content-Type to match what we told the backend (image/jpeg)
-    // This solves the 403 SignatureDoesNotMatch error
-    if (file.type) {
-        xhr.setRequestHeader("Content-Type", file.type);
+    // FIX: Set Custom Headers required by Presigned URL
+    if(headers){
+        Object.entries(headers).forEach(([k,v]) => {
+            if(v) xhr.setRequestHeader(k, v);
+        });
     }
 
     xhr.send(file);
@@ -1444,7 +1445,13 @@ async function runOne(item, ctx){
   item.uploadedBytes = 0;
   setRowProgress(item, 8, '<i class="fa-solid fa-cloud-arrow-up"></i> Uploading', 'waiting');
 
-  await putWithProgress(uploadUrl, item.file, (loaded, total) => {
+  // Headers must match EXACTLY what backend signed
+  const s3Headers = {
+      'Content-Type': 'image/jpeg',
+      'x-amz-meta-original-hash': item.hash // Required by backend signature
+  };
+
+  await putWithProgress(uploadUrl, item.file, s3Headers, (loaded, total) => {
     item.uploadedBytes = loaded;
     const pct = total ? (loaded / total) * 100 : 0;
     setRowProgress(item, 8 + (pct * 0.82), '<i class="fa-solid fa-cloud-arrow-up"></i> Uploading', 'waiting');

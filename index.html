@@ -295,34 +295,27 @@ async function doSearch(){
     show('#viewScan');
     
     try {
-        // Payload construction
+        // Payload construction: 
+        // Backend seems to strictly require "linkId" (or similar variations)
+        // We will send a "Kitchen Sink" payload covering all naming conventions to ensure one hits.
         const payload = { 
-            image_data: selfieBase64
+            image_data: selfieBase64,
+            link_id: linkId || cid, // Try snake_case
+            linkId: linkId || cid,  // Try camelCase
+            collection_id: cid || linkId, // Backup
+            collectionId: cid || linkId   // Backup
         };
-
-        // Fix for "Missing linkId" 400 Error:
-        // We ensure a 'linkId' key is sent even if we only have a collection ID (cid).
-        // Some backends require the 'linkId' field strictly.
         
-        if(linkId) {
-            payload.linkId = linkId;   // Sending camelCase
-            payload.link_id = linkId;  // Sending snake_case backup
-        } else if(cid) {
-            // Case: We only have a Collection ID
-            payload.collection_id = cid;
-            payload.collectionId = cid;
-            
-            // Critical Fix: Pass collection_id as 'linkId' too, satisfying backend validation
-            payload.linkId = cid; 
-            payload.link_id = cid;
-            
-            if(events) {
-                payload.event_ids = events.split(',');
-                payload.eventIds = events.split(',');
-            }
+        if(events) {
+            payload.event_ids = events.split(',');
         }
 
-        const res = await fetch(`${API_BASE}/search`, {
+        // Also try appending to URL for APIs that read query params
+        const url = new URL(`${API_BASE}/search`);
+        if(linkId) url.searchParams.append('linkId', linkId);
+        else if(cid) url.searchParams.append('collectionId', cid);
+
+        const res = await fetch(url.toString(), {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
@@ -331,9 +324,9 @@ async function doSearch(){
         const data = await res.json();
 
         if(!res.ok) {
-            // Handle specific backend error
-            if(data.error && data.error.includes("Missing linkId")) {
-                 throw new Error("System Error: API Link ID mismatch. Please regenerate the link from dashboard.");
+            // Handle specific backend error text
+            if(data.error && (data.error.includes("Missing linkId") || data.message.includes("Missing linkId"))) {
+                 throw new Error("System Error: API expects a 'linkId'. Please ensure you are using a generated Guest Link from the Dashboard.");
             }
             throw new Error(data.message || data.error || "Search failed");
         }

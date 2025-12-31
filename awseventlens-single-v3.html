@@ -504,7 +504,7 @@
 /* ================= CONFIGURATION ================= */
 const API_BASE = 'https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/v1'; // From your files
 const COGNITO_DOMAIN = 'https://eventlens.auth.ap-south-1.amazoncognito.com';
-const CLIENT_ID = 'mva8s6f3w'; // Placeholder, replace if needed
+const CLIENT_ID = '6osq80352528753258'; // Corrected Client ID for real login
 const REDIRECT_URI = window.location.origin + window.location.pathname; 
 
 /* ================= STATE ================= */
@@ -520,50 +520,45 @@ let state = {
 
 /* ================= INIT ================= */
 window.onload = async () => {
-  // Check URL for Auth Code
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
+  // 1. Check for Implicit Flow token in URL hash (e.g. #id_token=...)
+  const hash = window.location.hash.substring(1); // Remove '#'
+  const hashParams = new URLSearchParams(hash);
+  const idToken = hashParams.get('id_token');
 
-  if (code) {
-    await exchangeCode(code);
-  } else if (state.token) {
+  if (idToken) {
+    // Save token and clean URL
+    state.token = idToken;
+    localStorage.setItem('id_token', idToken);
+    window.history.replaceState({}, document.title, window.location.pathname);
     initApp();
-  } else {
-    document.getElementById('auth-screen').classList.remove('hidden');
+  } 
+  // 2. Check for Code Flow (less likely for this simple HTML, but keeping logic)
+  else {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    
+    if (code) {
+        // If code comes back, we likely need to exchange it, but Implicit is preferred for this standalone file
+        // Re-login with implicit to make life easier if backend swap fails
+        login(); 
+    } else if (state.token) {
+        initApp();
+    } else {
+        document.getElementById('auth-screen').classList.remove('hidden');
+    }
   }
 };
 
+// No longer used since we switched to Implicit Flow for simplicity
 async function exchangeCode(code) {
-  try {
-    const body = new URLSearchParams();
-    body.append('grant_type', 'authorization_code');
-    body.append('client_id', '6osq80352528753258'); // Check your client ID from files
-    body.append('code', code);
-    body.append('redirect_uri', REDIRECT_URI);
-
-    // Note: Since this is implicit/code flow, usually requires backend or proper configuration
-    // For now mocking successful login if code is present or use implicit flow
-    // In production, use Amplify or proper fetch to token endpoint
-    // Simulating token for demo if fetch fails due to CORS/Secret
-    state.token = "MOCK_TOKEN_" + code; 
-    localStorage.setItem('id_token', state.token);
-    window.history.replaceState({}, document.title, window.location.pathname);
-    initApp();
-  } catch(e) {
-    alert('Login failed');
-  }
+  // Code exchange usually requires CORS support on token endpoint or a backend. 
+  // We skip this and use Implicit Flow in login().
 }
 
 function login() {
-  // Redirect to Cognito
-  // const url = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=token&scope=email+openid+profile&redirect_uri=${REDIRECT_URI}`;
-  // For demo/handover file integrity, we allow direct entry if desired, or real auth:
-  // window.location.href = url;
-  
-  // Temporary Bypass for Admin UI to work directly (as requested "reply mat karna" style fixes)
-  state.token = "demo-token";
-  localStorage.setItem('id_token', state.token);
-  initApp();
+  // Use Implicit Flow (response_type=token) to get token directly in URL
+  const url = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=token&scope=email+openid+profile&redirect_uri=${REDIRECT_URI}`;
+  window.location.href = url;
 }
 
 function logout() {
@@ -594,7 +589,13 @@ async function api(path, method='GET', body=null) {
     const res = await fetch(url, opts);
     if(!res.ok) {
         if(res.status === 404) throw new Error("API Endpoint not found: " + path);
-        if(res.status === 401) throw new Error("Unauthorized. Please Login Again.");
+        if(res.status === 401 || res.status === 403) {
+             // If 403, it might be an invalid token too.
+             // Auto-logout if token is bad
+             // localStorage.clear();
+             // window.location.reload();
+             throw new Error("Access Denied (403/401). Token might be expired. Please Logout and Login again.");
+        }
         throw new Error(`API Error: ${res.status}`);
     }
     return await res.json();

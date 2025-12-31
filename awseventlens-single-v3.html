@@ -900,11 +900,9 @@ async function generateLink(){
     });
     
     // FIXED: Use the actual link_id returned by backend
-    // If backend returns a full URL, parse it. If it returns ID, construct it.
     let linkId = "";
     if (res.link_id || res.id) linkId = res.link_id || res.id;
     else if (res.searchUrl || res.url) {
-        // Try to extract ID from URL if backend returned full string
         try {
             const tempUrl = new URL(res.searchUrl || res.url);
             linkId = tempUrl.searchParams.get("linkId") || tempUrl.searchParams.get("id");
@@ -913,9 +911,10 @@ async function generateLink(){
 
     if(!linkId) throw new Error("Could not retrieve Link ID from backend response");
 
-    // Construct the FINAL URL pointing to index.html with the correct ID
+    // Construct the FINAL URL with BOTH linkId AND cid for robustness
     const baseUrl = window.location.origin + "/index.html"; 
-    const finalUrl = `${baseUrl}?linkId=${linkId}`;
+    // We explicitly add cid so index.html knows the collection without guessing
+    const finalUrl = `${baseUrl}?linkId=${linkId}&cid=${curCol.id}`;
     
     $('#finalLink').value = finalUrl;
     $('#finalLinkBtn').href = finalUrl;

@@ -66,11 +66,6 @@
 
 <script>
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    // Staff token should be provided or using a dedicated limited token. 
-    // For now assuming staff uses same logic or a provided token.
-    // In real scenario, staff might need login or a special key. 
-    // Here we assume localStorage has token OR we use a public upload endpoint (if available).
-    // Assuming authenticated for now (Admin/Photographer gives device).
     let token = localStorage.getItem('idToken');
     
     let queue = [];
@@ -80,8 +75,8 @@
 
     window.onload = async () => {
         if(!token) {
-            alert("Device not authenticated. Please login as photographer first.");
-            window.location.href = "dashboard.html"; // Redirect to login
+            alert("Device not authenticated. Please login as photographer first on dashboard.");
+            window.location.href = "dashboard.html"; 
             return;
         }
 
@@ -94,28 +89,32 @@
     };
 
     async function loadCollections() {
-        const res = await fetch(`${API_BASE}/get-collections`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const data = await res.json();
-        const sel = document.getElementById('colSelect');
-        sel.innerHTML = '<option value="">Select Collection...</option>' + 
-            (data.Items || []).map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
+        try {
+            const res = await fetch(`${API_BASE}/get-collections`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            const sel = document.getElementById('colSelect');
+            sel.innerHTML = '<option value="">Select Collection...</option>' + 
+                (data.Items || []).map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
+        } catch(e) { console.error(e); alert("Failed to load collections"); }
     }
 
     async function loadEvents(cidOverride) {
         const cid = cidOverride || document.getElementById('colSelect').value;
         if(!cid) return;
 
-        const res = await fetch(`${API_BASE}/get-events`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ collection_id: cid })
-        });
-        const data = await res.json();
-        const sel = document.getElementById('eventSelect');
-        sel.innerHTML = '<option value="">Select Event...</option>' + 
-            (data.events || []).map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
-            
-        if(preEid) sel.value = preEid;
+        try {
+            const res = await fetch(`${API_BASE}/get-events`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ collection_id: cid })
+            });
+            const data = await res.json();
+            const sel = document.getElementById('eventSelect');
+            sel.innerHTML = '<option value="">Select Event...</option>' + 
+                (data.events || []).map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+                
+            if(preEid) sel.value = preEid;
+        } catch(e) { console.error(e); }
     }
 
     function handleFiles(files) {
@@ -140,44 +139,61 @@
 
         for(let i=0; i<queue.length; i+=chunkSi) {
             const chunk = queue.slice(i, i+chunkSi);
-            stat.innerText = `Uploading Batch ${Math.ceil((i+1)/50)}...`;
+            stat.innerText = `Processing & Uploading Batch ${Math.ceil((i+1)/50)}...`;
             
             const metas = await Promise.all(chunk.map(async f => {
                 let procFile = f;
+                
+                // 1. Convert HEIC
                 if(f.name.toLowerCase().endsWith('.heic')){
                     try {
                         const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
                         procFile = new File([blob], f.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
                     } catch(e) {}
                 }
+
+                // 2. FORCE RENAME TO LOWERCASE .jpg (Critical for S3 Indexing Trigger)
+                // This handles Photo.JPG, image.png, etc. by forcing them to .jpg suffix
+                let parts = procFile.name.split('.');
+                if(parts.length > 1) parts.pop(); // Remove existing extension
+                let finalName = parts.join('.') + ".jpg";
+
                 const b = await procFile.arrayBuffer();
                 const h = await crypto.subtle.digest('SHA-256', b);
                 const hash = Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
-                return { name: procFile.name, type: 'image/jpeg', size: procFile.size, hash: hash, file: procFile };
+                
+                // Send forced .jpg name to backend
+                return { name: finalName, type: 'image/jpeg', size: procFile.size, hash: hash, file: procFile };
             }));
 
-            const res = await fetch(`${API_BASE}/generate-upload-urls`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ collection_id: cid, event_id: eid, files: metas })
-            });
-            const data = await res.json();
-
-            await Promise.all(data.urls.map(u => {
-                const item = metas.find(m => m.hash === u.hash);
-                return fetch(u.uploadURL, {
-                    method: 'PUT',
-                    body: item.file,
-                    headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
+            try {
+                const res = await fetch(`${API_BASE}/generate-upload-urls`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ collection_id: cid, event_id: eid, files: metas })
                 });
-            }));
+                const data = await res.json();
+
+                if(data.urls) {
+                    await Promise.all(data.urls.map(u => {
+                        const item = metas.find(m => m.hash === u.hash);
+                        return fetch(u.uploadURL, {
+                            method: 'PUT',
+                            body: item.file,
+                            headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
+                        });
+                    }));
+                }
+            } catch(e) {
+                console.error("Batch failed", e);
+            }
             
             processed += chunk.length;
             bar.style.width = `${(processed/queue.length)*100}%`;
         }
 
-        stat.innerText = "Upload Complete!";
-        alert("Done!");
+        stat.innerText = "Upload Complete! Indexing will start automatically.";
+        alert("Upload Done! Photos will appear in dashboard shortly.");
         location.reload();
     }
 </script>

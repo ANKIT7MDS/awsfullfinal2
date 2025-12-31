@@ -19,839 +19,1070 @@
   <style>
     /* DARK THEME CORE */
     :root {
-      --bg-body: #09090b;
-      --bg-panel: #18181b;
-      --bg-card: #27272a;
-      --primary: #00e676; /* Neon Green */
-      --primary-hover: #00c853;
-      --danger: #ef4444;
+      --bg-dark: #050505;
+      --bg-panel: #111111;
+      --primary: #00e676;
+      --primary-dim: rgba(0, 230, 118, 0.15);
       --text-main: #ffffff;
       --text-muted: #a1a1aa;
-      --border: #3f3f46;
-      --radius: 12px;
-      --shadow: 0 8px 30px rgba(0,0,0,0.5);
+      --border-color: #27272a;
+      --radius-md: 12px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-    body {
-      font-family: 'Outfit', sans-serif;
-      background: var(--bg-body);
-      color: var(--text-main);
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-    }
-    
-    /* TOAST */
-    #toast-container {
-      position: fixed; top: 20px; right: 20px; z-index: 9999;
-      display: flex; flex-direction: column; gap: 10px;
-    }
-    .toast {
-      background: var(--bg-card); border-left: 4px solid var(--primary);
-      padding: 16px 20px; border-radius: 8px; box-shadow: var(--shadow);
-      color: #fff; font-size: 0.9rem; animation: slideIn 0.3s ease;
-      display: flex; align-items: center; gap: 10px; min-width: 250px;
-    }
-    .toast.error { border-left-color: var(--danger); }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    * { box-sizing: border-box; outline: none; }
+    body { margin: 0; background: var(--bg-dark); color: var(--text-main); font-family: "Plus Jakarta Sans", sans-serif; font-size: 14px; min-height: 100vh; overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; cursor: pointer; }
 
     /* LAYOUT */
-    #app { display: flex; width: 100%; height: 100%; }
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .logo { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .logo span { color: var(--primary); }
+
+    /* BUTTONS */
+    .btn { border: none; padding: 10px 20px; border-radius: 50px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 13px; }
+    .btn.primary { background: var(--primary); color: #000; }
+    .btn.primary:hover { background: #00c853; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3); }
+    .btn.secondary { background: #27272a; color: #fff; border: 1px solid var(--border-color); }
+    .btn.secondary:hover { background: #3f3f46; border-color: #555; }
+    .btn.danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .btn.danger:hover { background: #ef4444; color: #fff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* CARDS */
+    .card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; position: relative; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     
-    /* SIDEBAR */
-    aside {
-      width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; padding: 20px;
-      transition: transform 0.3s ease;
+    /* INPUTS */
+    input, select, textarea { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
+
+    /* TABLES */
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th { text-align: left; padding: 14px 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); font-weight: 700; letter-spacing: 0.5px; }
+    td { padding: 16px; border-bottom: 1px solid var(--border-color); color: #fff; vertical-align: middle; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* TABS */
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+    .tab { padding: 10px 24px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-weight: 600; border-radius: 20px; white-space: nowrap; transition: 0.2s; }
+    .tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .tab.active { color: #000; background: var(--primary); }
+    .tab-content { display: none; animation: fadeIn 0.4s ease; }
+    .tab-content.active { display: block; }
+
+    /* GALLERY OPTIMIZATIONS (Kwikpic style) */
+    .gallery-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+        gap: 8px; 
+        margin-top: 16px;
+        /* Content Visibility for Performance */
+        content-visibility: auto; 
+        contain-intrinsic-size: 140px;
     }
-    .brand {
-      font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px;
-      margin-bottom: 40px; color: var(--primary); display: flex; align-items: center; gap: 10px;
+    .ph-card { 
+        aspect-ratio: 1; 
+        background: #1a1a1a; 
+        border-radius: 8px; 
+        overflow: hidden; 
+        position: relative; 
+        cursor: pointer; 
+        /* GPU Acceleration hint */
+        transform: translateZ(0); 
     }
-    .nav-item {
-      padding: 12px 16px; margin-bottom: 8px; border-radius: 8px;
-      cursor: pointer; color: var(--text-muted); font-weight: 500;
-      transition: all 0.2s; display: flex; align-items: center; gap: 12px;
+    .ph-card img { 
+        width: 100%; 
+        height: 100%; 
+        object-fit: cover; 
+        transition: opacity 0.3s;
+        /* Blur up effect placeholder logic would go here */
+        background-color: #222;
     }
-    .nav-item:hover, .nav-item.active { background: rgba(0, 230, 118, 0.1); color: var(--primary); }
-    .nav-item i { width: 20px; text-align: center; }
+    .ph-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); opacity: 0; transition: 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
+    .ph-card:hover .ph-overlay { opacity: 1; }
     
-    .storage-box {
-      margin-top: auto; background: var(--bg-card); padding: 15px;
-      border-radius: var(--radius); border: 1px solid var(--border);
-    }
-    .storage-label { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 8px; }
-    .progress-bar { height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s; }
+    /* LIGHTBOX VIEWER */
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+    .lightbox.open { display: flex; opacity: 1; }
+    .lb-img-wrap { position: relative; max-width: 90vw; max-height: 80vh; }
+    .lb-img { max-width: 100%; max-height: 80vh; border-radius: 4px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+    .lb-controls { position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%); display: flex; gap: 16px; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 30px; backdrop-filter: blur(10px); }
+    .lb-btn { background: transparent; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; }
+    .lb-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+    .lb-btn.danger:hover { color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+    .lb-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; padding: 20px; cursor: pointer; font-size: 24px; border-radius: 50%; transition: 0.2s; }
+    .lb-nav:hover { background: var(--primary); color: #000; }
+    .lb-prev { left: 20px; }
+    .lb-next { right: 20px; }
+    .lb-close { position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 32px; cursor: pointer; }
+
+    /* UTILS */
+    .view { display: none; }
+    .view.show { display: block; }
+    .hidden { display: none !important; }
+    .text-sm { font-size: 12px; color: var(--text-muted); }
+    .kpi-box { background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
+    .kpi-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); opacity: 0.5; }
+    .kpi-val { font-size: 32px; font-weight: 800; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; }
     
-    /* MAIN CONTENT */
-    main { flex: 1; overflow-y: auto; padding: 30px; position: relative; }
-    
-    /* VIEWS */
-    .view { display: none; animation: fadeIn 0.3s ease; }
-    .view.active { display: block; }
+    /* TOAST */
+    #toast { position: fixed; top: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 16px 24px; border-radius: 12px; z-index: 9999; transform: translateX(150%); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; }
+    #toast.show { transform: translateX(0); }
+    #toast.success { border-left: 4px solid var(--primary); }
+    #toast.error { border-left: 4px solid #ef4444; }
+
+    /* ANIMATIONS */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* DASHBOARD GRID */
-    .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    h1 { font-size: 1.8rem; font-weight: 700; }
-    .btn {
-      background: var(--primary); color: #000; border: none; padding: 10px 20px;
-      border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s;
-      display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
-    }
-    .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
-    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
-    .btn-outline:hover { border-color: var(--text-main); }
-    .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-    .btn-danger:hover { background: var(--danger); color: #fff; }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-    .card {
-      background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 20px; transition: 0.2s; position: relative; overflow: hidden;
-    }
-    .card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-    .card h3 { font-size: 1.2rem; margin-bottom: 5px; }
-    .card p { font-size: 0.9rem; color: var(--text-muted); }
-    .card-actions { margin-top: 15px; display: flex; gap: 10px; }
-
-    /* COLLECTION DETAILS */
-    .breadcrumb { color: var(--text-muted); margin-bottom: 10px; font-size: 0.9rem; cursor: pointer; }
-    .breadcrumb:hover { color: var(--primary); }
-    .tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-    .tab { padding: 10px 0; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; }
-    .tab.active { color: var(--primary); border-color: var(--primary); }
-    
-    /* UPLOAD AREA */
-    .upload-zone {
-      border: 2px dashed var(--border); border-radius: var(--radius);
-      padding: 40px; text-align: center; cursor: pointer; transition: 0.2s;
-      background: rgba(255,255,255,0.02);
-    }
-    .upload-zone:hover, .upload-zone.dragover { border-color: var(--primary); background: rgba(0, 230, 118, 0.05); }
-    .upload-zone i { font-size: 3rem; color: var(--text-muted); margin-bottom: 15px; }
-
-    /* PHOTO GRID */
-    .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
-    .photo-item {
-      aspect-ratio: 1; background: #000; border-radius: 8px; overflow: hidden; position: relative; group: 1;
-    }
-    .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
-    .photo-item:hover img { opacity: 0.7; transform: scale(1.05); }
-    .photo-overlay {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: 0.2s; gap: 10px;
-    }
-    .photo-item:hover .photo-overlay { opacity: 1; }
-    
-    /* MODAL */
-    .modal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000;
-      display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px);
-    }
-    .modal.active { display: flex; }
-    .modal-content {
-      background: var(--bg-panel); padding: 30px; border-radius: var(--radius);
-      width: 90%; max-width: 500px; border: 1px solid var(--border);
-    }
-    .modal h2 { margin-bottom: 20px; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9rem; }
-    .form-input {
-      width: 100%; background: var(--bg-body); border: 1px solid var(--border);
-      padding: 12px; border-radius: 8px; color: #fff; font-family: inherit;
-    }
-    .form-input:focus { border-color: var(--primary); }
-
-    /* MOBILE TOGGLE */
-    .menu-toggle { display: none; font-size: 1.5rem; cursor: pointer; color: #fff; }
-
-    @media (max-width: 768px) {
-      aside { position: fixed; left: -260px; height: 100%; z-index: 100; box-shadow: 0 0 20px #000; }
-      aside.open { left: 0; }
-      .menu-toggle { display: block; margin-right: 15px; }
-      .header-row { flex-wrap: wrap; gap: 10px; }
-      main { padding: 15px; }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-  <div id="toast-container"></div>
+<!-- TOAST NOTIFICATION -->
+<div id="toast"></div>
 
-  <!-- AUTH SCREEN (Replaces body content if not logged in) -->
-  <div id="authScreen" style="display:none; position:fixed; inset:0; background:var(--bg-body); z-index:2000; align-items:center; justify-content:center; flex-direction:column;">
-    <div style="text-align:center;">
-      <i class="fa-solid fa-camera-retro" style="font-size: 4rem; color: var(--primary); margin-bottom: 20px;"></i>
-      <h1>EventLens Pro</h1>
-      <p style="color:var(--text-muted); margin-bottom: 30px;">AI-Powered Event Photography Management</p>
-      <button onclick="login()" class="btn" style="font-size: 1.1rem; padding: 15px 40px;">
-        <i class="fa-brands fa-aws"></i> Login with Photographer ID
+<!-- LIGHTBOX VIEWER -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()">&times;</button>
+  <button class="lb-nav lb-prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+  <button class="lb-nav lb-next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></button>
+  
+  <div class="lb-img-wrap">
+    <img src="" id="lbImage" class="lb-img">
+    <div class="lb-controls">
+      <button class="lb-btn" onclick="downloadCurrentPhoto()" title="Download"><i class="fa-solid fa-download"></i></button>
+      <button class="lb-btn danger" onclick="deleteCurrentPhoto()" title="Delete"><i class="fa-solid fa-trash"></i></button>
+      <button class="lb-btn" onclick="closeLightbox()" title="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="mainWrap">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="logo"><i class="fa-solid fa-camera-retro"></i> EventLens <span>Pro</span></div>
+    <div class="row">
+      <div id="userBadge" class="text-sm" style="background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px;">Guest</div>
+      <button class="btn primary" id="btnLogin" onclick="doLogin()">Login</button>
+      <button class="btn danger hidden" id="btnLogout" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- VIEW: LOGIN -->
+  <div id="vLogin" class="view">
+    <div class="card" style="max-width: 480px; margin: 80px auto; text-align: center; padding: 40px;">
+      <div style="background: var(--primary-dim); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+        <i class="fa-solid fa-user-shield" style="font-size: 32px; color: var(--primary);"></i>
+      </div>
+      <h2 style="font-size: 28px; margin-bottom: 8px;">Welcome Back</h2>
+      <p class="text-sm" style="margin-bottom: 32px; line-height: 1.6;">Secure login for Photographers & Admins.</p>
+      <button class="btn primary" onclick="doLogin()" style="width: 100%; justify-content: center; padding: 16px; font-size: 16px;">
+        Login via AWS Cognito
       </button>
     </div>
   </div>
 
-  <div id="app">
-    <!-- SIDEBAR -->
-    <aside id="sidebar">
-      <div class="brand">
-        <i class="fa-solid fa-aperture"></i> EventLens
+  <!-- VIEW: DASHBOARD OVERVIEW -->
+  <div id="vDash" class="view">
+    <div class="row" style="margin-bottom: 24px;">
+      <h2 style="margin: 0;">Dashboard Overview</h2>
+    </div>
+
+    <!-- KPIs (Updated Labels) -->
+    <div class="grid" style="margin-bottom: 32px;">
+       <div class="kpi-box">
+         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Collections</div>
+         <div class="kpi-val" id="dCols">-</div>
+       </div>
+       <div class="kpi-box">
+         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Total Photos</div>
+         <div class="kpi-val" id="dPhotos">-</div>
+       </div>
+       <div class="kpi-box">
+         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Storage Used</div>
+         <div class="kpi-val" id="dStorage">-</div>
+       </div>
+       <div class="kpi-box">
+         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Account Status</div>
+         <div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div>
+       </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content: space-between; margin-bottom: 24px;">
+        <h3>My Collections</h3>
+        <button class="btn primary" onclick="toggleNewCol(true)"><i class="fa-solid fa-plus"></i> New Collection</button>
       </div>
-      <nav>
-        <div class="nav-item active" onclick="showView('dashboard')">
-          <i class="fa-solid fa-grid-2"></i> Collections
-        </div>
-        <div class="nav-item" onclick="logout()">
-          <i class="fa-solid fa-right-from-bracket"></i> Logout
-        </div>
-      </nav>
       
-      <div class="storage-box">
-        <div class="storage-label">
-          <span>Storage</span>
-          <span id="storageText">0%</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="storageBar"></div>
-        </div>
-        <div class="storage-label" style="margin-top:5px;">
-          <small id="storageDetail">0GB / 5GB</small>
-        </div>
-      </div>
-    </aside>
-
-    <!-- MAIN -->
-    <main>
-      <div class="menu-toggle" onclick="toggleSidebar()">
-        <i class="fa-solid fa-bars"></i>
-      </div>
-
-      <!-- VIEW: DASHBOARD -->
-      <div id="view-dashboard" class="view active">
-        <div class="header-row">
-          <h1>My Collections</h1>
-          <button class="btn" onclick="openModal('createCollectionModal')">
-            <i class="fa-solid fa-plus"></i> New Collection
-          </button>
-        </div>
-        <div class="grid" id="collectionsGrid">
-          <!-- Populated by JS -->
-          <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--text-muted);">
-            <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Loading collections...
-          </div>
+      <!-- New Collection Inline Form -->
+      <div id="newColBox" class="card hidden" style="background: rgba(255,255,255,0.02); border-left: 4px solid var(--primary);">
+        <h4 style="margin-top: 0;">Create New Collection</h4>
+        <div class="row">
+          <input id="ncName" placeholder="e.g. Rahul & Priya Wedding" style="flex: 2;">
+          <button class="btn primary" onclick="createCollection()">Create</button>
+          <button class="btn secondary" onclick="toggleNewCol(false)">Cancel</button>
         </div>
       </div>
 
-      <!-- VIEW: COLLECTION DETAILS -->
-      <div id="view-collection" class="view">
-        <div class="header-row">
-          <div>
-            <div class="breadcrumb" onclick="showView('dashboard')">← Back to Dashboard</div>
-            <h1 id="cdTitle">Collection Name</h1>
-          </div>
-          <div style="display:flex; gap:10px;">
-            <button class="btn btn-outline" onclick="openSettings()"><i class="fa-solid fa-gear"></i> Settings</button>
-            <button class="btn btn-danger" onclick="deleteCollection()"><i class="fa-solid fa-trash"></i> Delete</button>
-          </div>
-        </div>
-
-        <div class="tabs">
-          <div class="tab active" onclick="switchTab('events')">Events</div>
-          <div class="tab" onclick="switchTab('qr')">QR & Links</div>
-          <div class="tab" onclick="switchTab('branding')">Branding</div>
-        </div>
-
-        <!-- TAB: EVENTS -->
-        <div id="tab-events" class="tab-content">
-          <div class="header-row" style="margin-bottom:15px;">
-            <h3>Events in this Collection</h3>
-            <button class="btn btn-sm" onclick="openModal('createEventModal')"><i class="fa-solid fa-plus"></i> Add Event</button>
-          </div>
-          <div class="grid" id="eventsGrid"></div>
-        </div>
-
-        <!-- TAB: QR -->
-        <div id="tab-qr" class="tab-content" style="display:none;">
-          <div class="card" style="max-width: 600px;">
-            <h3>Guest Search Link</h3>
-            <p>Share this link with guests to let them find their photos using AI.</p>
-            <div style="display:flex; gap:10px; margin-top:15px;">
-              <input type="text" id="searchLinkInput" class="form-input" readonly value="Generating...">
-              <button class="btn" onclick="copyLink()">Copy</button>
-            </div>
-            <div style="margin-top:20px; text-align:center;">
-               <img id="qrImage" src="" alt="QR Code" style="width:150px; border-radius:8px; display:none;">
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB: BRANDING -->
-        <div id="tab-branding" class="tab-content" style="display:none;">
-          <div class="card" style="max-width: 600px;">
-            <h3>Customize Guest View</h3>
-            <div class="form-group">
-              <label>Collection Name</label>
-              <input type="text" class="form-input" id="setColName">
-            </div>
-            <div class="form-group">
-               <label>Accent Color</label>
-               <input type="color" class="form-input" id="setColor" style="height:50px;">
-            </div>
-            <button class="btn" onclick="saveSettings()">Save Changes</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- VIEW: EVENT PHOTOS -->
-      <div id="view-photos" class="view">
-        <div class="header-row">
-          <div>
-            <div class="breadcrumb" onclick="openCollection(curCol)">← Back to Collection</div>
-            <h1 id="epTitle">Event Photos</h1>
-          </div>
-          <button class="btn btn-danger" onclick="deleteEvent()"><i class="fa-solid fa-trash"></i> Delete Event</button>
-        </div>
-
-        <div class="upload-zone" id="dropZone">
-          <i class="fa-solid fa-cloud-arrow-up"></i>
-          <h3>Drag & Drop Photos Here</h3>
-          <p>or click to browse (JPG, PNG, HEIC)</p>
-          <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
-        </div>
-
-        <div class="photo-grid" id="photoGrid">
-           <!-- Photos -->
-        </div>
-      </div>
-
-    </main>
-  </div>
-
-  <!-- MODALS -->
-  <div id="createCollectionModal" class="modal">
-    <div class="modal-content">
-      <h2>New Collection</h2>
-      <div class="form-group">
-        <label>Collection Name (e.g., Wedding 2025)</label>
-        <input type="text" id="newColName" class="form-input" placeholder="Enter name...">
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-        <button class="btn" onclick="createCollection()">Create</button>
+      <div class="table-responsive">
+        <table id="tblCols">
+          <thead><tr><th>Collection Name</th><th>Created</th><th>Stats</th><th>Data Used</th><th>Actions</th></tr></thead>
+          <tbody><tr><td colspan="5" style="text-align:center; padding: 40px;" class="text-muted">Loading...</td></tr></tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <div id="createEventModal" class="modal">
-    <div class="modal-content">
-      <h2>New Event</h2>
-      <div class="form-group">
-        <label>Event Name (e.g., Reception, Haldi)</label>
-        <input type="text" id="newEventName" class="form-input" placeholder="Enter name...">
+  <!-- VIEW: COLLECTION DETAILS -->
+  <div id="vCol" class="view">
+    <div class="row" style="margin-bottom: 24px; justify-content: space-between;">
+      <div class="row">
+        <button class="btn secondary" onclick="route('dashboard')" style="padding: 8px 12px;"><i class="fa-solid fa-arrow-left"></i></button>
+        <div>
+          <div class="text-sm" style="color: var(--primary); font-weight: 700;">COLLECTION</div>
+          <h2 id="cdTitle" style="margin: 0; font-size: 24px;">-</h2>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" id="newEventDate" class="form-input">
-      </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px;">
-        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-        <button class="btn" onclick="createEvent()">Create</button>
+      <div class="text-sm text-muted" id="cdId">ID: -</div>
+    </div>
+
+    <!-- TABS NAVIGATION -->
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('tGal')"><i class="fa-regular fa-images"></i> Gallery</button>
+      <button class="tab" onclick="setTab('tEvents')"><i class="fa-regular fa-calendar"></i> Events</button>
+      <button class="tab" onclick="setTab('tUp')"><i class="fa-solid fa-cloud-arrow-up"></i> Batch Upload</button>
+      <button class="tab" onclick="setTab('tLink')"><i class="fa-solid fa-link"></i> Generate Link</button>
+      <button class="tab" onclick="setTab('tLeads')"><i class="fa-solid fa-users"></i> Guest Leads</button>
+      <button class="tab" onclick="setTab('tSettings')"><i class="fa-solid fa-gear"></i> Branding & Settings</button>
+    </div>
+
+    <!-- TAB 1: GALLERY -->
+    <div id="tGal" class="tab-content active">
+      <div class="card">
+        <div class="row" style="margin-bottom: 20px; justify-content: space-between;">
+           <div class="row">
+             <select id="galEventFilter" style="width: 200px;"></select>
+             <div class="text-sm text-muted" id="galCount">0 Photos</div>
+           </div>
+           <button class="btn secondary" onclick="loadPhotos(true)"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+        </div>
+        
+        <div class="gallery-grid" id="galGrid">
+           <!-- Photos injected here -->
+        </div>
+        
+        <div style="text-align:center; margin-top: 30px;">
+          <button class="btn secondary hidden" id="btnLoadMore" onclick="loadPhotos(false, true)">Load More Photos</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- SCRIPTS -->
-  <script>
-    /* ================= CONFIG ================= */
-    // REPLACE WITH YOUR ACTUAL API URL AND CLIENT ID
-    const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/v1"; 
-    const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367"; 
-    const COGNITO_DOMAIN = "https://eu-north-1-d6y2808061.auth.eu-north-1.amazoncognito.com"; // Verify this from your setup
-    const REDIRECT_URI = window.location.origin + window.location.pathname; // Dynamic
-
-    /* ================= STATE ================= */
-    let token = localStorage.getItem('id_token');
-    let user = null;
-    let collections = [];
-    let curCol = null;
-    let curEvent = null;
-
-    /* ================= INIT ================= */
-    window.onload = async () => {
-      // Check auth redirect
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      
-      if (code) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-        await exchangeCode(code);
-      } else if (!token) {
-        showAuth();
-      } else {
-        await initApp();
-      }
-
-      // Drag and drop setup
-      const dropZone = document.getElementById('dropZone');
-      dropZone.onclick = () => document.getElementById('fileInput').click();
-      document.getElementById('fileInput').onchange = (e) => uploadFiles(e.target.files);
-      
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
-      });
-      ['dragenter', 'dragover'].forEach(name => dropZone.classList.add('highlight'));
-      ['dragleave', 'drop'].forEach(name => dropZone.classList.remove('highlight'));
-      dropZone.addEventListener('drop', handleDrop, false);
-    };
-
-    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-    function handleDrop(e) { uploadFiles(e.dataTransfer.files); }
-
-    /* ================= AUTH ================= */
-    function showAuth() {
-      document.getElementById('authScreen').style.display = 'flex';
-      document.getElementById('app').style.display = 'none';
-    }
-
-    function login() {
-      const url = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
-      window.location.href = url;
-    }
-
-    function logout() {
-      localStorage.clear();
-      window.location.reload();
-    }
-
-    async function exchangeCode(code) {
-      showToast('Logging in...');
-      try {
-        const body = new URLSearchParams();
-        body.append('grant_type', 'authorization_code');
-        body.append('client_id', CLIENT_ID);
-        body.append('code', code);
-        body.append('redirect_uri', REDIRECT_URI);
-
-        const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: body
-        });
-        const data = await res.json();
-        if (data.id_token) {
-            token = data.id_token;
-            localStorage.setItem('id_token', token);
-            await initApp();
-        } else {
-            throw new Error('No token returned');
-        }
-      } catch (e) {
-        console.error(e);
-        showToast('Login Failed', 'error');
-        showAuth();
-      }
-    }
-
-    /* ================= API CALLER ================= */
-    async function api(endpoint, body = null, method = 'POST') {
-      if (!token) return logout();
-      
-      const opts = {
-        method: method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      };
-      if (body) opts.body = JSON.stringify(body);
-      
-      // Handle GET params
-      let url = `${API_BASE}${endpoint}`;
-      if (method === 'GET' && body) {
-         // simple query string logic if needed
-      }
-
-      const res = await fetch(url, opts);
-      if (res.status === 401) logout();
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'API Error');
-      return data;
-    }
-
-    /* ================= APP LOGIC ================= */
-    async function initApp() {
-      document.getElementById('authScreen').style.display = 'none';
-      document.getElementById('app').style.display = 'flex';
-      checkAccountStatus();
-      loadCollections();
-    }
-
-    async function checkAccountStatus() {
-      try {
-        const data = await api('/account-status', null, 'GET');
-        const used = parseInt(data.total_storage_used_bytes || 0);
-        const limit = parseInt(data.storage_limit_bytes || 5368709120); // 5GB
+    <!-- TAB 2: EVENTS -->
+    <div id="tEvents" class="tab-content">
+      <div class="card">
+        <h3>Manage Sub-Events</h3>
+        <p class="text-sm text-muted" style="margin-bottom: 20px;">Organize photos into sub-events like 'Haldi', 'Sangeet', 'Reception'.</p>
         
-        const pct = Math.min((used / limit) * 100, 100).toFixed(1);
-        document.getElementById('storageBar').style.width = `${pct}%`;
-        document.getElementById('storageText').innerText = `${pct}%`;
-        document.getElementById('storageDetail').innerText = `${formatBytes(used)} / ${formatBytes(limit)}`;
+        <!-- EDIT EVENT FORM (Hidden) -->
+        <div id="evEditForm" class="hidden" style="background: rgba(0, 230, 118, 0.05); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--primary-dim);">
+           <div class="row" style="margin-bottom: 8px;">
+             <span class="text-sm font-bold" style="color:var(--primary)">EDIT EVENT</span>
+           </div>
+           <input id="eeId" type="hidden">
+           <div class="row">
+              <input id="eeName" placeholder="New Event Name" style="flex:2">
+              <input id="eeDate" type="date" style="flex:1">
+              <button class="btn primary" onclick="updateEvent()">Save Changes</button>
+              <button class="btn secondary" onclick="cancelEditEvent()">Cancel</button>
+           </div>
+        </div>
+
+        <!-- ADD EVENT FORM -->
+        <div id="evAddForm" class="row" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border-color);">
+          <input id="neName" placeholder="Event Name (e.g. Morning Haldi)" style="flex:2">
+          <input id="neDate" type="date" style="flex:1">
+          <!-- FIX: Removed argument from onclick -->
+          <button class="btn primary" onclick="createEvent()"><i class="fa-solid fa-plus"></i> Add Event</button>
+        </div>
+
+        <table>
+          <thead><tr><th>Event Name</th><th>Date</th><th>Photos Count</th><th>Data Used</th><th>Actions</th></tr></thead>
+          <tbody id="tblEvents"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: UPLOAD -->
+    <div id="tUp" class="tab-content">
+      <div class="card">
+        <h3>Batch Photo Upload</h3>
+        <p class="text-sm text-muted">Photos queue up first. Click 'Start Upload' to process.</p>
         
-        if (pct > 90) document.getElementById('storageBar').style.backgroundColor = 'var(--danger)';
-        else document.getElementById('storageBar').style.backgroundColor = 'var(--primary)';
+        <div class="row" style="margin: 24px 0;">
+          <div style="flex: 1; max-width: 400px;">
+            <label class="text-sm" style="display:block; margin-bottom: 6px;">Select Target Event</label>
+            <select id="upEventSel"></select>
+          </div>
+        </div>
 
-      } catch (e) { console.error("Stats error", e); }
-    }
+        <div style="border: 2px dashed var(--border-color); padding: 40px; text-align: center; border-radius: 16px; position: relative; transition: 0.2s;" ondragover="this.style.borderColor=var(--primary)" ondragleave="this.style.borderColor='var(--border-color)'">
+          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: var(--text-muted); margin-bottom: 12px;"></i>
+          <h4 style="margin: 0; color: #fff;">Click to Select Photos</h4>
+          <p class="text-sm text-muted">Queue up multiple files (JPG, HEIC)</p>
+          <input type="file" id="upInput" multiple accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer" onchange="queueFiles(this.files)">
+        </div>
 
-    async function loadCollections() {
-      const grid = document.getElementById('collectionsGrid');
-      grid.innerHTML = '<div style="color:#888;">Loading...</div>';
-      try {
-        const res = await api('/get-collections', null, 'GET');
-        collections = res.collections || [];
-        renderCollections();
-      } catch (e) {
-        grid.innerHTML = '<div style="color:red;">Failed to load collections</div>';
-      }
-    }
+        <!-- Queue List -->
+        <div id="uploadQueueBox" class="hidden" style="margin-top: 20px;">
+           <div class="row" style="justify-content:space-between; margin-bottom: 10px;">
+              <h4>Upload Queue (<span id="queueCount">0</span>)</h4>
+              <button class="btn primary" id="btnStartUpload" onclick="startUploadProcess()">Start Upload</button>
+           </div>
+           <div id="queueList" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;"></div>
+        </div>
 
-    function renderCollections() {
-        const grid = document.getElementById('collectionsGrid');
-        grid.innerHTML = '';
-        if(collections.length === 0) {
-            grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#666;">No collections found. Create one!</p>';
-            return;
-        }
-        collections.forEach(c => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <h3>${escapeHtml(c.name)}</h3>
-                <p>${c.event_count || 0} Events • ${c.total_photo_count || 0} Photos</p>
-                <div class="card-actions">
-                    <button class="btn btn-sm" onclick='openCollection(${JSON.stringify(c)})'>Manage</button>
+        <!-- Progress UI -->
+        <div id="upProgress" class="hidden" style="margin-top: 20px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
+            <span class="text-sm font-bold" id="upStatusText">Uploading...</span>
+            <span class="text-sm" id="upPct">0%</span>
+          </div>
+          <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+            <div id="upBar" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease;"></div>
+          </div>
+          <div class="text-sm text-muted" style="margin-top: 10px;" id="upCountStr">Processing...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: GENERATE LINK (FIXED) -->
+    <div id="tLink" class="tab-content">
+      <div class="card">
+        <h3>Generate Guest Link</h3>
+        <div class="row" style="gap: 20px; align-items: flex-end; margin-top: 24px;">
+          <div style="flex: 2;">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Select Event Scope</label>
+            <select id="linkEventSel"></select>
+          </div>
+          <div style="flex: 1;">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Link Expiry</label>
+            <select id="linkExpiry">
+              <option value="87600">Lifetime</option>
+              <option value="168">7 Days</option>
+              <option value="24">24 Hours</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">PIN Protection</label>
+            <input id="linkPin" placeholder="e.g. 1234">
+          </div>
+          <button class="btn primary" onclick="generateLink()" style="height: 46px;">Generate Link</button>
+        </div>
+
+        <div id="linkRes" class="hidden" style="margin-top: 24px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
+           <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">SHAREABLE GUEST LINK</div>
+           <div class="row">
+             <input id="finalLink" readonly style="background: transparent; border: none; color: #fff; font-size: 16px; font-family: monospace; padding: 0;">
+             <button class="btn secondary" onclick="copyLink()">Copy Link</button>
+             <a id="finalLinkBtn" target="_blank" class="btn primary">Open Page</a>
+           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: GUEST LEADS -->
+    <div id="tLeads" class="tab-content">
+      <div class="card">
+        <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
+          <h3>Guest Leads & Analytics</h3>
+          <button class="btn secondary" onclick="loadLeads()"><i class="fa-solid fa-rotate-right"></i> Refresh Data</button>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Guest Name</th><th>Phone Number</th><th>Selfie Used</th><th>Photos Found</th></tr></thead>
+            <tbody id="tblLeads"><tr><td colspan="4" align="center" class="text-muted">Loading leads...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: SETTINGS & BRANDING -->
+    <div id="tSettings" class="tab-content">
+        <div class="card">
+            <h3>Collection Branding & Settings</h3>
+            <p class="text-sm text-muted">Customize the guest search page experience.</p>
+            
+            <div class="grid" style="margin-top: 20px;">
+                <!-- Left: Branding -->
+                <div>
+                    <label class="text-sm" style="display:block; margin-bottom:6px;">Header Image / Banner</label>
+                    <div class="row">
+                       <input id="setHeadImg" placeholder="Image URL">
+                       <input type="file" id="fileHeadImg" hidden onchange="uploadAsset(this, 'setHeadImg')">
+                       <button class="btn secondary" onclick="$('#fileHeadImg').click()">Upload</button>
+                    </div>
+
+                    <label class="text-sm" style="display:block; margin-top:16px; margin-bottom:6px;">Logo</label>
+                    <div class="row">
+                       <input id="setLogo" placeholder="Logo URL">
+                       <input type="file" id="fileLogo" hidden onchange="uploadAsset(this, 'setLogo')">
+                       <button class="btn secondary" onclick="$('#fileLogo').click()">Upload</button>
+                    </div>
+
+                    <label class="text-sm" style="display:block; margin-top:16px; margin-bottom:6px;">Footer Text</label>
+                    <input id="setFooter" placeholder="e.g. Photography by EventLens">
                 </div>
-            `;
-            grid.appendChild(card);
+
+                <!-- Right: Theme -->
+                <div>
+                    <label class="text-sm" style="display:block; margin-bottom:6px;">Primary Color</label>
+                    <div class="row">
+                        <input type="color" id="setColorPicker" style="width: 50px; height: 45px; padding: 0;" onchange="$('#setColor').value=this.value">
+                        <input id="setColor" placeholder="#00e676" onchange="$('#setColorPicker').value=this.value">
+                    </div>
+
+                    <label class="text-sm" style="display:block; margin-top:16px; margin-bottom:6px;">Layout Style</label>
+                    <select id="setLayout">
+                        <option value="grid">Grid (Default)</option>
+                        <option value="masonry">Masonry (Pinterest Style)</option>
+                    </select>
+
+                    <label class="text-sm" style="display:block; margin-top:16px; margin-bottom:6px;">Collection Title</label>
+                    <input id="setColName">
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; text-align: right;">
+                <button class="btn primary" onclick="saveSettings()">Save All Settings</button>
+            </div>
+        </div>
+    </div>
+
+  </div> <!-- End View Col -->
+
+</div>
+
+<script>
+/* ================= CONFIGURATION ================= */
+const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod"; 
+const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
+const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
+
+/* ================= STATE MANAGEMENT ================= */
+let idToken = localStorage.getItem('idToken');
+let curCol = null;
+let curEvents = [];
+let uploadQueue = [];
+let currentPhotos = []; // Store for gallery
+let currentPhotoIndex = -1;
+
+/* ================= INITIALIZATION ================= */
+window.addEventListener('load', async () => {
+  const params = new URLSearchParams(location.search);
+  if(params.has('code')){
+    await exchangeCode(params.get('code'));
+    return;
+  }
+  
+  if(!idToken) {
+    showView('vLogin');
+  } else {
+    $('#btnLogout').classList.remove('hidden');
+    $('#userBadge').textContent = 'Photographer';
+    $('#btnLogin').classList.add('hidden');
+    route('dashboard'); 
+  }
+  
+  // Keyboard Events for Lightbox
+  document.addEventListener('keydown', (e) => {
+      if(!$('#lightbox').classList.contains('open')) return;
+      if(e.key === 'ArrowLeft') navLightbox(-1);
+      if(e.key === 'ArrowRight') navLightbox(1);
+      if(e.key === 'Escape') closeLightbox();
+  });
+});
+
+/* ================= AUTHENTICATION ================= */
+async function exchangeCode(code){
+  showToast('Authenticating...', 'success');
+  try {
+    const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: CLIENT_ID,
+        code: code,
+        redirect_uri: window.location.origin + window.location.pathname
+      })
+    });
+    const data = await res.json();
+    if(data.id_token){
+      localStorage.setItem('idToken', data.id_token);
+      window.location.href = window.location.origin + window.location.pathname; 
+    } else {
+      showToast('Login Failed', 'error');
+    }
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function doLogin(){ location.href = HOSTED_UI; }
+function doLogout() { localStorage.clear(); location.reload(); }
+
+/* ================= API HELPERS ================= */
+const $ = (s) => document.querySelector(s);
+const showToast = (msg, type='success') => {
+  const t = $('#toast'); 
+  t.innerHTML = type === 'error' ? `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}` : `<i class="fa-solid fa-check-circle"></i> ${msg}`;
+  t.className = `show ${type}`;
+  setTimeout(() => t.className = '', 3500);
+};
+
+async function api(path, body){
+  const opts = {
+    method: 'POST', 
+    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' }
+  };
+  if(path.includes('account-status') || path.includes('get-collections')) opts.method = 'GET';
+  if(body) { opts.method = 'POST'; opts.body = JSON.stringify(body); } 
+
+  const r = await fetch(`${API_BASE}${path}`, opts);
+  if(!r.ok) throw new Error(`API Error ${r.status}`);
+  return r.json();
+}
+
+/* ================= ROUTING & VIEWS ================= */
+function route(dest){
+  if(dest === 'dashboard'){
+    loadDashboard();
+    showView('vDash');
+  }
+}
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(e => e.classList.remove('show'));
+  $(`#${id}`).classList.add('show');
+  window.scrollTo(0,0);
+}
+
+function setTab(id){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  $(`.tab[onclick="setTab('${id}')"]`).classList.add('active');
+  $(`#${id}`).classList.add('active');
+  
+  if(id === 'tGal') loadPhotos(true);
+  if(id === 'tLeads') loadLeads();
+  if(id === 'tSettings') loadSettings();
+}
+
+/* ================= DASHBOARD ================= */
+async function loadDashboard(){
+  try {
+    const [cData, sData] = await Promise.all([
+        api('/get-collections'),
+        api('/account-status').catch(()=>({})) 
+    ]);
+
+    const cols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    const totalPhotos = cols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
+    const storageBytes = sData.total_storage_used_bytes || cols.reduce((sum, c) => sum + (c.storage_bytes || 0), 0);
+    
+    $('#dCols').textContent = cols.length;
+    $('#dPhotos').textContent = totalPhotos.toLocaleString();
+    $('#dStorage').textContent = formatBytes(storageBytes);
+    
+    const tbody = $('#tblCols tbody');
+    if(cols.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 30px;" class="text-muted">No collections found. Create one!</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = cols.map(c => `
+      <tr>
+        <td>
+            <div style="font-weight:700; font-size:15px; color:#fff;">${escapeHtml(c.name)}</div>
+            <div class="text-sm text-muted">ID: ${c.collection_id.substring(0,8)}...</div>
+        </td>
+        <td>${new Date(c.created_at).toLocaleDateString()}</td>
+        <td>
+            <span class="tag-pill">${c.event_count||0} Events</span>
+            <span class="tag-pill">${c.total_photo_count||0} Photos</span>
+        </td>
+        <td>${formatBytes(c.storage_bytes || 0)}</td>
+        <td>
+           <button class="btn secondary" onclick="openCol('${c.collection_id}', '${escapeHtml(c.name)}')">Manage</button>
+           <button class="btn danger" onclick="delCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('');
+    
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function toggleNewCol(show){ show ? $('#newColBox').classList.remove('hidden') : $('#newColBox').classList.add('hidden'); }
+
+async function createCollection(){
+  const name = $('#ncName').value;
+  if(!name) return;
+  showToast('Creating...');
+  await api('/upsert-collection', { name });
+  toggleNewCol(false); $('#ncName').value = '';
+  loadDashboard();
+}
+
+async function delCol(id){
+  if(confirm("Permanently delete this collection?")){
+    await api('/delete-collection', { collection_id: id });
+    loadDashboard();
+  }
+}
+
+async function openCol(id, name){
+  curCol = { id, name };
+  $('#cdTitle').textContent = name;
+  $('#cdId').textContent = `ID: ${id}`;
+  showView('vCol');
+  setTab('tGal'); 
+  loadEvents(); 
+}
+
+/* ================= EVENT MANAGEMENT ================= */
+async function loadEvents(){
+  const data = await api('/get-events', { collection_id: curCol.id });
+  curEvents = data.events || [];
+  
+  $('#tblEvents').innerHTML = curEvents.map(e => `
+    <tr>
+      <td><b>${escapeHtml(e.name)}</b></td>
+      <td>${e.event_date || '-'}</td>
+      <td>${e.photo_count || 0}</td>
+      <td>${formatBytes(e.storage_bytes || 0)}</td>
+      <td>
+        <button class="btn secondary" onclick="editEvent('${e.event_id}', '${escapeHtml(e.name)}', '${e.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn danger" onclick="delEvent('${e.event_id}')"><i class="fa-solid fa-trash"></i></button>
+      </td>
+    </tr>
+  `).join('');
+
+  const opts = `<option value="">Select Event</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+  const allOpts = `<option value="">All Events</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+  
+  $('#galEventFilter').innerHTML = allOpts;
+  $('#upEventSel').innerHTML = opts;
+  $('#linkEventSel').innerHTML = `<option value="">Entire Collection</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+}
+
+async function createEvent(){
+  const name = $('#neName').value;
+  const date = $('#neDate').value;
+  if(!name) return showToast('Name required', 'error');
+  await api('/upsert-event', { collection_id: curCol.id, name, event_date: date });
+  $('#neName').value = '';
+  loadEvents();
+  showToast('Event Added');
+}
+
+async function delEvent(eid){
+  if(confirm('Delete event?')) {
+    await api('/delete-event', { collection_id: curCol.id, event_id: eid });
+    loadEvents();
+  }
+}
+
+function editEvent(id, name, date){
+    $('#eeId').value = id;
+    $('#eeName').value = name;
+    $('#eeDate').value = date;
+    $('#evEditForm').classList.remove('hidden');
+    $('#evAddForm').classList.add('hidden');
+}
+
+function cancelEditEvent(){
+    $('#evEditForm').classList.add('hidden');
+    $('#evAddForm').classList.remove('hidden');
+}
+
+async function updateEvent(){
+    const id = $('#eeId').value;
+    const name = $('#eeName').value;
+    const date = $('#eeDate').value;
+    if(!name) return;
+    await api('/upsert-event', { collection_id: curCol.id, event_id: id, name, event_date: date });
+    cancelEditEvent();
+    loadEvents();
+    showToast('Event Updated');
+}
+
+/* ================= GALLERY & LIGHTBOX (Optimized) ================= */
+let photosNext = null;
+async function loadPhotos(reset=false, loadMore=false){
+  if(reset) photosNext = null;
+  const eid = $('#galEventFilter').value;
+  const payload = { collection_id: curCol.id };
+  if(eid) payload.event_id = eid;
+  if(loadMore && photosNext) payload.nextToken = photosNext;
+
+  const res = await api('/get-photos', payload);
+  const photos = res.items || res.photos || []; 
+  photosNext = res.nextToken;
+
+  if(reset) {
+      $('#galGrid').innerHTML = '';
+      currentPhotos = [];
+  }
+  
+  currentPhotos = reset ? photos : currentPhotos.concat(photos);
+  
+  $('#galCount').textContent = `${currentPhotos.length} photos displayed`;
+  
+  // Render using lazy loading + content visibility optimization
+  const html = photos.map((p, idx) => {
+      const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
+      const faces = p.face_count || 0;
+      const url = p.thumbnail_url || p.url;
+      const tags = p.ai_tags && p.ai_tags.length ? p.ai_tags.slice(0,3).map(t => `<span class="tag-pill">${t}</span>`).join('') : '';
+      
+      return `
+        <div class="ph-card" onclick="openLightbox(${globalIdx})">
+          <img src="${url}" loading="lazy" decoding="async">
+          <div class="ph-overlay">
+            <div class="ph-meta">
+               <span><i class="fa-solid fa-face-smile"></i> ${faces} Faces</span>
+               <div style="margin-top:4px;">${tags}</div>
+            </div>
+          </div>
+        </div>
+      `;
+  }).join('');
+  
+  $('#galGrid').insertAdjacentHTML('beforeend', html);
+  if(photosNext) $('#btnLoadMore').classList.remove('hidden'); else $('#btnLoadMore').classList.add('hidden');
+}
+
+function openLightbox(index) {
+    currentPhotoIndex = index;
+    const p = currentPhotos[index];
+    $('#lbImage').src = p.url; // Use full res URL
+    $('#lightbox').classList.add('open');
+}
+
+function closeLightbox() {
+    $('#lightbox').classList.remove('open');
+}
+
+function navLightbox(dir) {
+    let newIndex = currentPhotoIndex + dir;
+    if(newIndex < 0) newIndex = currentPhotos.length - 1;
+    if(newIndex >= currentPhotos.length) newIndex = 0;
+    openLightbox(newIndex);
+}
+
+function downloadCurrentPhoto() {
+    const p = currentPhotos[currentPhotoIndex];
+    const link = document.createElement('a');
+    link.href = p.url;
+    link.download = p.filename || 'photo.jpg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+async function deleteCurrentPhoto() {
+    if(!confirm("Delete this photo?")) return;
+    const p = currentPhotos[currentPhotoIndex];
+    showToast('Request sent to delete', 'success'); 
+    
+    // Remove from UI
+    currentPhotos.splice(currentPhotoIndex, 1);
+    if(currentPhotos.length === 0) closeLightbox();
+    else navLightbox(0); // Go to next
+    loadPhotos(true); // Reload grid
+}
+
+/* ================= QUEUED UPLOAD LOGIC ================= */
+function queueFiles(fileList){
+  const files = Array.from(fileList);
+  if(!files.length) return;
+  
+  files.forEach(f => {
+      uploadQueue.push(f);
+  });
+  
+  renderQueue();
+  $('#upInput').value = ''; // Reset input
+}
+
+function renderQueue(){
+    $('#uploadQueueBox').classList.remove('hidden');
+    $('#queueCount').textContent = uploadQueue.length;
+    $('#queueList').innerHTML = uploadQueue.map(f => `<div style="font-size:12px; border-bottom:1px solid #333; padding:4px;">${f.name} <span class="text-muted">(${formatBytes(f.size)})</span></div>`).join('');
+}
+
+async function startUploadProcess(){
+  const eventId = $('#upEventSel').value;
+  if(!eventId) return showToast('Please select an event first!', 'error');
+  if(uploadQueue.length === 0) return showToast('Queue is empty', 'error');
+
+  $('#btnStartUpload').disabled = true;
+  $('#btnStartUpload').textContent = 'Uploading...';
+  $('#upProgress').classList.remove('hidden');
+  
+  // Process queue
+  const BATCH_SIZE = 50; 
+  let processedCount = 0;
+  const total = uploadQueue.length;
+
+  for (let i = 0; i < total; i += BATCH_SIZE) {
+    const chunk = uploadQueue.slice(i, i + BATCH_SIZE);
+    
+    $('#upStatusText').textContent = `Uploading Batch ${Math.ceil((i+1)/BATCH_SIZE)}/${Math.ceil(total/BATCH_SIZE)}`;
+    $('#upPct').textContent = `${Math.round((processedCount / total) * 100)}%`;
+    
+    await processBatch(chunk, eventId);
+    processedCount += chunk.length;
+    $('#upBar').style.width = `${Math.round((processedCount / total) * 100)}%`;
+  }
+
+  showToast('All Uploads Complete!', 'success');
+  $('#upStatusText').textContent = 'Done!';
+  $('#upCountStr').textContent = 'Server is indexing faces in background...';
+  
+  uploadQueue = []; // Clear queue
+  renderQueue();
+  $('#uploadQueueBox').classList.add('hidden');
+  $('#btnStartUpload').disabled = false;
+  $('#btnStartUpload').textContent = 'Start Upload';
+  loadPhotos(true);
+}
+
+async function processBatch(files, eventId){
+  const metaList = await Promise.all(files.map(async f => {
+      let procFile = f;
+      // Simple HEIC check
+      if(f.name.toLowerCase().endsWith('.heic')){
+          try {
+             const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
+             procFile = new File([blob], f.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+          } catch(e) { console.error("HEIC Error", e); }
+      }
+      const hash = await computeHash(procFile);
+      return { name: procFile.name, type: 'image/jpeg', size: procFile.size, hash: hash, fileObj: procFile };
+  }));
+
+  const payload = {
+    collection_id: curCol.id,
+    event_id: eventId,
+    files: metaList.map(m => ({ name: m.name, type: m.type, size: m.size, hash: m.hash }))
+  };
+  
+  try {
+      const res = await api('/generate-upload-urls', payload);
+      const uploadPromises = res.urls.map(u => {
+        const original = metaList.find(m => m.hash === u.hash); 
+        if(!original) return null;
+        return fetch(u.uploadURL, {
+          method: 'PUT',
+          body: original.fileObj,
+          headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
         });
+      });
+      await Promise.all(uploadPromises);
+  } catch(e) { console.error(e); }
+}
+
+async function computeHash(file) {
+  const buf = await file.arrayBuffer();
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ================= LINK GENERATION (FIXED) ================= */
+async function generateLink(){
+  const eid = $('#linkEventSel').value;
+  const expiry = $('#linkExpiry').value;
+  const pin = $('#linkPin').value;
+  
+  try {
+    const res = await api('/generate-search-link', {
+       collection_id: curCol.id,
+       event_ids: eid ? [eid] : [],
+       expiry_hours: parseInt(expiry),
+       password: pin
+    });
+    
+    // FIXED: Use the actual link_id returned by backend
+    let linkId = "";
+    if (res.link_id || res.id) linkId = res.link_id || res.id;
+    else if (res.searchUrl || res.url) {
+        try {
+            const tempUrl = new URL(res.searchUrl || res.url);
+            linkId = tempUrl.searchParams.get("linkId") || tempUrl.searchParams.get("id");
+        } catch(e) {}
     }
 
-    function openCollection(c) {
-        curCol = c;
-        document.getElementById('cdTitle').textContent = c.name;
-        // Set settings inputs
-        if(c.branding) {
-             document.getElementById('setColName').value = c.name;
-             document.getElementById('setColor').value = c.branding.color || '#00e676';
-        } else {
-             document.getElementById('setColName').value = c.name;
-             document.getElementById('setColor').value = '#00e676';
+    if(!linkId) throw new Error("Could not retrieve Link ID from backend response");
+
+    // Construct the FINAL URL with BOTH linkId AND cid for robustness
+    const baseUrl = window.location.origin + "/index.html"; 
+    // We explicitly add cid so index.html knows the collection without guessing
+    const finalUrl = `${baseUrl}?linkId=${linkId}&cid=${curCol.id}`;
+    
+    $('#finalLink').value = finalUrl;
+    $('#finalLinkBtn').href = finalUrl;
+    $('#linkRes').classList.remove('hidden');
+    showToast('Link Generated Successfully!', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function copyLink(){
+  const el = $('#finalLink');
+  el.select();
+  document.execCommand('copy');
+  showToast('Copied to clipboard');
+}
+
+/* ================= GUEST LEADS (GROUPED) ================= */
+async function loadLeads(){
+  $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
+  try {
+    const res = await api('/save-details', { action: 'list', collection_id: curCol.id });
+    const leads = Array.isArray(res) ? res : (res.items || res.leads || []);
+    
+    if(leads.length === 0) {
+        $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">No guest searches yet.</td></tr>`;
+        return;
+    }
+    
+    // Group By Mobile Number
+    const grouped = {};
+    leads.forEach(l => {
+        const key = l.mobile || l.phone || 'Unknown';
+        if(!grouped[key]) grouped[key] = { ...l, visits: 0, history: [] };
+        grouped[key].visits++;
+        grouped[key].history.push(l);
+    });
+
+    const rows = Object.values(grouped).sort((a,b) => new Date(b.timestamp||0) - new Date(a.timestamp||0));
+
+    $('#tblLeads').innerHTML = rows.map((l, i) => `
+      <tr>
+        <td>
+           <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
+        </td>
+        <td>${l.mobile || l.phone || '-'}</td>
+        <td>
+           <a href="${l.selfie_url}" target="_blank">
+             <img src="${l.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid var(--border-color);">
+           </a>
+        </td>
+        <td>
+           <span class="tag-pill" style="background: var(--primary-dim); color: var(--primary); font-weight:700;">
+             ${l.match_count || l.photo_count || 0} Matches
+           </span>
+           <div class="text-sm text-muted" style="margin-top:4px;">${l.visits} Visits</div>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) { 
+    $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" style="color: #ef4444;">Error: ${e.message}</td></tr>`;
+  }
+}
+
+/* ================= SETTINGS & BRANDING ================= */
+// Simulated asset upload reusing the photo upload logic but ignoring DB index
+async function uploadAsset(input, targetId) {
+    const file = input.files[0];
+    if(!file) return;
+    
+    // We need a place to upload. We will use a dummy event or first event.
+    // If no events, warn user.
+    if(curEvents.length === 0) return showToast('Create an event first to store assets', 'error');
+    const eventId = curEvents[0].event_id; 
+
+    showToast('Uploading asset...');
+    try {
+        const hash = await computeHash(file);
+        const res = await api('/generate-upload-urls', {
+            collection_id: curCol.id,
+            event_id: eventId,
+            files: [{ name: "branding_"+file.name, type: file.type, size: file.size, hash: hash }]
+        });
+        
+        if(res.urls && res.urls.length > 0) {
+            const u = res.urls[0];
+            await fetch(u.uploadURL, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': file.type, 'x-amz-meta-original-hash': u.hash }
+            });
+            
+            // Construct Public URL (Assuming standard S3 public or CloudFront)
+            // Since we don't know the exact public domain from here without backend return,
+            // we will approximate based on uploadURL or expect user to use the signed URL (which expires).
+            // BETTER: Just put the key here, and frontend should resolve. 
+            // For now, we put the key. 
+            $(`#${targetId}`).value = u.object_key; 
+            showToast('Uploaded! Key saved.');
         }
-        
-        showView('collection');
-        switchTab('events');
-        // Generate Link Preview
-        generateLinkPreview();
+    } catch(e) { showToast('Upload failed', 'error'); }
+}
+
+function loadSettings(){
+    $('#setColName').value = curCol.name;
+    // Load other settings if stored in curCol (requires backend to return them)
+    if(curCol.branding) {
+        $('#setHeadImg').value = curCol.branding.header_img || '';
+        $('#setLogo').value = curCol.branding.logo || '';
+        $('#setFooter').value = curCol.branding.footer || '';
+        $('#setColor').value = curCol.branding.color || '#00e676';
+        $('#setColorPicker').value = curCol.branding.color || '#00e676';
+        $('#setLayout').value = curCol.branding.layout || 'grid';
     }
+}
 
-    async function loadEvents(colId) {
-        const grid = document.getElementById('eventsGrid');
-        grid.innerHTML = 'Loading events...';
-        try {
-            const res = await api('/get-events', { collection_id: colId });
-            const events = res.events || [];
-            grid.innerHTML = '';
-            
-            if(events.length === 0) {
-                grid.innerHTML = '<p>No events yet.</p>';
-                return;
-            }
-
-            events.forEach(e => {
-                const el = document.createElement('div');
-                el.className = 'card';
-                el.innerHTML = `
-                    <h3>${escapeHtml(e.name)}</h3>
-                    <p>${new Date(e.date).toLocaleDateString()}</p>
-                    <div class="card-actions">
-                        <button class="btn btn-sm" onclick='openEventPhotos(${JSON.stringify(e)})'>Photos</button>
-                    </div>
-                `;
-                grid.appendChild(el);
-            });
-        } catch(e) { console.error(e); grid.innerHTML = 'Error loading events'; }
-    }
-
-    function openEventPhotos(e) {
-        curEvent = e;
-        document.getElementById('epTitle').innerText = e.name;
-        showView('photos');
-        loadPhotos(e.event_id);
-    }
-
-    async function loadPhotos(eventId) {
-        const grid = document.getElementById('photoGrid');
-        grid.innerHTML = 'Loading...';
-        try {
-            const res = await api('/get-photos', { event_id: eventId });
-            const photos = res.photos || [];
-            grid.innerHTML = '';
-            
-            photos.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'photo-item';
-                // Using presigned URL directly if available, else construct it
-                // Assuming backend returns 'url' or 'key'
-                // If backend returns key, need to generate signed url on fly or backend should return signed url.
-                // Our lambda 'get-photos' usually returns signed URLs.
-                div.innerHTML = `
-                    <img src="${p.url}" loading="lazy">
-                    <div class="photo-overlay">
-                       <small>${formatBytes(p.size)}</small>
-                    </div>
-                `;
-                grid.appendChild(div);
-            });
-        } catch (e) { console.error(e); }
-    }
-
-    /* ================= UPLOAD LOGIC (FIXED) ================= */
+async function saveSettings() {
+    const newName = $('#setColName').value;
+    const branding = {
+        header_img: $('#setHeadImg').value,
+        logo: $('#setLogo').value,
+        footer: $('#setFooter').value,
+        color: $('#setColor').value,
+        layout: $('#setLayout').value
+    };
     
-    // Helper for duplicate check logic
-    async function computeFileHash(file) {
-        const buffer = await file.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
+    showToast('Saving...');
+    try {
+        // We pass branding object. Backend 'upsert-collection' needs to handle this.
+        // Assuming NoSQL flexibility.
+        await api('/upsert-collection', { 
+            collection_id: curCol.id, 
+            name: newName,
+            branding: branding
+        });
+        $('#cdTitle').textContent = newName;
+        // Update local state
+        curCol.name = newName;
+        curCol.branding = branding;
+        showToast('Settings Saved');
+    } catch(e) { showToast(e.message, 'error'); }
+}
 
-    async function uploadFiles(fileList) {
-        if (!curCol || !curEvent) return;
-        
-        const files = Array.from(fileList);
-        if (files.length === 0) return;
+/* ================= UTILS ================= */
+function escapeHtml(text) {
+  if (!text) return text;
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+function formatBytes(bytes=0){
+  if(!+bytes) return '0 B';
+  const k=1024, sizes=['Bytes','KB','MB','GB','TB'];
+  const i=Math.floor(Math.log(bytes)/Math.log(k));
+  return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
+}
 
-        showToast(`Preparing ${files.length} files...`);
-
-        try {
-            // 1. Calculate Hashes & Prepare Data
-            // Send size so backend can check storage limit
-            const filesData = await Promise.all(files.map(async (file) => {
-                // If HEIC, we might want to convert first? 
-                // For now, assuming direct upload or client handles conversion if needed.
-                // Assuming raw upload for speed.
-                const hash = await computeFileHash(file);
-                return {
-                    name: file.name,
-                    size: file.size, // <--- CRITICAL FIX: Sending size
-                    hash: hash
-                };
-            }));
-
-            // 2. Get Presigned URLs
-            const res = await api('/generate-upload-urls', {
-                collection_id: curCol.id,
-                event_id: curEvent.id,
-                files: filesData
-            });
-
-            const { urls, skipped, message } = res;
-            
-            if (skipped && skipped.length > 0) {
-                showToast(`Skipped ${skipped.length} duplicates.`);
-            }
-
-            if (urls.length === 0 && skipped.length > 0) {
-                showToast("All files were duplicates.");
-                return;
-            }
-
-            // 3. Upload to S3
-            let uploadedCount = 0;
-            const total = urls.length;
-            const batchSize = 5;
-            
-            for (let i = 0; i < total; i += batchSize) {
-                const batch = urls.slice(i, i + batchSize);
-                await Promise.all(batch.map(async (u) => {
-                    const fileObj = files.find(f => f.name === u.originalName);
-                    if (fileObj) {
-                        await fetch(u.uploadURL, {
-                            method: 'PUT',
-                            body: fileObj,
-                            headers: {
-                                'Content-Type': 'image/jpeg'
-                                // Note: If backend requires metadata header signature, add here.
-                                // Typically boto3 presigned params handle it in query string.
-                            }
-                        });
-                        uploadedCount++;
-                    }
-                }));
-                showToast(`Uploading... ${Math.min(i + batchSize, total)}/${total}`);
-            }
-
-            showToast(`Success! ${uploadedCount} photos uploaded.`);
-            
-            // Refresh
-            loadPhotos(curEvent.id);
-            checkAccountStatus(); // Update storage bar
-
-        } catch (e) {
-            console.error(e);
-            // This will show "Storage limit reached" from backend
-            showToast(e.message || "Upload Failed", "error");
-        }
-    }
-
-    /* ================= ACTIONS ================= */
-    async function createCollection() {
-        const name = document.getElementById('newColName').value;
-        if(!name) return showToast('Name required', 'error');
-        
-        closeModal();
-        showToast('Creating...');
-        try {
-            await api('/upsert-collection', { name: name });
-            showToast('Collection created');
-            loadCollections();
-        } catch(e) { showToast(e.message, 'error'); }
-    }
-
-    async function createEvent() {
-        const name = document.getElementById('newEventName').value;
-        const date = document.getElementById('newEventDate').value;
-        if(!name || !date) return showToast('Details required', 'error');
-        
-        closeModal();
-        showToast('Creating...');
-        try {
-            await api('/upsert-event', { 
-                collection_id: curCol.id,
-                name: name,
-                date: date
-            });
-            showToast('Event created');
-            loadEvents(curCol.id);
-        } catch(e) { showToast(e.message, 'error'); }
-    }
-
-    async function saveSettings() {
-        const newName = document.getElementById('setColName').value;
-        const color = document.getElementById('setColor').value;
-        
-        showToast('Saving...');
-        try {
-            await api('/upsert-collection', {
-                collection_id: curCol.id,
-                name: newName,
-                branding: { color: color } // Sending Branding Object
-            });
-            curCol.name = newName;
-            curCol.branding = { color: color };
-            document.getElementById('cdTitle').textContent = newName;
-            loadCollections(); // Refresh sidebar list
-            showToast('Settings Saved');
-        } catch(e) { showToast(e.message, 'error'); }
-    }
-
-    async function deleteCollection() {
-        if(!confirm('Delete this collection and ALL photos? This cannot be undone.')) return;
-        showToast('Deleting (this may take a while)...');
-        try {
-            await api('/delete-collection', { collection_id: curCol.id });
-            showToast('Deleted');
-            showView('dashboard');
-            loadCollections();
-            checkAccountStatus();
-        } catch(e) { showToast(e.message, 'error'); }
-    }
-    
-    async function deleteEvent() {
-        if(!confirm('Delete this event?')) return;
-        try {
-             await api('/delete-event', { event_id: curEvent.id });
-             showToast('Deleted');
-             openCollection(curCol);
-        } catch(e) { showToast(e.message, 'error'); }
-    }
-
-    async function generateLinkPreview() {
-        document.getElementById('searchLinkInput').value = "Loading...";
-        try {
-            const res = await api('/generate-search-link', { 
-                collection_id: curCol.id,
-                expiry_hours: 720 // 30 days default
-            });
-            document.getElementById('searchLinkInput').value = res.url;
-            // QR Code logic if needed using an external API or lib
-            // document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(res.url)}`;
-            // document.getElementById('qrImage').style.display = 'inline-block';
-        } catch(e) { console.error(e); }
-    }
-
-    function copyLink() {
-        const copyText = document.getElementById("searchLinkInput");
-        copyText.select();
-        document.execCommand("copy"); // Fallback
-        navigator.clipboard.writeText(copyText.value);
-        showToast("Link Copied!");
-    }
-
-    /* ================= UI HELPERS ================= */
-    function showView(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById(`view-${id}`).classList.add('active');
-        
-        // Mobile sidebar auto close
-        if(window.innerWidth < 768) {
-            document.getElementById('sidebar').classList.remove('open');
-        }
-    }
-
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-        
-        // Find tab element (simplified for this example)
-        const tabs = document.querySelectorAll('.tab');
-        if(tabName === 'events') tabs[0].classList.add('active');
-        if(tabName === 'qr') tabs[1].classList.add('active');
-        if(tabName === 'branding') tabs[2].classList.add('active');
-
-        document.getElementById(`tab-${tabName}`).style.display = 'block';
-        
-        if(tabName === 'events') loadEvents(curCol.id);
-    }
-
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); }
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
-    
-    function showToast(msg, type='success') {
-        const c = document.getElementById('toast-container');
-        const t = document.createElement('div');
-        t.className = `toast ${type}`;
-        t.innerHTML = `<i class="fa-solid ${type==='error'?'fa-circle-exclamation':'fa-circle-check'}"></i> ${msg}`;
-        c.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
-    }
-
-    function escapeHtml(text) {
-      if (!text) return text;
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-    
-    function formatBytes(bytes, decimals = 2) {
-        if (!+bytes) return '0 B';
-        const k = 1024;
-        const dm = decimals < 0 ? 0 : decimals;
-        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-    }
-  </script>
+</script>
 </body>
 </html>

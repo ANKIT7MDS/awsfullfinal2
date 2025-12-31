@@ -292,6 +292,7 @@
 
   /* ================= INIT CHECK ================= */
   window.onload = () => {
+    // We now support cases where only one ID might be present if users manually edit URL
     if(!cid && !linkId) {
       document.body.innerHTML = "<h2 style='color:#fff;text-align:center;margin-top:50px;'>Invalid Link: Missing ID</h2>";
     }
@@ -323,22 +324,20 @@
     show('stepLoading');
 
     try {
-      // --- PAYLOAD FIX: Sending ONLY what backend needs ---
-      // We send 'selfie_image' as key. 
-      // We prioritize 'linkId' if available. 
-      // If only 'cid' is available, we send it as 'collection_id'.
-      // BUT, to satisfy "Missing linkId" error, we might need to send a dummy linkId or the cid as linkId if linkId is null.
-      
       const payload = {
         selfie_image: selfieBase64,
-        collection_id: cid || linkId, // Always needed for logic
+        collection_id: cid || linkId, 
       };
 
-      // Only add link_id if it exists, otherwise backend might be okay with just collection_id 
-      // IF the code has changed. BUT previous error said "Missing linkId".
-      // So we will force send link_id = cid if linkId is missing.
-      payload.link_id = linkId || cid; 
-      payload.linkId = linkId || cid; // Fallback for case sensitivity
+      // Ensure linkId is sent if available
+      if(linkId) {
+         payload.link_id = linkId;
+         payload.linkId = linkId;
+      } else {
+         // Fallback: If backend demands it, send cid as linkId
+         payload.link_id = cid;
+         payload.linkId = cid;
+      }
 
       const res = await fetch(`${API_BASE}/search`, {
         method: 'POST',
@@ -374,12 +373,6 @@
     const phone = $('#userPhone').value.trim();
     if(!name || !phone) return alert("Please fill details");
 
-    // --- SAVE DETAILS FIX ---
-    // Only send link_id if it is a REAL linkId (not just cid spoofed).
-    // If we only have cid, we should probably send link_id as null or undefined to avoid "None" or "Same ID" confusion in DB.
-    // However, if backend requires it, we must send it.
-    // Let's try sending it only if `linkId` variable is present.
-    
     const payload = {
       collection_id: cid || linkId,
       name: name,
@@ -387,7 +380,10 @@
       match_count: filteredPhotos.length
     };
     
-    if(linkId) payload.link_id = linkId; // Only attach if valid linkId exists
+    // Explicitly handle link_id to avoid "None" in backend if linkId is missing
+    if(linkId) payload.link_id = linkId;
+    // If no linkId, we omit it or send null (depending on backend). 
+    // Sending cid as link_id caused confusion, so we skip it if real linkId is absent.
 
     fetch(`${API_BASE}/save-details`, {
       method: 'POST',
@@ -404,12 +400,11 @@
     grid.innerHTML = filteredPhotos.map((p, idx) => {
       const url = typeof p === 'string' ? p : (p.url || p.s3_url);
       const isSel = selectedUrls.has(url) ? 'selected' : '';
-      // Store clean URL in object for viewer
       if(typeof p !== 'string') p.url = url; else filteredPhotos[idx] = {url:url};
       
       return `
         <div class="photo-item ${isSel}" onclick="toggleSelect('${url}')">
-          <img src="${url}" loading="lazy">
+          <img src="${url}" loading="lazy" crossOrigin="anonymous">
           <div style="position:absolute; bottom:5px; right:5px;">
              <button class="btn-primary" style="padding:4px 8px; font-size:10px; border-radius:20px;" onclick="event.stopPropagation(); openViewer(${idx})">View</button>
           </div>
@@ -429,25 +424,45 @@
     renderGrid();
   };
 
+  /* --- DOWNLOAD LOGIC (CORS SAFE) --- */
   window.downloadZip = async function() {
     if(selectedUrls.size === 0) return alert("Select photos first!");
+    
+    const btn = $('button[onclick="downloadZip()"]');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = `Zipping...`;
+    btn.disabled = true;
+
     const zip = new JSZip();
     const urls = Array.from(selectedUrls);
-    
-    // CORS Workaround Attempt: fetching with 'no-cors' wont give data. 
-    // We rely on standard fetch. If S3 blocks it, this will fail.
-    // Ensure S3 bucket CORS allows GET from *
+    let successCount = 0;
     
     for(let i=0; i<urls.length; i++) {
       try {
-          const blob = await fetch(urls[i]).then(r => r.blob());
+          // Attempt fetch. If CORS fails, it will throw.
+          const response = await fetch(urls[i]);
+          if (!response.ok) throw new Error("Network response was not ok");
+          const blob = await response.blob();
           zip.file(`photo_${i+1}.jpg`, blob);
+          successCount++;
       } catch(e) {
-          console.error("DL Error", e);
+          console.error("Download failed for item " + i, e);
+          // Silent fail for individual items allows others to proceed
       }
     }
+    
+    if (successCount === 0) {
+        alert("Could not download photos due to server security settings (CORS). Please use 'View' -> Download on individual photos.");
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+        return;
+    }
+
     const content = await zip.generateAsync({type:"blob"});
     saveAs(content, "Photos.zip");
+    
+    btn.innerHTML = oldText;
+    btn.disabled = false;
   };
 
   function openViewer(index) {
@@ -461,9 +476,11 @@
   
   window.downloadCurrent = () => {
       const url = filteredPhotos[currentViewerIndex].url;
+      // Direct link download is most robust against CORS for single files
       const a = document.createElement('a');
       a.href = url;
       a.download = `photo_${currentViewerIndex}.jpg`;
+      a.target = "_blank"; // Fallback to new tab if download blocked
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

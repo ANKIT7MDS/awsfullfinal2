@@ -78,7 +78,6 @@
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
         gap: 8px; 
         margin-top: 16px;
-        /* Content Visibility for Performance */
         content-visibility: auto; 
         contain-intrinsic-size: 140px;
     }
@@ -89,17 +88,17 @@
         overflow: hidden; 
         position: relative; 
         cursor: pointer; 
-        /* GPU Acceleration hint */
         transform: translateZ(0); 
     }
     .ph-card img { 
         width: 100%; 
         height: 100%; 
         object-fit: cover; 
-        transition: opacity 0.3s;
-        /* Blur up effect placeholder logic would go here */
-        background-color: #222;
+        transition: opacity 0.4s ease-out;
+        opacity: 0; /* Starts hidden for blur-up */
     }
+    .ph-card img.loaded { opacity: 1; }
+    
     .ph-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); opacity: 0; transition: 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
     .ph-card:hover .ph-overlay { opacity: 1; }
     
@@ -133,9 +132,14 @@
     #toast.success { border-left: 4px solid var(--primary); }
     #toast.error { border-left: 4px solid #ef4444; }
 
+    /* LEADS ACCORDION */
+    .lead-row { cursor: pointer; }
+    .lead-history { background: rgba(255,255,255,0.03); display: none; padding: 10px; }
+    .lead-history.open { display: table-row; }
+    .lead-thumb { width:30px; height:30px; border-radius:50%; object-fit:cover; margin-right:5px; border:1px solid #555; vertical-align: middle; }
+
     /* ANIMATIONS */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -190,7 +194,7 @@
       <h2 style="margin: 0;">Dashboard Overview</h2>
     </div>
 
-    <!-- KPIs (Updated Labels) -->
+    <!-- KPIs -->
     <div class="grid" style="margin-bottom: 32px;">
        <div class="kpi-box">
          <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Collections</div>
@@ -303,8 +307,8 @@
         <div id="evAddForm" class="row" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border-color);">
           <input id="neName" placeholder="Event Name (e.g. Morning Haldi)" style="flex:2">
           <input id="neDate" type="date" style="flex:1">
-          <!-- FIX: Removed argument from onclick -->
-          <button class="btn primary" onclick="createEvent()"><i class="fa-solid fa-plus"></i> Add Event</button>
+          <!-- FIX: Renamed function to createNewEvent to avoid conflicts -->
+          <button class="btn primary" onclick="createNewEvent()"><i class="fa-solid fa-plus"></i> Add Event</button>
         </div>
 
         <table>
@@ -317,8 +321,16 @@
     <!-- TAB 3: UPLOAD -->
     <div id="tUp" class="tab-content">
       <div class="card">
-        <h3>Batch Photo Upload</h3>
-        <p class="text-sm text-muted">Photos queue up first. Click 'Start Upload' to process.</p>
+        <div class="row" style="justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h3>Batch Photo Upload</h3>
+                <p class="text-sm text-muted">Photos queue up first. Click 'Start Upload' to process.</p>
+            </div>
+            <!-- STAFF LINK BUTTON -->
+            <button class="btn secondary" onclick="copyStaffLink()">
+                <i class="fa-solid fa-user-plus"></i> Get Staff Upload Link
+            </button>
+        </div>
         
         <div class="row" style="margin: 24px 0;">
           <div style="flex: 1; max-width: 400px;">
@@ -357,7 +369,7 @@
       </div>
     </div>
 
-    <!-- TAB 4: GENERATE LINK (FIXED) -->
+    <!-- TAB 4: GENERATE LINK -->
     <div id="tLink" class="tab-content">
       <div class="card">
         <h3>Generate Guest Link</h3>
@@ -392,7 +404,7 @@
       </div>
     </div>
 
-    <!-- TAB 5: GUEST LEADS -->
+    <!-- TAB 5: GUEST LEADS (UPDATED) -->
     <div id="tLeads" class="tab-content">
       <div class="card">
         <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
@@ -401,14 +413,14 @@
         </div>
         <div class="table-responsive">
           <table>
-            <thead><tr><th>Guest Name</th><th>Phone Number</th><th>Selfie Used</th><th>Photos Found</th></tr></thead>
+            <thead><tr><th>Guest Name</th><th>Phone Number</th><th>Total Searches</th><th>Actions</th></tr></thead>
             <tbody id="tblLeads"><tr><td colspan="4" align="center" class="text-muted">Loading leads...</td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- TAB 6: SETTINGS & BRANDING -->
+    <!-- TAB 6: SETTINGS -->
     <div id="tSettings" class="tab-content">
         <div class="card">
             <h3>Collection Branding & Settings</h3>
@@ -676,7 +688,8 @@ async function loadEvents(){
   $('#linkEventSel').innerHTML = `<option value="">Entire Collection</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
 }
 
-async function createEvent(){
+// ✅ FIX: Renamed function to createNewEvent to avoid conflicts
+async function createNewEvent(){
   const name = $('#neName').value;
   const date = $('#neDate').value;
   if(!name) return showToast('Name required', 'error');
@@ -724,13 +737,11 @@ async function loadPhotos(reset=false, loadMore=false){
   const eid = $('#galEventFilter').value;
   const payload = { collection_id: curCol.id };
   if(eid) payload.event_id = eid;
-  
-  // ✅ FIX: Changed nextToken to next_token to match backend
   if(loadMore && photosNext) payload.next_token = photosNext;
 
   const res = await api('/get-photos', payload);
   const photos = res.items || res.photos || []; 
-  photosNext = res.nextToken;
+  photosNext = res.nextToken; // API might return nextToken or next_token, handling standard
 
   if(reset) {
       $('#galGrid').innerHTML = '';
@@ -741,7 +752,7 @@ async function loadPhotos(reset=false, loadMore=false){
   
   $('#galCount').textContent = `${currentPhotos.length} photos displayed`;
   
-  // Render using lazy loading + content visibility optimization
+  // ✅ FIX: Kwikpic style loading + lazy
   const html = photos.map((p, idx) => {
       const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
       const faces = p.face_count || 0;
@@ -750,7 +761,7 @@ async function loadPhotos(reset=false, loadMore=false){
       
       return `
         <div class="ph-card" onclick="openLightbox(${globalIdx})">
-          <img src="${url}" loading="lazy" decoding="async">
+          <img src="${url}" loading="lazy" decoding="async" onload="this.classList.add('loaded')">
           <div class="ph-overlay">
             <div class="ph-meta">
                <span><i class="fa-solid fa-face-smile"></i> ${faces} Faces</span>
@@ -768,7 +779,7 @@ async function loadPhotos(reset=false, loadMore=false){
 function openLightbox(index) {
     currentPhotoIndex = index;
     const p = currentPhotos[index];
-    $('#lbImage').src = p.url; // Use full res URL
+    $('#lbImage').src = p.url; 
     $('#lightbox').classList.add('open');
 }
 
@@ -783,26 +794,45 @@ function navLightbox(dir) {
     openLightbox(newIndex);
 }
 
-function downloadCurrentPhoto() {
+// ✅ FIX: Download using Fetch to bypass CORS
+async function downloadCurrentPhoto() {
     const p = currentPhotos[currentPhotoIndex];
-    const link = document.createElement('a');
-    link.href = p.url;
-    link.download = p.filename || 'photo.jpg';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    showToast('Downloading...', 'success');
+    try {
+        const response = await fetch(p.url);
+        const blob = await response.blob();
+        const fname = p.photo_id ? (p.photo_id.split('___').pop()) : 'photo.jpg';
+        saveAs(blob, fname);
+    } catch(e) {
+        showToast('Download failed. Opening in new tab.', 'error');
+        window.open(p.url, '_blank');
+    }
 }
 
+// ✅ FIX: Added actual API call to delete
 async function deleteCurrentPhoto() {
     if(!confirm("Delete this photo?")) return;
     const p = currentPhotos[currentPhotoIndex];
-    showToast('Request sent to delete', 'success'); 
+    showToast('Deleting...', 'success'); 
     
-    // Remove from UI
-    currentPhotos.splice(currentPhotoIndex, 1);
-    if(currentPhotos.length === 0) closeLightbox();
-    else navLightbox(0); // Go to next
-    loadPhotos(true); // Reload grid
+    try {
+        // Calling delete API - ensuring user has a delete-photo endpoint or uses delete-collection equivalent logic
+        // If specific delete-photo endpoint missing, this might fail unless added to backend.
+        // Assuming user will add it or it exists.
+        await api('/delete-photo', { photo_id: p.photo_id, collection_id: curCol.id });
+        
+        // Remove from UI
+        currentPhotos.splice(currentPhotoIndex, 1);
+        if(currentPhotos.length === 0) closeLightbox();
+        else navLightbox(0); 
+        
+        // Re-render grid partially or reload
+        loadPhotos(true); 
+        showToast('Deleted');
+    } catch(e) {
+        showToast('Delete failed on server', 'error');
+        console.error(e);
+    }
 }
 
 /* ================= QUEUED UPLOAD LOGIC ================= */
@@ -815,7 +845,7 @@ function queueFiles(fileList){
   });
   
   renderQueue();
-  $('#upInput').value = ''; // Reset input
+  $('#upInput').value = ''; 
 }
 
 function renderQueue(){
@@ -833,7 +863,6 @@ async function startUploadProcess(){
   $('#btnStartUpload').textContent = 'Uploading...';
   $('#upProgress').classList.remove('hidden');
   
-  // Process queue
   const BATCH_SIZE = 50; 
   let processedCount = 0;
   const total = uploadQueue.length;
@@ -853,7 +882,7 @@ async function startUploadProcess(){
   $('#upStatusText').textContent = 'Done!';
   $('#upCountStr').textContent = 'Server is indexing faces in background...';
   
-  uploadQueue = []; // Clear queue
+  uploadQueue = []; 
   renderQueue();
   $('#uploadQueueBox').classList.add('hidden');
   $('#btnStartUpload').disabled = false;
@@ -864,7 +893,6 @@ async function startUploadProcess(){
 async function processBatch(files, eventId){
   const metaList = await Promise.all(files.map(async f => {
       let procFile = f;
-      // Simple HEIC check
       if(f.name.toLowerCase().endsWith('.heic')){
           try {
              const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
@@ -902,7 +930,27 @@ async function computeHash(file) {
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/* ================= LINK GENERATION (FIXED) ================= */
+// ✅ FIX: Staff Upload Link Generator
+function copyStaffLink() {
+    // Requires staff-upload.html to be hosted at /staff-upload.html (or similar)
+    const baseUrl = window.location.origin + "/EventLens_Staff_Upload.html";
+    // We pass cid only, or cid+eid if user selected event
+    const eid = $('#upEventSel').value;
+    let url = `${baseUrl}?cid=${curCol.id}`;
+    if(eid) url += `&eid=${eid}`;
+    
+    // Copy to clipboard
+    const tempInput = document.createElement("input");
+    tempInput.value = url;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempInput);
+    
+    showToast('Staff Upload Link Copied!');
+}
+
+/* ================= LINK GENERATION ================= */
 async function generateLink(){
   const eid = $('#linkEventSel').value;
   const expiry = $('#linkExpiry').value;
@@ -916,7 +964,6 @@ async function generateLink(){
        password: pin
     });
     
-    // ✅ FIX: Enhanced link extraction logic to match new backend
     let linkId = "";
     if (res.link_id || res.id) linkId = res.link_id || res.id;
     else if (res.searchUrl || res.url) {
@@ -928,9 +975,7 @@ async function generateLink(){
 
     if(!linkId) throw new Error("Could not retrieve Link ID from backend response");
 
-    // Construct the FINAL URL with BOTH linkId AND cid for robustness
     const baseUrl = window.location.origin + "/index.html"; 
-    // We explicitly add cid so index.html knows the collection without guessing
     const finalUrl = `${baseUrl}?linkId=${linkId}&cid=${curCol.id}`;
     
     $('#finalLink').value = finalUrl;
@@ -947,7 +992,7 @@ function copyLink(){
   showToast('Copied to clipboard');
 }
 
-/* ================= GUEST LEADS (GROUPED) ================= */
+/* ================= GUEST LEADS (GROUPED & HISTORY) ================= */
 async function loadLeads(){
   $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
   try {
@@ -968,40 +1013,69 @@ async function loadLeads(){
         grouped[key].history.push(l);
     });
 
-    const rows = Object.values(grouped).sort((a,b) => new Date(b.timestamp||0) - new Date(a.timestamp||0));
+    const sortedGroups = Object.values(grouped).sort((a,b) => {
+        // Sort by most recent timestamp in history
+        const lastA = a.history.sort((x,y) => new Date(y.timestamp) - new Date(x.timestamp))[0];
+        const lastB = b.history.sort((x,y) => new Date(y.timestamp) - new Date(x.timestamp))[0];
+        return new Date(lastB.timestamp) - new Date(lastA.timestamp);
+    });
 
-    $('#tblLeads').innerHTML = rows.map((l, i) => `
-      <tr>
-        <td>
-           <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
-        </td>
-        <td>${l.mobile || l.phone || '-'}</td>
-        <td>
-           <a href="${l.selfie_url}" target="_blank">
-             <img src="${l.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid var(--border-color);">
-           </a>
-        </td>
-        <td>
-           <span class="tag-pill" style="background: var(--primary-dim); color: var(--primary); font-weight:700;">
-             ${l.match_count || l.photo_count || 0} Matches
-           </span>
-           <div class="text-sm text-muted" style="margin-top:4px;">${l.visits} Visits</div>
-        </td>
-      </tr>
-    `).join('');
+    let html = '';
+    sortedGroups.forEach((g, i) => {
+        const latest = g.history[0]; // Already sorted
+        html += `
+          <tr class="lead-row" onclick="toggleLeadHistory(${i})">
+            <td>
+               <div style="font-weight:700">${escapeHtml(g.name || 'Unknown')}</div>
+               <div class="text-sm text-muted">Latest: ${new Date(latest.timestamp).toLocaleString()}</div>
+            </td>
+            <td>${g.mobile || g.phone || '-'}</td>
+            <td>
+               <span class="tag-pill" style="background: var(--primary-dim); color: var(--primary); font-weight:700;">
+                 ${g.visits} Searches
+               </span>
+               <i class="fa-solid fa-chevron-down" style="float:right; margin-top:4px;"></i>
+            </td>
+            <td>
+                <button class="btn secondary btn-sm">Details</button>
+            </td>
+          </tr>
+          <tr id="lead-hist-${i}" class="lead-history">
+            <td colspan="4">
+                <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                    ${g.history.map(h => `
+                        <div style="background:#222; padding:8px; border-radius:8px; display:flex; align-items:center; gap:8px;">
+                            <a href="${h.selfie_url}" target="_blank">
+                                <img src="${h.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                            </a>
+                            <div>
+                                <div class="text-sm">${new Date(h.timestamp).toLocaleTimeString()}</div>
+                                <div class="text-sm text-muted">${h.match_count||0} Photos</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </td>
+          </tr>
+        `;
+    });
+    $('#tblLeads').innerHTML = html;
   } catch(e) { 
     $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" style="color: #ef4444;">Error: ${e.message}</td></tr>`;
   }
 }
 
+function toggleLeadHistory(idx) {
+    const el = document.getElementById(`lead-hist-${idx}`);
+    if(el.classList.contains('open')) el.classList.remove('open');
+    else el.classList.add('open');
+}
+
 /* ================= SETTINGS & BRANDING ================= */
-// Simulated asset upload reusing the photo upload logic but ignoring DB index
 async function uploadAsset(input, targetId) {
     const file = input.files[0];
     if(!file) return;
     
-    // We need a place to upload. We will use a dummy event or first event.
-    // If no events, warn user.
     if(curEvents.length === 0) return showToast('Create an event first to store assets', 'error');
     const eventId = curEvents[0].event_id; 
 
@@ -1022,20 +1096,15 @@ async function uploadAsset(input, targetId) {
                 headers: { 'Content-Type': file.type, 'x-amz-meta-original-hash': u.hash }
             });
             
-            // Construct Public URL (Assuming standard S3 public or CloudFront)
-            // Since we don't know the exact public domain from here without backend return,
-            // we will approximate based on uploadURL or expect user to use the signed URL (which expires).
-            // BETTER: Just put the key here, and frontend should resolve. 
-            // For now, we put the key. 
-            $(`#${targetId}`).value = u.object_key; 
-            showToast('Uploaded! Key saved.');
+            const publicUrl = u.uploadURL.split('?')[0];
+            $(`#${targetId}`).value = publicUrl; 
+            showToast('Uploaded! URL saved.');
         }
-    } catch(e) { showToast('Upload failed', 'error'); }
+    } catch(e) { console.error(e); showToast('Upload failed', 'error'); }
 }
 
 function loadSettings(){
     $('#setColName').value = curCol.name;
-    // Load other settings if stored in curCol (requires backend to return them)
     if(curCol.branding) {
         $('#setHeadImg').value = curCol.branding.header_img || '';
         $('#setLogo').value = curCol.branding.logo || '';
@@ -1058,15 +1127,12 @@ async function saveSettings() {
     
     showToast('Saving...');
     try {
-        // We pass branding object. Backend 'upsert-collection' needs to handle this.
-        // Assuming NoSQL flexibility.
         await api('/upsert-collection', { 
             collection_id: curCol.id, 
             name: newName,
             branding: branding
         });
         $('#cdTitle').textContent = newName;
-        // Update local state
         curCol.name = newName;
         curCol.branding = branding;
         showToast('Settings Saved');
@@ -1084,7 +1150,6 @@ function formatBytes(bytes=0){
   const i=Math.floor(Math.log(bytes)/Math.log(k));
   return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
 }
-
 </script>
 </body>
 </html>

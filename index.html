@@ -160,25 +160,32 @@
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId');
-    // cid can be used for fallback, but linkId is preferred for security/uniqueness
-    const cid = urlParams.get('cid'); 
+    const cid = urlParams.get('cid'); // Fallback Collection ID
 
     let currentPhotoUrl = '';
     let pendingSelfieBase64 = null; 
 
     // --- ON LOAD: FETCH BRANDING ---
     window.onload = async () => {
-        if(!linkId) {
-             console.log("No Link ID provided, using default theme.");
-             return;
+        // Build API URL intelligently
+        let brandingApiUrl = "";
+        
+        if (linkId) {
+            brandingApiUrl = `${API_BASE}/get-branding?linkId=${linkId}`;
+        } else if (cid) {
+            brandingApiUrl = `${API_BASE}/get-branding?cid=${cid}`;
+        } else {
+            console.log("No ID provided for branding.");
+            return;
         }
         
         try {
-            // New endpoint to fetch branding based on linkId
-            const res = await fetch(`${API_BASE}/get-branding?linkId=${linkId}`);
+            const res = await fetch(brandingApiUrl);
             if(res.ok) {
                 const branding = await res.json();
                 applyBranding(branding);
+            } else {
+                console.warn("Branding API returned:", res.status);
             }
         } catch(e) {
             console.error("Failed to fetch branding:", e);
@@ -310,16 +317,19 @@
             if(data.matches && data.matches.length > 0) {
                 renderGallery(data.matches);
                 
+                // IMPORTANT: Fix for saving leads with correct Collection ID
+                const payload = {
+                    linkId: linkId,
+                    collection_id: cid, // Now sending CID explicitly
+                    mobile: mobile,
+                    name: name,
+                    selfie_image: pendingSelfieBase64,
+                    photo_count: data.matches.length
+                };
+                
                 fetch(`${API_BASE}/save-details`, {
                     method: 'POST',
-                    body: JSON.stringify({
-                        linkId: linkId,
-                        collection_id: cid,
-                        mobile: mobile,
-                        name: name,
-                        selfie_image: pendingSelfieBase64,
-                        photo_count: data.matches.length
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });

@@ -594,6 +594,7 @@ async function api(path, method='GET', body=null) {
     const res = await fetch(url, opts);
     if(!res.ok) {
         if(res.status === 404) throw new Error("API Endpoint not found: " + path);
+        if(res.status === 401) throw new Error("Unauthorized. Please Login Again.");
         throw new Error(`API Error: ${res.status}`);
     }
     return await res.json();
@@ -606,31 +607,22 @@ async function api(path, method='GET', body=null) {
 /* ================= DASHBOARD & COLLECTIONS ================= */
 async function loadCollections() {
   try {
-    // const data = await api('/get-collections');
-    // Mocking Data for "reply mat karna" request context if API fails
-    // In real scenario: state.collections = data.collections;
-    
-    // Simulate Data if API 404s (Since I cannot hit your real private API)
-    // Replace this block with real API call in production
-    /* const res = await api('/get-collections');
-    state.collections = res.collections || [];
-    */
-    
-    // MOCK DATA FOR UI DEMO
-    state.collections = [
-        { collection_id: 'c1', name: 'Wedding: Rahul & Priya', created_at: '2025-10-10', cover: '', event_count: 3, branding: { color: '#00e676' } },
-        { collection_id: 'c2', name: 'Corporate Event: TechSummit', created_at: '2025-11-05', cover: '', event_count: 1, branding: { color: '#2979ff' } }
-    ];
-
+    const data = await api('/get-collections');
+    state.collections = data.collections || [];
     renderCollections();
     populateQuickUpload();
   } catch(e) {
-    showToast('Failed to load collections', 'error');
+    showToast('Failed to load collections: ' + e.message, 'error');
   }
 }
 
 function renderCollections() {
   const container = document.getElementById('collection-list');
+  if(!state.collections.length) {
+     container.innerHTML = `<div class="text-muted text-center w-full" style="grid-column: 1/-1;">No collections found. Create one!</div>`;
+     return;
+  }
+  
   container.innerHTML = state.collections.map(c => `
     <div class="card" onclick="openCollection('${c.collection_id}')" style="cursor:pointer;">
       <div class="card-img-top">
@@ -638,7 +630,7 @@ function renderCollections() {
       </div>
       <div class="card-body">
          <h3 class="card-title">${c.name}</h3>
-         <p class="card-info"><i class="fa-regular fa-calendar"></i> ${c.created_at}</p>
+         <p class="card-info"><i class="fa-regular fa-calendar"></i> ${c.created_at || 'Recently'}</p>
          <div class="flex justify-between items-center text-sm text-muted">
             <span><i class="fa-solid fa-layer-group"></i> ${c.event_count || 0} Events</span>
             <i class="fa-solid fa-arrow-right text-primary"></i>
@@ -686,24 +678,21 @@ function applyBranding(col) {
 
 async function loadEvents(colId) {
     try {
-        // const res = await api('/get-events', 'POST', { collection_id: colId });
-        // state.currentEvents = res.events;
-        
-        // MOCK
-        state.currentEvents = [
-            { event_id: 'e1', name: 'Reception', date: '2025-10-10', photo_count: 1240 },
-            { event_id: 'e2', name: 'Haldi', date: '2025-10-09', photo_count: 850 }
-        ];
-
+        const res = await api('/get-events', 'POST', { collection_id: colId });
+        state.currentEvents = res.events || [];
         renderEvents();
         updateCounts(); // Fix for "Data count dashboard par"
     } catch(e) {
-        showToast('Error loading events', 'error');
+        showToast('Error loading events: ' + e.message, 'error');
     }
 }
 
 function renderEvents() {
     const container = document.getElementById('event-list');
+    if(!state.currentEvents.length) {
+        container.innerHTML = `<div class="text-muted">No events yet.</div>`;
+        return;
+    }
     container.innerHTML = state.currentEvents.map(e => `
         <div class="card">
             <div class="card-body">
@@ -736,7 +725,8 @@ async function handleCreateEvent() {
         collection_id: state.currentCollection.collection_id,
         name: name,
         date: date,
-        event_id: 'evt_' + Date.now() // or let backend handle
+        // event_id handled by backend if not provided, or generate UUID
+        event_id: 'evt_' + Date.now() 
     };
 
     try {
@@ -752,32 +742,41 @@ async function handleCreateEvent() {
 
 /* ================= LEADS / GUESTS (GROUPING FIX) ================= */
 async function loadLeads(colId) {
-    // const res = await api('/save-details?action=list&collection_id='+colId); 
-    // MOCK
-    const rawLeads = [
-        { phone: '9876543210', name: 'Amit', timestamp: '10:00 AM', face_id: 'f1' },
-        { phone: '9876543210', name: 'Amit', timestamp: '10:05 AM', face_id: 'f1' }, // Duplicate phone
-        { phone: '9998887776', name: 'Priya', timestamp: '11:00 AM', face_id: 'f2' }
-    ];
+    try {
+        // Correct API call based on pagewise calls
+        const res = await api(`/save-details?action=list&collection_id=${colId}`, 'GET');
+        
+        // Handle variations in response structure
+        const rawLeads = res.guests || res.leads || res.data || [];
 
-    // Grouping Logic
-    const grouped = {};
-    rawLeads.forEach(lead => {
-        if(!grouped[lead.phone]) grouped[lead.phone] = [];
-        grouped[lead.phone].push(lead);
-    });
+        // Grouping Logic
+        const grouped = {};
+        rawLeads.forEach(lead => {
+            if(!grouped[lead.phone]) grouped[lead.phone] = [];
+            grouped[lead.phone].push(lead);
+        });
 
-    renderLeads(grouped);
+        renderLeads(grouped);
+    } catch(e) {
+        console.error("Failed to load leads", e);
+        // Don't alert blocking error for leads
+    }
 }
 
 function renderLeads(groupedData) {
     const tbody = document.querySelector('#leads-table tbody');
     tbody.innerHTML = '';
+    
+    if(Object.keys(groupedData).length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No guest leads yet.</td></tr>`;
+        return;
+    }
 
     Object.keys(groupedData).forEach(phone => {
         const group = groupedData[phone];
         const count = group.length;
-        const lastActive = group[group.length-1].timestamp;
+        // Handle potential missing timestamp
+        const lastActive = group[group.length-1].timestamp || 'Unknown';
         
         // Main Row
         const tr = document.createElement('tr');
@@ -795,7 +794,7 @@ function renderLeads(groupedData) {
         detailsTr.innerHTML = `
             <td colspan="4" style="padding:0;">
                 <div style="background:#1a1a1a; padding:1rem;">
-                    ${group.map(g => `<div style="border-bottom:1px solid #333; padding:5px;">Selfie uploaded at ${g.timestamp}</div>`).join('')}
+                    ${group.map(g => `<div style="border-bottom:1px solid #333; padding:5px;">Selfie uploaded at ${g.timestamp || 'N/A'}</div>`).join('')}
                 </div>
             </td>
         `;
@@ -824,16 +823,19 @@ async function loadPhotos(eventId) {
     const container = document.getElementById('gallery-container');
     container.innerHTML = '<div class="text-muted p-4">Loading photos...</div>';
 
-    // Fetch photos
-    // const res = await api('/get-photos', 'POST', { event_id: eventId });
-    
-    // MOCK 6000+ Photo Simulation
-    const photos = Array.from({length: 50}, (_, i) => ({
-        url: `https://picsum.photos/400?random=${i}`, // Random image
-        id: i
-    }));
-
-    renderGallery(photos);
+    try {
+        const res = await api('/get-photos', 'POST', { event_id: eventId });
+        // Handle common response patterns
+        const photos = res.photos || res.urls || res.data || [];
+        
+        if(photos.length === 0) {
+            container.innerHTML = '<div class="text-muted p-4">No photos uploaded yet.</div>';
+        } else {
+            renderGallery(photos);
+        }
+    } catch(e) {
+        container.innerHTML = `<div class="text-danger p-4">Error loading photos: ${e.message}</div>`;
+    }
 }
 
 // OPTIMIZED GALLERY RENDER
@@ -856,9 +858,13 @@ function renderGallery(photos) {
     photos.forEach(p => {
         const div = document.createElement('div');
         div.className = 'gallery-item';
+        
+        // Handle varying photo object structure
+        const imgUrl = p.url || p.thumbnail_url || p; 
+        
         // Use data-src for lazy loading
         div.innerHTML = `
-            <img data-src="${p.url}" alt="Photo" loading="lazy">
+            <img data-src="${imgUrl}" alt="Photo" loading="lazy">
             <div class="overlay-actions">
                 <button class="btn-icon btn-danger"><i class="fa-solid fa-trash"></i></button>
             </div>
@@ -881,17 +887,16 @@ async function loadEventsForQuickUpload() {
     
     if(!colId) { evtSel.disabled = true; return; }
     
-    // Fetch events for this collection
-    // await loadEvents(colId) -> updates state.currentEvents
-    // MOCK for now
-    state.currentEvents = [
-        { event_id: 'e1', name: 'Reception' },
-        { event_id: 'e2', name: 'Haldi' }
-    ];
-    
-    evtSel.innerHTML = '<option value="">-- Choose Event --</option>' + 
-        state.currentEvents.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
-    evtSel.disabled = false;
+    try {
+        const res = await api('/get-events', 'POST', { collection_id: colId });
+        state.currentEvents = res.events || [];
+        
+        evtSel.innerHTML = '<option value="">-- Choose Event --</option>' + 
+            state.currentEvents.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+        evtSel.disabled = false;
+    } catch(e) {
+        showToast('Error loading events for upload', 'error');
+    }
 }
 
 async function handleFilesSelect(files) {
@@ -920,15 +925,25 @@ async function handleFilesSelect(files) {
     // Function to upload one file
     const uploadOne = async (file) => {
         try {
-            // 1. Get Signed URL (In real app, optimize to get batch signed urls)
-            // const res = await api('/generate-upload-urls', 'POST', { files: [file.name] });
-            // const uploadUrl = res.urls[0].uploadURL;
+            // 1. Get Signed URL 
+            const res = await api('/generate-upload-urls', 'POST', { 
+                event_id: eventId,
+                files: [file.name] 
+            });
             
-            // 2. PUT to S3
-            // await fetch(uploadUrl, { method: 'PUT', body: file });
-            
-            // MOCK DELAY
-            await new Promise(r => setTimeout(r, 500)); 
+            if(res.urls && res.urls.length > 0) {
+                const uploadData = res.urls[0];
+                const uploadUrl = uploadData.uploadURL;
+                
+                // 2. PUT to S3
+                await fetch(uploadUrl, { 
+                    method: 'PUT', 
+                    body: file,
+                    headers: { 'Content-Type': file.type || 'image/jpeg' }
+                });
+            } else {
+                console.warn("No upload URL generated for", file.name);
+            }
             
             uploaded++;
             const pct = Math.round((uploaded / total) * 100);
@@ -937,12 +952,12 @@ async function handleFilesSelect(files) {
             details.textContent = `${uploaded}/${total} files`;
             
         } catch(e) {
-            console.error(e);
+            console.error("Upload failed for", file.name, e);
         }
     };
 
     // Queue Manager
-    status.textContent = "Uploading (High Speed)...";
+    status.textContent = "Uploading...";
     for (let i = 0; i < total; i += BATCH_SIZE) {
         const batch = fileArray.slice(i, i + BATCH_SIZE);
         await Promise.all(batch.map(f => uploadOne(f)));

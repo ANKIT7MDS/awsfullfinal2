@@ -152,6 +152,7 @@
       <button class="btn secondary" onclick="route('dashboard')"><i class="fa-solid fa-arrow-left"></i> Back</button>
       <h2 id="cdTitle">-</h2>
     </div>
+    <div class="text-sm text-muted" id="cdId" style="margin-bottom: 20px;">ID: -</div>
 
     <div class="tabs">
       <button class="tab active" onclick="setTab('tGal')">Gallery</button>
@@ -412,8 +413,8 @@
                 <div id="previewFrame" class="preview-frame mobile">
                     <div id="prevHeader" class="prev-header" style="background-image: url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069');">
                         <div class="prev-overlay">
-                            <!-- Placeholder with error handling -->
-                            <img id="prevLogo" class="prev-logo" src="https://via.placeholder.com/80" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'40\' fill=\'%23333\' stroke=\'%2300e676\' stroke-width=\'4\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23fff\' font-family=\'sans-serif\' font-size=\'14\'%3ELOGO%3C/text%3E%3C/svg%3E'">
+                            <!-- Safe SVG Placeholder -->
+                            <img id="prevLogo" class="prev-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23333' stroke='%2300e676' stroke-width='4'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23fff' font-family='sans-serif' font-size='14'%3ELOGO%3C/text%3E%3C/svg%3E">
                             <h2 id="prevTitle" class="prev-title">Event Title</h2>
                             <p id="prevWelcome" class="prev-welcome">Welcome Message Here</p>
                         </div>
@@ -633,13 +634,16 @@ async function openCol(index){
   curCol = allCols[index]; // Full object with branding info
   
   if (curCol) {
+      // 1. Switch View First
+      showView('vCol');
+      
+      // 2. Then Update DOM
       const titleEl = $('#cdTitle');
       const idEl = $('#cdId');
-      
       if (titleEl) titleEl.textContent = curCol.name;
       if (idEl) idEl.textContent = `ID: ${curCol.collection_id}`;
       
-      showView('vCol');
+      // 3. Load Data
       setTab('tGal'); 
       loadEvents(); 
   } else {
@@ -1137,7 +1141,9 @@ async function saveSettings() {
     showToast('Saving...');
     try {
         await api('/upsert-collection', { 
-            collection_id: curCol.collection_id, name: newName, branding: branding
+            collection_id: curCol.collection_id, 
+            name: newName, 
+            branding: branding
         });
         // Update local object
         curCol.name = newName; 
@@ -1151,9 +1157,11 @@ async function uploadAsset(input, targetId) {
     const file = input.files[0];
     if(!file) return;
     
+    // Ensure we have an event ID to attach the upload to
     let eventIdToUse = null;
     
     if(!curEvents || curEvents.length === 0) { 
+        // Try fetching events if missing
         try {
             const data = await api('/get-events', { collection_id: curCol.collection_id });
             curEvents = data.events || [];
@@ -1163,6 +1171,8 @@ async function uploadAsset(input, targetId) {
     if(curEvents.length > 0) {
         eventIdToUse = curEvents[0].event_id;
     } else {
+        // Create a dummy/hidden system event if no events exist? 
+        // For now, blocking and asking user to create event is safer logic.
         return showToast('Please create an event first to store assets.', 'error');
     }
     
@@ -1179,6 +1189,7 @@ async function uploadAsset(input, targetId) {
             const u = res.urls[0];
             await fetch(u.uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
             
+            // Extract the clean URL (remove query params)
             const publicUrl = u.uploadURL.split('?')[0];
             $(`#${targetId}`).value = publicUrl; 
             

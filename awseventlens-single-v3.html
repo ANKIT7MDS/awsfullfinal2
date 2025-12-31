@@ -412,7 +412,8 @@
                 <div id="previewFrame" class="preview-frame mobile">
                     <div id="prevHeader" class="prev-header" style="background-image: url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069');">
                         <div class="prev-overlay">
-                            <img id="prevLogo" class="prev-logo" src="https://via.placeholder.com/80">
+                            <!-- Placeholder with error handling -->
+                            <img id="prevLogo" class="prev-logo" src="https://via.placeholder.com/80" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'40\' fill=\'%23333\' stroke=\'%2300e676\' stroke-width=\'4\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23fff\' font-family=\'sans-serif\' font-size=\'14\'%3ELOGO%3C/text%3E%3C/svg%3E'">
                             <h2 id="prevTitle" class="prev-title">Event Title</h2>
                             <p id="prevWelcome" class="prev-welcome">Welcome Message Here</p>
                         </div>
@@ -537,19 +538,28 @@ function route(dest){
 
 function showView(id){
   document.querySelectorAll('.view').forEach(e => e.classList.remove('show'));
-  $(`#${id}`).classList.add('show');
+  const target = $(`#${id}`);
+  if(target) target.classList.add('show');
   window.scrollTo(0,0);
 }
 
 function setTab(id){
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  $(`.tab[onclick="setTab('${id}')"]`).classList.add('active');
-  $(`#${id}`).classList.add('active');
   
-  if(id === 'tGal') loadPhotos(true);
-  if(id === 'tLeads') loadLeads();
-  if(id === 'tSettings') loadSettings();
+  // Use more specific selector to avoid selecting multiple buttons if IDs reused
+  const tabBtn = document.querySelector(`.tab[onclick*="'${id}'"]`);
+  if(tabBtn) tabBtn.classList.add('active');
+  
+  const content = $(`#${id}`);
+  if(content) content.classList.add('active');
+  
+  // Only load if we have a valid collection
+  if(curCol) {
+      if(id === 'tGal') loadPhotos(true);
+      if(id === 'tLeads') loadLeads();
+      if(id === 'tSettings') loadSettings();
+  }
 }
 
 /* ================= DASHBOARD ================= */
@@ -639,35 +649,38 @@ async function openCol(index){
 
 /* ================= EVENT MANAGEMENT ================= */
 async function loadEvents(){
-  const data = await api('/get-events', { collection_id: curCol.id });
-  curEvents = data.events || [];
-  
-  $('#tblEvents').innerHTML = curEvents.map(e => `
-    <tr>
-      <td><b>${escapeHtml(e.name)}</b></td>
-      <td>${e.event_date || '-'}</td>
-      <td>${e.photo_count || 0}</td>
-      <td>${formatBytes(e.storage_bytes || 0)}</td>
-      <td>
-        <button class="btn secondary" onclick="editEvent('${e.event_id}', '${escapeHtml(e.name)}', '${e.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn danger" onclick="delEvent('${e.event_id}')"><i class="fa-solid fa-trash"></i></button>
-      </td>
-    </tr>
-  `).join('');
+  if(!curCol) return;
+  try {
+      const data = await api('/get-events', { collection_id: curCol.collection_id });
+      curEvents = data.events || [];
+      
+      $('#tblEvents').innerHTML = curEvents.map(e => `
+        <tr>
+          <td><b>${escapeHtml(e.name)}</b></td>
+          <td>${e.event_date || '-'}</td>
+          <td>${e.photo_count || 0}</td>
+          <td>${formatBytes(e.storage_bytes || 0)}</td>
+          <td>
+            <button class="btn secondary" onclick="editEvent('${e.event_id}', '${escapeHtml(e.name)}', '${e.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn danger" onclick="delEvent('${e.event_id}')"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
 
-  const opts = `<option value="">Select Event</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
-  const allOpts = `<option value="">All Events</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
-  
-  $('#galEventFilter').innerHTML = allOpts;
-  $('#upEventSel').innerHTML = opts;
-  $('#linkEventSel').innerHTML = `<option value="">Entire Collection</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+      const opts = `<option value="">Select Event</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+      const allOpts = `<option value="">All Events</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+      
+      $('#galEventFilter').innerHTML = allOpts;
+      $('#upEventSel').innerHTML = opts;
+      $('#linkEventSel').innerHTML = `<option value="">Entire Collection</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
+  } catch(e) { console.error("Error loading events", e); }
 }
 
 async function createNewEvent(){
   const name = $('#neName').value;
   const date = $('#neDate').value;
   if(!name) return showToast('Name required', 'error');
-  await api('/upsert-event', { collection_id: curCol.id, name, event_date: date });
+  await api('/upsert-event', { collection_id: curCol.collection_id, name, event_date: date });
   $('#neName').value = '';
   loadEvents();
   showToast('Event Added');
@@ -675,7 +688,7 @@ async function createNewEvent(){
 
 async function delEvent(eid){
   if(confirm('Delete event?')) {
-    await api('/delete-event', { collection_id: curCol.id, event_id: eid });
+    await api('/delete-event', { collection_id: curCol.collection_id, event_id: eid });
     loadEvents();
   }
 }
@@ -698,7 +711,7 @@ async function updateEvent(){
     const name = $('#eeName').value;
     const date = $('#eeDate').value;
     if(!name) return;
-    await api('/upsert-event', { collection_id: curCol.id, event_id: id, name, event_date: date });
+    await api('/upsert-event', { collection_id: curCol.collection_id, event_id: id, name, event_date: date });
     cancelEditEvent();
     loadEvents();
     showToast('Event Updated');
@@ -707,52 +720,58 @@ async function updateEvent(){
 /* ================= GALLERY & LIGHTBOX ================= */
 let photosNext = null;
 async function loadPhotos(reset=false, loadMore=false){
+  if(!curCol) return;
   if(reset) photosNext = null;
+  
   const eid = $('#galEventFilter').value;
-  const payload = { collection_id: curCol.id };
+  const payload = { collection_id: curCol.collection_id };
   if(eid) payload.event_id = eid;
   if(loadMore && photosNext) payload.next_token = photosNext;
 
-  const res = await api('/get-photos', payload);
-  const photos = res.items || res.photos || []; 
-  photosNext = res.nextToken; 
+  try {
+      const res = await api('/get-photos', payload);
+      const photos = res.items || res.photos || []; 
+      photosNext = res.nextToken; 
 
-  if(reset) {
-      $('#galGrid').innerHTML = '';
-      currentPhotos = [];
-  }
-  
-  currentPhotos = reset ? photos : currentPhotos.concat(photos);
-  $('#galCount').textContent = `${currentPhotos.length} photos displayed`;
-  
-  const html = photos.map((p, idx) => {
-      const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
-      const faces = p.face_count || 0;
-      const url = p.thumbnail_url || p.url;
-      const tags = p.ai_tags && p.ai_tags.length ? p.ai_tags.slice(0,3).map(t => `<span class="tag-pill">${t}</span>`).join('') : '';
+      if(reset) {
+          $('#galGrid').innerHTML = '';
+          currentPhotos = [];
+      }
       
-      return `
-        <div class="ph-card" onclick="openLightbox(${globalIdx})">
-          <img src="${url}" loading="lazy" decoding="async" onload="this.classList.add('loaded')">
-          <div class="ph-overlay">
-            <div class="ph-meta">
-               <span><i class="fa-solid fa-face-smile"></i> ${faces} Faces</span>
-               <div style="margin-top:4px;">${tags}</div>
+      currentPhotos = reset ? photos : currentPhotos.concat(photos);
+      $('#galCount').textContent = `${currentPhotos.length} photos displayed`;
+      
+      const html = photos.map((p, idx) => {
+          const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
+          const faces = p.face_count || 0;
+          const url = p.thumbnail_url || p.url;
+          const tags = p.ai_tags && p.ai_tags.length ? p.ai_tags.slice(0,3).map(t => `<span class="tag-pill">${t}</span>`).join('') : '';
+          
+          return `
+            <div class="ph-card" onclick="openLightbox(${globalIdx})">
+              <img src="${url}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.style.display='none'">
+              <div class="ph-overlay">
+                <div class="ph-meta">
+                   <span><i class="fa-solid fa-face-smile"></i> ${faces} Faces</span>
+                   <div style="margin-top:4px;">${tags}</div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      `;
-  }).join('');
-  
-  $('#galGrid').insertAdjacentHTML('beforeend', html);
-  if(photosNext) $('#btnLoadMore').classList.remove('hidden'); else $('#btnLoadMore').classList.add('hidden');
+          `;
+      }).join('');
+      
+      $('#galGrid').insertAdjacentHTML('beforeend', html);
+      if(photosNext) $('#btnLoadMore').classList.remove('hidden'); else $('#btnLoadMore').classList.add('hidden');
+  } catch(e) { console.error("Error loading photos", e); }
 }
 
 function openLightbox(index) {
     currentPhotoIndex = index;
     const p = currentPhotos[index];
-    $('#lbImage').src = p.url; 
-    $('#lightbox').classList.add('open');
+    if(p) {
+        $('#lbImage').src = p.url; 
+        $('#lightbox').classList.add('open');
+    }
 }
 
 function closeLightbox() {
@@ -768,6 +787,7 @@ function navLightbox(dir) {
 
 async function downloadCurrentPhoto() {
     const p = currentPhotos[currentPhotoIndex];
+    if(!p) return;
     showToast('Downloading...', 'success');
     try {
         const response = await fetch(p.url);
@@ -785,7 +805,7 @@ async function deleteCurrentPhoto() {
     const p = currentPhotos[currentPhotoIndex];
     showToast('Deleting...', 'success'); 
     try {
-        await api('/delete-photo', { photo_id: p.photo_id, collection_id: curCol.id });
+        await api('/delete-photo', { photo_id: p.photo_id, collection_id: curCol.collection_id });
         currentPhotos.splice(currentPhotoIndex, 1);
         if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0); 
         loadPhotos(true); 
@@ -861,7 +881,7 @@ async function processBatch(files, eventId){
   }));
 
   const payload = {
-    collection_id: curCol.id,
+    collection_id: curCol.collection_id,
     event_id: eventId,
     files: metaList.map(m => ({ name: m.name, type: m.type, size: m.size, hash: m.hash }))
   };
@@ -890,7 +910,7 @@ async function computeHash(file) {
 function copyStaffLink() {
     const baseUrl = window.location.origin + "/EventLens_Staff_Upload.html";
     const eid = $('#upEventSel').value;
-    let url = `${baseUrl}?cid=${curCol.id}`;
+    let url = `${baseUrl}?cid=${curCol.collection_id}`;
     if(eid) url += `&eid=${eid}`;
     
     const tempInput = document.createElement("input");
@@ -911,7 +931,7 @@ async function generateLink(){
   
   try {
     const res = await api('/generate-search-link', {
-       collection_id: curCol.id,
+       collection_id: curCol.collection_id,
        event_ids: eid ? [eid] : [],
        expiry_hours: parseInt(expiry),
        password: pin
@@ -929,7 +949,7 @@ async function generateLink(){
     if(!linkId) throw new Error("Could not retrieve Link ID from backend response");
 
     const baseUrl = window.location.origin + "/index.html"; 
-    const finalUrl = `${baseUrl}?linkId=${linkId}&cid=${curCol.id}`;
+    const finalUrl = `${baseUrl}?linkId=${linkId}&cid=${curCol.collection_id}`;
     
     $('#finalLink').value = finalUrl;
     $('#finalLinkBtn').href = finalUrl;
@@ -949,7 +969,7 @@ function copyLink(){
 async function loadLeads(){
   $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
   try {
-    const res = await api('/save-details', { action: 'list', collection_id: curCol.id });
+    const res = await api('/save-details', { action: 'list', collection_id: curCol.collection_id });
     const leads = Array.isArray(res) ? res : (res.items || res.leads || []);
     
     if(leads.length === 0) {
@@ -966,6 +986,8 @@ async function loadLeads(){
     });
 
     const sortedGroups = Object.values(grouped).sort((a,b) => {
+        // Safe check for history array
+        if(!a.history || !b.history || !a.history.length || !b.history.length) return 0;
         const lastA = a.history.sort((x,y) => new Date(y.timestamp) - new Date(x.timestamp))[0];
         const lastB = b.history.sort((x,y) => new Date(y.timestamp) - new Date(x.timestamp))[0];
         return new Date(lastB.timestamp) - new Date(lastA.timestamp);
@@ -997,7 +1019,7 @@ async function loadLeads(){
                     ${g.history.map(h => `
                         <div style="background:#222; padding:8px; border-radius:8px; display:flex; align-items:center; gap:8px;">
                             <a href="${h.selfie_url}" target="_blank">
-                                <img src="${h.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" onerror="this.src='https://placehold.co/40'">
+                                <img src="${h.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'40\' fill=\'%23333\' stroke=\'%23555\' stroke-width=\'2\'/%3E%3C/svg%3E'">
                             </a>
                             <div>
                                 <div class="text-sm">${new Date(h.timestamp).toLocaleTimeString()}</div>
@@ -1049,9 +1071,9 @@ function updatePreview() {
     if(logoImg) { 
         prevLogo.src = logoImg; 
         prevLogo.style.display = 'block'; 
-        // Add error handling for placeholder
         prevLogo.onerror = function() {
-            this.src = 'https://placehold.co/80';
+            // Fallback SVG if external image fails or is blocked
+            this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23333' stroke='%2300e676' stroke-width='4'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23fff' font-family='sans-serif' font-size='14'%3ELOGO%3C/text%3E%3C/svg%3E";
         };
     }
     else prevLogo.style.display = 'none';
@@ -1115,9 +1137,7 @@ async function saveSettings() {
     showToast('Saving...');
     try {
         await api('/upsert-collection', { 
-            collection_id: curCol.collection_id, 
-            name: newName, 
-            branding: branding
+            collection_id: curCol.collection_id, name: newName, branding: branding
         });
         // Update local object
         curCol.name = newName; 
@@ -1131,11 +1151,9 @@ async function uploadAsset(input, targetId) {
     const file = input.files[0];
     if(!file) return;
     
-    // Ensure we have an event ID to attach the upload to
     let eventIdToUse = null;
     
     if(!curEvents || curEvents.length === 0) { 
-        // Try fetching events if missing
         try {
             const data = await api('/get-events', { collection_id: curCol.collection_id });
             curEvents = data.events || [];
@@ -1145,8 +1163,6 @@ async function uploadAsset(input, targetId) {
     if(curEvents.length > 0) {
         eventIdToUse = curEvents[0].event_id;
     } else {
-        // Create a dummy/hidden system event if no events exist? 
-        // For now, blocking and asking user to create event is safer logic.
         return showToast('Please create an event first to store assets.', 'error');
     }
     
@@ -1163,7 +1179,6 @@ async function uploadAsset(input, targetId) {
             const u = res.urls[0];
             await fetch(u.uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
             
-            // Extract the clean URL (remove query params)
             const publicUrl = u.uploadURL.split('?')[0];
             $(`#${targetId}`).value = publicUrl; 
             

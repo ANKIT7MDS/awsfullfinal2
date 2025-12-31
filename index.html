@@ -16,476 +16,241 @@
     :root {
       --bg: #050505;
       --card: #101010;
-      --accent: #00e676; /* Green Accent */
+      --accent: #00e676; /* Default Green */
       --accent-soft: rgba(0, 230, 118, 0.15);
       --text: #ffffff;
       --muted: #a0a0a0;
       --border: #262626;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-    body {
-      background: #050505;
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+    /* BRANDING HEADER */
+    header { 
+        position: relative; 
+        height: 280px; 
+        overflow: hidden; 
+        border-bottom: 1px solid var(--border);
+        background-size: cover; 
+        background-position: center;
+        background-image: url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop'); /* Default fallback */
     }
-
-    /* --- Header --- */
-    header {
-      padding: 20px;
-      text-align: center;
-      border-bottom: 1px solid var(--border);
-      background: rgba(16, 16, 16, 0.8);
-      backdrop-filter: blur(10px);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+    .header-overlay {
+        position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.3), var(--bg));
+        display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; text-align: center; align-items: center;
     }
-    .logo { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); }
-    .logo span { color: var(--accent); }
-
-    /* --- Main Container --- */
-    main {
-      flex: 1;
-      max-width: 600px;
-      margin: 0 auto;
-      width: 100%;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .brand-logo {
+        width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent);
+        object-fit: cover; margin-bottom: 10px; background: #000;
+        display: none; /* Hidden unless set */
     }
-
-    /* --- Cards --- */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 32px 24px;
-      text-align: center;
-      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
-      transition: 0.3s ease;
-    }
+    .brand-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
     
-    h1 { font-size: 28px; margin-bottom: 12px; line-height: 1.2; }
-    p { color: var(--muted); margin-bottom: 32px; font-size: 15px; line-height: 1.5; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
-    /* --- Selfie Preview --- */
-    .preview-box {
-      width: 160px;
-      height: 160px;
-      background: #000;
-      border-radius: 50%;
-      margin: 0 auto 32px;
-      border: 2px dashed var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
+    /* SEARCH BOX */
+    .search-card {
+        background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 30px;
+        text-align: center; margin-top: -40px; position: relative; z-index: 10;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     }
-    .preview-box img { width: 100%; height: 100%; object-fit: cover; }
-    .preview-box i { font-size: 48px; color: var(--border); }
+    .selfie-btn {
+        background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px;
+        font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+        transition: transform 0.2s;
+    }
+    .selfie-btn:hover { transform: scale(1.05); }
 
-    /* --- Buttons --- */
-    .btn {
-      width: 100%;
-      padding: 16px;
-      border-radius: 100px;
-      border: none;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .btn-primary { background: var(--accent); color: #000; }
-    .btn-primary:hover { background: #00c853; transform: scale(1.02); }
-    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
-    .btn-outline:hover { border-color: var(--text); background: rgba(255,255,255,0.05); }
-
-    /* --- Inputs --- */
-    input {
-      width: 100%;
-      padding: 16px;
-      background: #000;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      color: #fff;
-      font-size: 16px;
-      margin-bottom: 12px;
-      outline: none;
-      transition: 0.2s;
-    }
-    input:focus { border-color: var(--accent); }
-
-    /* --- Gallery Grid --- */
-    .gallery-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 4px;
-    }
-    .photo-item {
-      aspect-ratio: 1;
-      background: #222;
-      overflow: hidden;
-      cursor: pointer;
-      position: relative;
+    /* GALLERY GRID */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 30px; }
+    .photo-item { 
+        aspect-ratio: 1; background: #222; border-radius: 8px; overflow: hidden; position: relative; 
+        opacity: 0; animation: fadeIn 0.5s forwards; cursor: pointer;
     }
     .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
-    .photo-item.selected img { opacity: 0.5; transform: scale(0.95); }
-    .photo-item.selected::after {
-      content: '✓';
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: var(--accent);
-      color: #000;
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: bold;
+    .photo-item:hover img { transform: scale(1.05); }
+
+    /* MODAL */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: none; align-items: center; justify-content: center; }
+    .modal.open { display: flex; }
+    .modal-img { max-width: 90%; max-height: 80vh; border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+    .close-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; font-size: 32px; cursor: pointer; }
+    .download-btn {
+        position: absolute; bottom: 30px; background: var(--accent); color: #000; border: none;
+        padding: 12px 24px; border-radius: 30px; font-weight: 700; cursor: pointer;
     }
 
-    /* --- Lightbox --- */
-    .viewer {
-      position: fixed; inset: 0; background: #000; z-index: 200;
-      display: none; flex-direction: column;
-    }
-    .viewer.open { display: flex; }
-    .viewer-img { flex: 1; width: 100%; object-fit: contain; }
-    .viewer-controls { padding: 20px; display: flex; justify-content: space-between; background: rgba(0,0,0,0.5); }
-    .v-btn { background: transparent; border: none; color: #fff; font-size: 24px; cursor: pointer; padding: 10px; }
-
-    /* --- Utils --- */
-    .hidden { display: none !important; }
-    .loader { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { to { opacity: 1; } }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo">Event<span>Lens</span></div>
-  </header>
-
-  <main>
-    <!-- 1. INTRO / SELFIE -->
-    <div id="stepSelfie" class="card">
-      <h1>Find Your Photos</h1>
-      <p>Upload a clear selfie to instantly find all your photos from the event.</p>
-      
-      <div class="preview-box" id="previewBox">
-        <i class="fa-solid fa-camera"></i>
-      </div>
-
-      <div id="actionBtns">
-        <button class="btn btn-primary" onclick="$('#cam').click()">
-          <i class="fa-solid fa-camera"></i> Take Selfie
-        </button>
-        <button class="btn btn-outline" onclick="$('#file').click()">
-          <i class="fa-solid fa-image"></i> Upload from Gallery
-        </button>
-      </div>
-
-      <div id="searchBtnWrapper" class="hidden">
-        <button class="btn btn-primary" onclick="doSearch()">
-          Search Photos <i class="fa-solid fa-magnifying-glass"></i>
-        </button>
-        <button class="btn btn-outline" onclick="resetSelfie()">Retake</button>
-      </div>
-
-      <!-- Hidden Inputs -->
-      <input type="file" id="cam" accept="image/*" capture="user" hidden onchange="handleInput(this)">
-      <input type="file" id="file" accept="image/*" hidden onchange="handleInput(this)">
+<header id="pageHeader">
+    <div class="header-overlay">
+        <img id="pageLogo" class="brand-logo" alt="Logo">
+        <div class="brand-title" id="pageTitle">EventLens Gallery</div>
     </div>
+</header>
 
-    <!-- 2. LOADING -->
-    <div id="stepLoading" class="card hidden">
-      <div class="loader"></div>
-      <h2>Scanning Gallery...</h2>
-      <p>Matching your face with thousands of photos.</p>
-    </div>
+<div class="container">
+    <div class="search-card">
+        <h3>Find Your Photos</h3>
+        <p style="color:var(--muted); margin-bottom: 20px;">Upload a selfie to find all your photos instantly using AI.</p>
+        
+        <input type="file" id="selfieInput" accept="image/*" hidden onchange="processSelfie(this.files[0])">
+        <button class="selfie-btn" onclick="document.getElementById('selfieInput').click()">
+            <i class="fa-solid fa-camera"></i> Find My Photos
+        </button>
 
-    <!-- 3. DETAILS FORM -->
-    <div id="stepForm" class="card hidden">
-      <div style="font-size: 40px; margin-bottom: 10px;">🎉</div>
-      <h2><span id="matchCount" style="color:var(--accent)">0</span> Photos Found</h2>
-      <p>Enter your details to unlock and download them.</p>
-      
-      <input id="userName" placeholder="Your Name">
-      <input id="userPhone" type="tel" placeholder="Mobile Number">
-      
-      <button class="btn btn-primary" onclick="submitDetails()">
-        Unlock Photos <i class="fa-solid fa-unlock"></i>
-      </button>
-    </div>
-
-    <!-- 4. GALLERY -->
-    <div id="stepGallery" class="hidden">
-      <div class="gallery-header">
-        <div>
-          <h3 style="color:#fff; margin:0;">My Photos</h3>
-          <span style="color:var(--muted); font-size:12px;">Tap to select</span>
+        <div id="loader" class="hidden" style="margin-top: 20px; color: var(--accent);">
+            <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+            <p>Scanning faces...</p>
         </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn-outline" style="padding:8px 16px; width:auto; border-radius:50px; font-size:12px;" onclick="selectAll()">Select All</button>
-          <button class="btn-primary" style="padding:8px 16px; width:auto; border-radius:50px; font-size:12px;" onclick="downloadZip()">Download ZIP</button>
-        </div>
-      </div>
-      
-      <div class="grid" id="grid"></div>
-      
-      <div style="text-align:center; margin-top:40px;">
-        <p style="margin-bottom:10px;">Missed some photos?</p>
-        <button class="btn btn-outline" onclick="location.reload()">Try Another Selfie</button>
-      </div>
     </div>
-  </main>
 
-  <!-- LIGHTBOX -->
-  <div id="viewer" class="viewer">
-    <div style="padding:20px; display:flex; justify-content:flex-end;">
-      <button class="v-btn" onclick="closeViewer()">&times;</button>
-    </div>
-    <img id="viewerImage" class="viewer-img">
-    <div class="viewer-controls">
-      <button class="v-btn" onclick="prevImage()"><i class="fa-solid fa-chevron-left"></i></button>
-      <button class="v-btn" style="color:var(--accent)" onclick="downloadCurrent()"><i class="fa-solid fa-download"></i></button>
-      <button class="v-btn" onclick="nextImage()"><i class="fa-solid fa-chevron-right"></i></button>
-    </div>
-  </div>
+    <h3 id="resultsTitle" class="hidden" style="margin-top: 30px;">Your Photos <span id="matchCount" style="color:var(--accent)"></span></h3>
+    <div class="grid" id="galleryGrid"></div>
+</div>
+
+<!-- VIEWER -->
+<div class="modal" id="viewer">
+    <button class="close-btn" onclick="closeViewer()">&times;</button>
+    <img id="viewerImg" class="modal-img">
+    <button class="download-btn" onclick="downloadPhoto()">Download HD</button>
+</div>
 
 <script>
-  /* ================= CONFIG ================= */
-  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-  const params = new URLSearchParams(location.search);
-  const cid = params.get('cid') || params.get('collectionId');
-  const linkId = params.get('linkId'); // Backup parameter
+    const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkId = urlParams.get('linkId');
+    const cid = urlParams.get('cid'); // Collection ID for branding
 
-  /* ================= STATE ================= */
-  let selfieBase64 = null;
-  let filteredPhotos = [];
-  let selectedUrls = new Set();
-  let currentViewerIndex = 0;
+    let currentPhotoUrl = '';
 
-  /* ================= UTILS ================= */
-  const $ = (s) => document.querySelector(s);
-  const show = (id) => {
-    ['stepSelfie','stepLoading','stepForm','stepGallery'].forEach(i => $(`#${i}`).classList.add('hidden'));
-    $(`#${id}`).classList.remove('hidden');
-  };
-
-  /* ================= INIT CHECK ================= */
-  window.onload = () => {
-    // If neither cid nor linkId is present, show error.
-    if(!cid && !linkId) {
-      document.body.innerHTML = "<h2 style='color:#fff;text-align:center;margin-top:50px;'>Invalid Link: Missing ID</h2>";
-    }
-  };
-
-  /* ================= HANDLERS ================= */
-  window.handleInput = (input) => {
-    const file = input.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      $('#previewBox').innerHTML = `<img src="${e.target.result}">`;
-      selfieBase64 = e.target.result.split(',')[1];
-      $('#actionBtns').classList.add('hidden');
-      $('#searchBtnWrapper').classList.remove('hidden');
+    window.onload = async () => {
+        // Branding Logic
+        // In a real app, you might fetch branding by linkId or cid from a public endpoint.
+        // Here we simulate or assume if passed in some way.
+        // For now, if you implement a public /get-collection-info endpoint, call it here.
+        // Assuming we might have branding info stored or we just check if the user provided customized params.
+        
+        // Example: If backend supports fetching public info:
+        if(cid) {
+             // Mockup: Fetch branding (Replace with actual API call if available)
+             // fetch(`${API_BASE}/public-collection-info?cid=${cid}`)...
+             // For now, we rely on default styles or manual overrides if implemented.
+             console.log("Branding for CID:", cid);
+        }
     };
-    reader.readAsDataURL(file);
-  };
 
-  window.resetSelfie = () => {
-    selfieBase64 = null;
-    $('#previewBox').innerHTML = `<i class="fa-solid fa-camera"></i>`;
-    $('#actionBtns').classList.remove('hidden');
-    $('#searchBtnWrapper').classList.add('hidden');
-  };
-
-  window.doSearch = async () => {
-    if(!selfieBase64) return alert("Selfie required!");
-    show('stepLoading');
-
-    try {
-      const payload = {
-        selfie_image: selfieBase64,
-        collection_id: cid || linkId, 
-      };
-
-      // Ensure linkId is sent if available
-      if(linkId) {
-         payload.link_id = linkId;
-         payload.linkId = linkId;
-      } else {
-         // Fallback: If backend demands it, send cid as linkId
-         payload.link_id = cid;
-         payload.linkId = cid;
-      }
-
-      const res = await fetch(`${API_BASE}/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.message || data.error || "Search failed");
-
-      filteredPhotos = data.urls || data.matches || [];
-      
-      if(filteredPhotos.length === 0) {
-        alert("No matches found. Try a clearer photo.");
-        show('stepSelfie');
-        window.resetSelfie();
-        return;
-      }
-
-      $('#matchCount').innerText = filteredPhotos.length;
-      show('stepForm');
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-
-    } catch(e) {
-      alert("Error: " + e.message);
-      show('stepSelfie');
-      window.resetSelfie();
-    }
-  };
-
-  window.submitDetails = async () => {
-    const name = $('#userName').value.trim();
-    const phone = $('#userPhone').value.trim();
-    if(!name || !phone) return alert("Please fill details");
-
-    // --- SAVE DETAILS PAYLOAD FIX ---
-    // Sending Comprehensive Data
-    const payload = {
-      collection_id: cid || linkId,
-      name: name,
-      mobile: phone,
-      match_count: filteredPhotos.length,
-      photo_count: filteredPhotos.length, 
-      selfie_image: selfieBase64 
-    };
-    
-    // Use linkId if available, otherwise fallback to cid to prevent "None"
-    payload.link_id = linkId || cid; 
-
-    fetch(`${API_BASE}/save-details`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    renderGrid();
-    show('stepGallery');
-  };
-
-  function renderGrid() {
-    const grid = $('#grid');
-    grid.innerHTML = filteredPhotos.map((p, idx) => {
-      const url = typeof p === 'string' ? p : (p.url || p.s3_url);
-      const isSel = selectedUrls.has(url) ? 'selected' : '';
-      if(typeof p !== 'string') p.url = url; else filteredPhotos[idx] = {url:url};
-      
-      return `
-        <div class="photo-item ${isSel}" onclick="toggleSelect('${url}')">
-          <img src="${url}" loading="lazy">
-          <div style="position:absolute; bottom:5px; right:5px;">
-             <button class="btn-primary" style="padding:4px 8px; font-size:10px; border-radius:20px;" onclick="event.stopPropagation(); openViewer(${idx})">View</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function toggleSelect(url) {
-    selectedUrls.has(url) ? selectedUrls.delete(url) : selectedUrls.add(url);
-    renderGrid();
-  }
-
-  window.selectAll = () => {
-    if(selectedUrls.size === filteredPhotos.length) selectedUrls.clear();
-    else filteredPhotos.forEach(p => selectedUrls.add(p.url));
-    renderGrid();
-  };
-
-  window.downloadZip = async function() {
-    if(selectedUrls.size === 0) return alert("Select photos first!");
-    
-    const btn = $('button[onclick="downloadZip()"]');
-    const oldText = btn.innerHTML;
-    btn.innerHTML = `Zipping...`;
-    btn.disabled = true;
-
-    const zip = new JSZip();
-    const urls = Array.from(selectedUrls);
-    let successCount = 0;
-    
-    for(let i=0; i<urls.length; i++) {
-      try {
-          // Attempt fetch. If CORS fails, it will throw.
-          const response = await fetch(urls[i]);
-          if (!response.ok) throw new Error("Network response was not ok");
-          const blob = await response.blob();
-          zip.file(`photo_${i+1}.jpg`, blob);
-          successCount++;
-      } catch(e) {
-          console.error("Download failed for item " + i, e);
-          // Silent fail for individual items allows others to proceed
-      }
-    }
-    
-    if (successCount === 0) {
-        alert("Could not download photos due to server security settings (CORS). Please use 'View' -> Download on individual photos.");
-        btn.innerHTML = oldText;
-        btn.disabled = false;
-        return;
+    // To be called if branding data is available
+    function applyBranding(data) {
+        if(data.color) {
+            document.documentElement.style.setProperty('--accent', data.color);
+            document.documentElement.style.setProperty('--accent-soft', data.color + '26'); // 15% opacity
+        }
+        if(data.header_img) {
+            document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
+        }
+        if(data.logo) {
+            const logo = document.getElementById('pageLogo');
+            logo.src = data.logo;
+            logo.style.display = 'block';
+        }
+        if(data.name) {
+            document.getElementById('pageTitle').innerText = data.name;
+        }
     }
 
-    const content = await zip.generateAsync({type:"blob"});
-    saveAs(content, "Photos.zip");
-    
-    btn.innerHTML = oldText;
-    btn.disabled = false;
-  };
+    async function processSelfie(file) {
+        if(!file) return;
+        
+        // UI Updates
+        document.getElementById('loader').classList.remove('hidden');
+        document.getElementById('galleryGrid').innerHTML = '';
+        document.getElementById('resultsTitle').classList.add('hidden');
 
-  function openViewer(index) {
-    currentViewerIndex = index;
-    document.getElementById('viewerImage').src = filteredPhotos[index].url;
-    document.getElementById('viewer').classList.add('open');
-  }
-  window.closeViewer = () => document.getElementById('viewer').classList.remove('open');
-  window.nextImage = () => { currentViewerIndex = (currentViewerIndex + 1) % filteredPhotos.length; openViewer(currentViewerIndex); };
-  window.prevImage = () => { currentViewerIndex = (currentViewerIndex - 1 + filteredPhotos.length) % filteredPhotos.length; openViewer(currentViewerIndex); };
-  
-  window.downloadCurrent = () => {
-      const url = filteredPhotos[currentViewerIndex].url;
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `photo_${currentViewerIndex}.jpg`;
-      a.target = "_blank"; // Fallback to new tab if download blocked
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-  };
+        try {
+            // Convert to Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const base64 = reader.result; // Data URL
 
+                // API Call
+                const res = await fetch(`${API_BASE}/search`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        linkId: linkId, 
+                        selfie_image: base64
+                    })
+                });
+
+                const data = await res.json();
+                document.getElementById('loader').classList.add('hidden');
+                
+                if(data.matches && data.matches.length > 0) {
+                    renderGallery(data.matches);
+                    
+                    // Save Lead (Optional, silent)
+                    fetch(`${API_BASE}/save-details`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            linkId: linkId,
+                            mobile: "WebGuest", // Or prompt user
+                            name: "Guest",
+                            selfie_image: base64,
+                            photo_count: data.matches.length
+                        })
+                    });
+
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                } else {
+                    alert("No matches found. Try a clearer selfie!");
+                }
+            };
+        } catch(e) {
+            alert("Error searching photos.");
+            document.getElementById('loader').classList.add('hidden');
+        }
+    }
+
+    function renderGallery(photos) {
+        const grid = document.getElementById('galleryGrid');
+        document.getElementById('resultsTitle').classList.remove('hidden');
+        document.getElementById('matchCount').innerText = `(${photos.length})`;
+
+        grid.innerHTML = photos.map(p => `
+            <div class="photo-item" onclick="openViewer('${p.url}')">
+                <img src="${p.url}" loading="lazy">
+            </div>
+        `).join('');
+    }
+
+    function openViewer(url) {
+        currentPhotoUrl = url;
+        document.getElementById('viewerImg').src = url;
+        document.getElementById('viewer').classList.add('open');
+    }
+
+    function closeViewer() {
+        document.getElementById('viewer').classList.remove('open');
+    }
+
+    async function downloadPhoto() {
+        if(!currentPhotoUrl) return;
+        try {
+            const res = await fetch(currentPhotoUrl);
+            const blob = await res.blob();
+            saveAs(blob, "eventlens_photo.jpg");
+        } catch(e) {
+            window.open(currentPhotoUrl, '_blank');
+        }
+    }
 </script>
 </body>
 </html>

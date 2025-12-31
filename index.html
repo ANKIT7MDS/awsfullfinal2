@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Find My Photos - EventLens</title>
+  <title>EventLens – Find My Photos</title>
   
-  <!-- Libs -->
+  <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* ====== CSS EXACT SAME AS YOUR FILE ====== */
+    /* DYNAMIC VARIABLES */
     :root {
       --bg: #000000;
       --card-bg: #111111;
@@ -23,148 +23,382 @@
       --border: #333333;
       --radius: 16px;
     }
+
     * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
-    .header { position: relative; height: 200px; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 40px; background: #222; }
+
+    /* --- HEADER --- */
+    .header { position: relative; height: 180px; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; background: #222; }
     .header::after { content:''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg), transparent); }
     .header-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
-    .logo-area { position: relative; z-index: 10; text-align: center; margin-top: -40px; }
-    .logo-img { width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--card-bg); background: #000; object-fit: cover; }
-    .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; flex: 1; }
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; text-align: center; }
-    .btn { background: var(--primary); color: #000; border: none; padding: 16px; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; }
-    .btn.outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-    input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 12px; margin-bottom: 12px; font-size: 16px; }
+    
+    .logo-area { position: relative; z-index: 10; text-align: center; margin-top: -40px; margin-bottom: 20px; }
+    .logo-img { width: 80px; height: 80px; border-radius: 50%; border: 4px solid var(--card-bg); background: #000; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .brand-title { font-size: 22px; font-weight: 800; margin-top: 8px; }
+    .brand-tagline { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+
+    /* --- CONTAINER --- */
+    .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; flex: 1; display: flex; flex-direction: column; }
+
+    /* --- CARDS --- */
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    h2 { margin: 0 0 10px; font-size: 20px; font-weight: 700; }
+    p { margin: 0 0 24px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+
+    /* --- BUTTONS --- */
+    .btn { background: var(--primary); color: #000; border: none; padding: 14px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+    .btn:active { transform: scale(0.98); opacity: 0.9; }
+    .btn.secondary { background: rgba(255,255,255,0.1); color: #fff; }
+    .btn.outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 12px; font-size: 13px; }
+    
+    /* --- INPUTS --- */
+    input { width: 100%; padding: 14px; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 12px; margin-bottom: 12px; font-size: 16px; font-family: inherit; }
+    input:focus { border-color: var(--primary); }
+
+    /* --- SELFIE PREVIEW --- */
+    .selfie-box { width: 140px; height: 140px; margin: 0 auto 24px; border-radius: 50%; overflow: hidden; border: 4px solid var(--border); background: #000; display: flex; align-items: center; justify-content: center; position: relative; }
+    .selfie-box img { width: 100%; height: 100%; object-fit: cover; }
+    .selfie-box i { font-size: 40px; color: #333; }
+
+    /* --- GALLERY --- */
+    .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 4px; }
+    .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding-bottom: 40px; }
+    .photo-card { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: #222; cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-card.selected { border-color: var(--primary); }
+    .photo-card .check { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; background: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0.8; transition: 0.2s; }
+    .photo-card.selected .check { background: var(--primary); border-color: var(--primary); color: #000; opacity: 1; }
+
+    /* --- UTILS --- */
     .hidden { display: none !important; }
+    .loader { width: 40px; height: 40px; border: 4px solid #333; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .footer { text-align: center; padding: 20px; color: #444; font-size: 11px; margin-top: auto; }
+
+    /* --- LIGHTBOX --- */
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: none; flex-direction: column; justify-content: center; align-items: center; }
+    .lightbox.open { display: flex; }
+    .lb-img { max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+    .lb-controls { position: absolute; bottom: 40px; display: flex; gap: 20px; }
+    .lb-btn { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+    .lb-close { position: absolute; top: 20px; right: 20px; font-size: 30px; color: #fff; background: transparent; border: none; cursor: pointer; }
   </style>
 </head>
-
 <body>
+
+<!-- HEADER -->
+<div class="header">
+  <img id="headerImg" class="header-img" src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop">
+</div>
+<div class="logo-area">
+  <img id="logoImg" class="logo-img" src="https://cdn-icons-png.flaticon.com/512/3249/3249935.png">
+  <div class="brand-title">Find My Photos</div>
+  <div class="brand-tagline">Face Recognition Gallery</div>
+</div>
 
 <div class="container">
 
-  <div id="viewInit" class="card">
+  <!-- STEP 1: WELCOME & SELFIE -->
+  <div id="step1" class="card">
     <h2>Welcome Guest</h2>
-    <p>To access this private gallery, please verify yourself.</p>
-    <button class="btn" onclick="startFlow()">Find My Photos</button>
+    <p>Upload a selfie to find all your photos from the event instantly.</p>
+    
+    <div class="selfie-box" id="selfiePreview">
+       <i class="fa-regular fa-user"></i>
+    </div>
+
+    <!-- Buttons -->
+    <div id="uploadBtns">
+      <button class="btn" onclick="$('#camInput').click()">
+        <i class="fa-solid fa-camera"></i> Take Selfie
+      </button>
+      <input type="file" id="camInput" accept="image/*" capture="user" hidden onchange="handleFile(this)">
+
+      <button class="btn outline" style="margin-top:10px" onclick="$('#fileInput').click()">
+        <i class="fa-solid fa-image"></i> Upload from Gallery
+      </button>
+      <input type="file" id="fileInput" accept="image/*" hidden onchange="handleFile(this)">
+    </div>
+
+    <!-- Search Action (Hidden initially) -->
+    <div id="searchActions" class="hidden">
+       <button class="btn" onclick="startSearch()">
+         Search Photos <i class="fa-solid fa-magnifying-glass"></i>
+       </button>
+       <button class="btn outline" style="margin-top:10px" onclick="resetSelfie()">
+         Retake
+       </button>
+    </div>
   </div>
 
-  <div id="viewSelfie" class="card hidden">
-    <h2>Find Your Face</h2>
-    <input type="file" accept="image/*" capture="user" onchange="handleSelfie(this)">
-    <button id="btnSearch" class="btn hidden" onclick="doSearch()">Search Photos</button>
+  <!-- STEP 2: LOADING -->
+  <div id="step2" class="card hidden">
+    <div class="loader"></div>
+    <h2>Scanning Gallery...</h2>
+    <p>Matching your face with thousands of photos.</p>
   </div>
 
-  <div id="viewScan" class="card hidden">
-    <p>Scanning gallery…</p>
+  <!-- STEP 3: DETAILS FORM -->
+  <div id="step3" class="card hidden">
+    <div style="font-size: 40px; margin-bottom: 10px;">🎉</div>
+    <h2><span id="matchCount" style="color:var(--primary)">0</span> Photos Found!</h2>
+    <p>Please enter your details to view them.</p>
+    
+    <input id="inpName" placeholder="Your Full Name">
+    <input id="inpPhone" type="tel" placeholder="Mobile Number">
+    
+    <button class="btn" onclick="submitDetails()">
+      Unlock Photos <i class="fa-solid fa-lock-open"></i>
+    </button>
   </div>
 
-  <div id="viewForm" class="card hidden">
-    <h2><span id="matchCount">0</span> Photos Found</h2>
-    <input id="userName" placeholder="Your Name">
-    <input id="userPhone" placeholder="Mobile Number">
-    <button class="btn" onclick="submitDetails()">View Photos</button>
+  <!-- STEP 4: GALLERY -->
+  <div id="step4" class="hidden" style="width:100%">
+    <div class="gallery-header">
+       <div>
+         <h3 style="margin:0; font-size:18px; color:#fff;">My Photos</h3>
+         <span style="font-size:12px; color:var(--text-muted);">Click to select</span>
+       </div>
+       <div style="display:flex; gap:8px;">
+         <button class="btn secondary" style="width:auto; padding: 8px 16px; font-size:12px;" onclick="selectAll()">
+           Select All
+         </button>
+         <button class="btn" style="width:auto; padding: 8px 16px; font-size:12px;" onclick="downloadZip()">
+           <i class="fa-solid fa-download"></i> ZIP
+         </button>
+       </div>
+    </div>
+
+    <div class="photo-grid" id="grid"></div>
+    
+    <div style="text-align:center; margin-top:20px;">
+       <button class="btn outline" onclick="location.reload()">Search Again</button>
+    </div>
   </div>
 
-  <div id="viewGallery" class="hidden">
-    <p id="galSubtext"></p>
-    <div id="photoGrid"></div>
-  </div>
+</div>
 
+<div class="footer">Powered by EventLens AI</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lb">
+   <button class="lb-close" onclick="$('#lb').classList.remove('open')">&times;</button>
+   <img id="lbImg" class="lb-img">
+   <div class="lb-controls">
+      <button class="lb-btn" onclick="downloadCurrent()"><i class="fa-solid fa-download"></i></button>
+      <button class="lb-btn" onclick="shareCurrent()"><i class="fa-solid fa-share-nodes"></i></button>
+   </div>
 </div>
 
 <script>
 /* ================= CONFIG ================= */
 const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
 const params = new URLSearchParams(location.search);
-const linkId = params.get('linkId');
-const cid = params.get('cid');
+const cid = params.get('cid') || params.get('collectionId');
+const linkId = params.get('linkId'); // Backup parameter
 
 /* ================= STATE ================= */
 let selfieBase64 = null;
 let foundPhotos = [];
+let selectedPhotos = new Set();
+let currentUrl = null;
 
 /* ================= UTILS ================= */
-const $ = s => document.querySelector(s);
-const show = id => {
-  document.querySelectorAll('.card,#viewGallery').forEach(e=>e.classList.add('hidden'));
+const $ = (s) => document.querySelector(s);
+const show = (id) => {
+  document.querySelectorAll('.card, #step4').forEach(e => e.classList.add('hidden'));
   $(id).classList.remove('hidden');
 };
 
-/* ================= FLOW ================= */
-function startFlow(){ show('#viewSelfie'); }
+/* ================= INIT ================= */
+window.onload = () => {
+  if(!cid && !linkId) {
+    document.body.innerHTML = "<div class='container'><div class='card'><h2 style='color:#ef4444'>Invalid Link</h2><p>Link ID or Collection ID missing.</p></div></div>";
+  }
+};
 
-/* ================= SELFIE ================= */
-function handleSelfie(input){
+/* ================= HANDLERS ================= */
+function handleFile(input){
   const file = input.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    selfieBase64 = e.target.result;   // ✅ FULL DATA URI
-    $('#btnSearch').classList.remove('hidden');
+  reader.onload = (e) => {
+    $('#selfiePreview').innerHTML = `<img src="${e.target.result}">`;
+    selfieBase64 = e.target.result.split(',')[1]; // Raw Base64
+    $('#uploadBtns').classList.add('hidden');
+    $('#searchActions').classList.remove('hidden');
   };
   reader.readAsDataURL(file);
 }
 
-/* ================= SEARCH ================= */
-async function doSearch(){
-  show('#viewScan');
-
-  const payload = {
-    selfie_image: selfieBase64,
-    linkId: linkId
-  };
-
-  const res = await fetch(`${API_BASE}/search`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  });
-
-  const data = await res.json();
-  foundPhotos = data.matches || [];
-
-  $('#matchCount').innerText = foundPhotos.length;
-  show('#viewForm');
+function resetSelfie(){
+  selfieBase64 = null;
+  $('#selfiePreview').innerHTML = `<i class="fa-regular fa-user"></i>`;
+  $('#uploadBtns').classList.remove('hidden');
+  $('#searchActions').classList.add('hidden');
 }
 
-/* ================= SAVE DETAILS (FIXED) ================= */
-async function submitDetails(){
-  const name = $('#userName').value.trim();
-  const phone = $('#userPhone').value.trim();
+async function startSearch(){
+  if(!selfieBase64) return alert("Please take a selfie");
+  show('#step2');
 
-  if(!name || !phone){
-    alert("Please enter details");
-    return;
+  try {
+    // === RESTORED LOGIC FROM WORKING FILE ===
+    // Using 'collection_id' and 'image' as seen in working file
+    // BUT adding 'selfie_image' and 'link_id' to satisfy backend errors you saw.
+    const payload = {
+      collection_id: cid || linkId, // ID handling
+      image: selfieBase64,          // Old working key
+      selfie_image: selfieBase64,   // New required key
+      link_id: linkId || cid,       // Just in case
+      linkId: linkId || cid
+    };
+
+    const res = await fetch(`${API_BASE}/search`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message || data.error || "Search failed");
+
+    // Handle 'urls' or 'matches' key
+    foundPhotos = data.urls || data.matches || [];
+    
+    if(foundPhotos.length === 0){
+      alert("No photos found. Try a clearer selfie.");
+      show('#step1');
+      resetSelfie();
+      return;
+    }
+
+    $('#matchCount').innerText = foundPhotos.length;
+    show('#step3');
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+  } catch(e) {
+    alert("Error: " + e.message);
+    show('#step1');
+    resetSelfie();
   }
+}
 
-  await fetch(`${API_BASE}/save-details`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      name: name,
-      mobile: phone,
-      linkId: linkId,
-      collection_id: cid,
-      photo_count: foundPhotos.length,
+async function submitDetails(){
+  const name = $('#inpName').value.trim();
+  const phone = $('#inpPhone').value.trim();
+  if(!name || !phone) return alert("Please fill details");
 
-      /* 🔥 THIS WAS MISSING – NOW FIXED */
-      selfie_image: selfieBase64
-    })
+  // --- SAVE DETAILS MATCHING WORKING LOGIC ---
+  const payload = {
+    collection_id: cid || linkId,
+    name: name,
+    mobile: phone,
+    match_count: foundPhotos.length,
+    link_id: linkId || cid // Ensure this is sent!
+  };
+
+  // Fire & Forget
+  fetch(`${API_BASE}/save-details`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
   });
 
   renderGallery();
 }
 
-/* ================= GALLERY ================= */
+/* ================= GALLERY LOGIC (From Working File) ================= */
 function renderGallery(){
-  show('#viewGallery');
-  $('#galSubtext').innerText = `${foundPhotos.length} photos`;
-  $('#photoGrid').innerHTML = foundPhotos
-    .map(p=>`<img src="${p.url}" style="width:100%;margin-bottom:8px;">`)
-    .join('');
+  show('#step4');
+  const grid = $('#grid');
+  // Handle if photos are objects or strings
+  grid.innerHTML = foundPhotos.map(p => {
+    const url = typeof p === 'string' ? p : (p.url || p.s3_url);
+    const isSel = selectedPhotos.has(url) ? 'selected' : '';
+    return `
+      <div class="photo-card ${isSel}" onclick="togglePhoto('${url}', this)">
+         <img src="${url}" loading="lazy" crossorigin="anonymous">
+         <div class="check"><i class="fa-solid fa-check"></i></div>
+      </div>
+    `;
+  }).join('');
 }
-</script>
 
+function togglePhoto(url, el){
+  // Tap to select logic
+  if(selectedPhotos.has(url)){
+      selectedPhotos.delete(url);
+      el.classList.remove('selected');
+  } else {
+      selectedPhotos.add(url);
+      el.classList.add('selected');
+  }
+  // Open Lightbox if needed (here we prioritize selection for zip)
+  // openLightbox(url); 
+}
+
+function selectAll(){
+  if(selectedPhotos.size === foundPhotos.length) selectedPhotos.clear();
+  else foundPhotos.forEach(p => selectedPhotos.add(typeof p === 'string' ? p : p.url));
+  renderGallery();
+}
+
+/* ================= LIGHTBOX & ACTIONS ================= */
+function openLightbox(url){
+  currentUrl = url;
+  $('#lbImg').src = url;
+  $('#lb').classList.add('open');
+}
+
+function downloadCurrent(){
+  // Use anchor tag for reliable single download
+  const link = document.createElement('a');
+  link.href = currentUrl;
+  link.download = `photo_${Date.now()}.jpg`;
+  link.target = "_blank";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function shareCurrent(){
+  if(navigator.share) navigator.share({title:'My Photo', url: currentUrl});
+  else alert("Link copied!");
+}
+
+async function downloadZip(){
+  const zip = new JSZip();
+  const folder = zip.folder("MyPhotos");
+  const btn = $('button[onclick="downloadZip()"]');
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Zipping...`;
+  
+  // Download selection OR all
+  const targetList = selectedPhotos.size > 0 ? Array.from(selectedPhotos) : foundPhotos.map(p => typeof p==='string'?p:p.url);
+
+  let i = 0;
+  for(const url of targetList){
+    try{
+      // Attempt fetch with cors mode, fallback if fails
+      const blob = await fetch(url, {mode: 'cors'}).then(r=>r.blob());
+      folder.file(`photo_${++i}.jpg`, blob);
+    }catch(e){
+        console.error("Download failed for", url, e);
+    }
+  }
+  
+  const content = await zip.generateAsync({type:"blob"});
+  saveAs(content, "EventLens_Memories.zip");
+  btn.innerHTML = `<i class="fa-solid fa-download"></i> ZIP`;
+}
+
+function shareLink(){
+    const text = `Hey! I found ${foundPhotos.length} photos of myself using EventLens AI. Check it out: ${window.location.href}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+</script>
 </body>
 </html>

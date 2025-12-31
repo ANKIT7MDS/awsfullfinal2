@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Upload - EventLens</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+
+  <style>
+    body { background: #000; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 500px; }
+    .card { background: #111; border: 1px solid #333; border-radius: 16px; padding: 30px; text-align: center; }
+    h2 { color: #00e676; margin-bottom: 10px; }
+    
+    select { width: 100%; padding: 14px; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 20px; font-size: 16px; }
+    
+    .drop-zone { border: 2px dashed #444; padding: 40px; border-radius: 12px; cursor: pointer; transition: 0.2s; margin-bottom: 20px; }
+    .drop-zone:hover { border-color: #00e676; background: rgba(0, 230, 118, 0.05); }
+    
+    .btn { background: #00e676; color: #000; border: none; padding: 16px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .progress { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 20px; display: none; }
+    .bar { height: 100%; width: 0%; background: #00e676; transition: width 0.2s; }
+    .status { margin-top: 10px; font-size: 13px; color: #888; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h2><i class="fa-solid fa-bolt"></i> Quick Upload</h2>
+    <p id="colName" style="color:#888; margin-bottom:20px;">Loading Collection...</p>
+    
+    <label style="display:block; text-align:left; font-size:12px; margin-bottom:5px; color:#aaa;">SELECT EVENT</label>
+    <select id="eventSel"><option>Loading events...</option></select>
+
+    <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+       <i class="fa-solid fa-cloud-arrow-up" style="font-size: 40px; color: #555; margin-bottom: 10px;"></i>
+       <p style="margin:0; font-size:14px;">Tap to select photos</p>
+       <input type="file" id="fileInput" multiple accept="image/*" hidden onchange="handleFiles(this.files)">
+    </div>
+
+    <div id="queueInfo" style="display:none; margin-bottom:15px; font-size:14px;">
+       <span id="qCount">0</span> photos selected
+    </div>
+
+    <button class="btn" id="upBtn" onclick="startUpload()" disabled>START UPLOAD</button>
+
+    <div class="progress" id="progBox"><div class="bar" id="progBar"></div></div>
+    <div class="status" id="statusText"></div>
+  </div>
+</div>
+
+<script>
+  // CONFIG
+  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+  const params = new URLSearchParams(location.search);
+  const cid = params.get('cid');
+  
+  if(!cid) document.body.innerHTML = "<h2 style='color:red'>Invalid Link (Missing CID)</h2>";
+  else {
+      if(params.get('name')) document.getElementById('colName').textContent = params.get('name');
+      loadEvents();
+  }
+
+  // NOTE: This page assumes a public 'get-events' or uses a shared staff token/key. 
+  // If your API is strictly authenticated, you need to pass a temporary token in URL or login.
+  // For now, assuming standard flow requiring Auth. 
+  // **IF AUTH REQUIRED**: Staff needs to login on main page first.
+  // Or better: The Photographer logs in and opens this page for staff.
+
+  async function loadEvents(){
+     // Using a simplified fetch assuming token is in localStorage from main domain login
+     const token = localStorage.getItem('idToken');
+     if(!token) return document.getElementById('statusText').innerText = "Please login as Photographer first.";
+     
+     const res = await fetch(`${API_BASE}/get-events`, {
+         method: 'POST',
+         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ collection_id: cid })
+     });
+     const data = await res.json();
+     document.getElementById('eventSel').innerHTML = data.events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+  }
+
+  let queue = [];
+  function handleFiles(files){
+      Array.from(files).forEach(f => queue.push(f));
+      document.getElementById('queueInfo').style.display = 'block';
+      document.getElementById('qCount').innerText = queue.length;
+      document.getElementById('upBtn').disabled = false;
+  }
+
+  async function startUpload(){
+      const eid = document.getElementById('eventSel').value;
+      const token = localStorage.getItem('idToken');
+      const btn = document.getElementById('upBtn');
+      const prog = document.getElementById('progBox');
+      const bar = document.getElementById('progBar');
+      const stat = document.getElementById('statusText');
+
+      btn.disabled = true;
+      prog.style.display = 'block';
+
+      // Batching 50
+      let processed = 0;
+      for(let i=0; i<queue.length; i+=50){
+          const chunk = queue.slice(i, i+50);
+          stat.innerText = `Uploading Batch ${Math.ceil((i+1)/50)}...`;
+          
+          // 1. Get URLs
+          const metas = await Promise.all(chunk.map(async f => {
+              const b = await f.arrayBuffer();
+              const h = await crypto.subtle.digest('SHA-256', b);
+              const hash = Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+              return { name: f.name, type: 'image/jpeg', size: f.size, hash: hash, file: f };
+          }));
+
+          const res = await fetch(`${API_BASE}/generate-upload-urls`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ collection_id: cid, event_id: eid, files: metas })
+          });
+          const data = await res.json();
+
+          // 2. Upload
+          await Promise.all(data.urls.map(u => {
+              const item = metas.find(m => m.hash === u.hash);
+              return fetch(u.uploadURL, {
+                  method: 'PUT',
+                  body: item.file,
+                  headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
+              });
+          }));
+          
+          processed += chunk.length;
+          bar.style.width = `${(processed/queue.length)*100}%`;
+      }
+
+      stat.innerText = "Upload Complete!";
+      stat.style.color = "#00e676";
+      queue = [];
+      document.getElementById('fileInput').value = '';
+  }
+</script>
+</body>
+</html>

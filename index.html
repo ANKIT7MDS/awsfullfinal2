@@ -1,200 +1,311 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quick Upload - EventLens</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EventLens – Smart AI Gallery</title>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
 
   <style>
-    body { background: #000; color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-    .container { width: 100%; max-width: 500px; }
-    .card { background: #111; border: 1px solid #333; border-radius: 16px; padding: 30px; text-align: center; }
-    h2 { color: #00e676; margin-bottom: 10px; }
+    :root {
+      --bg: #050505;
+      --card: #101010;
+      --accent: #00e676; /* Default Green */
+      --accent-soft: rgba(0, 230, 118, 0.15);
+      --text: #ffffff;
+      --muted: #a0a0a0;
+      --border: #262626;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+    /* BRANDING HEADER */
+    header { 
+        position: relative; 
+        height: 280px; 
+        overflow: hidden; 
+        border-bottom: 1px solid var(--border);
+        background-size: cover; 
+        background-position: center;
+        background-image: url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop');
+    }
+    .header-overlay {
+        position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.3), var(--bg));
+        display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; text-align: center; align-items: center;
+    }
+    .brand-logo {
+        width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent);
+        object-fit: cover; margin-bottom: 10px; background: #000;
+        display: none; 
+    }
+    .brand-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
     
-    select { width: 100%; padding: 14px; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 20px; font-size: 16px; }
-    
-    .upload-box { border: 2px dashed #444; padding: 40px; border-radius: 12px; cursor: pointer; transition: 0.3s; }
-    .upload-box:hover { border-color: #00e676; background: rgba(0,230,118,0.05); }
-    .upload-box i { font-size: 40px; color: #555; margin-bottom: 10px; }
-    
-    .btn { background: #00e676; color: #000; border: none; padding: 14px; width: 100%; font-weight: 700; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 20px; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    
-    .progress-bar { height: 6px; background: #333; border-radius: 3px; margin-top: 20px; overflow: hidden; display: none; }
-    .progress-fill { height: 100%; background: #00e676; width: 0%; transition: 0.3s; }
-    
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    /* SEARCH BOX */
+    .search-card {
+        background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 30px;
+        text-align: center; margin-top: -40px; position: relative; z-index: 10;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    .selfie-btn {
+        background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px;
+        font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+        transition: transform 0.2s;
+    }
+    .selfie-btn:hover { transform: scale(1.05); }
+
+    /* GALLERY GRID */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 30px; }
+    .photo-item { 
+        aspect-ratio: 1; background: #222; border-radius: 8px; overflow: hidden; position: relative; 
+        opacity: 0; animation: fadeIn 0.5s forwards; cursor: pointer;
+    }
+    .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+    .photo-item:hover img { transform: scale(1.05); }
+
+    /* MODAL */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: none; align-items: center; justify-content: center; }
+    .modal.open { display: flex; }
+    .modal-img { max-width: 90%; max-height: 80vh; border-radius: 8px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+    .close-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; font-size: 32px; cursor: pointer; }
+    .download-btn {
+        position: absolute; bottom: 30px; background: var(--accent); color: #000; border: none;
+        padding: 12px 24px; border-radius: 30px; font-weight: 700; cursor: pointer;
+    }
+
+    /* LEAD FORM INPUTS */
+    .lead-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; font-size: 16px; }
+    .lead-input:focus { border-color: var(--accent); }
+
+    @keyframes fadeIn { to { opacity: 1; } }
     .hidden { display: none; }
   </style>
 </head>
 <body>
 
+<header id="pageHeader">
+    <div class="header-overlay">
+        <img id="pageLogo" class="brand-logo" alt="Logo">
+        <div class="brand-title" id="pageTitle">EventLens Gallery</div>
+    </div>
+</header>
+
 <div class="container">
-  <div class="card">
-    <h2><i class="fa-solid fa-cloud-arrow-up"></i> Staff Upload</h2>
-    <p style="color:#888; margin-bottom: 30px;">Select Event & Upload Photos</p>
+    <div class="search-card">
+        <h3>Find Your Photos</h3>
+        <p style="color:var(--muted); margin-bottom: 20px;">Upload a selfie to find all your photos instantly using AI.</p>
+        
+        <input type="file" id="selfieInput" accept="image/*" hidden onchange="prepareSelfie(this.files[0])">
+        <button class="selfie-btn" type="button" onclick="document.getElementById('selfieInput').click()">
+            <i class="fa-solid fa-camera"></i> Find My Photos
+        </button>
 
-    <!-- Collection Dropdown (Hidden if cid in URL) -->
-    <div id="colSelectWrap">
-        <label style="display:block; text-align:left; margin-bottom:5px; color:#888; font-size:12px;">COLLECTION</label>
-        <select id="colSelect" onchange="loadEvents()"></select>
+        <div id="loader" class="hidden" style="margin-top: 20px; color: var(--accent);">
+            <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+            <p>Scanning faces... (Compressing image)</p>
+        </div>
     </div>
 
-    <label style="display:block; text-align:left; margin-bottom:5px; color:#888; font-size:12px;">EVENT</label>
-    <select id="eventSelect">
-      <option value="">Select Event...</option>
-    </select>
+    <h3 id="resultsTitle" class="hidden" style="margin-top: 30px;">Your Photos <span id="matchCount" style="color:var(--accent)"></span></h3>
+    <div class="grid" id="galleryGrid"></div>
+</div>
 
-    <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-      <i class="fa-solid fa-images"></i>
-      <p>Click to Select Photos</p>
-      <input type="file" id="fileInput" multiple accept="image/*" hidden onchange="handleFiles(this.files)">
+<!-- LEAD FORM MODAL -->
+<div class="modal" id="leadModal" style="z-index: 200;">
+    <div class="search-card" style="max-width: 400px; margin: 0; text-align: left;">
+        <h3 style="margin-top:0;">Almost there!</h3>
+        <p style="color:var(--muted); margin-bottom: 20px; font-size: 14px;">Enter your details to view your matched photos.</p>
+        
+        <label style="font-size:12px; color:#888; margin-bottom:4px; display:block;">YOUR NAME</label>
+        <input id="guestName" class="lead-input" placeholder="e.g. Rahul Sharma">
+        
+        <label style="font-size:12px; color:#888; margin-bottom:4px; display:block;">MOBILE NUMBER</label>
+        <input id="guestMobile" class="lead-input" placeholder="e.g. 9876543210" type="tel">
+        
+        <button class="selfie-btn" type="button" onclick="submitGuestDetails()" style="width: 100%; justify-content: center; margin-top: 10px;">
+            View Photos
+        </button>
     </div>
+</div>
 
-    <div id="fileCount" style="margin-top: 15px; font-weight: 600; color: #00e676; display:none;">0 Files Selected</div>
-
-    <button class="btn" id="uploadBtn" onclick="startUpload()" disabled>Start Upload</button>
-
-    <div class="progress-bar" id="progressBar">
-      <div class="progress-fill" id="progressFill"></div>
-    </div>
-    <p id="statusText" style="margin-top: 10px; font-size: 13px; color: #888;"></p>
-  </div>
+<!-- VIEWER -->
+<div class="modal" id="viewer">
+    <button class="close-btn" onclick="closeViewer()">&times;</button>
+    <img id="viewerImg" class="modal-img">
+    <button class="download-btn" onclick="downloadPhoto()">Download HD</button>
 </div>
 
 <script>
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    let token = localStorage.getItem('idToken');
-    
-    let queue = [];
     const urlParams = new URLSearchParams(window.location.search);
-    const preCid = urlParams.get('cid');
-    const preEid = urlParams.get('eid');
+    const linkId = urlParams.get('linkId');
+    const cid = urlParams.get('cid'); // Collection ID for branding
 
+    let currentPhotoUrl = '';
+    let pendingSelfieBase64 = null; 
+
+    // Branding Mockup - In real app, fetch from public API
     window.onload = async () => {
-        if(!token) {
-            alert("Device not authenticated. Please login as photographer first on dashboard.");
-            window.location.href = "dashboard.html"; 
+        if(cid) console.log("Collection ID:", cid);
+        // Apply default or fetched branding here
+    };
+
+    // --- RESIZE IMAGE FUNCTION (Crucial for Fast Search) ---
+    function resizeImage(file, maxWidth = 800) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85)); // Returns Base64
+                };
+                img.onerror = reject;
+            };
+            reader.onerror = reject;
+        });
+    }
+
+    // Step 1: User Selects Selfie -> Resize -> Show Lead Modal
+    async function prepareSelfie(file) {
+        if(!file) return;
+        
+        // Show loader briefly while resizing
+        document.getElementById('loader').classList.remove('hidden');
+        document.querySelector('#loader p').innerText = "Optimizing Selfie...";
+        
+        try {
+            // Resize image to max 800px width (Perfect for Rekognition)
+            pendingSelfieBase64 = await resizeImage(file, 800);
+            
+            // Hide loader and Show Modal
+            document.getElementById('loader').classList.add('hidden');
+            document.getElementById('leadModal').classList.add('open');
+        } catch(e) {
+            console.error(e);
+            alert("Could not process image. Please try another one.");
+            document.getElementById('loader').classList.add('hidden');
+        }
+    }
+
+    // Step 2: User Submits Details -> Process Search
+    async function submitGuestDetails() {
+        const name = document.getElementById('guestName').value;
+        const mobile = document.getElementById('guestMobile').value;
+        
+        if(!name || !mobile) {
+            alert("Please enter your name and mobile number.");
             return;
         }
 
-        if(preCid) {
-            document.getElementById('colSelectWrap').classList.add('hidden');
-            await loadEvents(preCid);
-        } else {
-            await loadCollections();
+        if(!pendingSelfieBase64) {
+            alert("Selfie missing. Please select again.");
+            document.getElementById('leadModal').classList.remove('open');
+            return;
         }
-    };
 
-    async function loadCollections() {
-        try {
-            const res = await fetch(`${API_BASE}/get-collections`, { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await res.json();
-            const sel = document.getElementById('colSelect');
-            sel.innerHTML = '<option value="">Select Collection...</option>' + 
-                (data.Items || []).map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
-        } catch(e) { console.error(e); alert("Failed to load collections"); }
-    }
-
-    async function loadEvents(cidOverride) {
-        const cid = cidOverride || document.getElementById('colSelect').value;
-        if(!cid) return;
+        // Close Modal & Start Loading
+        document.getElementById('leadModal').classList.remove('open');
+        document.getElementById('loader').classList.remove('hidden');
+        document.querySelector('#loader p').innerText = "Scanning faces...";
+        document.getElementById('galleryGrid').innerHTML = '';
+        document.getElementById('resultsTitle').classList.add('hidden');
 
         try {
-            const res = await fetch(`${API_BASE}/get-events`, {
+            // API Call: Search
+            const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ collection_id: cid })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    linkId: linkId, 
+                    selfie_image: pendingSelfieBase64
+                })
             });
+
             const data = await res.json();
-            const sel = document.getElementById('eventSelect');
-            sel.innerHTML = '<option value="">Select Event...</option>' + 
-                (data.events || []).map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
-                
-            if(preEid) sel.value = preEid;
-        } catch(e) { console.error(e); }
-    }
-
-    function handleFiles(files) {
-        queue = Array.from(files);
-        document.getElementById('fileCount').style.display = 'block';
-        document.getElementById('fileCount').innerText = `${queue.length} Files Selected`;
-        document.getElementById('uploadBtn').disabled = false;
-    }
-
-    async function startUpload() {
-        const cid = preCid || document.getElementById('colSelect').value;
-        const eid = document.getElementById('eventSelect').value;
-        if(!eid) return alert("Select an event!");
-
-        document.getElementById('uploadBtn').disabled = true;
-        document.getElementById('progressBar').style.display = 'block';
-        const bar = document.getElementById('progressFill');
-        const stat = document.getElementById('statusText');
-
-        let processed = 0;
-        const chunkSi = 50;
-
-        for(let i=0; i<queue.length; i+=chunkSi) {
-            const chunk = queue.slice(i, i+chunkSi);
-            stat.innerText = `Processing & Uploading Batch ${Math.ceil((i+1)/50)}...`;
+            document.getElementById('loader').classList.add('hidden');
             
-            const metas = await Promise.all(chunk.map(async f => {
-                let procFile = f;
+            if(data.matches && data.matches.length > 0) {
+                renderGallery(data.matches);
                 
-                // 1. Convert HEIC
-                if(f.name.toLowerCase().endsWith('.heic')){
-                    try {
-                        const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
-                        procFile = new File([blob], f.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
-                    } catch(e) {}
-                }
-
-                // 2. FORCE RENAME TO LOWERCASE .jpg (Critical for S3 Indexing Trigger)
-                // This handles Photo.JPG, image.png, etc. by forcing them to .jpg suffix
-                let parts = procFile.name.split('.');
-                if(parts.length > 1) parts.pop(); // Remove existing extension
-                let finalName = parts.join('.') + ".jpg";
-
-                const b = await procFile.arrayBuffer();
-                const h = await crypto.subtle.digest('SHA-256', b);
-                const hash = Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
-                
-                // Send forced .jpg name to backend
-                return { name: finalName, type: 'image/jpeg', size: procFile.size, hash: hash, file: procFile };
-            }));
-
-            try {
-                const res = await fetch(`${API_BASE}/generate-upload-urls`, {
+                // API Call: Save Lead (Fire and forget)
+                fetch(`${API_BASE}/save-details`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ collection_id: cid, event_id: eid, files: metas })
+                    body: JSON.stringify({
+                        linkId: linkId,
+                        collection_id: cid,
+                        mobile: mobile,
+                        name: name,
+                        selfie_image: pendingSelfieBase64,
+                        photo_count: data.matches.length
+                    })
                 });
-                const data = await res.json();
 
-                if(data.urls) {
-                    await Promise.all(data.urls.map(u => {
-                        const item = metas.find(m => m.hash === u.hash);
-                        return fetch(u.uploadURL, {
-                            method: 'PUT',
-                            body: item.file,
-                            headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
-                        });
-                    }));
-                }
-            } catch(e) {
-                console.error("Batch failed", e);
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                alert("No matches found. Try a clearer selfie with good lighting!");
             }
-            
-            processed += chunk.length;
-            bar.style.width = `${(processed/queue.length)*100}%`;
+        } catch(e) {
+            console.error(e);
+            alert("Server Error. Please try again later.");
+            document.getElementById('loader').classList.add('hidden');
         }
+    }
 
-        stat.innerText = "Upload Complete! Indexing will start automatically.";
-        alert("Upload Done! Photos will appear in dashboard shortly.");
-        location.reload();
+    function renderGallery(photos) {
+        const grid = document.getElementById('galleryGrid');
+        document.getElementById('resultsTitle').classList.remove('hidden');
+        document.getElementById('matchCount').innerText = `(${photos.length})`;
+
+        grid.innerHTML = photos.map(p => `
+            <div class="photo-item" onclick="openViewer('${p.url}')">
+                <img src="${p.url}" loading="lazy">
+            </div>
+        `).join('');
+    }
+
+    function openViewer(url) {
+        currentPhotoUrl = url;
+        document.getElementById('viewerImg').src = url;
+        document.getElementById('viewer').classList.add('open');
+    }
+
+    function closeViewer() {
+        document.getElementById('viewer').classList.remove('open');
+    }
+
+    async function downloadPhoto() {
+        if(!currentPhotoUrl) return;
+        try {
+            const res = await fetch(currentPhotoUrl);
+            const blob = await res.blob();
+            saveAs(blob, "eventlens_photo.jpg");
+        } catch(e) {
+            window.open(currentPhotoUrl, '_blank');
+        }
     }
 </script>
 </body>

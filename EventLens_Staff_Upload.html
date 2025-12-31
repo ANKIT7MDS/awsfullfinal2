@@ -16,135 +16,170 @@
     
     select { width: 100%; padding: 14px; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 20px; font-size: 16px; }
     
-    .drop-zone { border: 2px dashed #444; padding: 40px; border-radius: 12px; cursor: pointer; transition: 0.2s; margin-bottom: 20px; }
-    .drop-zone:hover { border-color: #00e676; background: rgba(0, 230, 118, 0.05); }
+    .upload-box { border: 2px dashed #444; padding: 40px; border-radius: 12px; cursor: pointer; transition: 0.3s; }
+    .upload-box:hover { border-color: #00e676; background: rgba(0,230,118,0.05); }
+    .upload-box i { font-size: 40px; color: #555; margin-bottom: 10px; }
     
-    .btn { background: #00e676; color: #000; border: none; padding: 16px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; }
+    .btn { background: #00e676; color: #000; border: none; padding: 14px; width: 100%; font-weight: 700; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 20px; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .progress { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 20px; display: none; }
-    .bar { height: 100%; width: 0%; background: #00e676; transition: width 0.2s; }
-    .status { margin-top: 10px; font-size: 13px; color: #888; }
+    
+    .progress-bar { height: 6px; background: #333; border-radius: 3px; margin-top: 20px; overflow: hidden; display: none; }
+    .progress-fill { height: 100%; background: #00e676; width: 0%; transition: 0.3s; }
+    
+    .hidden { display: none; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div class="card">
-    <h2><i class="fa-solid fa-bolt"></i> Quick Upload</h2>
-    <p id="colName" style="color:#888; margin-bottom:20px;">Loading Collection...</p>
-    
-    <label style="display:block; text-align:left; font-size:12px; margin-bottom:5px; color:#aaa;">SELECT EVENT</label>
-    <select id="eventSel"><option>Loading events...</option></select>
+    <h2><i class="fa-solid fa-cloud-arrow-up"></i> Staff Upload</h2>
+    <p style="color:#888; margin-bottom: 30px;">Select Event & Upload Photos</p>
 
-    <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
-       <i class="fa-solid fa-cloud-arrow-up" style="font-size: 40px; color: #555; margin-bottom: 10px;"></i>
-       <p style="margin:0; font-size:14px;">Tap to select photos</p>
-       <input type="file" id="fileInput" multiple accept="image/*" hidden onchange="handleFiles(this.files)">
+    <!-- Collection Dropdown (Hidden if cid in URL) -->
+    <div id="colSelectWrap">
+        <label style="display:block; text-align:left; margin-bottom:5px; color:#888; font-size:12px;">COLLECTION</label>
+        <select id="colSelect" onchange="loadEvents()"></select>
     </div>
 
-    <div id="queueInfo" style="display:none; margin-bottom:15px; font-size:14px;">
-       <span id="qCount">0</span> photos selected
+    <label style="display:block; text-align:left; margin-bottom:5px; color:#888; font-size:12px;">EVENT</label>
+    <select id="eventSelect">
+      <option value="">Select Event...</option>
+    </select>
+
+    <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+      <i class="fa-solid fa-images"></i>
+      <p>Click to Select Photos</p>
+      <input type="file" id="fileInput" multiple accept="image/*" hidden onchange="handleFiles(this.files)">
     </div>
 
-    <button class="btn" id="upBtn" onclick="startUpload()" disabled>START UPLOAD</button>
+    <div id="fileCount" style="margin-top: 15px; font-weight: 600; color: #00e676; display:none;">0 Files Selected</div>
 
-    <div class="progress" id="progBox"><div class="bar" id="progBar"></div></div>
-    <div class="status" id="statusText"></div>
+    <button class="btn" id="uploadBtn" onclick="startUpload()" disabled>Start Upload</button>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <p id="statusText" style="margin-top: 10px; font-size: 13px; color: #888;"></p>
   </div>
 </div>
 
 <script>
-  // CONFIG
-  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-  const params = new URLSearchParams(location.search);
-  const cid = params.get('cid');
-  
-  if(!cid) document.body.innerHTML = "<h2 style='color:red'>Invalid Link (Missing CID)</h2>";
-  else {
-      if(params.get('name')) document.getElementById('colName').textContent = params.get('name');
-      loadEvents();
-  }
+    const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+    // Staff token should be provided or using a dedicated limited token. 
+    // For now assuming staff uses same logic or a provided token.
+    // In real scenario, staff might need login or a special key. 
+    // Here we assume localStorage has token OR we use a public upload endpoint (if available).
+    // Assuming authenticated for now (Admin/Photographer gives device).
+    let token = localStorage.getItem('idToken');
+    
+    let queue = [];
+    const urlParams = new URLSearchParams(window.location.search);
+    const preCid = urlParams.get('cid');
+    const preEid = urlParams.get('eid');
 
-  // NOTE: This page assumes a public 'get-events' or uses a shared staff token/key. 
-  // If your API is strictly authenticated, you need to pass a temporary token in URL or login.
-  // For now, assuming standard flow requiring Auth. 
-  // **IF AUTH REQUIRED**: Staff needs to login on main page first.
-  // Or better: The Photographer logs in and opens this page for staff.
+    window.onload = async () => {
+        if(!token) {
+            alert("Device not authenticated. Please login as photographer first.");
+            window.location.href = "dashboard.html"; // Redirect to login
+            return;
+        }
 
-  async function loadEvents(){
-     // Using a simplified fetch assuming token is in localStorage from main domain login
-     const token = localStorage.getItem('idToken');
-     if(!token) return document.getElementById('statusText').innerText = "Please login as Photographer first.";
-     
-     const res = await fetch(`${API_BASE}/get-events`, {
-         method: 'POST',
-         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-         body: JSON.stringify({ collection_id: cid })
-     });
-     const data = await res.json();
-     document.getElementById('eventSel').innerHTML = data.events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
-  }
+        if(preCid) {
+            document.getElementById('colSelectWrap').classList.add('hidden');
+            await loadEvents(preCid);
+        } else {
+            await loadCollections();
+        }
+    };
 
-  let queue = [];
-  function handleFiles(files){
-      Array.from(files).forEach(f => queue.push(f));
-      document.getElementById('queueInfo').style.display = 'block';
-      document.getElementById('qCount').innerText = queue.length;
-      document.getElementById('upBtn').disabled = false;
-  }
+    async function loadCollections() {
+        const res = await fetch(`${API_BASE}/get-collections`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const sel = document.getElementById('colSelect');
+        sel.innerHTML = '<option value="">Select Collection...</option>' + 
+            (data.Items || []).map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
+    }
 
-  async function startUpload(){
-      const eid = document.getElementById('eventSel').value;
-      const token = localStorage.getItem('idToken');
-      const btn = document.getElementById('upBtn');
-      const prog = document.getElementById('progBox');
-      const bar = document.getElementById('progBar');
-      const stat = document.getElementById('statusText');
+    async function loadEvents(cidOverride) {
+        const cid = cidOverride || document.getElementById('colSelect').value;
+        if(!cid) return;
 
-      btn.disabled = true;
-      prog.style.display = 'block';
+        const res = await fetch(`${API_BASE}/get-events`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collection_id: cid })
+        });
+        const data = await res.json();
+        const sel = document.getElementById('eventSelect');
+        sel.innerHTML = '<option value="">Select Event...</option>' + 
+            (data.events || []).map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+            
+        if(preEid) sel.value = preEid;
+    }
 
-      // Batching 50
-      let processed = 0;
-      for(let i=0; i<queue.length; i+=50){
-          const chunk = queue.slice(i, i+50);
-          stat.innerText = `Uploading Batch ${Math.ceil((i+1)/50)}...`;
-          
-          // 1. Get URLs
-          const metas = await Promise.all(chunk.map(async f => {
-              const b = await f.arrayBuffer();
-              const h = await crypto.subtle.digest('SHA-256', b);
-              const hash = Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
-              return { name: f.name, type: 'image/jpeg', size: f.size, hash: hash, file: f };
-          }));
+    function handleFiles(files) {
+        queue = Array.from(files);
+        document.getElementById('fileCount').style.display = 'block';
+        document.getElementById('fileCount').innerText = `${queue.length} Files Selected`;
+        document.getElementById('uploadBtn').disabled = false;
+    }
 
-          const res = await fetch(`${API_BASE}/generate-upload-urls`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ collection_id: cid, event_id: eid, files: metas })
-          });
-          const data = await res.json();
+    async function startUpload() {
+        const cid = preCid || document.getElementById('colSelect').value;
+        const eid = document.getElementById('eventSelect').value;
+        if(!eid) return alert("Select an event!");
 
-          // 2. Upload
-          await Promise.all(data.urls.map(u => {
-              const item = metas.find(m => m.hash === u.hash);
-              return fetch(u.uploadURL, {
-                  method: 'PUT',
-                  body: item.file,
-                  headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
-              });
-          }));
-          
-          processed += chunk.length;
-          bar.style.width = `${(processed/queue.length)*100}%`;
-      }
+        document.getElementById('uploadBtn').disabled = true;
+        document.getElementById('progressBar').style.display = 'block';
+        const bar = document.getElementById('progressFill');
+        const stat = document.getElementById('statusText');
 
-      stat.innerText = "Upload Complete!";
-      stat.style.color = "#00e676";
-      queue = [];
-      document.getElementById('fileInput').value = '';
-  }
+        let processed = 0;
+        const chunkSi = 50;
+
+        for(let i=0; i<queue.length; i+=chunkSi) {
+            const chunk = queue.slice(i, i+chunkSi);
+            stat.innerText = `Uploading Batch ${Math.ceil((i+1)/50)}...`;
+            
+            const metas = await Promise.all(chunk.map(async f => {
+                let procFile = f;
+                if(f.name.toLowerCase().endsWith('.heic')){
+                    try {
+                        const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
+                        procFile = new File([blob], f.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+                    } catch(e) {}
+                }
+                const b = await procFile.arrayBuffer();
+                const h = await crypto.subtle.digest('SHA-256', b);
+                const hash = Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+                return { name: procFile.name, type: 'image/jpeg', size: procFile.size, hash: hash, file: procFile };
+            }));
+
+            const res = await fetch(`${API_BASE}/generate-upload-urls`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ collection_id: cid, event_id: eid, files: metas })
+            });
+            const data = await res.json();
+
+            await Promise.all(data.urls.map(u => {
+                const item = metas.find(m => m.hash === u.hash);
+                return fetch(u.uploadURL, {
+                    method: 'PUT',
+                    body: item.file,
+                    headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
+                });
+            }));
+            
+            processed += chunk.length;
+            bar.style.width = `${(processed/queue.length)*100}%`;
+        }
+
+        stat.innerText = "Upload Complete!";
+        alert("Done!");
+        location.reload();
+    }
 </script>
 </body>
 </html>

@@ -35,7 +35,7 @@
         border-bottom: 1px solid var(--border);
         background-size: cover; 
         background-position: center;
-        background-image: url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop'); /* Default fallback */
+        background-image: url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop');
     }
     .header-overlay {
         position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.3), var(--bg));
@@ -44,7 +44,7 @@
     .brand-logo {
         width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent);
         object-fit: cover; margin-bottom: 10px; background: #000;
-        display: none; /* Hidden unless set */
+        display: none; 
     }
     .brand-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
     
@@ -82,6 +82,10 @@
         padding: 12px 24px; border-radius: 30px; font-weight: 700; cursor: pointer;
     }
 
+    /* LEAD FORM INPUTS */
+    .lead-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #222; border: 1px solid #444; border-radius: 8px; color: #fff; font-size: 16px; }
+    .lead-input:focus { border-color: var(--accent); }
+
     @keyframes fadeIn { to { opacity: 1; } }
     .hidden { display: none; }
   </style>
@@ -100,7 +104,7 @@
         <h3>Find Your Photos</h3>
         <p style="color:var(--muted); margin-bottom: 20px;">Upload a selfie to find all your photos instantly using AI.</p>
         
-        <input type="file" id="selfieInput" accept="image/*" hidden onchange="processSelfie(this.files[0])">
+        <input type="file" id="selfieInput" accept="image/*" hidden onchange="prepareSelfie(this.files[0])">
         <button class="selfie-btn" onclick="document.getElementById('selfieInput').click()">
             <i class="fa-solid fa-camera"></i> Find My Photos
         </button>
@@ -115,6 +119,24 @@
     <div class="grid" id="galleryGrid"></div>
 </div>
 
+<!-- LEAD FORM MODAL -->
+<div class="modal" id="leadModal" style="z-index: 200;">
+    <div class="search-card" style="max-width: 400px; margin: 0; text-align: left;">
+        <h3 style="margin-top:0;">Almost there!</h3>
+        <p style="color:var(--muted); margin-bottom: 20px; font-size: 14px;">Enter your details to view your matched photos.</p>
+        
+        <label style="font-size:12px; color:#888; margin-bottom:4px; display:block;">YOUR NAME</label>
+        <input id="guestName" class="lead-input" placeholder="e.g. Rahul Sharma">
+        
+        <label style="font-size:12px; color:#888; margin-bottom:4px; display:block;">MOBILE NUMBER</label>
+        <input id="guestMobile" class="lead-input" placeholder="e.g. 9876543210" type="tel">
+        
+        <button class="selfie-btn" onclick="submitGuestDetails()" style="width: 100%; justify-content: center; margin-top: 10px;">
+            View Photos
+        </button>
+    </div>
+</div>
+
 <!-- VIEWER -->
 <div class="modal" id="viewer">
     <button class="close-btn" onclick="closeViewer()">&times;</button>
@@ -126,31 +148,21 @@
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId');
-    const cid = urlParams.get('cid'); // Collection ID for branding
+    const cid = urlParams.get('cid'); // Collection ID for branding and saving leads
 
     let currentPhotoUrl = '';
+    let pendingSelfieBase64 = null; // Store selfie while asking for details
 
     window.onload = async () => {
-        // Branding Logic
-        // In a real app, you might fetch branding by linkId or cid from a public endpoint.
-        // Here we simulate or assume if passed in some way.
-        // For now, if you implement a public /get-collection-info endpoint, call it here.
-        // Assuming we might have branding info stored or we just check if the user provided customized params.
-        
-        // Example: If backend supports fetching public info:
-        if(cid) {
-             // Mockup: Fetch branding (Replace with actual API call if available)
-             // fetch(`${API_BASE}/public-collection-info?cid=${cid}`)...
-             // For now, we rely on default styles or manual overrides if implemented.
-             console.log("Branding for CID:", cid);
-        }
+        // Here you would call an API to get branding info if supported
+        // For now, we wait for data
+        if(cid) console.log("Collection ID:", cid);
     };
 
-    // To be called if branding data is available
     function applyBranding(data) {
         if(data.color) {
             document.documentElement.style.setProperty('--accent', data.color);
-            document.documentElement.style.setProperty('--accent-soft', data.color + '26'); // 15% opacity
+            document.documentElement.style.setProperty('--accent-soft', data.color + '26');
         }
         if(data.header_img) {
             document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
@@ -165,55 +177,72 @@
         }
     }
 
-    async function processSelfie(file) {
+    // Step 1: User Selects Selfie -> Show Lead Modal
+    function prepareSelfie(file) {
         if(!file) return;
         
-        // UI Updates
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            pendingSelfieBase64 = reader.result;
+            // Open Modal
+            document.getElementById('leadModal').classList.add('open');
+        };
+    }
+
+    // Step 2: User Submits Details -> Process Search
+    async function submitGuestDetails() {
+        const name = document.getElementById('guestName').value;
+        const mobile = document.getElementById('guestMobile').value;
+        
+        if(!name || !mobile) {
+            alert("Please enter your name and mobile number.");
+            return;
+        }
+
+        // Close Modal & Start Loading
+        document.getElementById('leadModal').classList.remove('open');
         document.getElementById('loader').classList.remove('hidden');
         document.getElementById('galleryGrid').innerHTML = '';
         document.getElementById('resultsTitle').classList.add('hidden');
 
         try {
-            // Convert to Base64
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const base64 = reader.result; // Data URL
+            // API Call: Search
+            const res = await fetch(`${API_BASE}/search`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    linkId: linkId, 
+                    selfie_image: pendingSelfieBase64
+                })
+            });
 
-                // API Call
-                const res = await fetch(`${API_BASE}/search`, {
+            const data = await res.json();
+            document.getElementById('loader').classList.add('hidden');
+            
+            if(data.matches && data.matches.length > 0) {
+                renderGallery(data.matches);
+                
+                // API Call: Save Lead
+                // Important: Sending 'collection_id' (cid) so dashboard can filter
+                fetch(`${API_BASE}/save-details`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        linkId: linkId, 
-                        selfie_image: base64
+                    body: JSON.stringify({
+                        linkId: linkId,
+                        collection_id: cid, // <--- Added this fix
+                        mobile: mobile,
+                        name: name,
+                        selfie_image: pendingSelfieBase64,
+                        photo_count: data.matches.length
                     })
                 });
 
-                const data = await res.json();
-                document.getElementById('loader').classList.add('hidden');
-                
-                if(data.matches && data.matches.length > 0) {
-                    renderGallery(data.matches);
-                    
-                    // Save Lead (Optional, silent)
-                    fetch(`${API_BASE}/save-details`, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            linkId: linkId,
-                            mobile: "WebGuest", // Or prompt user
-                            name: "Guest",
-                            selfie_image: base64,
-                            photo_count: data.matches.length
-                        })
-                    });
-
-                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-                } else {
-                    alert("No matches found. Try a clearer selfie!");
-                }
-            };
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                alert("No matches found. Try a clearer selfie!");
+            }
         } catch(e) {
+            console.error(e);
             alert("Error searching photos.");
             document.getElementById('loader').classList.add('hidden');
         }

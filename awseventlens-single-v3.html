@@ -33,7 +33,7 @@
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     input, select, textarea { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
     
-    /* SETTINGS UI */
+    /* NEW STYLES FOR SETTINGS */
     .settings-group { border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); margin-bottom: 20px; }
     .settings-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
     .range-val { width: 50px; text-align: center; background: #222; border: none; font-size: 12px; padding: 4px; }
@@ -621,11 +621,20 @@ async function delCol(id){
 // FIXED: Now accepts index to retrieve full object from global store
 async function openCol(index){
   curCol = allCols[index]; // Full object with branding info
-  $('#cdTitle').textContent = curCol.name;
-  $('#cdId').textContent = `ID: ${curCol.collection_id}`;
-  showView('vCol');
-  setTab('tGal'); 
-  loadEvents(); 
+  
+  if (curCol) {
+      const titleEl = $('#cdTitle');
+      const idEl = $('#cdId');
+      
+      if (titleEl) titleEl.textContent = curCol.name;
+      if (idEl) idEl.textContent = `ID: ${curCol.collection_id}`;
+      
+      showView('vCol');
+      setTab('tGal'); 
+      loadEvents(); 
+  } else {
+      showToast("Error loading collection details", "error");
+  }
 }
 
 /* ================= EVENT MANAGEMENT ================= */
@@ -988,7 +997,7 @@ async function loadLeads(){
                     ${g.history.map(h => `
                         <div style="background:#222; padding:8px; border-radius:8px; display:flex; align-items:center; gap:8px;">
                             <a href="${h.selfie_url}" target="_blank">
-                                <img src="${h.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                                <img src="${h.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" onerror="this.src='https://placehold.co/40'">
                             </a>
                             <div>
                                 <div class="text-sm">${new Date(h.timestamp).toLocaleTimeString()}</div>
@@ -1028,16 +1037,24 @@ function setPreviewMode(mode) {
 
 function updatePreview() {
     // 1. Content
-    $('#prevTitle').innerText = $('#setColName').value || 'Event Title';
-    $('#prevWelcome').innerText = $('#setWelcome').value || '';
+    $('#prevTitle').textContent = $('#setColName').value || 'Event Title';
+    $('#prevWelcome').textContent = $('#setWelcome').value || '';
     
     // Images
     const headImg = $('#setHeadImg').value;
     if(headImg) $('#prevHeader').style.backgroundImage = `url('${headImg}')`;
     
     const logoImg = $('#setLogo').value;
-    if(logoImg) { $('#prevLogo').src = logoImg; $('#prevLogo').style.display = 'block'; }
-    else $('#prevLogo').style.display = 'none';
+    const prevLogo = $('#prevLogo');
+    if(logoImg) { 
+        prevLogo.src = logoImg; 
+        prevLogo.style.display = 'block'; 
+        // Add error handling for placeholder
+        prevLogo.onerror = function() {
+            this.src = 'https://placehold.co/80';
+        };
+    }
+    else prevLogo.style.display = 'none';
 
     // 2. Sizes based on Mode
     if(previewMode === 'mobile') {
@@ -1098,9 +1115,13 @@ async function saveSettings() {
     showToast('Saving...');
     try {
         await api('/upsert-collection', { 
-            collection_id: curCol.id, name: newName, branding: branding
+            collection_id: curCol.collection_id, 
+            name: newName, 
+            branding: branding
         });
-        curCol.name = newName; curCol.branding = branding;
+        // Update local object
+        curCol.name = newName; 
+        curCol.branding = branding;
         $('#cdTitle').textContent = newName;
         showToast('Settings Saved!');
     } catch(e) { showToast(e.message, 'error'); }
@@ -1109,25 +1130,43 @@ async function saveSettings() {
 async function uploadAsset(input, targetId) {
     const file = input.files[0];
     if(!file) return;
+    
+    // Ensure we have an event ID to attach the upload to
+    let eventIdToUse = null;
+    
     if(!curEvents || curEvents.length === 0) { 
-        const data = await api('/get-events', { collection_id: curCol.id });
-        curEvents = data.events || [];
+        // Try fetching events if missing
+        try {
+            const data = await api('/get-events', { collection_id: curCol.collection_id });
+            curEvents = data.events || [];
+        } catch(e) { console.error("Error fetching events for asset upload", e); }
     }
-    if(curEvents.length === 0) return showToast('Create an event first', 'error');
+    
+    if(curEvents.length > 0) {
+        eventIdToUse = curEvents[0].event_id;
+    } else {
+        // Create a dummy/hidden system event if no events exist? 
+        // For now, blocking and asking user to create event is safer logic.
+        return showToast('Please create an event first to store assets.', 'error');
+    }
     
     showToast('Uploading...');
     try {
         const hash = 'branding_' + Date.now(); 
         const res = await api('/generate-upload-urls', {
-            collection_id: curCol.id, event_id: curEvents[0].event_id,
+            collection_id: curCol.collection_id, 
+            event_id: eventIdToUse,
             files: [{ name: "branding_"+file.name, type: file.type, size: file.size, hash: hash }]
         });
         
         if(res.urls && res.urls.length > 0) {
             const u = res.urls[0];
             await fetch(u.uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+            
+            // Extract the clean URL (remove query params)
             const publicUrl = u.uploadURL.split('?')[0];
             $(`#${targetId}`).value = publicUrl; 
+            
             updatePreview(); 
             showToast('Uploaded!');
         }

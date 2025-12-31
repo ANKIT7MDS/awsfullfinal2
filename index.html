@@ -295,17 +295,21 @@ async function doSearch(){
     show('#viewScan');
     
     try {
-        // Payload construction: 
-        // Backend seems to strictly require "selfie_image" and "linkId".
-        // Updated to use "selfie_image" instead of "image_data" based on error report.
+        // Prepare IDs
+        const targetLinkId = linkId || cid;
+        const targetCollId = cid || linkId;
+
+        // Payload construction
+        // NOTE: We send "selfie_image" as primary key based on backend error "Missing ... selfie_image"
+        // We also send "image_data" as fallback.
         const payload = { 
-            selfie_image: selfieBase64, // Corrected Key
-            image_data: selfieBase64,   // Backup Key
+            "selfie_image": selfieBase64, 
+            "image_data": selfieBase64,
             
-            link_id: linkId || cid, // Try snake_case
-            linkId: linkId || cid,  // Try camelCase
-            collection_id: cid || linkId, // Backup
-            collectionId: cid || linkId   // Backup
+            "linkId": targetLinkId,
+            "link_id": targetLinkId,
+            "collectionId": targetCollId,
+            "collection_id": targetCollId
         };
         
         if(events) {

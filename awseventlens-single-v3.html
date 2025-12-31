@@ -33,7 +33,7 @@
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     input, select, textarea { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
     
-    /* NEW STYLES FOR SETTINGS */
+    /* SETTINGS UI */
     .settings-group { border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); margin-bottom: 20px; }
     .settings-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
     .range-val { width: 50px; text-align: center; background: #222; border: none; font-size: 12px; padding: 4px; }
@@ -61,9 +61,6 @@
     }
     .prev-title { font-size: 18px; font-weight: 800; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
     .prev-welcome { font-size: 10px; text-align: center; color: rgba(255,255,255,0.8); margin-top: 4px; }
-    .prev-btn-toggle { 
-        position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #444; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px;
-    }
 
     .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; }
     .tab { padding: 10px 24px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-weight: 600; border-radius: 20px; white-space: nowrap; transition: 0.2s; }
@@ -157,15 +154,16 @@
     </div>
 
     <div class="tabs">
-      <button class="tab" onclick="setTab('tGal')">Gallery</button>
+      <button class="tab active" onclick="setTab('tGal')">Gallery</button>
       <button class="tab" onclick="setTab('tEvents')">Events</button>
       <button class="tab" onclick="setTab('tUp')">Upload</button>
       <button class="tab" onclick="setTab('tLink')">Links</button>
-      <button class="tab active" onclick="setTab('tSettings')">Branding & Settings</button>
+      <button class="tab" onclick="setTab('tLeads')">Guest Leads</button>
+      <button class="tab" onclick="setTab('tSettings')">Branding & Settings</button>
     </div>
 
     <!-- TAB 1: GALLERY -->
-    <div id="tGal" class="tab-content">
+    <div id="tGal" class="tab-content active">
       <div class="card">
         <div class="row" style="margin-bottom: 20px; justify-content: space-between;">
            <div class="row">
@@ -312,8 +310,8 @@
       </div>
     </div>
 
-    <!-- UPDATED SETTINGS TAB WITH LIVE PREVIEW -->
-    <div id="tSettings" class="tab-content active">
+    <!-- TAB 6: SETTINGS (UPDATED WITH LIVE PREVIEW) -->
+    <div id="tSettings" class="tab-content">
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
             
             <!-- LEFT: CONTROLS -->
@@ -448,6 +446,7 @@ const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=
 /* ================= STATE MANAGEMENT ================= */
 let idToken = localStorage.getItem('idToken');
 let curCol = null;
+let allCols = []; // Global Store for Collections
 let curEvents = [];
 let uploadQueue = [];
 let currentPhotos = [];
@@ -561,21 +560,25 @@ async function loadDashboard(){
         api('/account-status').catch(()=>({})) 
     ]);
 
-    const cols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-    const totalPhotos = cols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
-    const storageBytes = sData.total_storage_used_bytes || cols.reduce((sum, c) => sum + (c.storage_bytes || 0), 0);
+    // Store globally for indexed access
+    allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
     
-    $('#dCols').textContent = cols.length;
+    // Stats
+    const totalPhotos = allCols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
+    const storageBytes = sData.total_storage_used_bytes || allCols.reduce((sum, c) => sum + (c.storage_bytes || 0), 0);
+    $('#dCols').textContent = allCols.length;
     $('#dPhotos').textContent = totalPhotos.toLocaleString();
     $('#dStorage').textContent = formatBytes(storageBytes);
     
+    // Render Table
     const tbody = $('#tblCols tbody');
-    if(cols.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 30px;" class="text-muted">No collections found. Create one!</td></tr>`;
+    if(allCols.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 30px;" class="text-muted">No collections found. Create one!</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = cols.map(c => `
+    // FIXED: Passed index 'i' instead of complex string params to openCol
+    tbody.innerHTML = allCols.map((c, i) => `
       <tr>
         <td>
             <div style="font-weight:700; font-size:15px; color:#fff;">${escapeHtml(c.name)}</div>
@@ -588,7 +591,7 @@ async function loadDashboard(){
         </td>
         <td>${formatBytes(c.storage_bytes || 0)}</td>
         <td>
-           <button class="btn secondary" onclick="openCol('${c.collection_id}', '${escapeHtml(c.name)}')">Manage</button>
+           <button class="btn secondary" onclick="openCol(${i})">Manage</button>
            <button class="btn danger" onclick="delCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
@@ -615,10 +618,11 @@ async function delCol(id){
   }
 }
 
-async function openCol(id, name){
-  curCol = { id, name };
-  $('#cdTitle').textContent = name;
-  $('#cdId').textContent = `ID: ${id}`;
+// FIXED: Now accepts index to retrieve full object from global store
+async function openCol(index){
+  curCol = allCols[index]; // Full object with branding info
+  $('#cdTitle').textContent = curCol.name;
+  $('#cdId').textContent = `ID: ${curCol.collection_id}`;
   showView('vCol');
   setTab('tGal'); 
   loadEvents(); 

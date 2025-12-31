@@ -724,7 +724,9 @@ async function loadPhotos(reset=false, loadMore=false){
   const eid = $('#galEventFilter').value;
   const payload = { collection_id: curCol.id };
   if(eid) payload.event_id = eid;
-  if(loadMore && photosNext) payload.nextToken = photosNext;
+  
+  // ✅ FIX: Changed nextToken to next_token to match backend
+  if(loadMore && photosNext) payload.next_token = photosNext;
 
   const res = await api('/get-photos', payload);
   const photos = res.items || res.photos || []; 
@@ -914,7 +916,7 @@ async function generateLink(){
        password: pin
     });
     
-    // FIXED: Use the actual link_id returned by backend
+    // ✅ FIX: Enhanced link extraction logic to match new backend
     let linkId = "";
     if (res.link_id || res.id) linkId = res.link_id || res.id;
     else if (res.searchUrl || res.url) {

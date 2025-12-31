@@ -292,6 +292,7 @@
 
   /* ================= INIT CHECK ================= */
   window.onload = () => {
+    // If neither cid nor linkId is present, show error.
     if(!cid && !linkId) {
       document.body.innerHTML = "<h2 style='color:#fff;text-align:center;margin-top:50px;'>Invalid Link: Missing ID</h2>";
     }
@@ -323,22 +324,20 @@
     show('stepLoading');
 
     try {
-      // --- PAYLOAD FIX: Sending ONLY what backend needs ---
-      // We send 'selfie_image' as key. 
-      // We prioritize 'linkId' if available. 
-      // If only 'cid' is available, we send it as 'collection_id'.
-      // BUT, to satisfy "Missing linkId" error, we might need to send a dummy linkId or the cid as linkId if linkId is null.
-      
       const payload = {
         selfie_image: selfieBase64,
-        collection_id: cid || linkId, // Always needed for logic
+        collection_id: cid || linkId, 
       };
 
-      // Only add link_id if it exists, otherwise backend might be okay with just collection_id 
-      // IF the code has changed. BUT previous error said "Missing linkId".
-      // So we will force send link_id = cid if linkId is missing.
-      payload.link_id = linkId || cid; 
-      payload.linkId = linkId || cid; // Fallback for case sensitivity
+      // Ensure linkId is sent if available
+      if(linkId) {
+         payload.link_id = linkId;
+         payload.linkId = linkId;
+      } else {
+         // Fallback: If backend demands it, send cid as linkId
+         payload.link_id = cid;
+         payload.linkId = cid;
+      }
 
       const res = await fetch(`${API_BASE}/search`, {
         method: 'POST',
@@ -374,22 +373,18 @@
     const phone = $('#userPhone').value.trim();
     if(!name || !phone) return alert("Please fill details");
 
-    // --- SAVE DETAILS FIX ---
-    // Only send link_id if it is a REAL linkId (not just cid spoofed).
-    // If we only have cid, we should probably send link_id as null or undefined to avoid "None" or "Same ID" confusion in DB.
-    // However, if backend requires it, we must send it.
-    // Let's try sending it only if `linkId` variable is present.
-    
+    // --- SAVE DETAILS PAYLOAD FIX ---
+    // Sending Comprehensive Data
     const payload = {
       collection_id: cid || linkId,
       name: name,
       mobile: phone,
       match_count: filteredPhotos.length,
-      photo_count: filteredPhotos.length, // Send duplicate for safety
-      selfie_image: selfieBase64 // Important for saving selfie to S3
+      photo_count: filteredPhotos.length, 
+      selfie_image: selfieBase64 
     };
     
-    // Explicitly handle link_id. Use cid if linkId is missing but required
+    // Use linkId if available, otherwise fallback to cid to prevent "None"
     payload.link_id = linkId || cid; 
 
     fetch(`${API_BASE}/save-details`, {
@@ -407,7 +402,6 @@
     grid.innerHTML = filteredPhotos.map((p, idx) => {
       const url = typeof p === 'string' ? p : (p.url || p.s3_url);
       const isSel = selectedUrls.has(url) ? 'selected' : '';
-      // Store clean URL in object for viewer
       if(typeof p !== 'string') p.url = url; else filteredPhotos[idx] = {url:url};
       
       return `
@@ -434,23 +428,42 @@
 
   window.downloadZip = async function() {
     if(selectedUrls.size === 0) return alert("Select photos first!");
+    
+    const btn = $('button[onclick="downloadZip()"]');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = `Zipping...`;
+    btn.disabled = true;
+
     const zip = new JSZip();
     const urls = Array.from(selectedUrls);
-    
-    // CORS Workaround Attempt: fetching with 'no-cors' wont give data. 
-    // We rely on standard fetch. If S3 blocks it, this will fail.
-    // Ensure S3 bucket CORS allows GET from *
+    let successCount = 0;
     
     for(let i=0; i<urls.length; i++) {
       try {
-          const blob = await fetch(urls[i]).then(r => r.blob());
+          // Attempt fetch. If CORS fails, it will throw.
+          const response = await fetch(urls[i]);
+          if (!response.ok) throw new Error("Network response was not ok");
+          const blob = await response.blob();
           zip.file(`photo_${i+1}.jpg`, blob);
+          successCount++;
       } catch(e) {
-          console.error("DL Error", e);
+          console.error("Download failed for item " + i, e);
+          // Silent fail for individual items allows others to proceed
       }
     }
+    
+    if (successCount === 0) {
+        alert("Could not download photos due to server security settings (CORS). Please use 'View' -> Download on individual photos.");
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+        return;
+    }
+
     const content = await zip.generateAsync({type:"blob"});
     saveAs(content, "Photos.zip");
+    
+    btn.innerHTML = oldText;
+    btn.disabled = false;
   };
 
   function openViewer(index) {
@@ -467,6 +480,7 @@
       const a = document.createElement('a');
       a.href = url;
       a.download = `photo_${currentViewerIndex}.jpg`;
+      a.target = "_blank"; // Fallback to new tab if download blocked
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

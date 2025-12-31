@@ -364,11 +364,17 @@
   <!-- SCRIPTS -->
   <script>
     /* ================= CONFIG ================= */
-    // REPLACE WITH YOUR ACTUAL API URL AND CLIENT ID
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/v1"; 
     const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367"; 
-    const COGNITO_DOMAIN = "https://eu-north-1-d6y2808061.auth.eu-north-1.amazoncognito.com"; // Verify this from your setup
-    const REDIRECT_URI = window.location.origin + window.location.pathname; // Dynamic
+    
+    // ----------- CRITICAL: UPDATE THIS LINE -----------
+    // AWS Console -> Cognito -> User Pools -> App Integration -> Domain name
+    // Yeh kuch aisa dikhega: https://<some-name>.auth.ap-south-1.amazoncognito.com
+    const COGNITO_DOMAIN = "https://<YOUR_DOMAIN_PREFIX>.auth.ap-south-1.amazoncognito.com"; 
+    // --------------------------------------------------
+
+    // Dynamic Redirect URI (Must be added to Cognito Callback URLs)
+    const REDIRECT_URI = window.location.origin + window.location.pathname; 
 
     /* ================= STATE ================= */
     let token = localStorage.getItem('id_token');
@@ -384,6 +390,7 @@
       const code = urlParams.get('code');
       
       if (code) {
+        // Clear query params to clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
         await exchangeCode(code);
       } else if (!token) {
@@ -415,16 +422,25 @@
     }
 
     function login() {
+      if (COGNITO_DOMAIN.includes("<YOUR_DOMAIN_PREFIX>")) {
+         alert("SETUP REQUIRED: Open index.html code and replace <YOUR_DOMAIN_PREFIX> with your actual Cognito Domain from AWS Console.");
+         return;
+      }
       const url = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
       window.location.href = url;
     }
 
     function logout() {
       localStorage.clear();
-      window.location.reload();
+      // Reload to base path to avoid loop
+      window.location.href = window.location.pathname;
     }
 
     async function exchangeCode(code) {
+      if (COGNITO_DOMAIN.includes("<YOUR_DOMAIN_PREFIX>")) {
+         showToast("Configuration Error: Set COGNITO_DOMAIN", 'error');
+         return;
+      }
       showToast('Logging in...');
       try {
         const body = new URLSearchParams();
@@ -444,11 +460,12 @@
             localStorage.setItem('id_token', token);
             await initApp();
         } else {
+            console.error("Token Exchange Error:", data);
             throw new Error('No token returned');
         }
       } catch (e) {
         console.error(e);
-        showToast('Login Failed', 'error');
+        showToast('Login Failed. Check Callback URLs in Cognito.', 'error');
         showAuth();
       }
     }

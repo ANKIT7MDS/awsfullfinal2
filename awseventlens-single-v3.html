@@ -72,94 +72,52 @@
     .tab-content { display: none; animation: fadeIn 0.4s ease; }
     .tab-content.active { display: block; }
 
-    /* GALLERY OPTIMIZATIONS (Kwikpic style) */
-    .gallery-grid { 
-        display: grid; 
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-        gap: 8px; 
-        margin-top: 16px;
-        content-visibility: auto; 
-        contain-intrinsic-size: 140px;
-    }
-    .ph-card { 
-        aspect-ratio: 1; 
-        background: #1a1a1a; 
-        border-radius: 8px; 
-        overflow: hidden; 
-        position: relative; 
-        cursor: pointer; 
-        transform: translateZ(0); 
-    }
-    .ph-card img { 
-        width: 100%; 
-        height: 100%; 
-        object-fit: cover; 
-        transition: opacity 0.4s ease-out;
-        opacity: 0; /* Starts hidden for blur-up */
-    }
+    /* SETTINGS UI */
+    .settings-group { border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); margin-bottom: 20px; }
+    .settings-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+    .range-val { width: 50px; text-align: center; background: #222; border: none; font-size: 12px; padding: 4px; }
+
+    /* GALLERY */
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 16px; content-visibility: auto; contain-intrinsic-size: 140px; }
+    .ph-card { aspect-ratio: 1; background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; transform: translateZ(0); }
+    .ph-card img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; background-color: #222; }
     .ph-card img.loaded { opacity: 1; }
-    
     .ph-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); opacity: 0; transition: 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
     .ph-card:hover .ph-overlay { opacity: 1; }
     
-    /* LIGHTBOX VIEWER */
-    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
-    .lightbox.open { display: flex; opacity: 1; }
-    .lb-img-wrap { position: relative; max-width: 90vw; max-height: 80vh; }
-    .lb-img { max-width: 100%; max-height: 80vh; border-radius: 4px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
-    .lb-controls { position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%); display: flex; gap: 16px; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 30px; backdrop-filter: blur(10px); }
-    .lb-btn { background: transparent; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; }
-    .lb-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
-    .lb-btn.danger:hover { color: #ef4444; background: rgba(239, 68, 68, 0.2); }
-    .lb-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; padding: 20px; cursor: pointer; font-size: 24px; border-radius: 50%; transition: 0.2s; }
-    .lb-nav:hover { background: var(--primary); color: #000; }
-    .lb-prev { left: 20px; }
-    .lb-next { right: 20px; }
-    .lb-close { position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 32px; cursor: pointer; }
-
     /* UTILS */
-    .view { display: none; }
-    .view.show { display: block; }
-    .hidden { display: none !important; }
-    .text-sm { font-size: 12px; color: var(--text-muted); }
+    .view { display: none; } .view.show { display: block; } .hidden { display: none !important; }
     .kpi-box { background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
     .kpi-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); opacity: 0.5; }
     .kpi-val { font-size: 32px; font-weight: 800; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; }
     
     /* TOAST */
-    #toast { position: fixed; top: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 16px 24px; border-radius: 12px; z-index: 9999; transform: translateX(150%); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; }
+    #toast { position: fixed; top: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 16px 24px; border-radius: 12px; z-index: 9999; transform: translateX(150%); transition: 0.4s; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; }
     #toast.show { transform: translateX(0); }
     #toast.success { border-left: 4px solid var(--primary); }
     #toast.error { border-left: 4px solid #ef4444; }
 
-    /* LEADS ACCORDION */
-    .lead-row { cursor: pointer; }
-    .lead-history { background: rgba(255,255,255,0.03); display: none; padding: 10px; }
-    .lead-history.open { display: table-row; }
-    .lead-thumb { width:30px; height:30px; border-radius:50%; object-fit:cover; margin-right:5px; border:1px solid #555; vertical-align: middle; }
+    /* LIGHTBOX */
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+    .lightbox.open { display: flex; opacity: 1; }
+    .lb-img { max-width: 90vw; max-height: 80vh; border-radius: 4px; }
+    .lb-close { position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 32px; cursor: pointer; }
+    .lb-controls { position: absolute; bottom: 20px; display: flex; gap: 20px; }
 
-    /* ANIMATIONS */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
 
-<!-- TOAST NOTIFICATION -->
 <div id="toast"></div>
 
-<!-- LIGHTBOX VIEWER -->
+<!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
   <button class="lb-close" onclick="closeLightbox()">&times;</button>
-  <button class="lb-nav lb-prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-  <button class="lb-nav lb-next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></button>
-  
-  <div class="lb-img-wrap">
-    <img src="" id="lbImage" class="lb-img">
-    <div class="lb-controls">
-      <button class="lb-btn" onclick="downloadCurrentPhoto()" title="Download"><i class="fa-solid fa-download"></i></button>
-      <button class="lb-btn danger" onclick="deleteCurrentPhoto()" title="Delete"><i class="fa-solid fa-trash"></i></button>
-      <button class="lb-btn" onclick="closeLightbox()" title="Close"><i class="fa-solid fa-xmark"></i></button>
-    </div>
+  <img src="" id="lbImage" class="lb-img">
+  <div class="lb-controls">
+      <button class="btn secondary" onclick="downloadCurrentPhoto()">Download</button>
+      <button class="btn danger" onclick="deleteCurrentPhoto()">Delete</button>
   </div>
 </div>
 
@@ -181,7 +139,7 @@
         <i class="fa-solid fa-user-shield" style="font-size: 32px; color: var(--primary);"></i>
       </div>
       <h2 style="font-size: 28px; margin-bottom: 8px;">Welcome Back</h2>
-      <p class="text-sm" style="margin-bottom: 32px; line-height: 1.6;">Secure login for Photographers & Admins.</p>
+      <p class="text-sm" style="margin-bottom: 32px;">Secure login for Photographers & Admins.</p>
       <button class="btn primary" onclick="doLogin()" style="width: 100%; justify-content: center; padding: 16px; font-size: 16px;">
         Login via AWS Cognito
       </button>
@@ -194,24 +152,11 @@
       <h2 style="margin: 0;">Dashboard Overview</h2>
     </div>
 
-    <!-- KPIs -->
     <div class="grid" style="margin-bottom: 32px;">
-       <div class="kpi-box">
-         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Collections</div>
-         <div class="kpi-val" id="dCols">-</div>
-       </div>
-       <div class="kpi-box">
-         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Total Photos</div>
-         <div class="kpi-val" id="dPhotos">-</div>
-       </div>
-       <div class="kpi-box">
-         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Storage Used</div>
-         <div class="kpi-val" id="dStorage">-</div>
-       </div>
-       <div class="kpi-box">
-         <div class="text-sm" style="text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Account Status</div>
-         <div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div>
-       </div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">COLLECTIONS</div><div class="kpi-val" id="dCols">-</div></div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">TOTAL PHOTOS</div><div class="kpi-val" id="dPhotos">-</div></div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div><div class="kpi-val" id="dStorage">-</div></div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STATUS</div><div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div></div>
     </div>
 
     <div class="card">
@@ -220,7 +165,6 @@
         <button class="btn primary" onclick="toggleNewCol(true)"><i class="fa-solid fa-plus"></i> New Collection</button>
       </div>
       
-      <!-- New Collection Inline Form -->
       <div id="newColBox" class="card hidden" style="background: rgba(255,255,255,0.02); border-left: 4px solid var(--primary);">
         <h4 style="margin-top: 0;">Create New Collection</h4>
         <div class="row">
@@ -252,7 +196,7 @@
       <div class="text-sm text-muted" id="cdId">ID: -</div>
     </div>
 
-    <!-- TABS NAVIGATION -->
+    <!-- TABS -->
     <div class="tabs">
       <button class="tab active" onclick="setTab('tGal')"><i class="fa-regular fa-images"></i> Gallery</button>
       <button class="tab" onclick="setTab('tEvents')"><i class="fa-regular fa-calendar"></i> Events</button>
@@ -272,11 +216,7 @@
            </div>
            <button class="btn secondary" onclick="loadPhotos(true)"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
         </div>
-        
-        <div class="gallery-grid" id="galGrid">
-           <!-- Photos injected here -->
-        </div>
-        
+        <div class="gallery-grid" id="galGrid"></div>
         <div style="text-align:center; margin-top: 30px;">
           <button class="btn secondary hidden" id="btnLoadMore" onclick="loadPhotos(false, true)">Load More Photos</button>
         </div>
@@ -289,7 +229,6 @@
         <h3>Manage Sub-Events</h3>
         <p class="text-sm text-muted" style="margin-bottom: 20px;">Organize photos into sub-events like 'Haldi', 'Sangeet', 'Reception'.</p>
         
-        <!-- EDIT EVENT FORM (Hidden) -->
         <div id="evEditForm" class="hidden" style="background: rgba(0, 230, 118, 0.05); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--primary-dim);">
            <div class="row" style="margin-bottom: 8px;">
              <span class="text-sm font-bold" style="color:var(--primary)">EDIT EVENT</span>
@@ -303,11 +242,9 @@
            </div>
         </div>
 
-        <!-- ADD EVENT FORM -->
         <div id="evAddForm" class="row" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border-color);">
           <input id="neName" placeholder="Event Name (e.g. Morning Haldi)" style="flex:2">
           <input id="neDate" type="date" style="flex:1">
-          <!-- FIX: Renamed function to createNewEvent to avoid conflicts -->
           <button class="btn primary" onclick="createNewEvent()"><i class="fa-solid fa-plus"></i> Add Event</button>
         </div>
 
@@ -326,7 +263,6 @@
                 <h3>Batch Photo Upload</h3>
                 <p class="text-sm text-muted">Photos queue up first. Click 'Start Upload' to process.</p>
             </div>
-            <!-- STAFF LINK BUTTON -->
             <button class="btn secondary" onclick="copyStaffLink()">
                 <i class="fa-solid fa-user-plus"></i> Get Staff Upload Link
             </button>
@@ -346,7 +282,6 @@
           <input type="file" id="upInput" multiple accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer" onchange="queueFiles(this.files)">
         </div>
 
-        <!-- Queue List -->
         <div id="uploadQueueBox" class="hidden" style="margin-top: 20px;">
            <div class="row" style="justify-content:space-between; margin-bottom: 10px;">
               <h4>Upload Queue (<span id="queueCount">0</span>)</h4>
@@ -355,7 +290,6 @@
            <div id="queueList" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;"></div>
         </div>
 
-        <!-- Progress UI -->
         <div id="upProgress" class="hidden" style="margin-top: 20px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
           <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
             <span class="text-sm font-bold" id="upStatusText">Uploading...</span>
@@ -369,7 +303,7 @@
       </div>
     </div>
 
-    <!-- TAB 4: GENERATE LINK -->
+    <!-- TAB 4: LINK GENERATION -->
     <div id="tLink" class="tab-content">
       <div class="card">
         <h3>Generate Guest Link</h3>
@@ -404,7 +338,7 @@
       </div>
     </div>
 
-    <!-- TAB 5: GUEST LEADS (UPDATED) -->
+    <!-- TAB 5: GUEST LEADS -->
     <div id="tLeads" class="tab-content">
       <div class="card">
         <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
@@ -420,54 +354,106 @@
       </div>
     </div>
 
-    <!-- TAB 6: SETTINGS -->
+    <!-- TAB 6: SETTINGS (UPDATED WITH ADVANCED CUSTOMIZATION) -->
     <div id="tSettings" class="tab-content">
         <div class="card">
-            <h3>Collection Branding & Settings</h3>
-            <p class="text-sm text-muted">Customize the guest search page experience.</p>
+            <h3>Advanced Customization</h3>
+            <p class="text-sm text-muted">Customize the look and feel of the guest search page.</p>
             
-            <div class="grid" style="margin-top: 20px;">
-                <!-- Left: Branding -->
+            <div class="grid" style="margin-top: 20px; align-items: start;">
+                
+                <!-- LEFT: IMAGES & TEXT -->
                 <div>
-                    <label class="text-sm" style="display:block; margin-bottom:6px;">Header Image / Banner</label>
-                    <div class="row">
-                       <input id="setHeadImg" placeholder="Image URL">
-                       <input type="file" id="fileHeadImg" hidden onchange="uploadAsset(this, 'setHeadImg')">
-                       <button class="btn secondary" onclick="$('#fileHeadImg').click()">Upload</button>
+                    <div class="settings-group">
+                        <div class="settings-title"><i class="fa-solid fa-image"></i> Visual Assets</div>
+                        
+                        <label class="text-sm">Header Image (Banner)</label>
+                        <div class="row" style="margin-bottom: 12px;">
+                           <input id="setHeadImg" placeholder="Image URL">
+                           <input type="file" id="fileHeadImg" hidden onchange="uploadAsset(this, 'setHeadImg')">
+                           <button class="btn secondary" onclick="$('#fileHeadImg').click()">Upload</button>
+                        </div>
+
+                        <label class="text-sm">Logo</label>
+                        <div class="row">
+                           <input id="setLogo" placeholder="Logo URL">
+                           <input type="file" id="fileLogo" hidden onchange="uploadAsset(this, 'setLogo')">
+                           <button class="btn secondary" onclick="$('#fileLogo').click()">Upload</button>
+                        </div>
                     </div>
 
-                    <label class="text-sm" style="display:block; margin-top:16px; margin-bottom:6px;">Logo</label>
-                    <div class="row">
-                       <input id="setLogo" placeholder="Logo URL">
-                       <input type="file" id="fileLogo" hidden onchange="uploadAsset(this, 'setLogo')">
-                       <button class="btn secondary" onclick="$('#fileLogo').click()">Upload</button>
-                    </div>
+                    <div class="settings-group">
+                        <div class="settings-title"><i class="fa-solid fa-pen-nib"></i> Text & Content</div>
+                        
+                        <label class="text-sm">Collection Title</label>
+                        <input id="setColName" style="margin-bottom: 12px;">
 
-                    <label class="text-sm" style="display:block; margin-top:16px; margin-bottom:6px;">Footer Text</label>
-                    <input id="setFooter" placeholder="e.g. Photography by EventLens">
+                        <label class="text-sm">Welcome Message (Below Banner)</label>
+                        <textarea id="setWelcome" rows="3" placeholder="e.g. Welcome to Rahul & Priya's Wedding! Please upload a selfie to find your photos." style="margin-bottom: 12px;"></textarea>
+
+                        <label class="text-sm">Footer Text</label>
+                        <input id="setFooter" placeholder="e.g. Photography by EventLens">
+                    </div>
                 </div>
 
-                <!-- Right: Theme -->
+                <!-- RIGHT: SIZES & COLORS -->
                 <div>
-                    <label class="text-sm" style="display:block; margin-bottom:6px;">Primary Color</label>
-                    <div class="row">
-                        <input type="color" id="setColorPicker" style="width: 50px; height: 45px; padding: 0;" onchange="$('#setColor').value=this.value">
-                        <input id="setColor" placeholder="#00e676" onchange="$('#setColorPicker').value=this.value">
+                    <div class="settings-group">
+                        <div class="settings-title"><i class="fa-solid fa-palette"></i> Theme</div>
+                        
+                        <label class="text-sm">Primary Color</label>
+                        <div class="row" style="margin-bottom: 12px;">
+                            <input type="color" id="setColorPicker" style="width: 50px; height: 45px; padding: 0;" onchange="$('#setColor').value=this.value">
+                            <input id="setColor" placeholder="#00e676" onchange="$('#setColorPicker').value=this.value">
+                        </div>
+
+                        <label class="text-sm">Layout Style</label>
+                        <select id="setLayout">
+                            <option value="grid">Grid (Default)</option>
+                            <option value="masonry">Masonry (Pinterest Style)</option>
+                        </select>
+
+                        <label class="text-sm" style="margin-top:10px; display:block;">Banner Opacity (Text readability)</label>
+                        <div class="row">
+                            <input type="range" id="setOpacity" min="0" max="0.9" step="0.1" value="0.3" oninput="$('#opacityVal').innerText=this.value" style="flex:1;">
+                            <span id="opacityVal" class="text-sm">0.3</span>
+                        </div>
                     </div>
 
-                    <label class="text-sm" style="display:block; margin-top:16px; margin-bottom:6px;">Layout Style</label>
-                    <select id="setLayout">
-                        <option value="grid">Grid (Default)</option>
-                        <option value="masonry">Masonry (Pinterest Style)</option>
-                    </select>
+                    <div class="settings-group">
+                        <div class="settings-title"><i class="fa-solid fa-ruler-combined"></i> Sizing Controls</div>
+                        
+                        <div class="row" style="justify-content:space-between; margin-bottom:5px;">
+                            <label class="text-sm">Logo Size (Mobile)</label>
+                            <input id="sizeLogoMob" class="range-val" value="80">
+                        </div>
+                        <input type="range" min="40" max="150" value="80" oninput="$('#sizeLogoMob').value=this.value" style="margin-bottom:12px;">
 
-                    <label class="text-sm" style="display:block; margin-top:16px; margin-bottom:6px;">Collection Title</label>
-                    <input id="setColName">
+                        <div class="row" style="justify-content:space-between; margin-bottom:5px;">
+                            <label class="text-sm">Logo Size (Desktop)</label>
+                            <input id="sizeLogoDesk" class="range-val" value="120">
+                        </div>
+                        <input type="range" min="50" max="300" value="120" oninput="$('#sizeLogoDesk').value=this.value" style="margin-bottom:12px;">
+
+                        <hr style="border:0; border-top:1px solid #333; margin: 15px 0;">
+
+                        <div class="row" style="justify-content:space-between; margin-bottom:5px;">
+                            <label class="text-sm">Banner Height (Mobile)</label>
+                            <input id="sizeBanMob" class="range-val" value="200">
+                        </div>
+                        <input type="range" min="100" max="400" value="200" oninput="$('#sizeBanMob').value=this.value" style="margin-bottom:12px;">
+
+                        <div class="row" style="justify-content:space-between; margin-bottom:5px;">
+                            <label class="text-sm">Banner Height (Desktop)</label>
+                            <input id="sizeBanDesk" class="range-val" value="350">
+                        </div>
+                        <input type="range" min="200" max="600" value="350" oninput="$('#sizeBanDesk').value=this.value">
+                    </div>
                 </div>
             </div>
 
             <div style="margin-top: 30px; text-align: right;">
-                <button class="btn primary" onclick="saveSettings()">Save All Settings</button>
+                <button class="btn primary" onclick="saveSettings()" style="width: 200px; justify-content: center;">Save All Settings</button>
             </div>
         </div>
     </div>
@@ -488,7 +474,7 @@ let idToken = localStorage.getItem('idToken');
 let curCol = null;
 let curEvents = [];
 let uploadQueue = [];
-let currentPhotos = []; // Store for gallery
+let currentPhotos = [];
 let currentPhotoIndex = -1;
 
 /* ================= INITIALIZATION ================= */
@@ -508,7 +494,6 @@ window.addEventListener('load', async () => {
     route('dashboard'); 
   }
   
-  // Keyboard Events for Lightbox
   document.addEventListener('keydown', (e) => {
       if(!$('#lightbox').classList.contains('open')) return;
       if(e.key === 'ArrowLeft') navLightbox(-1);
@@ -688,7 +673,6 @@ async function loadEvents(){
   $('#linkEventSel').innerHTML = `<option value="">Entire Collection</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
 }
 
-// ✅ FIX: Renamed function to createNewEvent to avoid conflicts
 async function createNewEvent(){
   const name = $('#neName').value;
   const date = $('#neDate').value;
@@ -730,7 +714,7 @@ async function updateEvent(){
     showToast('Event Updated');
 }
 
-/* ================= GALLERY & LIGHTBOX (Optimized) ================= */
+/* ================= GALLERY & LIGHTBOX ================= */
 let photosNext = null;
 async function loadPhotos(reset=false, loadMore=false){
   if(reset) photosNext = null;
@@ -741,7 +725,7 @@ async function loadPhotos(reset=false, loadMore=false){
 
   const res = await api('/get-photos', payload);
   const photos = res.items || res.photos || []; 
-  photosNext = res.nextToken; // API might return nextToken or next_token, handling standard
+  photosNext = res.nextToken; 
 
   if(reset) {
       $('#galGrid').innerHTML = '';
@@ -749,10 +733,8 @@ async function loadPhotos(reset=false, loadMore=false){
   }
   
   currentPhotos = reset ? photos : currentPhotos.concat(photos);
-  
   $('#galCount').textContent = `${currentPhotos.length} photos displayed`;
   
-  // ✅ FIX: Kwikpic style loading + lazy
   const html = photos.map((p, idx) => {
       const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
       const faces = p.face_count || 0;
@@ -794,7 +776,6 @@ function navLightbox(dir) {
     openLightbox(newIndex);
 }
 
-// ✅ FIX: Download using Fetch to bypass CORS
 async function downloadCurrentPhoto() {
     const p = currentPhotos[currentPhotoIndex];
     showToast('Downloading...', 'success');
@@ -809,24 +790,14 @@ async function downloadCurrentPhoto() {
     }
 }
 
-// ✅ FIX: Added actual API call to delete
 async function deleteCurrentPhoto() {
     if(!confirm("Delete this photo?")) return;
     const p = currentPhotos[currentPhotoIndex];
     showToast('Deleting...', 'success'); 
-    
     try {
-        // Calling delete API - ensuring user has a delete-photo endpoint or uses delete-collection equivalent logic
-        // If specific delete-photo endpoint missing, this might fail unless added to backend.
-        // Assuming user will add it or it exists.
         await api('/delete-photo', { photo_id: p.photo_id, collection_id: curCol.id });
-        
-        // Remove from UI
         currentPhotos.splice(currentPhotoIndex, 1);
-        if(currentPhotos.length === 0) closeLightbox();
-        else navLightbox(0); 
-        
-        // Re-render grid partially or reload
+        if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0); 
         loadPhotos(true); 
         showToast('Deleted');
     } catch(e) {
@@ -835,15 +806,11 @@ async function deleteCurrentPhoto() {
     }
 }
 
-/* ================= QUEUED UPLOAD LOGIC ================= */
+/* ================= UPLOAD LOGIC ================= */
 function queueFiles(fileList){
   const files = Array.from(fileList);
   if(!files.length) return;
-  
-  files.forEach(f => {
-      uploadQueue.push(f);
-  });
-  
+  files.forEach(f => { uploadQueue.push(f); });
   renderQueue();
   $('#upInput').value = ''; 
 }
@@ -930,16 +897,12 @@ async function computeHash(file) {
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// ✅ FIX: Staff Upload Link Generator
 function copyStaffLink() {
-    // Requires staff-upload.html to be hosted at /staff-upload.html (or similar)
     const baseUrl = window.location.origin + "/EventLens_Staff_Upload.html";
-    // We pass cid only, or cid+eid if user selected event
     const eid = $('#upEventSel').value;
     let url = `${baseUrl}?cid=${curCol.id}`;
     if(eid) url += `&eid=${eid}`;
     
-    // Copy to clipboard
     const tempInput = document.createElement("input");
     tempInput.value = url;
     document.body.appendChild(tempInput);
@@ -992,7 +955,7 @@ function copyLink(){
   showToast('Copied to clipboard');
 }
 
-/* ================= GUEST LEADS (GROUPED & HISTORY) ================= */
+/* ================= GUEST LEADS ================= */
 async function loadLeads(){
   $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
   try {
@@ -1004,7 +967,6 @@ async function loadLeads(){
         return;
     }
     
-    // Group By Mobile Number
     const grouped = {};
     leads.forEach(l => {
         const key = l.mobile || l.phone || 'Unknown';
@@ -1014,7 +976,6 @@ async function loadLeads(){
     });
 
     const sortedGroups = Object.values(grouped).sort((a,b) => {
-        // Sort by most recent timestamp in history
         const lastA = a.history.sort((x,y) => new Date(y.timestamp) - new Date(x.timestamp))[0];
         const lastB = b.history.sort((x,y) => new Date(y.timestamp) - new Date(x.timestamp))[0];
         return new Date(lastB.timestamp) - new Date(lastA.timestamp);
@@ -1022,9 +983,9 @@ async function loadLeads(){
 
     let html = '';
     sortedGroups.forEach((g, i) => {
-        const latest = g.history[0]; // Already sorted
+        const latest = g.history[0]; 
         html += `
-          <tr class="lead-row" onclick="toggleLeadHistory(${i})">
+          <tr onclick="$('#lead-hist-${i}').classList.toggle('open')" style="cursor:pointer">
             <td>
                <div style="font-weight:700">${escapeHtml(g.name || 'Unknown')}</div>
                <div class="text-sm text-muted">Latest: ${new Date(latest.timestamp).toLocaleString()}</div>
@@ -1040,9 +1001,9 @@ async function loadLeads(){
                 <button class="btn secondary btn-sm">Details</button>
             </td>
           </tr>
-          <tr id="lead-hist-${i}" class="lead-history">
+          <tr id="lead-hist-${i}" class="hidden" style="background:rgba(255,255,255,0.05)">
             <td colspan="4">
-                <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px;">
                     ${g.history.map(h => `
                         <div style="background:#222; padding:8px; border-radius:8px; display:flex; align-items:center; gap:8px;">
                             <a href="${h.selfie_url}" target="_blank">
@@ -1063,12 +1024,6 @@ async function loadLeads(){
   } catch(e) { 
     $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" style="color: #ef4444;">Error: ${e.message}</td></tr>`;
   }
-}
-
-function toggleLeadHistory(idx) {
-    const el = document.getElementById(`lead-hist-${idx}`);
-    if(el.classList.contains('open')) el.classList.remove('open');
-    else el.classList.add('open');
 }
 
 /* ================= SETTINGS & BRANDING ================= */
@@ -1106,12 +1061,21 @@ async function uploadAsset(input, targetId) {
 function loadSettings(){
     $('#setColName').value = curCol.name;
     if(curCol.branding) {
-        $('#setHeadImg').value = curCol.branding.header_img || '';
-        $('#setLogo').value = curCol.branding.logo || '';
-        $('#setFooter').value = curCol.branding.footer || '';
-        $('#setColor').value = curCol.branding.color || '#00e676';
-        $('#setColorPicker').value = curCol.branding.color || '#00e676';
-        $('#setLayout').value = curCol.branding.layout || 'grid';
+        const b = curCol.branding;
+        $('#setHeadImg').value = b.header_img || '';
+        $('#setLogo').value = b.logo || '';
+        $('#setFooter').value = b.footer || '';
+        $('#setWelcome').value = b.welcome_msg || '';
+        $('#setColor').value = b.color || '#00e676';
+        $('#setColorPicker').value = b.color || '#00e676';
+        $('#setLayout').value = b.layout || 'grid';
+        $('#setOpacity').value = b.overlay_opacity || 0.3;
+        $('#opacityVal').innerText = b.overlay_opacity || 0.3;
+        
+        $('#sizeLogoMob').value = b.logo_size_mob || '80';
+        $('#sizeLogoDesk').value = b.logo_size_desk || '120';
+        $('#sizeBanMob').value = b.banner_h_mob || '200';
+        $('#sizeBanDesk').value = b.banner_h_desk || '350';
     }
 }
 
@@ -1121,8 +1085,14 @@ async function saveSettings() {
         header_img: $('#setHeadImg').value,
         logo: $('#setLogo').value,
         footer: $('#setFooter').value,
+        welcome_msg: $('#setWelcome').value,
         color: $('#setColor').value,
-        layout: $('#setLayout').value
+        layout: $('#setLayout').value,
+        overlay_opacity: $('#setOpacity').value,
+        logo_size_mob: $('#sizeLogoMob').value,
+        logo_size_desk: $('#sizeLogoDesk').value,
+        banner_h_mob: $('#sizeBanMob').value,
+        banner_h_desk: $('#sizeBanDesk').value
     };
     
     showToast('Saving...');

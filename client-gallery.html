@@ -151,7 +151,6 @@
             align-items: center;
             gap: 8px;
         }
-        .chip i { font-size: 14px; }
         .chip.active { background: var(--primary); color: #000; border-color: var(--primary); transform: scale(1.05); }
 
         /* GRID */
@@ -195,6 +194,12 @@
         }
         .action-dot.selected { color: var(--primary); border-color: var(--primary); }
         .action-dot.fav { color: #ff4081; border-color: #ff4081; }
+
+        /* ERROR PLACEHOLDER */
+        .ph-error {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 100%; background: #222; color: #555;
+        }
 
         /* FOOTER / SUBMIT BAR */
         .submit-bar {
@@ -315,7 +320,8 @@
         </div>
         <div class="lb-content" id="lbContent">
             <div class="lb-nav prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></div>
-            <img src="" id="lbImg" class="lb-img">
+            <!-- Added referrerpolicy="no-referrer" -->
+            <img src="" id="lbImg" class="lb-img" referrerpolicy="no-referrer">
             <div class="lb-nav next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
         <div class="lb-footer">
@@ -334,9 +340,8 @@
         const API_URL = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod/client-api";
         const urlParams = new URLSearchParams(window.location.search);
         
-        // FIX: Prioritize 'cid' (Collection ID) over 'id' (Link ID) for data fetching
         const collectionId = urlParams.get('cid') || urlParams.get('collection_id') || urlParams.get('id');
-        const linkId = urlParams.get('id') || urlParams.get('linkId'); // Keep Link ID for references
+        const linkId = urlParams.get('id') || urlParams.get('linkId'); 
         
         let allPhotos = [];
         let selections = {}; 
@@ -353,7 +358,6 @@
             showToast("Opening Gallery...", "info");
 
             try {
-                // Sending 'collection_id' strictly as expected by Lambda
                 const res = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -369,7 +373,6 @@
                 
                 if(!res.ok) throw new Error(data.message || "Failed to load");
                 
-                // Handle AWS API Gateway double encoding if present
                 let parsedData = data;
                 if (typeof data.body === 'string') {
                     try { parsedData = JSON.parse(data.body); } catch(e) {}
@@ -389,13 +392,11 @@
         function initGallery(data) {
             allPhotos = data.photos || data.items || [];
             const settings = data.settings || {};
-
-            // Apply Branding
-            const branding = data.branding || {}; // If backend sends branding inside root
+            const branding = data.branding || {}; 
             
+            if(branding.color) document.documentElement.style.setProperty('--primary', branding.color);
             document.getElementById('brandTitle').textContent = data.collection_name || "Event Gallery"; 
             
-            // Map status from backend to local state
             allPhotos.forEach(p => {
                 if(p.status) {
                     selections[p.id] = { 
@@ -439,8 +440,9 @@
                 const originalIndex = allPhotos.findIndex(x => x.id === p.id);
                 card.onclick = () => openLightbox(originalIndex);
                 
+                // ADDED: referrerpolicy="no-referrer" and onerror fallback
                 card.innerHTML = `
-                    <img src="${p.thumb || p.url}" loading="lazy">
+                    <img src="${p.thumb || p.url}" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
                     <div class="ph-actions">
                         ${s.selected ? '<div class="action-dot selected"><i class="fa-solid fa-check"></i></div>' : ''}
                         ${s.fav ? '<div class="action-dot fav"><i class="fa-solid fa-heart"></i></div>' : ''}
@@ -462,7 +464,6 @@
             updateCounters();
             renderGrid();
             
-            // Sync with backend using COLLECTION ID
             syncWithServer(pid, selections[pid]);
         }
 
@@ -474,7 +475,7 @@
                     body: JSON.stringify({ 
                         action: "update_selection", 
                         payload: {
-                            collection_id: collectionId, // FIXED: Using correct ID
+                            collection_id: collectionId, 
                             photo_id: photoId,
                             status: statusObj
                         }

@@ -1,322 +1,559 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Find My Photos - EventLens</title>
-    <!-- Policy: No Referrer for S3 compliance -->
-    <meta name="referrer" content="no-referrer">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>EventLens – Smart AI Gallery</title>
+  <!-- Policy: No Referrer for S3 compliance -->
+  <meta name="referrer" content="no-referrer">
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ... (Keep existing CSS from old file) ... */
+    :root {
+      --bg: #050505; --card: #121212; --surface: #1e1e1e;
+      --accent: #00e676; --accent-dark: #00b35c; --accent-soft: rgba(0, 230, 118, 0.15);
+      --text: #ffffff; --muted: #a0a0a0; --border: #333;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --overlay-op: 0.4;
+      --logo-size: 80px; 
+      --banner-height: 220px;
+    }
+
+    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; padding-bottom: 80px; }
+
+    /* --- HEADER & BRANDING --- */
+    header { 
+        position: relative; height: var(--banner-height); overflow: hidden; 
+        background-color: #222; background-size: cover; background-position: center;
+        transition: height 0.3s ease; border-bottom: 1px solid var(--border);
+    }
+    .header-overlay {
+        position: absolute; inset: 0; 
+        background: linear-gradient(to bottom, rgba(0,0,0,var(--overlay-op)), #050505);
+        display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; text-align: center; align-items: center;
+    }
+    .brand-logo {
+        width: var(--logo-size); height: var(--logo-size);
+        border-radius: 50%; border: 3px solid var(--accent);
+        object-fit: cover; margin-bottom: 10px; background: #000;
+        display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+    .welcome-text {
+        font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); margin-bottom: 4px; 
+        letter-spacing: 0.5px; text-transform: uppercase; display: none;
+    }
+    .brand-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin: 0; }
+
+    /* --- MAIN CONTAINER --- */
+    .container { max-width: 1000px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
+
+    /* --- SEARCH BOX --- */
+    .search-card {
+        background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 30px 20px;
+        text-align: center; margin-top: -40px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        backdrop-filter: blur(10px);
+    }
+    .search-icon { font-size: 40px; color: var(--accent); margin-bottom: 15px; }
+    .btn-main {
+        background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px;
+        font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+        transition: transform 0.2s; box-shadow: 0 4px 15px var(--accent-soft);
+    }
+    .btn-main:active { transform: scale(0.96); }
+
+    /* --- GALLERY CONTROLS --- */
+    .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 20px; }
+    .tag-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+    .tag-pill { background: var(--surface); color: var(--muted); padding: 6px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; border: 1px solid var(--border); cursor: pointer; }
+    .tag-pill.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+
+    /* --- GRID --- */
+    .grid { 
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 6px; 
+        transition: opacity 0.3s;
+    }
+    .grid.masonry { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+    .photo-item { 
+        aspect-ratio: 1; background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; 
+        cursor: pointer; -webkit-tap-highlight-color: transparent; 
+    }
+    .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
     
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    /* Selection State */
+    .photo-item.selected img { opacity: 0.4; transform: scale(0.9); }
+    .photo-item.selected::after {
+        content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900;
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        color: #fff; font-size: 24px; background: var(--accent); 
+        width: 40px; height: 40px; border-radius: 50%; 
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .select-ring {
+        position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; 
+        border: 2px solid rgba(255,255,255,0.7); border-radius: 50%; pointer-events: none;
+        display: none; 
+    }
+    body.select-mode .select-ring { display: block; }
+    body.select-mode .photo-item.selected .select-ring { background: var(--accent); border-color: var(--accent); }
+
+    /* --- BOTTOM BAR (ACTIONS) --- */
+    .action-bar {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+        background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(12px);
+        border: 1px solid var(--border); border-radius: 50px; padding: 10px 20px;
+        display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100;
+        width: 90%; max-width: 400px; justify-content: space-around;
+    }
+    .action-bar.visible { transform: translateX(-50%) translateY(0); }
+    .act-btn { background: none; border: none; color: #fff; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; opacity: 0.7; }
+    .act-btn i { font-size: 20px; }
+    .act-btn:hover, .act-btn.active { opacity: 1; color: var(--accent); }
+
+    /* --- MODALS --- */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .modal.open { display: flex; animation: fadeIn 0.3s; }
     
-    <style>
-        :root {
-            --primary: #00e676;
-            --bg: #050505;
-            --panel: #111;
-            --text: #ffffff;
-            --text-muted: #a1a1aa;
-            --border: #27272a;
-        }
+    .modal-card { background: var(--card); border: 1px solid var(--border); width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; text-align: center; position: relative; }
+    .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #666; font-size: 20px; cursor: pointer; }
+    
+    .lead-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 16px; }
+    .lead-input:focus { border-color: var(--accent); }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+    /* --- LIGHTBOX (Enhanced) --- */
+    .viewer { position: fixed; inset: 0; background: #000; z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; }
+    .viewer.open { display: flex; }
+    .viewer-content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
+    .viewer img { max-width: 100%; max-height: 90vh; object-fit: contain; }
+    
+    .v-header { position: absolute; top: 0; width: 100%; padding: 20px; display: flex; justify-content: flex-end; z-index: 10; }
+    .v-close { color: #fff; font-size: 30px; background: none; border: none; cursor: pointer; }
+    
+    .v-controls { 
+        position: absolute; bottom: 0; width: 100%; 
+        background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+        padding: 30px 20px; display: flex; justify-content: space-around; 
+    }
+    
+    .v-btn {
+        background: transparent; border: none; color: #aaa; 
+        display: flex; flex-direction: column; align-items: center; gap: 6px; 
+        font-size: 11px; cursor: pointer; transition: 0.2s;
+    }
+    .v-btn i { font-size: 24px; padding: 12px; border-radius: 50%; background: rgba(255,255,255,0.1); }
+    .v-btn.active i { color: #fff; transform: scale(1.1); }
+    .v-btn.fav.active i { background: #ff4081; box-shadow: 0 0 15px rgba(255, 64, 129, 0.4); color: #fff; }
+    .v-btn.del.active i { background: #ff4444; box-shadow: 0 0 15px rgba(255, 68, 68, 0.4); color: #fff; }
 
-        /* SCREENS */
-        .screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.4s ease; }
-        .screen.active { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 1. UPLOAD SCREEN */
-        .hero-title { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 800; text-align: center; margin-bottom: 10px; }
-        .hero-sub { color: var(--text-muted); text-align: center; margin-bottom: 40px; font-size: 14px; }
-        
-        .upload-circle {
-            width: 180px; height: 180px; border-radius: 50%;
-            background: #1a1a1a; border: 2px dashed #444;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; position: relative; overflow: hidden;
-            transition: 0.3s; margin-bottom: 30px;
-        }
-        .upload-circle:active { transform: scale(0.95); border-color: var(--primary); }
-        .upload-circle i { font-size: 40px; color: #555; margin-bottom: 10px; }
-        .upload-circle span { font-size: 12px; color: #666; font-weight: 600; text-transform: uppercase; }
-        .upload-circle img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; display: none; }
-
-        .scan-line {
-            position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: var(--primary); box-shadow: 0 0 10px var(--primary);
-            animation: scan 1.5s infinite linear; display: none; z-index: 10;
-        }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-
-        /* 2. RESULT COUNT & FORM */
-        .result-card {
-            background: var(--panel); border: 1px solid var(--border); padding: 30px;
-            border-radius: 24px; width: 100%; max-width: 380px; text-align: center;
-        }
-        .match-badge {
-            background: rgba(0, 230, 118, 0.1); color: var(--primary);
-            padding: 8px 16px; border-radius: 50px; font-weight: 700; font-size: 14px;
-            display: inline-block; margin-bottom: 20px; border: 1px solid rgba(0, 230, 118, 0.2);
-        }
-        .input-box { width: 100%; padding: 14px; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 12px; margin-bottom: 15px; font-size: 15px; }
-        .btn-primary {
-            background: var(--primary); color: #000; border: none; padding: 16px; width: 100%;
-            border-radius: 12px; font-weight: 800; font-size: 16px; cursor: pointer;
-        }
-
-        /* 3. GALLERY GRID */
-        .gallery-header {
-            position: sticky; top: 0; z-index: 50; background: rgba(5,5,5,0.9); backdrop-filter: blur(10px);
-            width: 100%; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;
-            border-bottom: 1px solid var(--border);
-        }
-        .user-info { font-size: 14px; font-weight: 600; }
-        .user-info span { color: var(--text-muted); font-weight: 400; font-size: 12px; }
-        
-        .grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; padding: 4px;
-            width: 100%; max-width: 1000px; margin: 0 auto;
-        }
-        @media(min-width: 768px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px; } }
-
-        .photo-item { position: relative; aspect-ratio: 2/3; background: #111; border-radius: 4px; overflow: hidden; cursor: pointer; }
-        .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
-        
-        /* LIGHTBOX */
-        #lightbox { position: fixed; inset: 0; background: #000; z-index: 200; display: none; flex-direction: column; }
-        .lb-img { flex: 1; object-fit: contain; width: 100%; height: 100%; }
-        .lb-controls {
-            padding: 20px; background: #111; display: flex; justify-content: space-around;
-            border-top: 1px solid #333; padding-bottom: 40px;
-        }
-        .action-btn {
-            background: transparent; border: none; color: #888; font-size: 11px;
-            display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer;
-        }
-        .action-btn i { font-size: 24px; transition: 0.2s; }
-        .action-btn.active i { transform: scale(1.2); }
-        .action-btn.fav.active { color: #ff4081; }
-        .action-btn.del.active { color: #ff4444; }
-
-        /* TOAST */
-        #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: #222; padding: 10px 20px; border-radius: 30px; font-size: 13px; z-index: 300; display: none; border: 1px solid #333; }
-    </style>
+    /* --- UTILS --- */
+    .hidden { display: none !important; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .count-badge { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-left: 5px; }
+    
+    #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #222; padding: 10px 20px; border-radius: 30px; font-size: 13px; z-index: 300; display: none; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+  </style>
 </head>
 <body>
 
-    <div id="toast"></div>
+<div id="toast"></div>
 
-    <!-- SCREEN 1: UPLOAD SELFIE -->
-    <div id="screenUpload" class="screen active">
-        <h1 class="hero-title">Find My Photos</h1>
-        <p class="hero-sub">Upload a clear selfie to find your photos instantly.</p>
+<!-- HEADER -->
+<header id="pageHeader">
+    <div class="header-overlay">
+        <img id="pageLogo" class="brand-logo" alt="Logo" onerror="this.style.display='none'">
+        <div id="welcomeText" class="welcome-text"></div>
+        <h1 class="brand-title" id="pageTitle">EventLens Gallery</h1>
+    </div>
+</header>
+
+<!-- SEARCH SECTION -->
+<div class="container" id="searchContainer">
+    <div class="search-card">
+        <i class="fa-solid fa-face-smile-wink search-icon"></i>
+        <h3>Find Your Photos</h3>
+        <p style="color:var(--muted); margin-bottom: 25px; line-height: 1.5;">Upload a selfie to instantly find all your photos from this event using AI.</p>
         
-        <div class="upload-circle" onclick="document.getElementById('selfieInput').click()">
-            <div class="scan-line" id="scanLine"></div>
-            <img id="previewImg">
-            <i class="fa-solid fa-camera"></i>
-            <span>Tap to Upload</span>
+        <input type="file" id="selfieInput" accept="image/*" hidden onchange="handleSelfieSelect(this.files[0])">
+        <button class="btn-main" onclick="document.getElementById('selfieInput').click()">
+            <i class="fa-solid fa-camera"></i> Upload Selfie
+        </button>
+
+        <div id="loader" class="hidden" style="margin-top: 25px;">
+            <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--accent); font-size: 24px;"></i>
+            <p style="color:var(--muted); font-size: 14px; margin-top: 10px;" id="loaderText">Processing...</p>
         </div>
-        <input type="file" id="selfieInput" accept="image/*" hidden onchange="handleSelfie(this.files[0])">
         
-        <p id="statusText" style="font-size: 13px; color: var(--primary); height: 20px;"></p>
+        <!-- PIN Input (Hidden by default, shown if required) -->
+        <div id="pinArea" class="hidden" style="margin-top: 20px;">
+            <p style="color: #ff4081; font-size: 13px; margin-bottom: 10px;">🔒 Protected Gallery</p>
+            <input type="tel" id="manualPin" class="lead-input" placeholder="Enter Event PIN" style="text-align: center; letter-spacing: 4px; max-width: 200px;">
+            <button class="btn-main" onclick="retrySearchWithPin()" style="padding: 10px 20px; font-size: 14px; margin-top: 10px;">Retry</button>
+        </div>
+    </div>
+</div>
+
+<!-- GALLERY SECTION (Hidden Initially) -->
+<div class="container hidden" id="galleryContainer">
+    <div class="gallery-header">
+        <h3 style="margin:0;">Found <span id="matchCount" class="count-badge">0</span></h3>
+        <button id="btnToggleSelect" class="tag-pill" onclick="toggleSelectionMode()"><i class="fa-solid fa-check-double"></i> Select</button>
+    </div>
+    
+    <div class="grid" id="galleryGrid" style="margin-top: 15px;"></div>
+    
+    <div style="text-align:center; padding: 40px; color: #555;" class="hidden" id="noResultsMsg">
+        <i class="fa-regular fa-face-frown-open" style="font-size: 40px; margin-bottom: 10px;"></i>
+        <p>No matches found. Try a clearer selfie.</p>
+        <button class="btn-main" onclick="location.reload()" style="margin-top: 15px; font-size: 14px;">Try Again</button>
+    </div>
+</div>
+
+<!-- STICKY ACTION BAR (For Selection Mode) -->
+<div class="action-bar" id="actionBar">
+    <div style="color: var(--muted); font-size: 12px; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #111; padding: 4px 12px; border-radius: 12px; border: 1px solid #333;">
+        <span id="selCount">0</span> Selected
+    </div>
+    <button class="act-btn" onclick="selectAllMatches()"><i class="fa-solid fa-check-square"></i> All</button>
+    <button class="act-btn" onclick="downloadSelectedItems()"><i class="fa-solid fa-download"></i> Save</button>
+    <button class="act-btn" onclick="downloadAsZip()"><i class="fa-solid fa-file-zipper"></i> Zip</button>
+    <button class="act-btn" onclick="shareOnWhatsapp()"><i class="fa-brands fa-whatsapp"></i> Share</button>
+</div>
+
+<!-- LEAD MODAL (Intermediate Step) -->
+<div class="modal" id="leadModal">
+    <div class="modal-card">
+        <div style="width: 60px; height: 60px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+            <i class="fa-solid fa-check" style="color: var(--accent); font-size: 24px;"></i>
+        </div>
+        <h2 style="margin: 0 0 10px;">Photos Found!</h2>
+        <p style="color: var(--muted); margin-bottom: 25px;">We found <span id="leadMatchCount" style="color: #fff; font-weight: 700;">0</span> photos matching your selfie. Enter details to view them.</p>
         
-        <!-- Optional: Manual PIN entry if needed later -->
-        <div id="pinArea" style="display:none; margin-top:20px;">
-            <input type="password" id="manualPin" placeholder="Enter Event PIN" class="input-box" style="text-align:center; width:150px;">
-        </div>
+        <input id="guestName" class="lead-input" placeholder="Your Name">
+        <input id="guestMobile" class="lead-input" placeholder="Mobile Number" type="tel">
+        
+        <button class="btn-main" style="width: 100%; justify-content: center;" onclick="unlockGallery()">
+            View Photos
+        </button>
     </div>
+</div>
 
-    <!-- SCREEN 2: FOUND & DETAILS -->
-    <div id="screenDetails" class="screen">
-        <div class="result-card">
-            <div class="match-badge"><i class="fa-solid fa-check-circle"></i> <span id="matchCount">0</span> Photos Found</div>
-            <h2 style="margin: 0 0 10px 0;">Almost there!</h2>
-            <p style="color: #888; font-size: 13px; margin-bottom: 25px;">Enter your details to view and manage your photos.</p>
-            
-            <input type="text" id="guestName" class="input-box" placeholder="Your Name">
-            <input type="tel" id="guestPhone" class="input-box" placeholder="Phone Number">
-            
-            <button class="btn-primary" onclick="submitDetails()">View Photos</button>
-        </div>
+<!-- VIEWER (Lightbox with Actions) -->
+<div class="viewer" id="viewer">
+    <div class="v-header">
+        <button class="v-close" onclick="closeViewer()">&times;</button>
     </div>
-
-    <!-- SCREEN 3: GALLERY GRID -->
-    <div id="screenGallery" style="display:none;">
-        <div class="gallery-header">
-            <div class="user-info" id="headerUserInfo">Guest</div>
-            <button onclick="location.reload()" style="background:none; border:none; color:var(--primary); font-size:13px;">Exit</button>
-        </div>
-        <div class="grid" id="photoGrid"></div>
+    <div class="viewer-content">
+        <img id="viewerImg" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
     </div>
-
-    <!-- LIGHTBOX -->
-    <div id="lightbox">
-        <div style="padding: 15px; position:absolute; top:0; right:0; z-index:10;">
-            <button onclick="closeLightbox()" style="background:none;border:none;color:#fff;font-size:26px;"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div style="flex:1; display:flex; align-items:center; justify-content:center;">
-            <img id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
-        </div>
-        <div class="lb-controls">
-            <button class="action-btn fav" id="btnFav" onclick="toggleAction('fav')">
-                <i class="fa-solid fa-heart"></i>
-                <span>Favorite</span>
-            </button>
-            <button class="action-btn" onclick="downloadPhoto()">
-                <i class="fa-solid fa-download"></i>
-                <span>Download</span>
-            </button>
-            <button class="action-btn del" id="btnDel" onclick="toggleAction('delete_req')">
-                <i class="fa-solid fa-trash-can"></i>
-                <span>Delete</span>
-            </button>
-        </div>
+    <div class="v-controls">
+        <button class="v-btn fav" id="btnFav" onclick="toggleAction('fav')">
+            <i class="fa-solid fa-heart"></i>
+            <span>Favorite</span>
+        </button>
+        <button class="v-btn" onclick="downloadSingle()">
+            <i class="fa-solid fa-download"></i>
+            <span>Download</span>
+        </button>
+        <button class="v-btn del" id="btnDel" onclick="toggleAction('delete_req')">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Delete</span>
+        </button>
     </div>
+</div>
 
 <script>
-    // CONFIG
+    /* --- CONFIG --- */
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    const params = new URLSearchParams(window.location.search);
-    const cid = params.get('cid') || params.get('collection_id');
-    const linkId = params.get('linkId') || params.get('id'); // Link ID for tracking
-    const urlPin = params.get('pin');
-    
-    // STATE
-    let foundPhotos = [];
-    let guestInfo = { name: '', phone: '' };
-    let currentIdx = 0;
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkId = urlParams.get('linkId') || urlParams.get('id');
+    const cid = urlParams.get('cid') || urlParams.get('collection_id');
+    const urlPin = urlParams.get('pin');
 
-    // 1. INIT
-    window.onload = () => {
-        if(!cid) alert("Invalid Link: Missing Collection ID");
-        // Check if user already searched (Optional session persistence)
-        const saved = localStorage.getItem('el_guest_session');
-        if(saved) {
-            // Restore session logic if needed, for now starting fresh
+    /* --- STATE --- */
+    let allMatches = []; // Stores {url, id, tags}
+    let selectedIndices = new Set();
+    let pendingSelfieBase64 = null;
+    let isSelectMode = false;
+    let currentIdx = 0;
+    let guestInfo = { name: '', phone: '' };
+
+    /* --- INIT --- */
+    window.onload = async () => {
+        if (!cid) {
+            alert("Link seems invalid. Missing Collection ID.");
+            return;
         }
+
+        // Fetch Branding
+        try {
+            const res = await fetch(`${API_BASE}/get-branding?cid=${cid}`);
+            if(res.ok) applyBranding(await res.json());
+        } catch(e) { console.error("Branding fetch failed", e); }
     };
 
-    // 2. HANDLE SELFIE & SEARCH
-    async function handleSelfie(file) {
-        if(!file) return;
+    /* --- BRANDING --- */
+    function applyBranding(data) {
+        if(data.collection_name) {
+            document.getElementById('pageTitle').innerText = data.collection_name;
+            document.title = `${data.collection_name} – Gallery`;
+        }
+        if(data.welcome_msg) {
+            const el = document.getElementById('welcomeText');
+            el.innerText = data.welcome_msg;
+            el.style.display = 'block';
+        }
+        if(data.color) {
+            document.documentElement.style.setProperty('--accent', data.color);
+            document.documentElement.style.setProperty('--accent-soft', data.color + '26');
+            document.getElementById('pageLogo').style.borderColor = data.color;
+        }
+        if(data.overlay_opacity) document.documentElement.style.setProperty('--overlay-op', data.overlay_opacity);
+        
+        if(data.header_img) {
+            const img = new Image();
+            img.onload = () => document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
+            img.src = data.header_img; 
+        }
+        if(data.logo) {
+            const logo = document.getElementById('pageLogo');
+            logo.src = data.logo;
+            logo.style.display = 'block';
+        }
+        
+        const style = document.createElement('style');
+        style.innerHTML = `
+            :root { --logo-size: ${data.logo_size_mob || '80'}px; --banner-height: ${data.banner_h_mob || '220'}px; }
+            @media (min-width: 768px) { :root { --logo-size: ${data.logo_size_desk || '120'}px; --banner-height: ${data.banner_h_desk || '350'}px; } }
+        `;
+        document.head.appendChild(style);
+    }
 
-        // UI Updates
-        const img = document.getElementById('previewImg');
-        img.src = URL.createObjectURL(file);
-        img.style.display = 'block';
-        document.getElementById('scanLine').style.display = 'block';
-        document.getElementById('statusText').innerText = "Scanning database...";
+    /* --- STEP 1: SELFIE & SEARCH --- */
+    function resizeImage(file, maxWidth = 800) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > maxWidth) { h *= maxWidth/w; w = maxWidth; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                };
+            };
+        });
+    }
+
+    async function handleSelfieSelect(file) {
+        if(!file) return;
+        
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loaderText');
+        loader.classList.remove('hidden');
+        loaderText.innerText = "Compressing & Scanning...";
+        
+        document.getElementById('pinArea').classList.add('hidden'); // Hide PIN if previously shown
         
         try {
-            const base64 = await toBase64(file);
-            const pin = urlPin || document.getElementById('manualPin').value;
+            pendingSelfieBase64 = await resizeImage(file, 800);
+            
+            // Try Search (with URL PIN if available, else blank)
+            performSearch(urlPin);
+            
+        } catch(e) {
+            console.error(e);
+            alert("Image processing failed.");
+            loader.classList.add('hidden');
+        }
+    }
 
-            // Call Search API
-            // Note: Assuming 'search-faces' endpoint exists or routed via client-api
-            // Using direct search endpoint as per previous discussions
+    async function retrySearchWithPin() {
+        const pin = document.getElementById('manualPin').value;
+        if(!pin) return showToast("Enter PIN");
+        document.getElementById('loader').classList.remove('hidden');
+        performSearch(pin);
+    }
+
+    async function performSearch(pin) {
+        try {
             const res = await fetch(`${API_BASE}/search-faces`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    collection_id: cid,
-                    image: base64.split(',')[1],
+                body: JSON.stringify({ 
+                    collection_id: cid, 
+                    image: pendingSelfieBase64.split(',')[1],
                     min_confidence: 80,
-                    pin: pin // Send PIN if required by backend
+                    pin: pin 
                 })
             });
-
+            
             const data = await res.json();
+            document.getElementById('loader').classList.add('hidden');
             
             if(res.ok) {
-                foundPhotos = data.ids || data.photos || []; 
-                // If backend returns 401/403 for PIN, we catch it here
-                
-                if(foundPhotos.length > 0) {
-                    document.getElementById('matchCount').innerText = foundPhotos.length;
-                    showScreen('screenDetails');
+                // SUCCESS
+                const matches = data.ids || data.photos || [];
+                if(matches.length > 0) {
+                    allMatches = matches;
+                    document.getElementById('leadMatchCount').innerText = allMatches.length;
+                    document.getElementById('leadModal').classList.add('open');
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
                 } else {
-                    document.getElementById('statusText').innerText = "No matches found. Try another photo.";
-                    document.getElementById('scanLine').style.display = 'none';
+                    document.getElementById('noResultsMsg').classList.remove('hidden');
+                    document.getElementById('searchContainer').classList.add('hidden');
                 }
             } else {
+                // PIN REQUIRED handling
                 if(res.status === 401 || res.status === 403) {
-                    // Ask for PIN if not provided
-                    document.getElementById('statusText').innerText = "Protected Gallery. Enter PIN below.";
-                    document.getElementById('pinArea').style.display = 'block';
-                    document.getElementById('scanLine').style.display = 'none';
+                    document.getElementById('loaderText').innerText = "Gallery is protected.";
+                    document.getElementById('pinArea').classList.remove('hidden');
+                    showToast("PIN Required", "error");
                 } else {
                     throw new Error(data.message || "Search failed");
                 }
             }
         } catch(e) {
             console.error(e);
-            document.getElementById('statusText').innerText = "Error searching. Please try again.";
-            document.getElementById('scanLine').style.display = 'none';
+            document.getElementById('loader').classList.add('hidden');
+            alert("Error: " + e.message);
         }
     }
 
-    // 3. SUBMIT DETAILS & SHOW GALLERY
-    function submitDetails() {
+    /* --- STEP 2: LEAD CAPTURE & GALLERY --- */
+    function unlockGallery() {
         const name = document.getElementById('guestName').value.trim();
-        const phone = document.getElementById('guestPhone').value.trim();
+        const mobile = document.getElementById('guestMobile').value.trim();
         
-        if(!name || !phone) return showToast("Please enter your name and phone");
+        if(!name || !mobile) {
+            alert("Please enter your Name and Mobile Number to view photos.");
+            return;
+        }
+
+        guestInfo = { name, mobile };
+
+        // Close Modal & Show Gallery
+        document.getElementById('leadModal').classList.remove('open');
+        document.getElementById('searchContainer').classList.add('hidden');
+        document.getElementById('galleryContainer').classList.remove('hidden');
         
-        guestInfo = { name, phone };
-        
-        // Log the search to backend (Optional 'save-lead' call)
-        // For now, we proceed to show gallery
-        
-        document.getElementById('headerUserInfo').innerHTML = `${name}<br><span>${phone}</span>`;
         renderGallery();
         
-        document.getElementById('screenDetails').classList.remove('active');
-        document.getElementById('screenGallery').style.display = 'block';
-    }
-
-    function renderGallery() {
-        const grid = document.getElementById('photoGrid');
-        grid.innerHTML = '';
-        
-        foundPhotos.forEach((p, idx) => {
-            const div = document.createElement('div');
-            div.className = 'photo-item';
-            div.onclick = () => openLightbox(idx);
-            // Plain img tag for max compatibility
-            div.innerHTML = `<img src="${p.thumbnail_url || p.url}" loading="lazy">`;
-            grid.appendChild(div);
+        // Save Lead in background
+        fetch(`${API_BASE}/save-details`, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                collection_id: cid, 
+                linkId: linkId,
+                mobile: mobile, 
+                name: name, 
+                selfie_image: pendingSelfieBase64, 
+                photo_count: allMatches.length 
+            })
         });
     }
 
-    // 4. LIGHTBOX & ACTIONS
-    function openLightbox(idx) {
-        currentIdx = idx;
-        const p = foundPhotos[idx];
-        document.getElementById('lbImg').src = p.url;
+    function renderGallery() {
+        const grid = document.getElementById('galleryGrid');
+        document.getElementById('matchCount').innerText = allMatches.length;
         
-        // Reset buttons (visual state only for now unless we fetch existing status)
+        grid.innerHTML = allMatches.map((p, i) => `
+            <div class="photo-item" id="pitem-${i}" onclick="handleItemClick(${i})">
+                <!-- Using clean img tag -->
+                <img src="${p.thumbnail_url || p.url}" loading="lazy">
+                <div class="select-ring"></div>
+            </div>
+        `).join('');
+    }
+
+    /* --- INTERACTION MODES --- */
+    function toggleSelectionMode() {
+        isSelectMode = !isSelectMode;
+        document.body.classList.toggle('select-mode', isSelectMode);
+        
+        const btn = document.getElementById('btnToggleSelect');
+        if(isSelectMode) {
+            btn.classList.add('active');
+            btn.innerHTML = `<i class="fa-solid fa-times"></i> Cancel`;
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Select`;
+            selectedIndices.clear();
+            updateActionBar();
+            document.querySelectorAll('.photo-item.selected').forEach(el => el.classList.remove('selected'));
+        }
+    }
+
+    function handleItemClick(index) {
+        if(isSelectMode) {
+            const el = document.getElementById(`pitem-${index}`);
+            if(selectedIndices.has(index)) {
+                selectedIndices.delete(index);
+                el.classList.remove('selected');
+            } else {
+                selectedIndices.add(index);
+                el.classList.add('selected');
+            }
+            updateActionBar();
+        } else {
+            // Lightbox Mode
+            openViewer(index);
+        }
+    }
+
+    function updateActionBar() {
+        const bar = document.getElementById('actionBar');
+        document.getElementById('selCount').innerText = selectedIndices.size;
+        
+        if(selectedIndices.size > 0) bar.classList.add('visible');
+        else bar.classList.remove('visible');
+    }
+
+    function selectAllMatches() {
+        allMatches.forEach((_, i) => {
+            selectedIndices.add(i);
+            document.getElementById(`pitem-${i}`).classList.add('selected');
+        });
+        updateActionBar();
+    }
+
+    /* --- VIEWER & ACTIONS (BACKEND SYNC) --- */
+    function openViewer(index) {
+        currentIdx = index;
+        const p = allMatches[index];
+        document.getElementById('viewerImg').src = p.url;
+        
+        // Reset buttons visually
         document.getElementById('btnFav').classList.remove('active');
         document.getElementById('btnDel').classList.remove('active');
         
-        document.getElementById('lightbox').style.display = 'flex';
+        document.getElementById('viewer').classList.add('open');
     }
-
-    function closeLightbox() {
-        document.getElementById('lightbox').style.display = 'none';
-    }
+    
+    function closeViewer() { document.getElementById('viewer').classList.remove('open'); }
 
     async function toggleAction(type) {
-        const p = foundPhotos[currentIdx];
+        const p = allMatches[currentIdx];
         const btn = document.getElementById(type === 'fav' ? 'btnFav' : 'btnDel');
         const isActive = btn.classList.toggle('active');
         
-        showToast(isActive ? (type === 'fav' ? 'Added to Favorites' : 'Delete Requested') : 'Removed');
+        showToast(isActive ? (type === 'fav' ? 'Favorite Saved' : 'Delete Request Sent') : 'Removed');
 
         // Send to Backend for Admin Dashboard
+        // NOTE: Uses client-api 'update_selection' just like Client Gallery
         try {
             await fetch(`${API_BASE}/client-api`, {
                 method: 'POST',
@@ -329,46 +566,71 @@
                         status: {
                             [type]: isActive,
                             guest_name: guestInfo.name,
-                            guest_mobile: guestInfo.phone,
+                            guest_mobile: guestInfo.mobile,
                             timestamp: Date.now()
                         }
                     }
                 })
             });
-        } catch(e) { console.error("Action failed", e); }
+        } catch(e) { console.error("Action save failed", e); }
     }
 
-    function downloadPhoto() {
-        const url = foundPhotos[currentIdx].url;
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `EventPhoto_${Date.now()}.jpg`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    function downloadSingle() {
+        if(currentIdx !== null && allMatches[currentIdx]) {
+            saveAs(allMatches[currentIdx].url, `Photo_${Date.now()}.jpg`);
+        }
     }
 
-    // HELPERS
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+    /* --- BULK DOWNLOAD --- */
+    async function downloadSelectedItems() {
+        if(selectedIndices.size === 0) return;
+        const indices = Array.from(selectedIndices);
+        for(let i of indices) {
+            const url = allMatches[i].url;
+            saveAs(url, `photo_${i+1}.jpg`);
+            await new Promise(r => setTimeout(r, 300));
+        }
     }
 
-    function toBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
+    async function downloadAsZip() {
+        if(selectedIndices.size === 0) return;
+        const zip = new JSZip();
+        const folder = zip.folder("EventLens_Photos");
+        
+        // Update UI
+        const btn = document.querySelector('.act-btn .fa-file-zipper').parentElement;
+        const orgHtml = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Zipping...`;
+
+        const indices = Array.from(selectedIndices);
+        
+        await Promise.all(indices.map(async (idx) => {
+            try {
+                const url = allMatches[idx].url;
+                const blob = await fetch(url).then(r => r.blob());
+                folder.file(`photo_${idx+1}.jpg`, blob);
+            } catch(e) { console.error(e); }
+        }));
+
+        const content = await zip.generateAsync({type:"blob"});
+        saveAs(content, "My_Photos.zip");
+        btn.innerHTML = orgHtml;
     }
 
-    function showToast(msg) {
+    function shareOnWhatsapp() {
+        const text = `Found my photos using EventLens! Check them out: ${window.location.href}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    function showToast(msg, type) {
         const t = document.getElementById('toast');
         t.innerText = msg;
         t.style.display = 'block';
+        if(type === 'error') t.style.borderColor = '#ff4444';
+        else t.style.borderColor = '#333';
         setTimeout(() => t.style.display = 'none', 3000);
     }
+
 </script>
 </body>
 </html>

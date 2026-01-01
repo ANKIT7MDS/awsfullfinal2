@@ -151,6 +151,7 @@
             align-items: center;
             gap: 8px;
         }
+        .chip i { font-size: 14px; }
         .chip.active { background: var(--primary); color: #000; border-color: var(--primary); transform: scale(1.05); }
 
         /* GRID */
@@ -175,6 +176,7 @@
             transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1);
         }
         .ph-card:hover img { transform: scale(1.1); }
+        .ph-card.is-selected { border: 2px solid var(--primary); }
 
         .ph-actions {
             position: absolute;
@@ -330,9 +332,11 @@
 
     <script>
         const API_URL = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod/client-api";
-        const params = new URLSearchParams(window.location.search);
-        // Assuming linkId from URL IS the collection_id for the backend
-        const linkId = params.get('id') || params.get('linkId');
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // FIX: Prioritize 'cid' (Collection ID) over 'id' (Link ID) for data fetching
+        const collectionId = urlParams.get('cid') || urlParams.get('collection_id') || urlParams.get('id');
+        const linkId = urlParams.get('id') || urlParams.get('linkId'); // Keep Link ID for references
         
         let allPhotos = [];
         let selections = {}; 
@@ -344,19 +348,19 @@
             const pin = document.getElementById('pinInput').value;
             if(!pin) return showToast("PIN enter karein", "error");
 
+            if(!collectionId) return showToast("Invalid Link: No Collection ID found", "error");
+
             showToast("Opening Gallery...", "info");
 
             try {
-                // FIXED: Matching the Lambda's expectations exactly
-                // Action: get_client_view
-                // Payload: { collection_id: ... }
+                // Sending 'collection_id' strictly as expected by Lambda
                 const res = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         action: "get_client_view", 
                         payload: {
-                            collection_id: linkId
+                            collection_id: collectionId 
                         }
                     })
                 });
@@ -365,53 +369,39 @@
                 
                 if(!res.ok) throw new Error(data.message || "Failed to load");
                 
-                // Lambda returns body with { settings: ..., photos: ... } directly in response sometimes
-                // or inside a 'body' key depending on implementation wrapper.
-                // Based on code: returns { statusCode: 200, body: JSON_STRING }
-                // Fetch API parses the outer JSON. If Lambda uses json.dumps in body, we might need to double parse if API Gateway isn't proxying cleanly.
-                // But usually response.json() handles the lambda output if integration is set correctly.
-                // The provided python code returns 'body': json.dumps(...).
-                // Let's assume the client receives the parsed JSON body directly from API Gateway.
-                
-                // Handle case where body might be double encoded string
+                // Handle AWS API Gateway double encoding if present
                 let parsedData = data;
                 if (typeof data.body === 'string') {
-                    parsedData = JSON.parse(data.body);
+                    try { parsedData = JSON.parse(data.body); } catch(e) {}
                 } else if (data.body) {
-                    parsedData = data.body; // already object
+                    parsedData = data.body;
                 }
 
                 initGallery(parsedData);
 
             } catch (err) {
                 console.error(err);
-                showToast(err.message || "Invalid Link/ID", "error");
+                showToast(err.message || "Error loading gallery", "error");
             }
         }
 
         // 2. INITIALIZE
         function initGallery(data) {
-            allPhotos = data.photos || [];
+            allPhotos = data.photos || data.items || [];
             const settings = data.settings || {};
 
-            // Apply Settings/Branding if available (Lambda snippet mostly returned flags)
-            // If the lambda returns branding info inside settings or another key, map it here.
-            // Current lambda code: returns 'settings' and 'photos'. 'settings' has allowDownload etc.
-            // It doesn't seem to return logo/header_img in the snippet provided, 
-            // but we'll leave the UI elements in case you add them to the 'CONFIG' item later.
+            // Apply Branding
+            const branding = data.branding || {}; // If backend sends branding inside root
             
-            document.getElementById('brandTitle').textContent = "Event Gallery"; 
+            document.getElementById('brandTitle').textContent = data.collection_name || "Event Gallery"; 
             
-            // Map photos status (from Lambda: photo.status = { fav: T/F, ... }) to local selections
+            // Map status from backend to local state
             allPhotos.forEach(p => {
                 if(p.status) {
                     selections[p.id] = { 
-                        selected: p.status.selected || false, // 'selected' might not be in default lambda map, adjust if needed
+                        selected: p.status.selected || false, 
                         fav: p.status.fav || false
                     };
-                    // Note: Lambda 'update_photo_selection' saves 'selection_status'.
-                    // 'get_client_view' merges it back.
-                    // We assume 'status' object has keys we need.
                 }
             });
 
@@ -436,14 +426,16 @@
             });
 
             if(filtered.length === 0) {
-                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#555;">No photos found.</div>`;
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:#555;">
+                    <i class="fa-regular fa-images" style="font-size:32px; margin-bottom:10px; opacity:0.5;"></i><br>
+                    No photos found.
+                </div>`;
             }
 
             filtered.forEach((p, idx) => {
                 const s = selections[p.id] || {};
                 const card = document.createElement('div');
                 card.className = `ph-card ${s.selected ? 'is-selected' : ''}`;
-                // Use original index to open lightbox correctly
                 const originalIndex = allPhotos.findIndex(x => x.id === p.id);
                 card.onclick = () => openLightbox(originalIndex);
                 
@@ -470,20 +462,19 @@
             updateCounters();
             renderGrid();
             
-            // Sync with backend
+            // Sync with backend using COLLECTION ID
             syncWithServer(pid, selections[pid]);
         }
 
         async function syncWithServer(photoId, statusObj) {
             try {
-                // Fixed: Matching Lambda update_photo_selection payload
                 await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         action: "update_selection", 
                         payload: {
-                            collection_id: linkId,
+                            collection_id: collectionId, // FIXED: Using correct ID
                             photo_id: photoId,
                             status: statusObj
                         }
@@ -549,11 +540,7 @@
 
         // 6. SUBMIT
         function submitSelections() {
-            // Since Lambda has no "submit" action, this is just a user confirmation
-            // The data is already synced via update_selection
             alert("Great! Your selections have been saved and sent to the photographer.");
-            // Optionally hide bar
-            // document.getElementById('submitBar').classList.remove('show');
         }
 
         // Utils

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>EventLens – Smart AI Gallery</title>
+  <!-- Policy: No Referrer for S3 compliance -->
   <meta name="referrer" content="no-referrer">
 
   <!-- Libraries -->
@@ -191,7 +192,8 @@
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId') || urlParams.get('id');
-    const cid = urlParams.get('cid') || urlParams.get('collection_id');
+    // FIX: cid is now 'let' so we can update it if missing from URL
+    let cid = urlParams.get('cid') || urlParams.get('collection_id');
     const eid = urlParams.get('eid'); // Scope to specific event
     const urlPin = urlParams.get('pin');
 
@@ -205,6 +207,7 @@
 
     /* --- INIT --- */
     window.onload = async () => {
+        // If neither ID exists, show error
         if (!cid && !linkId) {
             document.body.innerHTML = `<div style="display:flex;height:100vh;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;">
                 <div><i class="fa-solid fa-link-slash" style="font-size:40px;margin-bottom:15px;color:#ff4444;"></i><br>
@@ -220,7 +223,14 @@
             
             if (fetchUrl) {
                 const res = await fetch(fetchUrl);
-                if(res.ok) applyBranding(await res.json());
+                if(res.ok) {
+                    const data = await res.json();
+                    applyBranding(data);
+                    // FIX: Populate cid from branding response if it was missing in URL
+                    if (!cid && data.collection_id) {
+                        cid = data.collection_id;
+                    }
+                }
             }
         } catch(e) { console.error("Branding fetch failed", e); }
     };
@@ -241,6 +251,7 @@
             document.documentElement.style.setProperty('--accent-soft', data.color + '26');
             document.getElementById('pageLogo').style.borderColor = data.color;
         }
+        
         if(data.header_img) {
             const img = new Image();
             img.onload = () => document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
@@ -307,8 +318,14 @@
     }
 
     async function performSearch(pin) {
+        // FIX: Ensure we have a Collection ID before searching
+        if (!cid) {
+            document.getElementById('loader').classList.add('hidden');
+            alert("Collection ID not found. Please refresh using a valid link.");
+            return;
+        }
+
         try {
-            // FIXED: Using single 'client-api' endpoint with 'search_faces' action
             const payload = {
                 collection_id: cid,
                 image: pendingSelfieBase64.split(',')[1],
@@ -330,7 +347,6 @@
             document.getElementById('loader').classList.add('hidden');
             
             if(res.ok) {
-                // Handle lambda proxy response structure if needed
                 let parsedData = data;
                 if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
 
@@ -379,8 +395,7 @@
         
         renderGallery();
         
-        // Log Guest in Background (Replacing save-details)
-        // Uses the NEW log_guest_visit action in Lambda
+        // Log Guest in Background
         fetch(`${API_BASE}/client-api`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

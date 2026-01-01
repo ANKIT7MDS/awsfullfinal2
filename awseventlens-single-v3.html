@@ -33,32 +33,28 @@
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     input, select, textarea { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
     
-    /* NEW STYLES FOR SETTINGS */
-    .settings-group { border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); margin-bottom: 20px; }
-    .settings-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-    .range-val { width: 50px; text-align: center; background: #222; border: none; font-size: 12px; padding: 4px; }
+    /* NEW STYLES FOR COLLECTIONS LIST */
+    .col-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; transition: 0.2s; }
+    .col-item:hover { border-color: var(--primary); background: rgba(255,255,255,0.05); }
+    .col-info h4 { margin: 0 0 5px 0; font-size: 18px; color: #fff; }
+    .col-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 15px; }
+    .col-meta span { display: flex; align-items: center; gap: 5px; }
     
+    /* NEW STYLES FOR TABLES (EVENTS/LEADS) */
+    .styled-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    .styled-table th { text-align: left; padding: 12px 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .styled-table td { background: rgba(255,255,255,0.03); padding: 16px; vertical-align: middle; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+    .styled-table tr td:first-child { border-left: 1px solid var(--border-color); border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+    .styled-table tr td:last-child { border-right: 1px solid var(--border-color); border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+    .styled-table tr:hover td { background: rgba(255,255,255,0.06); }
+
     /* PREVIEW CONTAINER */
-    .preview-frame {
-        border: 4px solid #333; border-radius: 16px; overflow: hidden; background: #000; margin: 0 auto; transition: all 0.3s ease; position: relative;
-    }
+    .preview-frame { border: 4px solid #333; border-radius: 16px; overflow: hidden; background: #000; margin: 0 auto; transition: all 0.3s ease; position: relative; }
     .preview-frame.mobile { width: 320px; height: 600px; border-width: 8px 4px; }
     .preview-frame.desktop { width: 100%; height: 500px; border-width: 4px; }
-    
-    .prev-header {
-        position: relative; background-size: cover; background-position: center; 
-        transition: height 0.3s;
-        display: flex; align-items: flex-end; justify-content: center;
-        background-color: #222;
-    }
-    .prev-overlay {
-        position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8));
-        display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 15px;
-    }
-    .prev-logo {
-        border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; margin-bottom: 8px; background: #000;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: all 0.3s;
-    }
+    .prev-header { position: relative; background-size: cover; background-position: center; transition: height 0.3s; display: flex; align-items: flex-end; justify-content: center; background-color: #222; }
+    .prev-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8)); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 15px; }
+    .prev-logo { border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; margin-bottom: 8px; background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: all 0.3s; }
     .prev-title { font-size: 18px; font-weight: 800; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
     .prev-welcome { font-size: 10px; text-align: center; color: rgba(255,255,255,0.8); margin-top: 4px; }
 
@@ -80,6 +76,8 @@
     .kpi-box { background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
     .kpi-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); opacity: 0.5; }
     .kpi-val { font-size: 32px; font-weight: 800; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; }
+    .settings-group { border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); margin-bottom: 20px; }
+    .settings-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
 
     /* LIGHTBOX */
     .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
@@ -129,21 +127,23 @@
     </div>
 
     <div class="grid" style="margin-bottom: 32px;">
-       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">COLLECTIONS</div><div class="kpi-val" id="dCols">-</div></div>
-       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">TOTAL PHOTOS</div><div class="kpi-val" id="dPhotos">-</div></div>
-       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div><div class="kpi-val" id="dStorage">-</div></div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">COLLECTIONS</div><div class="kpi-val" id="dCols">0</div></div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">TOTAL PHOTOS</div><div class="kpi-val" id="dPhotos">0</div></div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div><div class="kpi-val" id="dStorage">0 B</div></div>
        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STATUS</div><div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div></div>
     </div>
 
     <div class="card">
         <div class="row" style="justify-content: space-between; margin-bottom: 24px;">
             <h3>My Collections</h3>
-            <button class="btn primary" onclick="toggleNewCol(true)">New Collection</button>
+            <button class="btn primary" onclick="toggleNewCol(true)"><i class="fa-solid fa-plus"></i> New Collection</button>
         </div>
         <div id="newColBox" class="card hidden">
-            <input id="ncName" placeholder="Name"> <button class="btn primary" onclick="createCollection()">Create</button>
+            <input id="ncName" placeholder="e.g. Rahul Wedding"> <button class="btn primary" onclick="createCollection()">Create</button>
         </div>
-        <table id="tblCols"><tbody></tbody></table>
+        
+        <!-- IMPROVED COLLECTION LAYOUT -->
+        <div id="colList"></div>
     </div>
   </div>
 
@@ -180,13 +180,23 @@
       </div>
     </div>
 
-    <!-- TAB 2: EVENTS -->
+    <!-- TAB 2: EVENTS (FIXED UI) -->
     <div id="tEvents" class="tab-content">
       <div class="card">
-        <h3>Manage Sub-Events</h3>
-        <p class="text-sm text-muted" style="margin-bottom: 20px;">Organize photos into sub-events like 'Haldi', 'Sangeet', 'Reception'.</p>
-        
-        <div id="evEditForm" class="hidden" style="background: rgba(0, 230, 118, 0.05); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--primary-dim);">
+        <div class="row" style="justify-content: space-between;">
+            <div>
+                <h3>Manage Sub-Events</h3>
+                <p class="text-sm text-muted">Organize photos into sub-events like 'Haldi', 'Reception'.</p>
+            </div>
+            
+            <div id="evAddForm" class="row" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 50px; border: 1px solid var(--border-color);">
+              <input id="neName" placeholder="Event Name" style="background:transparent; border:none; color:#fff; width: 150px; padding: 5px 10px;">
+              <input id="neDate" type="date" style="background:transparent; border:none; color:#fff; width: 130px; padding: 5px 10px;">
+              <button class="btn primary" onclick="createNewEvent()" style="padding: 8px 20px; font-size:12px;">Add</button>
+            </div>
+        </div>
+
+        <div id="evEditForm" class="hidden" style="background: rgba(0, 230, 118, 0.05); padding: 16px; border-radius: 12px; margin: 24px 0; border: 1px solid var(--primary-dim);">
            <div class="row" style="margin-bottom: 8px;">
              <span class="text-sm font-bold" style="color:var(--primary)">EDIT EVENT</span>
            </div>
@@ -199,16 +209,12 @@
            </div>
         </div>
 
-        <div id="evAddForm" class="row" style="background: rgba(255,255,255,0.03); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border-color);">
-          <input id="neName" placeholder="Event Name (e.g. Morning Haldi)" style="flex:2">
-          <input id="neDate" type="date" style="flex:1">
-          <button class="btn primary" onclick="createNewEvent()"><i class="fa-solid fa-plus"></i> Add Event</button>
+        <div class="table-responsive" style="margin-top: 20px;">
+            <table class="styled-table">
+              <thead><tr><th>Event Name</th><th>Date</th><th>Photos</th><th>Size</th><th>Actions</th></tr></thead>
+              <tbody id="tblEvents"></tbody>
+            </table>
         </div>
-
-        <table>
-          <thead><tr><th>Event Name</th><th>Date</th><th>Photos Count</th><th>Data Used</th><th>Actions</th></tr></thead>
-          <tbody id="tblEvents"></tbody>
-        </table>
       </div>
     </div>
 
@@ -295,7 +301,7 @@
       </div>
     </div>
 
-    <!-- TAB 5: GUEST LEADS -->
+    <!-- TAB 5: GUEST LEADS (FIXED UI) -->
     <div id="tLeads" class="tab-content">
       <div class="card">
         <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
@@ -303,8 +309,8 @@
           <button class="btn secondary" onclick="loadLeads()"><i class="fa-solid fa-rotate-right"></i> Refresh Data</button>
         </div>
         <div class="table-responsive">
-          <table>
-            <thead><tr><th>Guest Name</th><th>Phone Number</th><th>Total Searches</th><th>Actions</th></tr></thead>
+          <table class="styled-table">
+            <thead><tr><th>Guest Name & Time</th><th>Phone Number</th><th>Matches</th><th>Selfie</th></tr></thead>
             <tbody id="tblLeads"><tr><td colspan="4" align="center" class="text-muted">Loading leads...</td></tr></tbody>
           </table>
         </div>
@@ -522,9 +528,7 @@ async function api(path, body){
     method: 'POST', 
     headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' }
   };
-  // ✅ FIX: Allow get-branding to be GET
   if(path.includes('account-status') || path.includes('get-collections') || path.includes('get-branding')) opts.method = 'GET';
-  
   if(body) { opts.method = 'POST'; opts.body = JSON.stringify(body); } 
 
   const r = await fetch(`${API_BASE}${path}`, opts);
@@ -577,38 +581,36 @@ async function loadDashboard(){
     // Store globally for indexed access
     allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
     
-    // Stats
-    const totalPhotos = allCols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
-    const storageBytes = sData.total_storage_used_bytes || allCols.reduce((sum, c) => sum + (c.storage_bytes || 0), 0);
+    // Stats calculation fixed (using parseInt safely)
+    const totalPhotos = allCols.reduce((sum, c) => sum + (parseInt(c.total_photo_count) || 0), 0);
+    const storageBytes = sData.total_storage_used_bytes || allCols.reduce((sum, c) => sum + (parseInt(c.storage_bytes) || 0), 0);
+    
     $('#dCols').textContent = allCols.length;
     $('#dPhotos').textContent = totalPhotos.toLocaleString();
     $('#dStorage').textContent = formatBytes(storageBytes);
     
-    // Render Table
-    const tbody = $('#tblCols tbody');
+    const colList = $('#colList');
     if(allCols.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 30px;" class="text-muted">No collections found. Create one!</td></tr>`;
+        colList.innerHTML = `<div style="text-align:center; padding: 40px; color:#555;">No collections found. Create one!</div>`;
         return;
     }
 
-    // FIXED: Passed index 'i' instead of complex string params to openCol
-    tbody.innerHTML = allCols.map((c, i) => `
-      <tr>
-        <td>
-            <div style="font-weight:700; font-size:15px; color:#fff;">${escapeHtml(c.name)}</div>
-            <div class="text-sm text-muted">ID: ${c.collection_id.substring(0,8)}...</div>
-        </td>
-        <td>${new Date(c.created_at).toLocaleDateString()}</td>
-        <td>
-            <span class="tag-pill">${c.event_count||0} Events</span>
-            <span class="tag-pill">${c.total_photo_count||0} Photos</span>
-        </td>
-        <td>${formatBytes(c.storage_bytes || 0)}</td>
-        <td>
-           <button class="btn secondary" onclick="openCol(${i})">Manage</button>
-           <button class="btn danger" onclick="delCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      </tr>
+    // New Modern Card List Layout for Collections
+    colList.innerHTML = allCols.map((c, i) => `
+      <div class="col-item" onclick="openCol(${i})">
+          <div class="col-info">
+             <h4>${escapeHtml(c.name)}</h4>
+             <div class="col-meta">
+                 <span><i class="fa-regular fa-calendar"></i> ${new Date(c.created_at).toLocaleDateString()}</span>
+                 <span><i class="fa-solid fa-images"></i> ${c.total_photo_count||0} Photos</span>
+                 <span><i class="fa-solid fa-database"></i> ${formatBytes(c.storage_bytes||0)}</span>
+             </div>
+          </div>
+          <div class="col-actions">
+             <button class="btn secondary" style="padding: 8px 16px; font-size: 12px;">Manage</button>
+             <button class="btn danger" style="padding: 8px 12px;" onclick="event.stopPropagation(); delCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
+          </div>
+      </div>
     `).join('');
     
   } catch(e) { showToast(e.message, 'error'); }
@@ -668,8 +670,8 @@ async function loadEvents(){
           <td>${e.photo_count || 0}</td>
           <td>${formatBytes(e.storage_bytes || 0)}</td>
           <td>
-            <button class="btn secondary" onclick="editEvent('${e.event_id}', '${escapeHtml(e.name)}', '${e.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn danger" onclick="delEvent('${e.event_id}')"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn secondary" style="padding:6px 12px;" onclick="editEvent('${e.event_id}', '${escapeHtml(e.name)}', '${e.event_date||''}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn danger" style="padding:6px 12px;" onclick="delEvent('${e.event_id}')"><i class="fa-solid fa-trash"></i></button>
           </td>
         </tr>
       `).join('');
@@ -972,7 +974,7 @@ function copyLink(){
   showToast('Copied to clipboard');
 }
 
-/* ================= GUEST LEADS ================= */
+/* ================= GUEST LEADS (FIXED LAYOUT) ================= */
 async function loadLeads(){
   $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
   try {
@@ -983,63 +985,23 @@ async function loadLeads(){
         $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">No guest searches yet.</td></tr>`;
         return;
     }
-    
-    const grouped = {};
-    leads.forEach(l => {
-        const key = l.mobile || l.phone || 'Unknown';
-        if(!grouped[key]) grouped[key] = { ...l, visits: 0, history: [] };
-        grouped[key].visits++;
-        grouped[key].history.push(l);
-    });
 
-    const sortedGroups = Object.values(grouped).sort((a,b) => {
-        // Safe check for history array
-        if(!a.history || !b.history || !a.history.length || !b.history.length) return 0;
-        const lastA = a.history.sort((x,y) => new Date(y.timestamp) - new Date(x.timestamp))[0];
-        const lastB = b.history.sort((x,y) => new Date(y.timestamp) - new Date(x.timestamp))[0];
-        return new Date(lastB.timestamp) - new Date(lastA.timestamp);
-    });
-
-    let html = '';
-    sortedGroups.forEach((g, i) => {
-        const latest = g.history[0]; 
-        html += `
-          <tr onclick="$('#lead-hist-${i}').classList.toggle('hidden')" style="cursor:pointer">
-            <td>
-               <div style="font-weight:700">${escapeHtml(g.name || 'Unknown')}</div>
-               <div class="text-sm text-muted">Latest: ${new Date(latest.timestamp).toLocaleString()}</div>
-            </td>
-            <td>${g.mobile || g.phone || '-'}</td>
-            <td>
-               <span class="tag-pill" style="background: var(--primary-dim); color: var(--primary); font-weight:700;">
-                 ${g.visits} Searches
-               </span>
-               <i class="fa-solid fa-chevron-down" style="float:right; margin-top:4px;"></i>
-            </td>
-            <td>
-                <button class="btn secondary btn-sm">Details</button>
-            </td>
-          </tr>
-          <tr id="lead-hist-${i}" class="hidden" style="background:rgba(255,255,255,0.05)">
-            <td colspan="4">
-                <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px;">
-                    ${g.history.map(h => `
-                        <div style="background:#222; padding:8px; border-radius:8px; display:flex; align-items:center; gap:8px;">
-                            <a href="${h.selfie_url}" target="_blank">
-                                <img src="${h.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'40\' fill=\'%23333\' stroke=\'%23555\' stroke-width=\'2\'/%3E%3C/svg%3E'">
-                            </a>
-                            <div>
-                                <div class="text-sm">${new Date(h.timestamp).toLocaleTimeString()}</div>
-                                <div class="text-sm text-muted">${h.match_count||0} Photos</div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </td>
-          </tr>
-        `;
-    });
-    $('#tblLeads').innerHTML = html;
+    // Display List directly (Simplest for now)
+    $('#tblLeads').innerHTML = leads.map(l => `
+      <tr>
+        <td>
+            <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
+            <div class="text-sm text-muted">${new Date(l.timestamp).toLocaleString()}</div>
+        </td>
+        <td>${l.mobile || '-'}</td>
+        <td><span class="tag-pill">${l.match_count || l.photo_count || 0} Matches</span></td>
+        <td>
+            <a href="${l.selfie_url}" target="_blank">
+                <img src="${l.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'40\' fill=\'%23333\' stroke=\'%23555\' stroke-width=\'2\'/%3E%3C/svg%3E'">
+            </a>
+        </td>
+      </tr>
+    `).join('');
   } catch(e) { 
     $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" style="color: #ef4444;">Error: ${e.message}</td></tr>`;
   }
@@ -1073,20 +1035,18 @@ function updatePreview() {
     const headImgInput = document.getElementById('setHeadImg');
     const logoImgInput = document.getElementById('setLogo');
     
-    // PRIORITY: Local Blob > Signed URL > Raw Value (Value is last resort)
+    // Check if we have a local preview (uploaded just now) OR a value from DB
     const headImgSrc = headImgInput.dataset.localPreview || headImgInput.dataset.signedUrl;
     const logoImgSrc = logoImgInput.dataset.localPreview || logoImgInput.dataset.signedUrl;
 
-    // Only set background if we have a valid source (local or signed)
-    if(headImgSrc) {
-        $('#prevHeader').style.backgroundImage = `url('${headImgSrc}')`;
-    }
+    if(headImgSrc) $('#prevHeader').style.backgroundImage = `url('${headImgSrc}')`;
     
     const prevLogo = $('#prevLogo');
     if(logoImgSrc) { 
         prevLogo.src = logoImgSrc; 
         prevLogo.style.display = 'block'; 
         prevLogo.onerror = function() {
+            // Fallback SVG if external image fails or is blocked
             this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23333' stroke='%2300e676' stroke-width='4'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23fff' font-family='sans-serif' font-size='14'%3ELOGO%3C/text%3E%3C/svg%3E";
         };
     }

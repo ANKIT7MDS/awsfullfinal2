@@ -108,7 +108,7 @@
 
 <header id="pageHeader">
     <div class="header-overlay">
-        <!-- Removed 'crossorigin' to prevent ORB/CORS blocks on S3 images -->
+        <!-- Safe SVG Fallback for Logo -->
         <img id="pageLogo" class="brand-logo" alt="Logo" onerror="this.style.display='none'">
         <div id="welcomeText" class="welcome-text"></div>
         <h1 class="brand-title" id="pageTitle">EventLens Gallery</h1>
@@ -175,7 +175,7 @@
         } catch(e) { console.error("Failed to fetch branding:", e); }
     };
 
-    function applyBranding(data) {
+    async function applyBranding(data) {
         if(data.collection_name) {
             document.getElementById('pageTitle').innerText = data.collection_name;
             document.title = `${data.collection_name} – Gallery`;
@@ -193,31 +193,48 @@
         }
         if(data.overlay_opacity) document.documentElement.style.setProperty('--overlay-op', data.overlay_opacity);
         
-        // --- SAFE HEADER IMAGE LOADING ---
+        // --- SAFE HEADER IMAGE LOADING (The Fix) ---
         if(data.header_img) {
-            const img = new Image();
-            // Important: Do NOT set crossOrigin if S3 CORS is not configured
-            img.onload = () => { 
-                document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`; 
-            };
-            img.onerror = () => { 
-                console.warn("Header image failed to load - check S3 CORS or URL"); 
-            }; 
-            img.src = data.header_img; 
+            // Hum pehle fetch() karke blob banayenge
+            // Yeh CORS error ko bypass karne ka sabse solid tarika hai agar response me headers loose hain
+            try {
+                const imgRes = await fetch(data.header_img);
+                if(imgRes.ok) {
+                    const blob = await imgRes.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+                    document.getElementById('pageHeader').style.backgroundImage = `url('${objectUrl}')`;
+                } else {
+                    // Fallback to direct URL if fetch fails (Direct S3 Access)
+                    document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
+                }
+            } catch(e) {
+                console.warn("Header blob fetch failed, using direct link as fallback.");
+                document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
+            }
         }
         
         if(data.logo) {
             const logo = document.getElementById('pageLogo');
-            // Remove any CORS attribute to allow loading opaque response
-            logo.removeAttribute('crossorigin');
-            logo.src = data.logo;
-            logo.style.display = 'block';
+            try {
+                const imgRes = await fetch(data.logo);
+                if(imgRes.ok) {
+                    const blob = await imgRes.blob();
+                    logo.src = URL.createObjectURL(blob);
+                    logo.style.display = 'block';
+                } else {
+                    logo.src = data.logo;
+                    logo.style.display = 'block';
+                }
+            } catch(e) {
+                logo.src = data.logo;
+                logo.style.display = 'block';
+            }
         }
         
         if(data.footer) document.getElementById('pageFooter').innerText = data.footer;
         if(data.layout === 'masonry') document.getElementById('galleryGrid').classList.add('masonry');
 
-        // Dynamic Sizing - Inject CSS based on API values
+        // Dynamic Sizing
         const style = document.createElement('style');
         style.innerHTML = `
             :root {

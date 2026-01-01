@@ -1040,9 +1040,15 @@ async function generateClientLink(){
        collection_id: curCol.collection_id, expiry_hours: 87600, password: pin, type: 'client'
     });
     
-    const linkId = res.link_id || res.id;
-    if(!linkId) throw new Error("No Link ID");
-    const finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}`;
+    // ✅ FIX: Guest Link ki tarah Client Link mein bhi direct 'searchUrl' check kar rahe hain
+    let finalUrl = res.searchUrl;
+    
+    if(!finalUrl) {
+        const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
+        if(!linkId) throw new Error("No Link ID or Search URL returned");
+        finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}`;
+    }
+    
     $('#clientFinalLink').value = finalUrl;
     $('#clientLinkBtn').href = finalUrl;
     $('#clientLinkRes').classList.remove('hidden');

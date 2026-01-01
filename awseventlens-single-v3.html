@@ -654,9 +654,7 @@ async function openCol(index){
 
 /* ================= EVENT MANAGEMENT ================= */
 async function loadEvents(){
-  // SAFETY CHECK: Prevent empty calls causing 400
-  if(!curCol || !curCol.collection_id) return;
-  
+  if(!curCol) return;
   try {
       const data = await api('/get-events', { collection_id: curCol.collection_id });
       curEvents = data.events || [];
@@ -727,9 +725,7 @@ async function updateEvent(){
 /* ================= GALLERY & LIGHTBOX ================= */
 let photosNext = null;
 async function loadPhotos(reset=false, loadMore=false){
-  // SAFETY CHECK: Prevent empty calls causing 400
-  if(!curCol || !curCol.collection_id) return;
-  
+  if(!curCol) return;
   if(reset) photosNext = null;
   
   const eid = $('#galEventFilter').value;
@@ -1197,16 +1193,25 @@ async function uploadAsset(input, targetId) {
     
     showToast('Uploading...');
     try {
+        // CLEAN FILENAME
+        const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        
         const hash = 'branding_' + Date.now(); 
         const res = await api('/generate-upload-urls', {
             collection_id: curCol.collection_id, 
             event_id: eventIdToUse,
-            files: [{ name: "branding_"+file.name, type: file.type, size: file.size, hash: hash }]
+            files: [{ name: "branding_"+cleanName, type: file.type, size: file.size, hash: hash }]
         });
         
         if(res.urls && res.urls.length > 0) {
             const u = res.urls[0];
-            await fetch(u.uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+            
+            // ✅ FIX: Force Content-Type to match Backend (image/jpeg)
+            await fetch(u.uploadURL, { 
+                method: 'PUT', 
+                body: file, 
+                headers: { 'Content-Type': 'image/jpeg' } 
+            });
             
             // Extract the clean URL (remove query params)
             const publicUrl = u.uploadURL.split('?')[0];
@@ -1214,7 +1219,7 @@ async function uploadAsset(input, targetId) {
             // Update the Value for Saving (but keep visual preview local until reload)
             targetInput.value = publicUrl; 
             
-            showToast('Uploaded!');
+            showToast('Uploaded Successfully!');
         }
     } catch(e) { console.error(e); showToast('Upload failed', 'error'); }
 }

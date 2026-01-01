@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Magic bullet for S3 403 errors: Forces the browser to send NO referrer header -->
+    <meta name="referrer" content="no-referrer">
     <title>Client Gallery – EventLens</title>
     
     <!-- Fonts & Icons -->
@@ -151,6 +153,7 @@
             align-items: center;
             gap: 8px;
         }
+        .chip i { font-size: 14px; }
         .chip.active { background: var(--primary); color: #000; border-color: var(--primary); transform: scale(1.05); }
 
         /* GRID */
@@ -314,7 +317,6 @@
         </div>
         <div class="lb-content" id="lbContent">
             <div class="lb-nav prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></div>
-            <!-- FIXED: Removed all security attributes to allow standard loading -->
             <img src="" id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
             <div class="lb-nav next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
@@ -434,7 +436,6 @@
                 const originalIndex = allPhotos.findIndex(x => x.id === p.id);
                 card.onclick = () => openLightbox(originalIndex);
                 
-                // FIXED: Removed crossorigin and referrerpolicy to mimic standard browser behavior
                 card.innerHTML = `
                     <img src="${p.thumb || p.url}" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
                     <div class="ph-actions">

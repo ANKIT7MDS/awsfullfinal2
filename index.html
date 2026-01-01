@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>EventLens – Smart AI Gallery</title>
-  <!-- Policy: No Referrer for S3 compliance -->
   <meta name="referrer" content="no-referrer">
 
   <!-- Libraries -->
@@ -15,7 +14,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* ... (Keep existing CSS from old file) ... */
     :root {
       --bg: #050505; --card: #121212; --surface: #1e1e1e;
       --accent: #00e676; --accent-dark: #00b35c; --accent-soft: rgba(0, 230, 118, 0.15);
@@ -25,147 +23,75 @@
       --logo-size: 80px; 
       --banner-height: 220px;
     }
-
     * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; padding-bottom: 80px; }
 
-    /* --- HEADER & BRANDING --- */
-    header { 
-        position: relative; height: var(--banner-height); overflow: hidden; 
-        background-color: #222; background-size: cover; background-position: center;
-        transition: height 0.3s ease; border-bottom: 1px solid var(--border);
-    }
-    .header-overlay {
-        position: absolute; inset: 0; 
-        background: linear-gradient(to bottom, rgba(0,0,0,var(--overlay-op)), #050505);
-        display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; text-align: center; align-items: center;
-    }
-    .brand-logo {
-        width: var(--logo-size); height: var(--logo-size);
-        border-radius: 50%; border: 3px solid var(--accent);
-        object-fit: cover; margin-bottom: 10px; background: #000;
-        display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-    }
-    .welcome-text {
-        font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); margin-bottom: 4px; 
-        letter-spacing: 0.5px; text-transform: uppercase; display: none;
-    }
+    /* HEADER */
+    header { position: relative; height: var(--banner-height); overflow: hidden; background-color: #222; background-size: cover; background-position: center; border-bottom: 1px solid var(--border); }
+    .header-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,var(--overlay-op)), #050505); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; text-align: center; align-items: center; }
+    .brand-logo { width: var(--logo-size); height: var(--logo-size); border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; margin-bottom: 10px; background: #000; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+    .welcome-text { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); margin-bottom: 4px; letter-spacing: 0.5px; text-transform: uppercase; display: none; }
     .brand-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin: 0; }
 
-    /* --- MAIN CONTAINER --- */
+    /* CONTAINERS */
     .container { max-width: 1000px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
-
-    /* --- SEARCH BOX --- */
-    .search-card {
-        background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 30px 20px;
-        text-align: center; margin-top: -40px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-        backdrop-filter: blur(10px);
-    }
+    
+    /* SEARCH CARD */
+    .search-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 30px 20px; text-align: center; margin-top: -40px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); backdrop-filter: blur(10px); }
     .search-icon { font-size: 40px; color: var(--accent); margin-bottom: 15px; }
-    .btn-main {
-        background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px;
-        font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
-        transition: transform 0.2s; box-shadow: 0 4px 15px var(--accent-soft);
-    }
+    .btn-main { background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: transform 0.2s; box-shadow: 0 4px 15px var(--accent-soft); }
     .btn-main:active { transform: scale(0.96); }
 
-    /* --- GALLERY CONTROLS --- */
+    /* GALLERY */
     .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 20px; }
-    .tag-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
     .tag-pill { background: var(--surface); color: var(--muted); padding: 6px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; border: 1px solid var(--border); cursor: pointer; }
     .tag-pill.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
-
-    /* --- GRID --- */
-    .grid { 
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 6px; 
-        transition: opacity 0.3s;
-    }
-    .grid.masonry { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-
-    .photo-item { 
-        aspect-ratio: 1; background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; 
-        cursor: pointer; -webkit-tap-highlight-color: transparent; 
-    }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 6px; transition: opacity 0.3s; }
+    .photo-item { aspect-ratio: 1; background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; }
     .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
     
-    /* Selection State */
+    /* SELECTION */
     .photo-item.selected img { opacity: 0.4; transform: scale(0.9); }
-    .photo-item.selected::after {
-        content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900;
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        color: #fff; font-size: 24px; background: var(--accent); 
-        width: 40px; height: 40px; border-radius: 50%; 
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    }
-    .select-ring {
-        position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; 
-        border: 2px solid rgba(255,255,255,0.7); border-radius: 50%; pointer-events: none;
-        display: none; 
-    }
-    body.select-mode .select-ring { display: block; }
-    body.select-mode .photo-item.selected .select-ring { background: var(--accent); border-color: var(--accent); }
-
-    /* --- BOTTOM BAR (ACTIONS) --- */
-    .action-bar {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
-        background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(12px);
-        border: 1px solid var(--border); border-radius: 50px; padding: 10px 20px;
-        display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100;
-        width: 90%; max-width: 400px; justify-content: space-around;
-    }
+    .photo-item.selected::after { content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 24px; background: var(--accent); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    
+    /* ACTION BAR */
+    .action-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: 50px; padding: 10px 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; width: 90%; max-width: 400px; justify-content: space-around; }
     .action-bar.visible { transform: translateX(-50%) translateY(0); }
     .act-btn { background: none; border: none; color: #fff; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; opacity: 0.7; }
     .act-btn i { font-size: 20px; }
     .act-btn:hover, .act-btn.active { opacity: 1; color: var(--accent); }
 
-    /* --- MODALS --- */
+    /* MODAL */
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
     .modal.open { display: flex; animation: fadeIn 0.3s; }
-    
     .modal-card { background: var(--card); border: 1px solid var(--border); width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; text-align: center; position: relative; }
-    .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #666; font-size: 20px; cursor: pointer; }
-    
     .lead-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 16px; }
-    .lead-input:focus { border-color: var(--accent); }
-
-    /* --- LIGHTBOX (Enhanced) --- */
+    
+    /* LIGHTBOX */
     .viewer { position: fixed; inset: 0; background: #000; z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; }
     .viewer.open { display: flex; }
     .viewer-content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
     .viewer img { max-width: 100%; max-height: 90vh; object-fit: contain; }
-    
     .v-header { position: absolute; top: 0; width: 100%; padding: 20px; display: flex; justify-content: flex-end; z-index: 10; }
     .v-close { color: #fff; font-size: 30px; background: none; border: none; cursor: pointer; }
-    
-    .v-controls { 
-        position: absolute; bottom: 0; width: 100%; 
-        background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-        padding: 30px 20px; display: flex; justify-content: space-around; 
-    }
-    
-    .v-btn {
-        background: transparent; border: none; color: #aaa; 
-        display: flex; flex-direction: column; align-items: center; gap: 6px; 
-        font-size: 11px; cursor: pointer; transition: 0.2s;
-    }
+    .v-controls { position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); padding: 30px 20px; display: flex; justify-content: space-around; }
+    .v-btn { background: transparent; border: none; color: #aaa; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; transition: 0.2s; }
     .v-btn i { font-size: 24px; padding: 12px; border-radius: 50%; background: rgba(255,255,255,0.1); }
     .v-btn.active i { color: #fff; transform: scale(1.1); }
     .v-btn.fav.active i { background: #ff4081; box-shadow: 0 0 15px rgba(255, 64, 129, 0.4); color: #fff; }
     .v-btn.del.active i { background: #ff4444; box-shadow: 0 0 15px rgba(255, 68, 68, 0.4); color: #fff; }
 
-    /* --- UTILS --- */
+    /* UTILS */
     .hidden { display: none !important; }
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     .count-badge { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-left: 5px; }
-    
-    #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #222; padding: 10px 20px; border-radius: 30px; font-size: 13px; z-index: 300; display: none; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+    #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #222; padding: 10px 20px; border-radius: 30px; font-size: 13px; z-index: 300; display: none; border: 1px solid #333; }
   </style>
 </head>
 <body>
 
-<div id="toast"></div>
+<div id="toast">Message</div>
 
 <!-- HEADER -->
 <header id="pageHeader">
@@ -190,19 +116,19 @@
 
         <div id="loader" class="hidden" style="margin-top: 25px;">
             <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--accent); font-size: 24px;"></i>
-            <p style="color:var(--muted); font-size: 14px; margin-top: 10px;" id="loaderText">Processing...</p>
+            <p style="color:var(--muted); font-size: 14px; margin-top: 10px;" id="loaderText">Scanning faces...</p>
         </div>
         
-        <!-- PIN Input (Hidden by default, shown if required) -->
+        <!-- PIN UI (Shows only if needed) -->
         <div id="pinArea" class="hidden" style="margin-top: 20px;">
-            <p style="color: #ff4081; font-size: 13px; margin-bottom: 10px;">🔒 Protected Gallery</p>
+            <p style="color: #ff4081; font-size: 13px; margin-bottom: 10px;">🔒 Gallery Protected</p>
             <input type="tel" id="manualPin" class="lead-input" placeholder="Enter Event PIN" style="text-align: center; letter-spacing: 4px; max-width: 200px;">
             <button class="btn-main" onclick="retrySearchWithPin()" style="padding: 10px 20px; font-size: 14px; margin-top: 10px;">Retry</button>
         </div>
     </div>
 </div>
 
-<!-- GALLERY SECTION (Hidden Initially) -->
+<!-- GALLERY SECTION -->
 <div class="container hidden" id="galleryContainer">
     <div class="gallery-header">
         <h3 style="margin:0;">Found <span id="matchCount" class="count-badge">0</span></h3>
@@ -218,7 +144,7 @@
     </div>
 </div>
 
-<!-- STICKY ACTION BAR (For Selection Mode) -->
+<!-- ACTION BAR -->
 <div class="action-bar" id="actionBar">
     <div style="color: var(--muted); font-size: 12px; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #111; padding: 4px 12px; border-radius: 12px; border: 1px solid #333;">
         <span id="selCount">0</span> Selected
@@ -229,7 +155,7 @@
     <button class="act-btn" onclick="shareOnWhatsapp()"><i class="fa-brands fa-whatsapp"></i> Share</button>
 </div>
 
-<!-- LEAD MODAL (Intermediate Step) -->
+<!-- LEAD MODAL -->
 <div class="modal" id="leadModal">
     <div class="modal-card">
         <div style="width: 60px; height: 60px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
@@ -247,27 +173,16 @@
     </div>
 </div>
 
-<!-- VIEWER (Lightbox with Actions) -->
+<!-- VIEWER -->
 <div class="viewer" id="viewer">
-    <div class="v-header">
-        <button class="v-close" onclick="closeViewer()">&times;</button>
-    </div>
+    <div class="v-header"><button class="v-close" onclick="closeViewer()">&times;</button></div>
     <div class="viewer-content">
         <img id="viewerImg" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
     </div>
     <div class="v-controls">
-        <button class="v-btn fav" id="btnFav" onclick="toggleAction('fav')">
-            <i class="fa-solid fa-heart"></i>
-            <span>Favorite</span>
-        </button>
-        <button class="v-btn" onclick="downloadSingle()">
-            <i class="fa-solid fa-download"></i>
-            <span>Download</span>
-        </button>
-        <button class="v-btn del" id="btnDel" onclick="toggleAction('delete_req')">
-            <i class="fa-solid fa-trash-can"></i>
-            <span>Delete</span>
-        </button>
+        <button class="v-btn fav" id="btnFav" onclick="toggleAction('fav')"><i class="fa-solid fa-heart"></i><span>Favorite</span></button>
+        <button class="v-btn" onclick="downloadSingle()"><i class="fa-solid fa-download"></i><span>Download</span></button>
+        <button class="v-btn del" id="btnDel" onclick="toggleAction('delete_req')"><i class="fa-solid fa-trash-can"></i><span>Delete</span></button>
     </div>
 </div>
 
@@ -277,28 +192,27 @@
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId') || urlParams.get('id');
     const cid = urlParams.get('cid') || urlParams.get('collection_id');
-    const eid = urlParams.get('eid') || urlParams.get('event_id');
+    const eid = urlParams.get('eid'); // Scope to specific event
     const urlPin = urlParams.get('pin');
 
     /* --- STATE --- */
-    let allMatches = []; // Stores {url, id, tags}
+    let allMatches = []; 
     let selectedIndices = new Set();
     let pendingSelfieBase64 = null;
     let isSelectMode = false;
     let currentIdx = 0;
-    let guestInfo = { name: '', phone: '' };
+    let guestInfo = { name: '', mobile: '' };
 
     /* --- INIT --- */
     window.onload = async () => {
-        // Soft check for cid/linkId. If linkId exists, we can fetch cid later or backend handles it.
-        // But frontend search-faces API needs cid.
-        // If neither exists, show error.
         if (!cid && !linkId) {
-            alert("Link seems invalid. Missing Collection ID.");
+            document.body.innerHTML = `<div style="display:flex;height:100vh;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;">
+                <div><i class="fa-solid fa-link-slash" style="font-size:40px;margin-bottom:15px;color:#ff4444;"></i><br>
+                Invalid Link<br><span style="font-size:12px;color:#888;">Missing Collection ID</span></div>
+            </div>`;
             return;
         }
 
-        // Fetch Branding (using either cid or linkId)
         try {
             let fetchUrl = "";
             if (cid) fetchUrl = `${API_BASE}/get-branding?cid=${cid}`;
@@ -327,8 +241,6 @@
             document.documentElement.style.setProperty('--accent-soft', data.color + '26');
             document.getElementById('pageLogo').style.borderColor = data.color;
         }
-        if(data.overlay_opacity) document.documentElement.style.setProperty('--overlay-op', data.overlay_opacity);
-        
         if(data.header_img) {
             const img = new Image();
             img.onload = () => document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
@@ -375,15 +287,11 @@
         const loaderText = document.getElementById('loaderText');
         loader.classList.remove('hidden');
         loaderText.innerText = "Compressing & Scanning...";
-        
-        document.getElementById('pinArea').classList.add('hidden'); // Hide PIN if previously shown
+        document.getElementById('pinArea').classList.add('hidden'); 
         
         try {
             pendingSelfieBase64 = await resizeImage(file, 800);
-            
-            // Try Search (with URL PIN if available, else blank)
-            performSearch(urlPin);
-            
+            performSearch(urlPin); // Try with URL pin if exists
         } catch(e) {
             console.error(e);
             alert("Image processing failed.");
@@ -400,31 +308,34 @@
 
     async function performSearch(pin) {
         try {
-            // Prepare payload with event_id scoping
-            const payload = { 
-                collection_id: cid, 
+            // FIXED: Using single 'client-api' endpoint with 'search_faces' action
+            const payload = {
+                collection_id: cid,
                 image: pendingSelfieBase64.split(',')[1],
                 min_confidence: 80,
                 pin: pin 
             };
-            
-            // IF event ID is present in URL, send it to backend for scoping
-            if(eid) {
-                payload.event_id = eid;
-            }
+            if(eid) payload.event_id = eid;
 
-            const res = await fetch(`${API_BASE}/search-faces`, {
+            const res = await fetch(`${API_BASE}/client-api`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    action: "search_faces",
+                    payload: payload
+                })
             });
             
             const data = await res.json();
             document.getElementById('loader').classList.add('hidden');
             
             if(res.ok) {
-                // SUCCESS
-                const matches = data.ids || data.photos || [];
+                // Handle lambda proxy response structure if needed
+                let parsedData = data;
+                if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
+
+                const matches = parsedData.photos || parsedData.ids || [];
+                
                 if(matches.length > 0) {
                     allMatches = matches;
                     document.getElementById('leadMatchCount').innerText = allMatches.length;
@@ -435,8 +346,7 @@
                     document.getElementById('searchContainer').classList.add('hidden');
                 }
             } else {
-                // PIN REQUIRED handling
-                if(res.status === 401 || res.status === 403) {
+                if(res.status === 401 || res.status === 403 || (data.message && data.message.includes('PIN'))) {
                     document.getElementById('loaderText').innerText = "Gallery is protected.";
                     document.getElementById('pinArea').classList.remove('hidden');
                     showToast("PIN Required", "error");
@@ -463,23 +373,25 @@
 
         guestInfo = { name, mobile };
 
-        // Close Modal & Show Gallery
         document.getElementById('leadModal').classList.remove('open');
         document.getElementById('searchContainer').classList.add('hidden');
         document.getElementById('galleryContainer').classList.remove('hidden');
         
         renderGallery();
         
-        // Save Lead in background
-        fetch(`${API_BASE}/save-details`, {
+        // Log Guest in Background (Replacing save-details)
+        // Uses the NEW log_guest_visit action in Lambda
+        fetch(`${API_BASE}/client-api`, {
             method: 'POST',
-            body: JSON.stringify({ 
-                collection_id: cid, 
-                linkId: linkId,
-                mobile: mobile, 
-                name: name, 
-                selfie_image: pendingSelfieBase64, 
-                photo_count: allMatches.length 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: "log_guest_visit",
+                payload: { 
+                    collection_id: cid, 
+                    mobile: mobile, 
+                    name: name, 
+                    photo_count: allMatches.length 
+                }
             })
         });
     }
@@ -490,8 +402,7 @@
         
         grid.innerHTML = allMatches.map((p, i) => `
             <div class="photo-item" id="pitem-${i}" onclick="handleItemClick(${i})">
-                <!-- Using clean img tag -->
-                <img src="${p.thumbnail_url || p.url}" loading="lazy">
+                <img src="${p.thumbnail_url || p.url}" loading="lazy" referrerpolicy="no-referrer">
                 <div class="select-ring"></div>
             </div>
         `).join('');
@@ -527,7 +438,6 @@
             }
             updateActionBar();
         } else {
-            // Lightbox Mode
             openViewer(index);
         }
     }
@@ -554,7 +464,6 @@
         const p = allMatches[index];
         document.getElementById('viewerImg').src = p.url;
         
-        // Reset buttons visually
         document.getElementById('btnFav').classList.remove('active');
         document.getElementById('btnDel').classList.remove('active');
         
@@ -570,8 +479,6 @@
         
         showToast(isActive ? (type === 'fav' ? 'Favorite Saved' : 'Delete Request Sent') : 'Removed');
 
-        // Send to Backend for Admin Dashboard
-        // NOTE: Uses client-api 'update_selection' just like Client Gallery
         try {
             await fetch(`${API_BASE}/client-api`, {
                 method: 'POST',
@@ -615,7 +522,6 @@
         const zip = new JSZip();
         const folder = zip.folder("EventLens_Photos");
         
-        // Update UI
         const btn = document.querySelector('.act-btn .fa-file-zipper').parentElement;
         const orgHtml = btn.innerHTML;
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Zipping...`;

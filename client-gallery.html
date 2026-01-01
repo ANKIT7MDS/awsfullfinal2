@@ -292,7 +292,7 @@
         const linkId = params.get('id') || params.get('linkId');
         
         let allPhotos = [];
-        let selections = {}; // { photoId: { selected: true, fav: false } }
+        let selections = {}; 
         let currentFilter = 'all';
         let currentIdx = 0;
 
@@ -307,11 +307,12 @@
                 const res = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: "get-gallery", linkId, pin })
+                    // FIXED: Changed action to 'get-details' which is standard for EventLens initial fetch
+                    body: JSON.stringify({ action: "get-details", linkId, pin })
                 });
 
                 const data = await res.json();
-                if(!res.ok) throw new Error(data.message || "Invalid PIN");
+                if(!res.ok) throw new Error(data.message || "Invalid PIN or Link");
 
                 initGallery(data);
             } catch (err) {
@@ -321,18 +322,19 @@
 
         // 2. INITIALIZE GALLERY
         function initGallery(data) {
-            allPhotos = data.photos || [];
+            // Handle different potential response structures
+            allPhotos = data.photos || data.items || [];
             const branding = data.branding || {};
 
             // Apply Branding
             if(branding.color) document.documentElement.style.setProperty('--primary', branding.color);
-            document.getElementById('brandTitle').textContent = data.collection_name || "Your Event";
+            document.getElementById('brandTitle').textContent = data.collection_name || data.name || "Your Event";
             document.getElementById('welcomeMsg').textContent = branding.welcome_msg || "";
             if(branding.logo) document.getElementById('brandLogo').src = branding.logo;
             if(branding.header_img) document.getElementById('heroBanner').style.backgroundImage = `url('${branding.header_img}')`;
 
-            // Load Previous Selections if any (from data)
-            selections = data.existing_selections || {};
+            // Load Previous Selections if any
+            selections = data.existing_selections || data.selections || {};
 
             renderGrid();
             updateCounters();
@@ -353,6 +355,10 @@
                 if(currentFilter === 'fav') return s.fav;
                 return true;
             });
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; padding: 50px; color: var(--text-muted);">No photos found.</div>`;
+            }
 
             filtered.forEach((p, idx) => {
                 const s = selections[p.photo_id] || {};
@@ -382,12 +388,10 @@
             updateCounters();
             renderGrid();
             
-            // Auto-sync with server (Optional: can do batch instead)
             syncSelection(photo.photo_id, selections[photo.photo_id]);
         }
 
         async function syncSelection(photoId, state) {
-            // Hum backend ko inform karte hain real-time mein
             try {
                 fetch(API_URL, {
                     method: 'POST',
@@ -460,14 +464,18 @@
                 const res = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: "submit-gallery", linkId })
+                    // FIXED: Action changed to submit-selections
+                    body: JSON.stringify({ action: "submit-selections", linkId })
                 });
 
                 if(res.ok) {
                     showToast("Selections safalta purvak bhej di gayi hain!", "success");
                     document.getElementById('submitBar').style.display = 'none';
+                } else {
+                    const err = await res.json();
+                    showToast(err.message || "Submission failed", "error");
                 }
-            } catch(e) { showToast("Submission failed"); }
+            } catch(e) { showToast("Network error during submission", "error"); }
         }
 
         // UTILS

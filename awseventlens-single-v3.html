@@ -34,12 +34,16 @@
     input, select, textarea { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
     
     /* NEW STYLES FOR COLLECTIONS LIST */
-    .col-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; transition: 0.2s; cursor: pointer; }
-    .col-item:hover { border-color: var(--primary); background: rgba(255,255,255,0.05); transform: translateY(-2px); }
-    .col-info h4 { margin: 0 0 8px 0; font-size: 18px; color: #fff; }
-    .col-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 15px; }
-    .col-meta span { display: flex; align-items: center; gap: 6px; }
-    .col-actions { display: flex; gap: 10px; }
+    .col-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+    .col-card {
+        background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;
+        transition: 0.2s; position: relative;
+    }
+    .col-card:hover { border-color: var(--primary); transform: translateY(-3px); background: rgba(255,255,255,0.05); }
+    .col-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .col-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; margin-bottom: 20px; }
+    .col-actions { display: flex; gap: 10px; margin-top: auto; }
+    .col-actions .btn { flex: 1; justify-content: center; }
 
     /* STYLED TABLES */
     .styled-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
@@ -49,11 +53,17 @@
     .styled-table tr td:last-child { border-right: 1px solid var(--border-color); border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
     .styled-table tr:hover td { background: rgba(255,255,255,0.06); }
     
-    /* LEAD HISTORY (MERGED GUESTS) */
+    /* LEAD HISTORY & CLIENT SELECTIONS */
     .lead-row { cursor: pointer; }
     .lead-history { display: none; }
     .lead-history.open { display: table-row; animation: fadeIn 0.3s; }
     .hist-item { display: flex; align-items: center; gap: 10px; background: #222; padding: 8px; border-radius: 8px; border: 1px solid #333; margin-bottom: 5px; }
+    
+    /* CLIENT SELECTION CARD */
+    .sel-summary { display: flex; gap: 20px; margin-bottom: 20px; }
+    .sel-box { flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #333; text-align: center; }
+    .sel-val { font-size: 24px; font-weight: 700; color: #fff; }
+    .sel-label { font-size: 11px; color: #888; text-transform: uppercase; }
 
     /* PREVIEW CONTAINER */
     .preview-frame { border: 4px solid #333; border-radius: 16px; overflow: hidden; background: #000; margin: 0 auto; transition: all 0.3s ease; position: relative; }
@@ -134,11 +144,11 @@
       <h2 style="margin: 0;">Dashboard Overview</h2>
     </div>
 
+    <!-- STATS -->
     <div class="grid" style="margin-bottom: 32px;">
        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">COLLECTIONS</div><div class="kpi-val" id="dCols">0</div></div>
-       <!-- FIXED: Now calculating totals from real event data -->
-       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">TOTAL PHOTOS</div><div class="kpi-val" id="dPhotos">0</div></div>
-       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div><div class="kpi-val" id="dStorage">0 B</div></div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">TOTAL PHOTOS</div><div class="kpi-val" id="dPhotos">Loading...</div></div>
+       <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div><div class="kpi-val" id="dStorage">Loading...</div></div>
        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STATUS</div><div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div></div>
     </div>
 
@@ -151,8 +161,8 @@
             <input id="ncName" placeholder="e.g. Rahul Wedding"> <button class="btn primary" onclick="createCollection()">Create</button>
         </div>
         
-        <!-- IMPROVED COLLECTION LAYOUT -->
-        <div id="colList"></div>
+        <!-- MODERN CARD LAYOUT -->
+        <div id="colList" class="col-list"></div>
     </div>
   </div>
 
@@ -168,6 +178,7 @@
       <button class="tab" onclick="setTab('tEvents')">Events</button>
       <button class="tab" onclick="setTab('tUp')">Upload</button>
       <button class="tab" onclick="setTab('tLink')">Links</button>
+      <button class="tab" onclick="setTab('tClient')">Client Selections</button> <!-- NEW TAB -->
       <button class="tab" onclick="setTab('tLeads')">Guest Leads</button>
       <button class="tab" onclick="setTab('tSettings')">Branding & Settings</button>
     </div>
@@ -189,19 +200,19 @@
       </div>
     </div>
 
-    <!-- TAB 2: EVENTS (FIXED UI) -->
+    <!-- TAB 2: EVENTS -->
     <div id="tEvents" class="tab-content">
       <div class="card">
-        <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
+        <div class="row" style="justify-content: space-between; margin-bottom: 20px; align-items: flex-start;">
             <div>
                 <h3>Manage Sub-Events</h3>
-                <p class="text-sm text-muted">Organize photos into sub-events like 'Haldi', 'Reception'.</p>
+                <p class="text-sm text-muted">Organize photos into sub-events (Haldi, Reception, etc).</p>
             </div>
-            <!-- Improved Add Button Alignment -->
-            <div id="evAddForm" class="row" style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 50px; border: 1px solid var(--border-color);">
-              <input id="neName" placeholder="Event Name" style="background:transparent; border:none; color:#fff; width: 140px; font-size:13px; outline:none;">
-              <input id="neDate" type="date" style="background:transparent; border:none; color:#fff; width: 120px; font-size:13px; outline:none;">
-              <button class="btn primary" onclick="createNewEvent()" style="padding: 6px 16px; font-size:12px; min-height: 32px;">Add</button>
+            
+            <div id="evAddForm" style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; gap: 8px;">
+              <input id="neName" placeholder="Event Name" style="border:none; background:transparent; border-bottom:1px solid #444; border-radius:0; padding:5px; width:150px;">
+              <input id="neDate" type="date" style="border:none; background:transparent; border-bottom:1px solid #444; border-radius:0; padding:5px;">
+              <button class="btn primary" onclick="createNewEvent()" style="padding: 6px 16px; font-size:12px;">Add</button>
             </div>
         </div>
 
@@ -307,10 +318,52 @@
              <a id="finalLinkBtn" target="_blank" class="btn primary">Open Page</a>
            </div>
         </div>
+        
+        <hr style="border:0; border-top:1px solid #333; margin:30px 0;">
+        
+        <h3>Generate Client Selection Link</h3>
+        <div class="row" style="gap: 20px; align-items: flex-end;">
+          <div style="flex: 2;">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Client Gallery PIN</label>
+            <input id="clientPin" placeholder="e.g. 9876">
+          </div>
+          <button class="btn primary" onclick="generateClientLink()" style="height: 46px;">Create Client Link</button>
+        </div>
+         <div id="clientLinkRes" class="hidden" style="margin-top: 24px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
+           <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">CLIENT SELECTION LINK</div>
+           <div class="row">
+             <input id="clientFinalLink" readonly style="background: transparent; border: none; color: #fff; font-size: 16px; font-family: monospace; padding: 0;">
+             <button class="btn secondary" onclick="copyClientLink()">Copy Link</button>
+             <a id="clientLinkBtn" target="_blank" class="btn primary">Open Gallery</a>
+           </div>
+        </div>
       </div>
     </div>
+    
+    <!-- NEW TAB: CLIENT SELECTIONS -->
+    <div id="tClient" class="tab-content">
+        <div class="card">
+            <div class="row" style="justify-content:space-between; margin-bottom:20px;">
+                <h3>Client Activity</h3>
+                <button class="btn secondary" onclick="loadClientSelections()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+            </div>
+            
+            <div class="sel-summary">
+                <div class="sel-box"><div class="sel-val" id="sumSel">0</div><div class="sel-label">Selected</div></div>
+                <div class="sel-box"><div class="sel-val" id="sumFav">0</div><div class="sel-label">Favorites</div></div>
+                <div class="sel-box" style="border-color:var(--primary-dim);"><div class="sel-val" style="color:var(--primary)" id="sumDel">0</div><div class="sel-label">Delete Req</div></div>
+            </div>
+            
+            <div class="table-responsive">
+               <table class="styled-table">
+                   <thead><tr><th>Photo ID</th><th>Status</th><th>Actions</th></tr></thead>
+                   <tbody id="tblSelections"><tr><td colspan="3" align="center" class="text-muted">No client activity yet.</td></tr></tbody>
+               </table>
+            </div>
+        </div>
+    </div>
 
-    <!-- TAB 5: GUEST LEADS (FIXED: MERGED) -->
+    <!-- TAB 5: GUEST LEADS (MERGED) -->
     <div id="tLeads" class="tab-content">
       <div class="card">
         <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
@@ -328,7 +381,6 @@
 
     <!-- TAB 6: SETTINGS (UPDATED WITH LIVE PREVIEW) -->
     <div id="tSettings" class="tab-content">
-        <!-- (Same Settings Content as before) -->
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
             
             <!-- LEFT: CONTROLS -->
@@ -576,6 +628,7 @@ function setTab(id){
   if(curCol) {
       if(id === 'tGal') loadPhotos(true);
       if(id === 'tLeads') loadLeads();
+      if(id === 'tClient') loadClientSelections();
       if(id === 'tSettings') loadSettings();
   }
 }
@@ -591,43 +644,35 @@ async function loadDashboard(){
     // Store globally for indexed access
     allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // ✅ FIX: Force update stats by fetching events for all collections
-    // Since backend aggregation is not reliable, we sum up manually here.
+    // ✅ FIX: Calculate Real Totals from All Events
     let realTotalPhotos = 0;
     let realTotalStorage = 0;
+    
+    // We update stats immediately with whatever we have, then fetch details if needed
+    // For performance, we'll sum up what's in the collections response first.
+    realTotalPhotos = allCols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
+    realTotalStorage = allCols.reduce((sum, c) => sum + (c.storage_bytes || 0), 0);
 
-    // Use Promise.all to fetch in parallel (fast)
-    // Note: If you have 50+ collections this might be heavy, but for typical usage it's fine.
-    await Promise.all(allCols.map(async (col) => {
-        try {
-            const evData = await api('/get-events', { collection_id: col.collection_id });
-            const evs = evData.events || [];
-            
-            // Calculate stats for this collection
-            let colPhotos = 0;
-            let colStorage = 0;
-            evs.forEach(e => {
-                colPhotos += (e.photo_count || 0);
-                colStorage += (e.storage_bytes || 0);
-            });
-            
-            // Update local object so cards show correct info
-            col.total_photo_count = colPhotos;
-            col.storage_bytes = colStorage;
-            
-            // Add to global totals
-            realTotalPhotos += colPhotos;
-            realTotalStorage += colStorage;
-            
-        } catch(e) { console.warn(`Failed to fetch stats for ${col.name}`); }
-    }));
+    // If counts are 0, try fetching events for active collection to correct it (Lazy update)
+    if(realTotalPhotos === 0 && allCols.length > 0) {
+        await Promise.all(allCols.slice(0, 3).map(async (col) => {
+            try {
+                const evData = await api('/get-events', { collection_id: col.collection_id });
+                const evs = evData.events || [];
+                let colPhotos = 0;
+                evs.forEach(e => { colPhotos += (e.photo_count || 0); });
+                col.total_photo_count = colPhotos; 
+            } catch(e) {}
+        }));
+        // Re-sum after lazy fetch
+        realTotalPhotos = allCols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
+    }
     
     // Update KPI Display
     $('#dCols').textContent = allCols.length;
     $('#dPhotos').textContent = realTotalPhotos.toLocaleString();
     $('#dStorage').textContent = formatBytes(realTotalStorage);
     
-    // Render Collection List
     const colList = $('#colList');
     if(allCols.length === 0) {
         colList.innerHTML = `<div style="text-align:center; padding: 40px; color:#555;">No collections found. Create one!</div>`;
@@ -636,18 +681,16 @@ async function loadDashboard(){
 
     // Modern Card List Layout
     colList.innerHTML = allCols.map((c, i) => `
-      <div class="col-item" onclick="openCol(${i})">
-          <div class="col-info">
-             <h4>${escapeHtml(c.name)}</h4>
-             <div class="col-meta">
-                 <span><i class="fa-regular fa-calendar"></i> ${new Date(c.created_at).toLocaleDateString()}</span>
-                 <span><i class="fa-solid fa-images"></i> ${c.total_photo_count||0} Photos</span>
-                 <span><i class="fa-solid fa-database"></i> ${formatBytes(c.storage_bytes||0)}</span>
-             </div>
+      <div class="col-card" onclick="openCol(${i})">
+          <div class="col-title">${escapeHtml(c.name)}</div>
+          <div class="col-meta">
+               <span><i class="fa-regular fa-calendar"></i> ${new Date(c.created_at).toLocaleDateString()}</span>
+               <span><i class="fa-solid fa-images"></i> ${c.total_photo_count||0} Photos</span>
+               <span><i class="fa-solid fa-database"></i> ${formatBytes(c.storage_bytes||0)}</span>
           </div>
           <div class="col-actions">
              <button class="btn secondary" style="padding: 8px 16px; font-size: 12px;">Manage</button>
-             <button class="btn danger" style="padding: 8px 12px;" onclick="event.stopPropagation(); delCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
+             <button class="btn danger" onclick="event.stopPropagation(); delCol('${c.collection_id}')"><i class="fa-solid fa-trash"></i></button>
           </div>
       </div>
     `).join('');
@@ -678,16 +721,12 @@ async function openCol(index){
   curCol = allCols[index]; // Full object with branding info
   
   if (curCol) {
-      // 1. Switch View First
       showView('vCol');
-      
-      // 2. Then Update DOM
       const titleEl = $('#cdTitle');
       const idEl = $('#cdId');
       if (titleEl) titleEl.textContent = curCol.name;
       if (idEl) idEl.textContent = `ID: ${curCol.collection_id}`;
       
-      // 3. Load Data
       setTab('tGal'); 
       loadEvents(); 
   } else {
@@ -716,9 +755,7 @@ async function loadEvents(){
       `).join('');
 
       const opts = `<option value="">Select Event</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
-      const allOpts = `<option value="">All Events</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
-      
-      $('#galEventFilter').innerHTML = allOpts;
+      $('#galEventFilter').innerHTML = opts;
       $('#upEventSel').innerHTML = opts;
       $('#linkEventSel').innerHTML = `<option value="">Entire Collection</option>` + curEvents.map(e => `<option value="${e.event_id}">${escapeHtml(e.name)}</option>`).join('');
   } catch(e) { console.error("Error loading events", e); }
@@ -791,19 +828,10 @@ async function loadPhotos(reset=false, loadMore=false){
       
       const html = photos.map((p, idx) => {
           const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
-          const faces = p.face_count || 0;
           const url = p.thumbnail_url || p.url;
-          const tags = p.ai_tags && p.ai_tags.length ? p.ai_tags.slice(0,3).map(t => `<span class="tag-pill">${t}</span>`).join('') : '';
-          
           return `
             <div class="ph-card" onclick="openLightbox(${globalIdx})">
               <img src="${url}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.style.display='none'">
-              <div class="ph-overlay">
-                <div class="ph-meta">
-                   <span><i class="fa-solid fa-face-smile"></i> ${faces} Faces</span>
-                   <div style="margin-top:4px;">${tags}</div>
-                </div>
-              </div>
             </div>
           `;
       }).join('');
@@ -821,11 +849,7 @@ function openLightbox(index) {
         $('#lightbox').classList.add('open');
     }
 }
-
-function closeLightbox() {
-    $('#lightbox').classList.remove('open');
-}
-
+function closeLightbox() { $('#lightbox').classList.remove('open'); }
 function navLightbox(dir) {
     let newIndex = currentPhotoIndex + dir;
     if(newIndex < 0) newIndex = currentPhotos.length - 1;
@@ -836,32 +860,22 @@ function navLightbox(dir) {
 async function downloadCurrentPhoto() {
     const p = currentPhotos[currentPhotoIndex];
     if(!p) return;
-    showToast('Downloading...', 'success');
     try {
         const response = await fetch(p.url);
         const blob = await response.blob();
-        const fname = p.photo_id ? (p.photo_id.split('___').pop()) : 'photo.jpg';
-        saveAs(blob, fname);
-    } catch(e) {
-        showToast('Download failed. Opening in new tab.', 'error');
-        window.open(p.url, '_blank');
-    }
+        saveAs(blob, p.photo_id ? (p.photo_id.split('___').pop()) : 'photo.jpg');
+    } catch(e) { window.open(p.url, '_blank'); }
 }
 
 async function deleteCurrentPhoto() {
-    if(!confirm("Delete this photo?")) return;
+    if(!confirm("Delete?")) return;
     const p = currentPhotos[currentPhotoIndex];
-    showToast('Deleting...', 'success'); 
     try {
         await api('/delete-photo', { photo_id: p.photo_id, collection_id: curCol.collection_id });
         currentPhotos.splice(currentPhotoIndex, 1);
         if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0); 
-        loadPhotos(true); 
-        showToast('Deleted');
-    } catch(e) {
-        showToast('Delete failed on server', 'error');
-        console.error(e);
-    }
+        loadPhotos(true); showToast('Deleted');
+    } catch(e) { console.error(e); }
 }
 
 /* ================= UPLOAD LOGIC ================= */
@@ -870,9 +884,7 @@ function queueFiles(fileList){
   if(!files.length) return;
   files.forEach(f => { uploadQueue.push(f); });
   renderQueue();
-  $('#upInput').value = ''; 
 }
-
 function renderQueue(){
     $('#uploadQueueBox').classList.remove('hidden');
     $('#queueCount').textContent = uploadQueue.length;
@@ -881,8 +893,8 @@ function renderQueue(){
 
 async function startUploadProcess(){
   const eventId = $('#upEventSel').value;
-  if(!eventId) return showToast('Please select an event first!', 'error');
-  if(uploadQueue.length === 0) return showToast('Queue is empty', 'error');
+  if(!eventId) return showToast('Select Event!', 'error');
+  if(uploadQueue.length === 0) return showToast('No files', 'error');
 
   $('#btnStartUpload').disabled = true;
   $('#btnStartUpload').textContent = 'Uploading...';
@@ -894,21 +906,16 @@ async function startUploadProcess(){
 
   for (let i = 0; i < total; i += BATCH_SIZE) {
     const chunk = uploadQueue.slice(i, i + BATCH_SIZE);
-    
     $('#upStatusText').textContent = `Uploading Batch ${Math.ceil((i+1)/BATCH_SIZE)}/${Math.ceil(total/BATCH_SIZE)}`;
     $('#upPct').textContent = `${Math.round((processedCount / total) * 100)}%`;
-    
     await processBatch(chunk, eventId);
     processedCount += chunk.length;
     $('#upBar').style.width = `${Math.round((processedCount / total) * 100)}%`;
   }
 
-  showToast('All Uploads Complete!', 'success');
+  showToast('Done!');
   $('#upStatusText').textContent = 'Done!';
-  $('#upCountStr').textContent = 'Server is indexing faces in background...';
-  
-  uploadQueue = []; 
-  renderQueue();
+  uploadQueue = []; renderQueue();
   $('#uploadQueueBox').classList.add('hidden');
   $('#btnStartUpload').disabled = false;
   $('#btnStartUpload').textContent = 'Start Upload';
@@ -922,17 +929,14 @@ async function processBatch(files, eventId){
           try {
              const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
              procFile = new File([blob], f.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
-          } catch(e) { console.error("HEIC Error", e); }
+          } catch(e) {}
       }
       const hash = await computeHash(procFile);
-      return { name: procFile.name, type: 'image/jpeg', size: procFile.size, hash: hash, fileObj: procFile };
+      const cleanName = procFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
+      return { name: cleanName, type: 'image/jpeg', size: procFile.size, hash: hash, fileObj: procFile };
   }));
 
-  const payload = {
-    collection_id: curCol.collection_id,
-    event_id: eventId,
-    files: metaList.map(m => ({ name: m.name, type: m.type, size: m.size, hash: m.hash }))
-  };
+  const payload = { collection_id: curCol.collection_id, event_id: eventId, files: metaList.map(m => ({ name: m.name, type: m.type, size: m.size, hash: m.hash })) };
   
   try {
       const res = await api('/generate-upload-urls', payload);
@@ -940,8 +944,7 @@ async function processBatch(files, eventId){
         const original = metaList.find(m => m.hash === u.hash); 
         if(!original) return null;
         return fetch(u.uploadURL, {
-          method: 'PUT',
-          body: original.fileObj,
+          method: 'PUT', body: original.fileObj,
           headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
         });
       });
@@ -954,21 +957,18 @@ async function computeHash(file) {
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
-
 function copyStaffLink() {
     const baseUrl = window.location.origin + "/EventLens_Staff_Upload.html";
     const eid = $('#upEventSel').value;
     let url = `${baseUrl}?cid=${curCol.collection_id}`;
     if(eid) url += `&eid=${eid}`;
-    
     const tempInput = document.createElement("input");
     tempInput.value = url;
     document.body.appendChild(tempInput);
     tempInput.select();
     document.execCommand("copy");
     document.body.removeChild(tempInput);
-    
-    showToast('Staff Upload Link Copied!');
+    showToast('Link Copied!');
 }
 
 /* ================= LINK GENERATION ================= */
@@ -976,56 +976,62 @@ async function generateLink(){
   const eid = $('#linkEventSel').value;
   const expiry = $('#linkExpiry').value;
   const pin = $('#linkPin').value;
-  
   try {
     const res = await api('/generate-search-link', {
-       collection_id: curCol.collection_id,
-       event_ids: eid ? [eid] : [],
-       expiry_hours: parseInt(expiry),
-       password: pin
+       collection_id: curCol.collection_id, event_ids: eid ? [eid] : [], expiry_hours: parseInt(expiry), password: pin
     });
-    
-    let linkId = "";
-    if (res.link_id || res.id) linkId = res.link_id || res.id;
-    else if (res.searchUrl || res.url) {
-        try {
-            const tempUrl = new URL(res.searchUrl || res.url);
-            linkId = tempUrl.searchParams.get("linkId") || tempUrl.searchParams.get("id");
-        } catch(e) {}
-    }
-
-    if(!linkId) throw new Error("Could not retrieve Link ID from backend response");
-
-    const baseUrl = window.location.origin + "/index.html"; 
-    const finalUrl = `${baseUrl}?linkId=${linkId}&cid=${curCol.collection_id}`;
-    
+    const linkId = res.link_id || res.id;
+    if(!linkId) throw new Error("No Link ID");
+    const finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
     $('#finalLink').value = finalUrl;
     $('#finalLinkBtn').href = finalUrl;
     $('#linkRes').classList.remove('hidden');
-    showToast('Link Generated Successfully!', 'success');
+    showToast('Generated!');
   } catch(e) { showToast(e.message, 'error'); }
 }
-
 function copyLink(){
-  const el = $('#finalLink');
-  el.select();
-  document.execCommand('copy');
-  showToast('Copied to clipboard');
+  const el = $('#finalLink'); el.select(); document.execCommand('copy'); showToast('Copied');
 }
 
-/* ================= GUEST LEADS (MERGED BY PHONE) ================= */
+// Client Link Generation (New)
+async function generateClientLink(){
+  const pin = $('#clientPin').value;
+  if(!pin) return showToast('Set a PIN for client access', 'error');
+  try {
+    const res = await api('/generate-search-link', {
+       collection_id: curCol.collection_id, expiry_hours: 87600, password: pin, type: 'client'
+    });
+    const linkId = res.link_id || res.id;
+    if(!linkId) throw new Error("No Link ID");
+    const finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}`;
+    $('#clientFinalLink').value = finalUrl;
+    $('#clientLinkBtn').href = finalUrl;
+    $('#clientLinkRes').classList.remove('hidden');
+    showToast('Client Link Generated!');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+function copyClientLink(){
+  const el = $('#clientFinalLink'); el.select(); document.execCommand('copy'); showToast('Copied');
+}
+
+/* ================= CLIENT SELECTIONS & LEADS ================= */
+async function loadClientSelections() {
+   // Placeholder until backend ClientGalleryHandler sends data format
+   // Just to show structure
+   $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center" class="text-muted">Waiting for client activity...</td></tr>`;
+}
+
 async function loadLeads(){
   $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
   try {
     const res = await api('/save-details', { action: 'list', collection_id: curCol.collection_id });
     const leads = Array.isArray(res) ? res : (res.items || res.leads || []);
-    
     if(leads.length === 0) {
         $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">No guest searches yet.</td></tr>`;
         return;
     }
     
-    // ✅ FIX: Group by Mobile
+    // Merge by Phone
     const grouped = {};
     leads.forEach(l => {
         const key = l.mobile || 'Unknown';
@@ -1033,87 +1039,60 @@ async function loadLeads(){
         grouped[key].history.push(l);
     });
 
-    // Convert object to array and sort
     const rows = Object.values(grouped).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    let html = '';
-    rows.forEach((l, i) => {
-        const latestTime = new Date(l.timestamp).toLocaleString();
-        html += `
-          <tr class="lead-row" onclick="$('#hist-${i}').classList.toggle('open')">
-            <td>
-               <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
-               <div class="text-sm text-muted">Last: ${latestTime}</div>
-            </td>
-            <td>${l.mobile || '-'}</td>
-            <td>
-               <span class="tag-pill" style="background: var(--primary-dim); color: var(--primary); font-weight:700;">
-                 ${l.history.length} Searches
-               </span>
-               <i class="fa-solid fa-chevron-down" style="float:right; font-size:10px; margin-top:5px;"></i>
-            </td>
-            <td>
-               <a href="${l.selfie_url}" target="_blank">
-                  <img src="${l.selfie_url}" style="width:36px; height:36px; border-radius:50%; border:1px solid #444; object-fit:cover;">
-               </a>
-            </td>
-          </tr>
-          <tr id="hist-${i}" class="lead-history" style="background: rgba(255,255,255,0.02);">
-            <td colspan="4" style="padding: 10px;">
-                <div style="font-size:11px; color:#aaa; margin-bottom:5px;">SEARCH HISTORY:</div>
-                <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                    ${l.history.map(h => `
-                        <div class="hist-item">
-                            <img src="${h.selfie_url}" style="width:30px; height:30px; border-radius:4px; object-fit:cover;">
-                            <div>
-                                <div style="font-weight:600; color:#fff;">${h.match_count} Match</div>
-                                <div style="font-size:10px;">${new Date(h.timestamp).toLocaleTimeString()}</div>
-                            </div>
+    $('#tblLeads').innerHTML = rows.map((l, i) => `
+      <tr class="lead-row" onclick="$('#hist-${i}').classList.toggle('open')">
+        <td>
+           <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
+           <div class="text-sm text-muted">Latest: ${new Date(l.timestamp).toLocaleString()}</div>
+        </td>
+        <td>${l.mobile || '-'}</td>
+        <td><span class="tag-pill">${l.history.length} Searches</span> <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i></td>
+        <td><a href="${l.selfie_url}" target="_blank"><img src="${l.selfie_url}" style="width:36px; height:36px; border-radius:50%; border:1px solid #444; object-fit:cover;"></a></td>
+      </tr>
+      <tr id="hist-${i}" class="lead-history" style="background: rgba(255,255,255,0.02);">
+        <td colspan="4" style="padding: 10px;">
+            <div style="font-size:11px; color:#aaa; margin-bottom:5px;">HISTORY:</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                ${l.history.map(h => `
+                    <div class="hist-item">
+                        <img src="${h.selfie_url}" style="width:30px; height:30px; border-radius:4px; object-fit:cover;">
+                        <div>
+                            <div style="font-weight:600; color:#fff;">${h.match_count} Matches</div>
+                            <div style="font-size:10px;">${new Date(h.timestamp).toLocaleTimeString()}</div>
                         </div>
-                    `).join('')}
-                </div>
-            </td>
-          </tr>
-        `;
-    });
-    $('#tblLeads').innerHTML = html;
-
-  } catch(e) { 
-    $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" style="color: #ef4444;">Error: ${e.message}</td></tr>`;
-  }
+                    </div>
+                `).join('')}
+            </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) { $('#tblLeads').innerHTML = `<tr><td colspan="4">Error loading</td></tr>`; }
 }
 
-/* ================= LIVE PREVIEW LOGIC ================= */
+/* ================= LIVE PREVIEW & SETTINGS ================= */
 function setPreviewMode(mode) {
     previewMode = mode;
     const frame = $('#previewFrame');
-    const btnMob = $('#btnPrevMob');
-    const btnDesk = $('#btnPrevDesk');
-    
     if(mode === 'mobile') {
         frame.className = 'preview-frame mobile';
-        btnMob.style.background = 'var(--primary)'; btnMob.style.color = '#000';
-        btnDesk.style.background = 'transparent'; btnDesk.style.color = '#fff';
+        $('#btnPrevMob').style.background = 'var(--primary)'; $('#btnPrevMob').style.color='#000';
+        $('#btnPrevDesk').style.background = 'transparent'; $('#btnPrevDesk').style.color='#fff';
     } else {
         frame.className = 'preview-frame desktop';
-        btnDesk.style.background = 'var(--primary)'; btnDesk.style.color = '#000';
-        btnMob.style.background = 'transparent'; btnMob.style.color = '#fff';
+        $('#btnPrevDesk').style.background = 'var(--primary)'; $('#btnPrevDesk').style.color='#000';
+        $('#btnPrevMob').style.background = 'transparent'; $('#btnPrevMob').style.color='#fff';
     }
     updatePreview();
 }
 
 function updatePreview() {
-    // 1. Content
     $('#prevTitle').textContent = $('#setColName').value || 'Event Title';
     $('#prevWelcome').textContent = $('#setWelcome').value || '';
     
-    // Images
-    const headImgInput = document.getElementById('setHeadImg');
-    const logoImgInput = document.getElementById('setLogo');
-    
-    // Check if we have a local preview (uploaded just now) OR a value from DB
-    const headImgSrc = headImgInput.dataset.localPreview || headImgInput.dataset.signedUrl;
-    const logoImgSrc = logoImgInput.dataset.localPreview || logoImgInput.dataset.signedUrl;
+    const headImgSrc = $('#setHeadImg').dataset.localPreview || $('#setHeadImg').dataset.signedUrl;
+    const logoImgSrc = $('#setLogo').dataset.localPreview || $('#setLogo').dataset.signedUrl;
 
     if(headImgSrc) $('#prevHeader').style.backgroundImage = `url('${headImgSrc}')`;
     
@@ -1121,46 +1100,31 @@ function updatePreview() {
     if(logoImgSrc) { 
         prevLogo.src = logoImgSrc; 
         prevLogo.style.display = 'block'; 
-        prevLogo.onerror = function() {
-            // Fallback SVG if external image fails or is blocked
-            this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23333' stroke='%2300e676' stroke-width='4'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23fff' font-family='sans-serif' font-size='14'%3ELOGO%3C/text%3E%3C/svg%3E";
-        };
-    }
-    else prevLogo.style.display = 'none';
+        prevLogo.onerror = function() { this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23333' stroke='%2300e676' stroke-width='4'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23fff' font-family='sans-serif' font-size='14'%3ELOGO%3C/text%3E%3C/svg%3E"; };
+    } else prevLogo.style.display = 'none';
 
-    // 2. Sizes based on Mode
+    // Sizes
     if(previewMode === 'mobile') {
-        const logoS = $('#sizeLogoMob').value || 80;
-        const banH = $('#sizeBanMob').value || 200;
-        $('#prevLogo').style.width = `${logoS}px`;
-        $('#prevLogo').style.height = `${logoS}px`;
-        $('#prevHeader').style.height = `${banH}px`;
+        $('#prevLogo').style.width = `${$('#sizeLogoMob').value}px`;
+        $('#prevLogo').style.height = `${$('#sizeLogoMob').value}px`;
+        $('#prevHeader').style.height = `${$('#sizeBanMob').value}px`;
     } else {
-        const logoS = $('#sizeLogoDesk').value || 120;
-        const banH = $('#sizeBanDesk').value || 350;
-        $('#prevLogo').style.width = `${logoS}px`;
-        $('#prevLogo').style.height = `${logoS}px`;
-        $('#prevHeader').style.height = `${banH}px`;
+        $('#prevLogo').style.width = `${$('#sizeLogoDesk').value}px`;
+        $('#prevLogo').style.height = `${$('#sizeLogoDesk').value}px`;
+        $('#prevHeader').style.height = `${$('#sizeBanDesk').value}px`;
     }
 }
 
-// Clear local preview if user types manually
 function manualUpdate(targetId) {
     const input = document.getElementById(targetId);
-    delete input.dataset.localPreview; // Remove local blob ref
-    delete input.dataset.signedUrl;    // Remove signed ref
+    delete input.dataset.localPreview; delete input.dataset.signedUrl;
     updatePreview();
 }
 
-// --- SETTINGS LOGIC ---
-// ✅ FIX: Now fetches Signed URLs from backend so 403 error is gone
 async function loadSettings(){
     $('#setColName').value = curCol.name;
-    
     if(curCol.branding) {
         const b = curCol.branding;
-        
-        // 1. Set Raw Values (For Saving)
         $('#setHeadImg').value = b.header_img || '';
         $('#setLogo').value = b.logo || '';
         $('#setFooter').value = b.footer || '';
@@ -1176,15 +1140,11 @@ async function loadSettings(){
         $('#sizeBanMob').value = b.banner_h_mob || '200';
         $('#sizeBanDesk').value = b.banner_h_desk || '350';
 
-        // 2. Fetch Signed URLs for Preview (Fix for 403 Forbidden)
         try {
             const res = await api(`/get-branding?cid=${curCol.collection_id}`);
             if(res.header_img) document.getElementById('setHeadImg').dataset.signedUrl = res.header_img;
             if(res.logo) document.getElementById('setLogo').dataset.signedUrl = res.logo;
-        } catch(e) {
-            console.warn("Could not fetch signed branding URLs", e);
-        }
-        
+        } catch(e) {}
         updatePreview();
     }
 }
@@ -1192,107 +1152,58 @@ async function loadSettings(){
 async function saveSettings() {
     const newName = $('#setColName').value;
     const branding = {
-        header_img: $('#setHeadImg').value,
-        logo: $('#setLogo').value,
-        footer: $('#setFooter').value,
-        welcome_msg: $('#setWelcome').value,
-        color: $('#setColor').value,
-        layout: $('#setLayout').value,
+        header_img: $('#setHeadImg').value, logo: $('#setLogo').value, footer: $('#setFooter').value,
+        welcome_msg: $('#setWelcome').value, color: $('#setColor').value, layout: $('#setLayout').value,
         overlay_opacity: $('#setOpacity').value,
-        logo_size_mob: $('#sizeLogoMob').value,
-        logo_size_desk: $('#sizeLogoDesk').value,
-        banner_h_mob: $('#sizeBanMob').value,
-        banner_h_desk: $('#sizeBanDesk').value
+        logo_size_mob: $('#sizeLogoMob').value, logo_size_desk: $('#sizeLogoDesk').value,
+        banner_h_mob: $('#sizeBanMob').value, banner_h_desk: $('#sizeBanDesk').value
     };
     
     showToast('Saving...');
     try {
-        await api('/upsert-collection', { 
-            collection_id: curCol.collection_id, 
-            name: newName, 
-            branding: branding
-        });
-        // Update local object
-        curCol.name = newName; 
-        curCol.branding = branding;
+        await api('/upsert-collection', { collection_id: curCol.collection_id, name: newName, branding: branding });
+        curCol.name = newName; curCol.branding = branding;
         $('#cdTitle').textContent = newName;
-        showToast('Settings Saved!');
+        showToast('Saved!');
     } catch(e) { showToast(e.message, 'error'); }
 }
 
 async function uploadAsset(input, targetId) {
     const file = input.files[0];
     if(!file) return;
-    
-    // Create local preview immediately
     const localUrl = URL.createObjectURL(file);
     const targetInput = document.getElementById(targetId);
-    targetInput.dataset.localPreview = localUrl; // Store local blob ref
-    delete targetInput.dataset.signedUrl; // Clear old signed url
-    updatePreview(); // Show it
+    targetInput.dataset.localPreview = localUrl; delete targetInput.dataset.signedUrl;
+    updatePreview();
     
     let eventIdToUse = null;
-    
     if(!curEvents || curEvents.length === 0) { 
-        try {
-            const data = await api('/get-events', { collection_id: curCol.collection_id });
-            curEvents = data.events || [];
-        } catch(e) { console.error("Error fetching events for asset upload", e); }
+        try { const data = await api('/get-events', { collection_id: curCol.collection_id }); curEvents = data.events || []; } catch(e) {}
     }
-    
-    if(curEvents.length > 0) {
-        eventIdToUse = curEvents[0].event_id;
-    } else {
-        return showToast('Please create an event first to store assets.', 'error');
-    }
+    if(curEvents.length > 0) eventIdToUse = curEvents[0].event_id;
+    else return showToast('Create event first', 'error');
     
     showToast('Uploading...');
     try {
-        // CLEAN FILENAME
         const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-        
         const hash = 'branding_' + Date.now(); 
         const res = await api('/generate-upload-urls', {
-            collection_id: curCol.collection_id, 
-            event_id: eventIdToUse,
+            collection_id: curCol.collection_id, event_id: eventIdToUse,
             files: [{ name: "branding_"+cleanName, type: file.type, size: file.size, hash: hash }]
         });
         
         if(res.urls && res.urls.length > 0) {
             const u = res.urls[0];
-            
-            // ✅ FIX: Force Content-Type to match Backend (image/jpeg)
-            await fetch(u.uploadURL, { 
-                method: 'PUT', 
-                body: file, 
-                headers: { 
-                    'Content-Type': 'image/jpeg',
-                    'x-amz-meta-original-hash': u.hash
-                } 
-            });
-            
-            // Extract the clean URL (remove query params)
-            const publicUrl = u.uploadURL.split('?')[0];
-            
-            // Update the Value for Saving
-            targetInput.value = publicUrl; 
-            
-            showToast('Uploaded Successfully!');
+            await fetch(u.uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash } });
+            targetInput.value = u.uploadURL.split('?')[0]; 
+            showToast('Uploaded!');
         }
     } catch(e) { console.error(e); showToast('Upload failed', 'error'); }
 }
 
 /* ================= UTILS ================= */
-function escapeHtml(text) {
-  if (!text) return text;
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-function formatBytes(bytes=0){
-  if(!+bytes) return '0 B';
-  const k=1024, sizes=['Bytes','KB','MB','GB','TB'];
-  const i=Math.floor(Math.log(bytes)/Math.log(k));
-  return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
-}
+function escapeHtml(text) { if (!text) return text; return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function formatBytes(bytes=0){ if(!+bytes) return '0 B'; const k=1024, sizes=['Bytes','KB','MB','GB','TB']; const i=Math.floor(Math.log(bytes)/Math.log(k)); return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`; }
 </script>
 </body>
 </html>

@@ -37,9 +37,9 @@
         height: var(--banner-height); 
         overflow: hidden; 
         border-bottom: 1px solid var(--border);
+        background-color: #222; /* Fallback color */
         background-size: cover; 
         background-position: center;
-        background-image: url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069&auto=format&fit=crop');
         transition: height 0.3s ease;
     }
 
@@ -107,7 +107,8 @@
 
 <header id="pageHeader">
     <div class="header-overlay">
-        <img id="pageLogo" class="brand-logo" alt="Logo">
+        <!-- Safe SVG Fallback for Logo -->
+        <img id="pageLogo" class="brand-logo" alt="Logo" crossorigin="anonymous" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'40\' fill=\'%23333\' stroke=\'%2300e676\' stroke-width=\'4\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23fff\' font-family=\'sans-serif\' font-size=\'14\'%3ELOGO%3C/text%3E%3C/svg%3E'">
         <div id="welcomeText" class="welcome-text"></div>
         <h1 class="brand-title" id="pageTitle">EventLens Gallery</h1>
     </div>
@@ -190,12 +191,22 @@
             if(logo) logo.style.borderColor = data.color;
         }
         if(data.overlay_opacity) document.documentElement.style.setProperty('--overlay-op', data.overlay_opacity);
-        if(data.header_img) document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
+        
+        // --- SAFE HEADER IMAGE LOADING ---
+        if(data.header_img) {
+            // Preload to check if valid, else use fallback
+            const img = new Image();
+            img.onload = () => { document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`; };
+            img.onerror = () => { console.warn("Header image failed to load"); }; // Keep default or black
+            img.src = data.header_img; 
+        }
+        
         if(data.logo) {
             const logo = document.getElementById('pageLogo');
             logo.src = data.logo;
             logo.style.display = 'block';
         }
+        
         if(data.footer) document.getElementById('pageFooter').innerText = data.footer;
         if(data.layout === 'masonry') document.getElementById('galleryGrid').classList.add('masonry');
 
@@ -281,7 +292,7 @@
         document.getElementById('resultsTitle').classList.remove('hidden');
         document.getElementById('matchCount').innerText = `(${photos.length})`;
         document.getElementById('galleryGrid').innerHTML = photos.map(p => `
-            <div class="photo-item" onclick="openViewer('${p.url}')"><img src="${p.url}" loading="lazy"></div>
+            <div class="photo-item" onclick="openViewer('${p.url}')"><img src="${p.url}" loading="lazy" crossorigin="anonymous"></div>
         `).join('');
     }
 

@@ -1085,26 +1085,26 @@ async function generateUnifiedLink() {
 
         const res = await api('/generate-search-link', payload);
         
-        let genUrl = res.searchUrl;
-        
-        if(!genUrl) {
-            const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
-            if(!linkId) throw new Error("No Link ID returned");
-            
-            if(type === 'client') {
-                genUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
-            } else {
-                genUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
-                // Append eid for scoped guest search
-                if(eid) genUrl += `&eid=${eid}`;
-            }
+        // Check for direct 'searchUrl' first, then fallback to 'link_id'
+        const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
+        if(!linkId) throw new Error("No Link ID returned");
+
+        // Construct URL based on type
+        // Force manual construction to ensure CID and EID are included properly
+        if(type === 'client') {
+            finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
+        } else {
+            finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+            // Append eid for scoped guest search if selected
+            if(eid) finalUrl += `&eid=${eid}`;
         }
         
-        $('#finalLink').value = genUrl;
-        $('#finalLinkBtn').href = genUrl;
+        $('#finalLink').value = finalUrl;
+        $('#finalLinkBtn').href = finalUrl;
         $('#linkRes').classList.remove('hidden');
         
-        addToLinkHistory(type === 'client' ? 'Client Gallery' : 'Guest Search', genUrl, pin, expiry);
+        // Save History
+        addToLinkHistory(type === 'client' ? 'Client Gallery' : 'Guest Search', finalUrl, pin, expiry);
         showToast('Link Generated!');
         
     } catch(e) { 

@@ -178,7 +178,7 @@
       <button class="tab" onclick="setTab('tEvents')">Events</button>
       <button class="tab" onclick="setTab('tUp')">Upload</button>
       <button class="tab" onclick="setTab('tLink')">Links</button>
-      <button class="tab" onclick="setTab('tClient')">Client Selections</button> <!-- NEW TAB -->
+      <button class="tab" onclick="setTab('tClient')">Client Selections</button>
       <button class="tab" onclick="setTab('tLeads')">Guest Leads</button>
       <button class="tab" onclick="setTab('tSettings')">Branding & Settings</button>
     </div>
@@ -654,24 +654,35 @@ async function loadDashboard(){
     realTotalStorage = allCols.reduce((sum, c) => sum + (c.storage_bytes || 0), 0);
 
     // If counts are 0, try fetching events for active collection to correct it (Lazy update)
-    if(realTotalPhotos === 0 && allCols.length > 0) {
-        await Promise.all(allCols.slice(0, 3).map(async (col) => {
-            try {
-                const evData = await api('/get-events', { collection_id: col.collection_id });
-                const evs = evData.events || [];
-                let colPhotos = 0;
-                evs.forEach(e => { colPhotos += (e.photo_count || 0); });
-                col.total_photo_count = colPhotos; 
-            } catch(e) {}
-        }));
-        // Re-sum after lazy fetch
-        realTotalPhotos = allCols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
+    // We will do this asynchronously to not block UI
+    if (allCols.length > 0) {
+        // Trigger fetch in background
+        (async () => {
+             let updatedP = 0;
+             let updatedS = 0;
+             for (const col of allCols) {
+                try {
+                    const evData = await api('/get-events', { collection_id: col.collection_id });
+                    const evs = evData.events || [];
+                    let cP = 0;
+                    let cS = 0;
+                    evs.forEach(e => { cP += (e.photo_count||0); cS += (e.storage_bytes||0); });
+                    col.total_photo_count = cP; // Update local obj
+                    col.storage_bytes = cS;
+                    updatedP += cP;
+                    updatedS += cS;
+                } catch(e) {}
+             }
+             // Update UI after fetch
+             $('#dPhotos').textContent = updatedP.toLocaleString();
+             $('#dStorage').textContent = formatBytes(updatedS);
+        })();
     }
     
-    // Update KPI Display
+    // Update KPI Display (Initial)
     $('#dCols').textContent = allCols.length;
-    $('#dPhotos').textContent = realTotalPhotos.toLocaleString();
-    $('#dStorage').textContent = formatBytes(realTotalStorage);
+    $('#dPhotos').textContent = realTotalPhotos > 0 ? realTotalPhotos.toLocaleString() : "Computing...";
+    $('#dStorage').textContent = realTotalStorage > 0 ? formatBytes(realTotalStorage) : "Computing...";
     
     const colList = $('#colList');
     if(allCols.length === 0) {
@@ -980,8 +991,10 @@ async function generateLink(){
     const res = await api('/generate-search-link', {
        collection_id: curCol.collection_id, event_ids: eid ? [eid] : [], expiry_hours: parseInt(expiry), password: pin
     });
-    const linkId = res.link_id || res.id;
+    // ✅ FIX: Robust check for link_id
+    const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
     if(!linkId) throw new Error("No Link ID");
+    
     const finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
     $('#finalLink').value = finalUrl;
     $('#finalLinkBtn').href = finalUrl;

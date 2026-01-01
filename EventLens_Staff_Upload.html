@@ -9,7 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
   <style>
-    /* BRANDING VARS (Will be updated by JS) */
+    /* BRANDING VARS */
     :root {
       --bg: #050505; --card: #111; --text: #fff;
       --accent: #00e676; --accent-soft: rgba(0, 230, 118, 0.15);
@@ -18,11 +18,28 @@
 
     body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; display: flex; flex-direction: column; min-height: 100vh; }
     
-    /* HEADER (Same as Index) */
+    /* PIN SCREEN */
+    #pinScreen {
+        position: fixed; inset: 0; background: #000; z-index: 100;
+        display: flex; align-items: center; justify-content: center;
+        padding: 20px;
+    }
+    .pin-card {
+        background: #111; border: 1px solid #333; padding: 40px; border-radius: 20px;
+        text-align: center; width: 100%; max-width: 400px;
+    }
+    .pin-input {
+        width: 100%; padding: 15px; background: #000; border: 1px solid #333;
+        color: #fff; font-size: 24px; text-align: center; letter-spacing: 5px;
+        border-radius: 10px; margin: 20px 0; outline: none;
+    }
+    .pin-input:focus { border-color: var(--accent); }
+
+    /* HEADER */
     header { 
         position: relative; height: var(--banner-height); overflow: hidden; 
         background-color: #222; background-size: cover; background-position: center;
-        transition: height 0.3s ease; border-bottom: 1px solid #333;
+        border-bottom: 1px solid #333;
     }
     .header-overlay {
         position: absolute; inset: 0; 
@@ -39,7 +56,7 @@
     .welcome-text { font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px; display: none; }
 
     /* UPLOAD CONTAINER */
-    .container { width: 100%; max-width: 600px; margin: -40px auto 40px; padding: 0 20px; position: relative; z-index: 2; }
+    .container { width: 100%; max-width: 600px; margin: -40px auto 40px; padding: 0 20px; position: relative; z-index: 2; display: none; }
     .card { background: var(--card); border: 1px solid #333; border-radius: 16px; padding: 30px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
     
     select { width: 100%; padding: 14px; background: #222; border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 20px; font-size: 16px; outline: none; }
@@ -62,14 +79,24 @@
     .log-text { font-size: 11px; color: #666; margin-top: 5px; font-family: monospace; }
     
     .hidden { display: none !important; }
-    
-    /* Footer */
     footer { margin-top: auto; text-align: center; padding: 20px; color: #555; font-size: 12px; border-top: 1px solid #222; }
   </style>
 </head>
 <body>
 
-<!-- BRANDING HEADER -->
+<!-- 1. PIN SECURITY SCREEN -->
+<div id="pinScreen">
+    <div class="pin-card">
+        <i class="fa-solid fa-lock" style="font-size: 40px; color: var(--accent); margin-bottom: 20px;"></i>
+        <h2>Staff Access</h2>
+        <p style="color:#888; font-size:14px;">Enter PIN to access upload portal</p>
+        <input type="tel" id="entryPin" class="pin-input" maxlength="6" placeholder="••••">
+        <button class="btn" onclick="verifyPin()">Enter</button>
+        <div id="pinError" style="color:#ff4444; margin-top:15px; font-size:13px;"></div>
+    </div>
+</div>
+
+<!-- 2. MAIN APP -->
 <header id="pageHeader">
     <div class="header-overlay">
         <img id="pageLogo" class="brand-logo" onerror="this.style.display='none'">
@@ -78,15 +105,15 @@
     </div>
 </header>
 
-<div class="container">
+<div class="container" id="mainApp">
   <div class="card">
     <div style="margin-bottom: 20px;">
         <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: var(--accent); margin-bottom: 10px;"></i>
         <h3 style="margin: 0;">Bulk Upload</h3>
-        <p style="color:#666; font-size:13px; margin-top:5px;">Optimize for High Volume (2000+)</p>
+        <p style="color:#666; font-size:13px; margin-top:5px;">Optimized for High Volume</p>
     </div>
 
-    <!-- Collection Dropdown (Hidden if cid in URL) -->
+    <!-- Collection info is mostly hidden as it comes from URL -->
     <div id="colSelectWrap" class="hidden">
         <label style="display:block; text-align:left; margin-bottom:5px; color:#888; font-size:12px;">COLLECTION</label>
         <select id="colSelect" onchange="loadEvents()"></select>
@@ -131,37 +158,58 @@
 <script>
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
     
-    // Auth Logic
+    // Params
     const urlParams = new URLSearchParams(window.location.search);
-    let token = urlParams.get('token') || localStorage.getItem('idToken');
+    const cid = urlParams.get('cid');
+    const eid = urlParams.get('eid');
+    const urlPin = urlParams.get('pin');
     
-    const preCid = urlParams.get('cid');
-    const preEid = urlParams.get('eid');
     let queue = [];
 
-    // --- INIT ---
-    window.onload = async () => {
-        if(!token) {
-             token = localStorage.getItem('idToken'); 
-             if(!token) alert("Warning: No Auth Token found. Uploads might fail if not logged in.");
-        }
-
-        // Load Branding & Data
-        if(preCid) {
-            loadBranding(preCid);
-            await loadEvents(preCid);
-        } else {
-            document.getElementById('colSelectWrap').classList.remove('hidden');
-            await loadCollections();
+    // --- 1. PIN VERIFICATION ---
+    window.onload = () => {
+        // Auto-fill pin if in URL
+        if(urlPin) document.getElementById('entryPin').value = urlPin;
+        
+        // If no CID, show error immediately
+        if(!cid) {
+            document.getElementById('pinError').innerText = "Error: Invalid Link (Missing Collection ID)";
+            return;
         }
     };
 
-    // --- BRANDING (Robust Fetch) ---
-    async function loadBranding(cid) {
+    function verifyPin() {
+        const inputPin = document.getElementById('entryPin').value;
+        const err = document.getElementById('pinError');
+        
+        // Client-side check against URL pin (if it exists) for basic gating
+        // Ideally backend validates on upload, but this is a UI gate
+        if(urlPin && inputPin !== urlPin) {
+            err.innerText = "Incorrect PIN";
+            return;
+        }
+        
+        if(!inputPin) {
+            err.innerText = "Please enter PIN";
+            return;
+        }
+
+        // Unlock UI
+        document.getElementById('pinScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        
+        // Load Data
+        loadBranding(cid);
+        loadEvents(cid);
+    }
+
+    // --- 2. DATA LOADING (NO AUTH TOKEN) ---
+    async function loadBranding(collectionId) {
         try {
-            const res = await fetch(`${API_BASE}/get-branding?cid=${cid}`);
+            // Fetch branding via public endpoint or fallback
+            const res = await fetch(`${API_BASE}/get-branding?cid=${collectionId}`);
             if(res.ok) applyBranding(await res.json());
-        } catch(e) { console.error("Branding error", e); }
+        } catch(e) { console.warn("Branding load failed", e); }
     }
 
     function applyBranding(data) {
@@ -174,11 +222,8 @@
             document.documentElement.style.setProperty('--accent-soft', data.color + '26');
             document.getElementById('pageLogo').style.borderColor = data.color;
         }
-        // Safe Image Loading
         if(data.header_img) {
-            const img = new Image();
-            img.onload = () => document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
-            img.src = data.header_img;
+            document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
         }
         if(data.logo) {
             const logo = document.getElementById('pageLogo');
@@ -190,49 +235,42 @@
             el.innerText = data.welcome_msg;
             el.style.display = 'block';
         }
-        
-        // Dynamic CSS Injection for sizes
-        const style = document.createElement('style');
-        style.innerHTML = `
-            :root { --logo-size: ${data.logo_size_mob || '80'}px; --banner-height: ${data.banner_h_mob || '200'}px; }
-            @media (min-width: 768px) { :root { --logo-size: ${data.logo_size_desk || '120'}px; --banner-height: ${data.banner_h_desk || '350'}px; } }
-        `;
-        document.head.appendChild(style);
     }
 
-    // --- DATA LOADING ---
-    async function loadCollections() {
+    async function loadEvents(collectionId) {
+        const sel = document.getElementById('eventSelect');
         try {
-            const res = await fetch(`${API_BASE}/get-collections`, { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await res.json();
-            const sel = document.getElementById('colSelect');
-            sel.innerHTML = '<option value="">Select Collection...</option>' + 
-                (data.Items || []).map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
-        } catch(e) { console.error(e); }
-    }
-
-    async function loadEvents(cidOverride) {
-        const cid = cidOverride || document.getElementById('colSelect').value;
-        if(!cid) return;
-        
-        if(!cidOverride) loadBranding(cid);
-
-        try {
+            // Try fetching events without token. 
+            // If backend requires token, this might fail (401).
+            // In that case, we fall back to a manual "Default Event" or trust the URL eid
             const res = await fetch(`${API_BASE}/get-events`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ collection_id: cid })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ collection_id: collectionId })
             });
-            const data = await res.json();
-            const sel = document.getElementById('eventSelect');
-            sel.innerHTML = '<option value="">Select Event...</option>' + 
-                (data.events || []).map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+            
+            if(res.ok) {
+                const data = await res.json();
+                sel.innerHTML = '<option value="">Select Event...</option>' + 
+                    (data.events || []).map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
                 
-            if(preEid) sel.value = preEid;
-        } catch(e) { console.error(e); }
+                // Pre-select if EID in URL
+                if(eid) sel.value = eid;
+            } else {
+                throw new Error("Auth required for events");
+            }
+        } catch(e) { 
+            console.warn("Event list fetch failed (likely auth)", e);
+            // Fallback if we can't fetch list but have EID
+            if(eid) {
+                sel.innerHTML = `<option value="${eid}" selected>Current Event</option>`;
+            } else {
+                sel.innerHTML = `<option value="default">General Upload</option>`;
+            }
+        }
     }
 
-    // --- FILE HANDLING ---
+    // --- 3. FILE HANDLING ---
     function handleDrop(e) {
         e.preventDefault();
         handleFiles(e.dataTransfer.files);
@@ -250,18 +288,15 @@
         document.getElementById('uploadBtn').innerText = `Upload ${queue.length} Photos`;
     }
 
-    // --- BULK UPLOAD ENGINE ---
+    // --- 4. UPLOAD ENGINE ---
     async function startUpload() {
-        const cid = preCid || document.getElementById('colSelect').value;
-        const eid = document.getElementById('eventSelect').value;
-        if(!cid) return alert("Select a Collection!");
-        if(!eid) return alert("Select an Event!");
+        const targetEid = document.getElementById('eventSelect').value;
+        if(!targetEid && !eid) return alert("Please select an event!");
 
         document.getElementById('uploadBtn').disabled = true;
         document.getElementById('progressSection').style.display = 'block';
         
-        // BATCH CONFIG
-        const BATCH_SIZE = 50; // AWS Gateway Limit safe zone
+        const BATCH_SIZE = 50;
         let totalProcessed = 0;
         const totalFiles = queue.length;
         let successCount = 0;
@@ -279,31 +314,24 @@
             );
 
             try {
-                // 1. Prepare Metadata (Hash + HEIC conversion + Rename)
+                // A. Prepare Meta
                 const metas = await Promise.all(chunk.map(async f => {
                     let procFile = f;
-                    
-                    // HEIC Conversion Logic
+                    // HEIC Conversion
                     if(f.name.toLowerCase().endsWith('.heic')){
-                        updateLog(`Converting HEIC: ${f.name}`);
+                        updateLog(`Converting: ${f.name}`);
                         try {
                             const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
                             procFile = new File([blob], f.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
-                        } catch(e) { 
-                            console.warn("HEIC convert failed", e); 
-                            return null; // Skip bad file
-                        }
+                        } catch(e) { return null; }
                     }
                     
-                    // Normalize Filename (VERY IMPORTANT FOR AWS)
-                    // Replaces spaces/special chars with underscores, forces lowercase extension
+                    // Clean Name & Hash
                     let cleanName = procFile.name.replace(/[^a-zA-Z0-9.]/g, '_');
-                    // Force .jpg extension logic
                     const parts = cleanName.split('.');
                     if(parts.length > 1) parts.pop();
                     cleanName = parts.join('.') + ".jpg";
 
-                    // Calculate Hash (for Backend verification)
                     const b = await procFile.arrayBuffer();
                     const h = await crypto.subtle.digest('SHA-256', b);
                     const hash = Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -311,62 +339,56 @@
                     return { name: cleanName, type: 'image/jpeg', size: procFile.size, hash: hash, file: procFile };
                 }));
 
-                // Filter out failed conversions
                 const validMetas = metas.filter(m => m !== null);
 
-                // 2. Get Presigned URLs
+                // B. Get Presigned URLs (NO TOKEN REQUIRED if backend supports CID-based auth)
                 if(validMetas.length > 0) {
                     const res = await fetch(`${API_BASE}/generate-upload-urls`, {
                         method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ collection_id: cid, event_id: eid, files: validMetas })
+                        headers: { 'Content-Type': 'application/json' },
+                        // Sending CID allows backend to verify validity without user token
+                        body: JSON.stringify({ 
+                            collection_id: cid, 
+                            event_id: targetEid || eid, 
+                            files: validMetas 
+                        })
                     });
+                    
+                    if(!res.ok) throw new Error("Server rejected upload request");
                     const data = await res.json();
 
-                    // 3. Upload to S3 (Parallel)
-                    if(data.urls && data.urls.length > 0) {
+                    // C. Upload to S3
+                    if(data.urls) {
                         await Promise.all(data.urls.map(async (u) => {
                             const item = validMetas.find(m => m.hash === u.hash);
                             if(!item) return;
-                            
                             try {
                                 await fetch(u.uploadURL, {
                                     method: 'PUT',
                                     body: item.file,
-                                    headers: { 
-                                        'Content-Type': 'image/jpeg',
-                                        'x-amz-meta-original-hash': u.hash
-                                    }
+                                    headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
                                 });
                                 successCount++;
-                            } catch(err) {
-                                console.error("Upload Put Failed", err);
-                                failCount++;
-                            }
+                            } catch(err) { failCount++; }
                         }));
                     }
                 }
                 
                 totalProcessed += chunk.length;
-                updateStatus(
-                    `Batch ${batchNum} Done`, 
-                    `Sent for Indexing. Success: ${successCount} | Failed: ${failCount}`, 
-                    (totalProcessed / totalFiles) * 100
-                );
+                updateStatus(`Batch ${batchNum} Done`, `Success: ${successCount} | Failed: ${failCount}`, (totalProcessed / totalFiles) * 100);
 
             } catch (e) {
                 console.error("Batch Failed", e);
-                updateLog(`Batch Error: ${e.message}`);
+                updateLog(`Error: ${e.message}`);
                 failCount += chunk.length;
             }
         }
 
-        // Completion
-        updateStatus("Complete!", "All photos uploaded. Indexing is running on server.", 100);
+        // Finish
+        updateStatus("Complete!", "Indexing photos...", 100);
         document.getElementById('progressFill').style.backgroundColor = '#00e676';
-        alert(`Upload Finished!\n\nSuccessfully Uploaded: ${successCount}\nFailed: ${failCount}\n\nPhotos will appear in the gallery shortly as they get indexed.`);
+        alert(`Upload Finished!\nSuccess: ${successCount}\nFailed: ${failCount}`);
         
-        // Reset UI
         queue = []; 
         document.getElementById('fileCount').innerText = "0 Files";
         document.getElementById('uploadBtn').disabled = false;
@@ -381,8 +403,7 @@
     }
     
     function updateLog(msg) {
-        const el = document.getElementById('logText');
-        el.innerText = msg;
+        document.getElementById('logText').innerText = msg;
     }
 </script>
 </body>

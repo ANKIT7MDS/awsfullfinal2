@@ -33,11 +33,11 @@
     .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     input, select, textarea { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
     
-    /* NEW STYLES FOR COLLECTIONS LIST */
+    /* COLLECTIONS LIST */
     .col-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
     .col-card {
         background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;
-        transition: 0.2s; position: relative;
+        transition: 0.2s; position: relative; cursor: pointer;
     }
     .col-card:hover { border-color: var(--primary); transform: translateY(-3px); background: rgba(255,255,255,0.05); }
     .col-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; }
@@ -45,7 +45,7 @@
     .col-actions { display: flex; gap: 10px; margin-top: auto; }
     .col-actions .btn { flex: 1; justify-content: center; }
 
-    /* STYLED TABLES */
+    /* TABLES */
     .styled-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
     .styled-table th { text-align: left; padding: 12px 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
     .styled-table td { background: rgba(255,255,255,0.03); padding: 16px; vertical-align: middle; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
@@ -53,13 +53,7 @@
     .styled-table tr td:last-child { border-right: 1px solid var(--border-color); border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
     .styled-table tr:hover td { background: rgba(255,255,255,0.06); }
     
-    /* LEAD HISTORY & CLIENT SELECTIONS */
-    .lead-row { cursor: pointer; }
-    .lead-history { display: none; }
-    .lead-history.open { display: table-row; animation: fadeIn 0.3s; }
-    .hist-item { display: flex; align-items: center; gap: 10px; background: #222; padding: 8px; border-radius: 8px; border: 1px solid #333; margin-bottom: 5px; }
-    
-    /* CLIENT SELECTION CARD */
+    /* CLIENT ACTIVITY */
     .sel-summary { display: flex; gap: 20px; margin-bottom: 20px; }
     .sel-box { flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #333; text-align: center; }
     .sel-val { font-size: 24px; font-weight: 700; color: #fff; }
@@ -81,7 +75,7 @@
     .tab-content { display: none; } .tab-content.active { display: block; }
     .view { display: none; } .view.show { display: block; } .hidden { display: none !important; }
     
-    /* GALLERY */
+    /* GALLERY & UPLOAD */
     .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 16px; content-visibility: auto; contain-intrinsic-size: 140px; }
     .ph-card { aspect-ratio: 1; background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; transform: translateZ(0); }
     .ph-card img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; background-color: #222; }
@@ -517,7 +511,7 @@ const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=
 /* ================= STATE MANAGEMENT ================= */
 let idToken = localStorage.getItem('idToken');
 let curCol = null;
-let allCols = []; // Global Store for Collections
+let allCols = []; 
 let curEvents = [];
 let uploadQueue = [];
 let currentPhotos = [];
@@ -648,34 +642,46 @@ async function loadDashboard(){
     let realTotalPhotos = 0;
     let realTotalStorage = 0;
     
-    // We update stats immediately with whatever we have, then fetch details if needed
-    // For performance, we'll sum up what's in the collections response first.
+    // First, sum up what's already in the collections response
     realTotalPhotos = allCols.reduce((sum, c) => sum + (c.total_photo_count || 0), 0);
     realTotalStorage = allCols.reduce((sum, c) => sum + (c.storage_bytes || 0), 0);
 
-    // If counts are 0, try fetching events for active collection to correct it (Lazy update)
-    // We will do this asynchronously to not block UI
+    // If counts seem low or 0, background fetch actual details
     if (allCols.length > 0) {
-        // Trigger fetch in background
+        // Trigger fetch in background to correct stats
         (async () => {
              let updatedP = 0;
              let updatedS = 0;
-             for (const col of allCols) {
+             
+             // Create an array of promises for parallel execution
+             const promises = allCols.map(async (col) => {
                 try {
                     const evData = await api('/get-events', { collection_id: col.collection_id });
                     const evs = evData.events || [];
                     let cP = 0;
                     let cS = 0;
                     evs.forEach(e => { cP += (e.photo_count||0); cS += (e.storage_bytes||0); });
-                    col.total_photo_count = cP; // Update local obj
+                    
+                    // Update the local object
+                    col.total_photo_count = cP; 
                     col.storage_bytes = cS;
-                    updatedP += cP;
-                    updatedS += cS;
-                } catch(e) {}
-             }
-             // Update UI after fetch
+                    
+                    // Update DOM for this card specifically if it exists
+                    // (We can add IDs to cards later for granular updates, but full refresh is okay)
+                    
+                    return { p: cP, s: cS };
+                } catch(e) { return { p: 0, s: 0 }; }
+             });
+
+             const results = await Promise.all(promises);
+             results.forEach(r => { updatedP += r.p; updatedS += r.s; });
+             
+             // Update Global UI
              $('#dPhotos').textContent = updatedP.toLocaleString();
              $('#dStorage').textContent = formatBytes(updatedS);
+             
+             // Re-render list with updated stats
+             renderCollectionList();
         })();
     }
     
@@ -684,13 +690,18 @@ async function loadDashboard(){
     $('#dPhotos').textContent = realTotalPhotos > 0 ? realTotalPhotos.toLocaleString() : "Computing...";
     $('#dStorage').textContent = realTotalStorage > 0 ? formatBytes(realTotalStorage) : "Computing...";
     
+    renderCollectionList();
+    
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function renderCollectionList() {
     const colList = $('#colList');
     if(allCols.length === 0) {
         colList.innerHTML = `<div style="text-align:center; padding: 40px; color:#555;">No collections found. Create one!</div>`;
         return;
     }
 
-    // Modern Card List Layout
     colList.innerHTML = allCols.map((c, i) => `
       <div class="col-card" onclick="openCol(${i})">
           <div class="col-title">${escapeHtml(c.name)}</div>
@@ -705,8 +716,6 @@ async function loadDashboard(){
           </div>
       </div>
     `).join('');
-    
-  } catch(e) { showToast(e.message, 'error'); }
 }
 
 function toggleNewCol(show){ show ? $('#newColBox').classList.remove('hidden') : $('#newColBox').classList.add('hidden'); }

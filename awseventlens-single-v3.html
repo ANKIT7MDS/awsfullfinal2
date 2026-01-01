@@ -522,7 +522,9 @@ async function api(path, body){
     method: 'POST', 
     headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' }
   };
-  if(path.includes('account-status') || path.includes('get-collections')) opts.method = 'GET';
+  // ✅ FIX: Allow get-branding to be GET
+  if(path.includes('account-status') || path.includes('get-collections') || path.includes('get-branding')) opts.method = 'GET';
+  
   if(body) { opts.method = 'POST'; opts.body = JSON.stringify(body); } 
 
   const r = await fetch(`${API_BASE}${path}`, opts);
@@ -1071,18 +1073,20 @@ function updatePreview() {
     const headImgInput = document.getElementById('setHeadImg');
     const logoImgInput = document.getElementById('setLogo');
     
-    // Check if we have a local preview (uploaded just now) OR a value from DB
-    const headImgSrc = headImgInput.dataset.localPreview || headImgInput.value;
-    const logoImgSrc = logoImgInput.dataset.localPreview || logoImgInput.value;
+    // PRIORITY: Local Blob > Signed URL > Raw Value (Value is last resort)
+    const headImgSrc = headImgInput.dataset.localPreview || headImgInput.dataset.signedUrl;
+    const logoImgSrc = logoImgInput.dataset.localPreview || logoImgInput.dataset.signedUrl;
 
-    if(headImgSrc) $('#prevHeader').style.backgroundImage = `url('${headImgSrc}')`;
+    // Only set background if we have a valid source (local or signed)
+    if(headImgSrc) {
+        $('#prevHeader').style.backgroundImage = `url('${headImgSrc}')`;
+    }
     
     const prevLogo = $('#prevLogo');
     if(logoImgSrc) { 
         prevLogo.src = logoImgSrc; 
         prevLogo.style.display = 'block'; 
         prevLogo.onerror = function() {
-            // Fallback SVG if external image fails or is blocked
             this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23333' stroke='%2300e676' stroke-width='4'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23fff' font-family='sans-serif' font-size='14'%3ELOGO%3C/text%3E%3C/svg%3E";
         };
     }
@@ -1108,14 +1112,19 @@ function updatePreview() {
 function manualUpdate(targetId) {
     const input = document.getElementById(targetId);
     delete input.dataset.localPreview; // Remove local blob ref
+    delete input.dataset.signedUrl;    // Remove signed ref
     updatePreview();
 }
 
 // --- SETTINGS LOGIC ---
-function loadSettings(){
+// ✅ FIX: Now fetches Signed URLs from backend so 403 error is gone
+async function loadSettings(){
     $('#setColName').value = curCol.name;
+    
     if(curCol.branding) {
         const b = curCol.branding;
+        
+        // 1. Set Raw Values (For Saving)
         $('#setHeadImg').value = b.header_img || '';
         $('#setLogo').value = b.logo || '';
         $('#setFooter').value = b.footer || '';
@@ -1130,6 +1139,15 @@ function loadSettings(){
         $('#sizeLogoDesk').value = b.logo_size_desk || '120';
         $('#sizeBanMob').value = b.banner_h_mob || '200';
         $('#sizeBanDesk').value = b.banner_h_desk || '350';
+
+        // 2. Fetch Signed URLs for Preview (Fix for 403 Forbidden)
+        try {
+            const res = await api(`/get-branding?cid=${curCol.collection_id}`);
+            if(res.header_img) document.getElementById('setHeadImg').dataset.signedUrl = res.header_img;
+            if(res.logo) document.getElementById('setLogo').dataset.signedUrl = res.logo;
+        } catch(e) {
+            console.warn("Could not fetch signed branding URLs", e);
+        }
         
         updatePreview();
     }
@@ -1174,6 +1192,7 @@ async function uploadAsset(input, targetId) {
     const localUrl = URL.createObjectURL(file);
     const targetInput = document.getElementById(targetId);
     targetInput.dataset.localPreview = localUrl; // Store local blob ref
+    delete targetInput.dataset.signedUrl; // Clear old signed url
     updatePreview(); // Show it
     
     let eventIdToUse = null;
@@ -1219,7 +1238,7 @@ async function uploadAsset(input, targetId) {
             // Extract the clean URL (remove query params)
             const publicUrl = u.uploadURL.split('?')[0];
             
-            // Update the Value for Saving (but keep visual preview local until reload)
+            // Update the Value for Saving
             targetInput.value = publicUrl; 
             
             showToast('Uploaded Successfully!');

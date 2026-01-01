@@ -1031,7 +1031,7 @@ function copyLink(){
   const el = $('#finalLink'); el.select(); document.execCommand('copy'); showToast('Copied');
 }
 
-// Client Link Generation (New)
+// Client Link Generation (Fixed to point to client-gallery.html)
 async function generateClientLink(){
   const pin = $('#clientPin').value;
   if(!pin) return showToast('Set a PIN for client access', 'error');
@@ -1040,14 +1040,18 @@ async function generateClientLink(){
        collection_id: curCol.collection_id, expiry_hours: 87600, password: pin, type: 'client'
     });
     
-    // ✅ FIX: Guest Link ki tarah Client Link mein bhi direct 'searchUrl' check kar rahe hain
-    let finalUrl = res.searchUrl;
-    
-    if(!finalUrl) {
-        const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
-        if(!linkId) throw new Error("No Link ID or Search URL returned");
-        finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}`;
+    // ✅ FIX: Humesha client-gallery.html use karne ke liye manually construct kar rahe hain
+    // Pehle Link ID nikalte hain chahe kisi bhi field se mile
+    let linkId = res.link_id || res.id;
+    if(!linkId && res.searchUrl) {
+        const urlObj = new URL(res.searchUrl);
+        linkId = urlObj.searchParams.get('linkId') || urlObj.searchParams.get('id');
     }
+    
+    if(!linkId) throw new Error("No Link ID returned");
+
+    // Yahan force kar rahe hain client-gallery.html page path
+    const finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
     
     $('#clientFinalLink').value = finalUrl;
     $('#clientLinkBtn').href = finalUrl;

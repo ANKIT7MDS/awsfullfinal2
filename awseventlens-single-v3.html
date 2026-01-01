@@ -53,11 +53,14 @@
     .styled-table tr td:last-child { border-right: 1px solid var(--border-color); border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
     .styled-table tr:hover td { background: rgba(255,255,255,0.06); }
     
-    /* CLIENT ACTIVITY */
+    /* CLIENT ACTIVITY & THUMBNAILS */
     .sel-summary { display: flex; gap: 20px; margin-bottom: 20px; }
     .sel-box { flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #333; text-align: center; }
     .sel-val { font-size: 24px; font-weight: 700; color: #fff; }
     .sel-label { font-size: 11px; color: #888; text-transform: uppercase; }
+    
+    .photo-thumb-cell { width: 80px; height: 80px; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #444; cursor: zoom-in; }
+    .photo-thumb-cell img { width: 100%; height: 100%; object-fit: cover; }
     
     /* LEAD HISTORY */
     .lead-row { cursor: pointer; }
@@ -362,24 +365,24 @@
       </div>
     </div>
     
-    <!-- NEW TAB: CLIENT SELECTIONS -->
+    <!-- NEW TAB: CLIENT SELECTIONS & GUEST ACTIVITY -->
     <div id="tClient" class="tab-content">
         <div class="card">
             <div class="row" style="justify-content:space-between; margin-bottom:20px;">
-                <h3>Client Activity</h3>
+                <h3>Client & Guest Activity</h3>
                 <button class="btn secondary" onclick="loadClientSelections()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
             </div>
             
             <div class="sel-summary">
                 <div class="sel-box"><div class="sel-val" id="sumSel">0</div><div class="sel-label">Selected</div></div>
                 <div class="sel-box"><div class="sel-val" id="sumFav">0</div><div class="sel-label">Favorites</div></div>
-                <div class="sel-box" style="border-color:var(--primary-dim);"><div class="sel-val" style="color:var(--primary)" id="sumDel">0</div><div class="sel-label">Total Actions</div></div>
+                <div class="sel-box" style="border-color:var(--primary-dim);"><div class="sel-val" style="color:var(--primary)" id="sumDel">0</div><div class="sel-label">Delete Requests</div></div>
             </div>
             
             <div class="table-responsive">
                <table class="styled-table">
-                   <thead><tr><th>Photo ID</th><th>Status</th><th>Updated At</th></tr></thead>
-                   <tbody id="tblSelections"><tr><td colspan="3" align="center" class="text-muted">No client activity yet.</td></tr></tbody>
+                   <thead><tr><th>Photo</th><th>Status</th><th>User</th><th>Updated At</th></tr></thead>
+                   <tbody id="tblSelections"><tr><td colspan="4" align="center" class="text-muted">Loading activity...</td></tr></tbody>
                </table>
             </div>
         </div>
@@ -1052,13 +1055,10 @@ async function generateUnifiedLink() {
     
     // 1. Staff Upload Link (Client Side Generation primarily)
     if(type === 'staff') {
-        // Staff link base logic
-        const baseUrl = window.location.origin + "/EventLens_Staff_Upload.html";
+        // Updated to point to new staff upload file
+        const baseUrl = `${window.location.origin}/staff-upload.html`;
         finalUrl = `${baseUrl}?cid=${curCol.collection_id}`;
         if(eid) finalUrl += `&eid=${eid}`;
-        
-        // Note: Backend might not support PIN/Expiry for upload links natively yet, 
-        // but we add params for future proofing or frontend check
         if(pin) finalUrl += `&pin=${pin}`; 
         
         // Show result immediately
@@ -1081,19 +1081,16 @@ async function generateUnifiedLink() {
             password: pin
         };
         
-        // Add type if supported by backend, otherwise default is 'guest'
         if(type === 'client') payload.type = 'client';
 
         const res = await api('/generate-search-link', payload);
         
-        // Check for direct 'searchUrl' first, then fallback to 'link_id'
         let genUrl = res.searchUrl;
         
         if(!genUrl) {
             const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
             if(!linkId) throw new Error("No Link ID returned");
             
-            // Construct URL based on type
             if(type === 'client') {
                 genUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
             } else {
@@ -1105,7 +1102,6 @@ async function generateUnifiedLink() {
         $('#finalLinkBtn').href = genUrl;
         $('#linkRes').classList.remove('hidden');
         
-        // Save History
         addToLinkHistory(type === 'client' ? 'Client Gallery' : 'Guest Search', genUrl, pin, expiry);
         showToast('Link Generated!');
         
@@ -1185,13 +1181,22 @@ function copyToClip(text) {
 }
 
 /* ================= CLIENT SELECTIONS & LEADS ================= */
-// UPDATED: Now calling the Lambda 'get_selections' action
+// UPDATED: Now fetches photo map first to show thumbnails
 async function loadClientSelections() {
    if(!curCol) return;
    
-   $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center">Loading selections...</td></tr>`;
+   $('#tblSelections').innerHTML = `<tr><td colspan="4" align="center">Loading selections & photo data...</td></tr>`;
    
    try {
+       // 1. Ensure we have photo data for thumbnails (Use cache or fetch)
+       if (currentPhotos.length === 0) {
+           await loadPhotos(true); // Populate currentPhotos
+       }
+       // Create a quick lookup map
+       const photoMap = {};
+       currentPhotos.forEach(p => photoMap[p.photo_id] = p.thumbnail_url || p.url);
+
+       // 2. Fetch Selections from Backend
        const res = await fetch(`${API_BASE}/client-api`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
@@ -1205,7 +1210,7 @@ async function loadClientSelections() {
        const selections = data.selections || [];
        
        if(selections.length === 0) {
-           $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center" class="text-muted">No photos selected yet.</td></tr>`;
+           $('#tblSelections').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">No photos selected yet.</td></tr>`;
            $('#sumSel').textContent = 0;
            $('#sumFav').textContent = 0;
            $('#sumDel').textContent = 0;
@@ -1215,21 +1220,37 @@ async function loadClientSelections() {
        // Calculate Summary
        let totalSel = 0;
        let totalFav = 0;
+       let totalDel = 0;
        
        const rows = selections.map(s => {
            if(s.status.selected) totalSel++;
            if(s.status.fav) totalFav++;
+           if(s.status.delete_req) totalDel++; // Assuming delete request might be added later
            
+           const thumbUrl = photoMap[s.photo_id] || '';
+           const thumbHtml = thumbUrl 
+                ? `<div class="photo-thumb-cell" onclick="openLightbox(${currentPhotos.findIndex(p => p.photo_id === s.photo_id)})"><img src="${thumbUrl}"></div>`
+                : `<div class="photo-thumb-cell" style="background:#222;display:flex;align-items:center;justify-content:center;color:#555;">No Img</div>`;
+
            const badges = [];
-           if(s.status.selected) badges.push(`<span class="tag-pill" style="background:rgba(0,230,118,0.2); color:#00e676;">Selected</span>`);
-           if(s.status.fav) badges.push(`<span class="tag-pill" style="background:rgba(255,64,129,0.2); color:#ff4081;">Favorite</span>`);
+           if(s.status.selected) badges.push(`<span class="tag-pill" style="background:rgba(0,230,118,0.2); color:#00e676;"><i class="fa-solid fa-check"></i> Album</span>`);
+           if(s.status.fav) badges.push(`<span class="tag-pill" style="background:rgba(255,64,129,0.2); color:#ff4081;"><i class="fa-solid fa-heart"></i> Favorite</span>`);
+           if(s.status.delete_req) badges.push(`<span class="tag-pill" style="background:rgba(255,0,0,0.2); color:red;"><i class="fa-solid fa-trash"></i> Delete</span>`);
+           
+           // Guest Info (If available in status object from guest actions)
+           // If status has 'guest_name' or similar
+           let userInfo = '<span class="text-muted">Client (Gallery)</span>';
+           if(s.status.guest_name) {
+               userInfo = `<div><i class="fa-solid fa-user"></i> ${s.status.guest_name}</div><div class="text-sm text-muted">${s.status.guest_mobile || ''}</div>`;
+           }
            
            const dateStr = s.updated_at ? new Date(s.updated_at * 1000).toLocaleString() : '-';
            
            return `
                <tr>
-                   <td style="font-family:monospace; color:#fff;">${s.photo_id}</td>
+                   <td style="width:100px;">${thumbHtml}</td>
                    <td>${badges.join(' ')}</td>
+                   <td>${userInfo}</td>
                    <td class="text-muted text-sm">${dateStr}</td>
                </tr>
            `;
@@ -1238,11 +1259,11 @@ async function loadClientSelections() {
        $('#tblSelections').innerHTML = rows;
        $('#sumSel').textContent = totalSel;
        $('#sumFav').textContent = totalFav;
-       $('#sumDel').textContent = selections.length; // Total actions count
+       $('#sumDel').textContent = totalDel;
        
    } catch(e) {
        console.error(e);
-       $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center" class="text-danger">Error loading selections</td></tr>`;
+       $('#tblSelections').innerHTML = `<tr><td colspan="4" align="center" class="text-danger">Error loading selections</td></tr>`;
    }
 }
 

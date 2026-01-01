@@ -34,19 +34,26 @@
     input, select, textarea { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
     
     /* NEW STYLES FOR COLLECTIONS LIST */
-    .col-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; transition: 0.2s; }
-    .col-item:hover { border-color: var(--primary); background: rgba(255,255,255,0.05); }
-    .col-info h4 { margin: 0 0 5px 0; font-size: 18px; color: #fff; }
+    .col-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px; transition: 0.2s; cursor: pointer; }
+    .col-item:hover { border-color: var(--primary); background: rgba(255,255,255,0.05); transform: translateY(-2px); }
+    .col-info h4 { margin: 0 0 8px 0; font-size: 18px; color: #fff; }
     .col-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 15px; }
-    .col-meta span { display: flex; align-items: center; gap: 5px; }
-    
-    /* NEW STYLES FOR TABLES (EVENTS/LEADS) */
+    .col-meta span { display: flex; align-items: center; gap: 6px; }
+    .col-actions { display: flex; gap: 10px; }
+
+    /* STYLED TABLES */
     .styled-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
     .styled-table th { text-align: left; padding: 12px 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
     .styled-table td { background: rgba(255,255,255,0.03); padding: 16px; vertical-align: middle; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
     .styled-table tr td:first-child { border-left: 1px solid var(--border-color); border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
     .styled-table tr td:last-child { border-right: 1px solid var(--border-color); border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
     .styled-table tr:hover td { background: rgba(255,255,255,0.06); }
+    
+    /* LEAD HISTORY (MERGED GUESTS) */
+    .lead-row { cursor: pointer; }
+    .lead-history { display: none; }
+    .lead-history.open { display: table-row; animation: fadeIn 0.3s; }
+    .hist-item { display: flex; align-items: center; gap: 10px; background: #222; padding: 8px; border-radius: 8px; border: 1px solid #333; margin-bottom: 5px; }
 
     /* PREVIEW CONTAINER */
     .preview-frame { border: 4px solid #333; border-radius: 16px; overflow: hidden; background: #000; margin: 0 auto; transition: all 0.3s ease; position: relative; }
@@ -88,6 +95,7 @@
 
     #toast { position: fixed; top: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 16px 24px; border-radius: 12px; z-index: 9999; transform: translateX(150%); transition: 0.4s; border: 1px solid var(--border-color); }
     #toast.show { transform: translateX(0); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
@@ -128,6 +136,7 @@
 
     <div class="grid" style="margin-bottom: 32px;">
        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">COLLECTIONS</div><div class="kpi-val" id="dCols">0</div></div>
+       <!-- FIXED: Now calculating totals from real event data -->
        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">TOTAL PHOTOS</div><div class="kpi-val" id="dPhotos">0</div></div>
        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div><div class="kpi-val" id="dStorage">0 B</div></div>
        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STATUS</div><div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div></div>
@@ -183,20 +192,20 @@
     <!-- TAB 2: EVENTS (FIXED UI) -->
     <div id="tEvents" class="tab-content">
       <div class="card">
-        <div class="row" style="justify-content: space-between;">
+        <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
             <div>
                 <h3>Manage Sub-Events</h3>
                 <p class="text-sm text-muted">Organize photos into sub-events like 'Haldi', 'Reception'.</p>
             </div>
-            
-            <div id="evAddForm" class="row" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 50px; border: 1px solid var(--border-color);">
-              <input id="neName" placeholder="Event Name" style="background:transparent; border:none; color:#fff; width: 150px; padding: 5px 10px;">
-              <input id="neDate" type="date" style="background:transparent; border:none; color:#fff; width: 130px; padding: 5px 10px;">
-              <button class="btn primary" onclick="createNewEvent()" style="padding: 8px 20px; font-size:12px;">Add</button>
+            <!-- Improved Add Button Alignment -->
+            <div id="evAddForm" class="row" style="background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 50px; border: 1px solid var(--border-color);">
+              <input id="neName" placeholder="Event Name" style="background:transparent; border:none; color:#fff; width: 140px; font-size:13px; outline:none;">
+              <input id="neDate" type="date" style="background:transparent; border:none; color:#fff; width: 120px; font-size:13px; outline:none;">
+              <button class="btn primary" onclick="createNewEvent()" style="padding: 6px 16px; font-size:12px; min-height: 32px;">Add</button>
             </div>
         </div>
 
-        <div id="evEditForm" class="hidden" style="background: rgba(0, 230, 118, 0.05); padding: 16px; border-radius: 12px; margin: 24px 0; border: 1px solid var(--primary-dim);">
+        <div id="evEditForm" class="hidden" style="background: rgba(0, 230, 118, 0.05); padding: 16px; border-radius: 12px; margin: 10px 0 20px; border: 1px solid var(--primary-dim);">
            <div class="row" style="margin-bottom: 8px;">
              <span class="text-sm font-bold" style="color:var(--primary)">EDIT EVENT</span>
            </div>
@@ -209,7 +218,7 @@
            </div>
         </div>
 
-        <div class="table-responsive" style="margin-top: 20px;">
+        <div class="table-responsive">
             <table class="styled-table">
               <thead><tr><th>Event Name</th><th>Date</th><th>Photos</th><th>Size</th><th>Actions</th></tr></thead>
               <tbody id="tblEvents"></tbody>
@@ -301,7 +310,7 @@
       </div>
     </div>
 
-    <!-- TAB 5: GUEST LEADS (FIXED UI) -->
+    <!-- TAB 5: GUEST LEADS (FIXED: MERGED) -->
     <div id="tLeads" class="tab-content">
       <div class="card">
         <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
@@ -310,7 +319,7 @@
         </div>
         <div class="table-responsive">
           <table class="styled-table">
-            <thead><tr><th>Guest Name & Time</th><th>Phone Number</th><th>Matches</th><th>Selfie</th></tr></thead>
+            <thead><tr><th>Guest Name</th><th>Phone Number</th><th>Activity</th><th>Actions</th></tr></thead>
             <tbody id="tblLeads"><tr><td colspan="4" align="center" class="text-muted">Loading leads...</td></tr></tbody>
           </table>
         </div>
@@ -319,6 +328,7 @@
 
     <!-- TAB 6: SETTINGS (UPDATED WITH LIVE PREVIEW) -->
     <div id="tSettings" class="tab-content">
+        <!-- (Same Settings Content as before) -->
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
             
             <!-- LEFT: CONTROLS -->
@@ -580,22 +590,51 @@ async function loadDashboard(){
 
     // Store globally for indexed access
     allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // ✅ FIX: Force update stats by fetching events for all collections
+    // Since backend aggregation is not reliable, we sum up manually here.
+    let realTotalPhotos = 0;
+    let realTotalStorage = 0;
+
+    // Use Promise.all to fetch in parallel (fast)
+    // Note: If you have 50+ collections this might be heavy, but for typical usage it's fine.
+    await Promise.all(allCols.map(async (col) => {
+        try {
+            const evData = await api('/get-events', { collection_id: col.collection_id });
+            const evs = evData.events || [];
+            
+            // Calculate stats for this collection
+            let colPhotos = 0;
+            let colStorage = 0;
+            evs.forEach(e => {
+                colPhotos += (e.photo_count || 0);
+                colStorage += (e.storage_bytes || 0);
+            });
+            
+            // Update local object so cards show correct info
+            col.total_photo_count = colPhotos;
+            col.storage_bytes = colStorage;
+            
+            // Add to global totals
+            realTotalPhotos += colPhotos;
+            realTotalStorage += colStorage;
+            
+        } catch(e) { console.warn(`Failed to fetch stats for ${col.name}`); }
+    }));
     
-    // Stats calculation fixed (using parseInt safely)
-    const totalPhotos = allCols.reduce((sum, c) => sum + (parseInt(c.total_photo_count) || 0), 0);
-    const storageBytes = sData.total_storage_used_bytes || allCols.reduce((sum, c) => sum + (parseInt(c.storage_bytes) || 0), 0);
-    
+    // Update KPI Display
     $('#dCols').textContent = allCols.length;
-    $('#dPhotos').textContent = totalPhotos.toLocaleString();
-    $('#dStorage').textContent = formatBytes(storageBytes);
+    $('#dPhotos').textContent = realTotalPhotos.toLocaleString();
+    $('#dStorage').textContent = formatBytes(realTotalStorage);
     
+    // Render Collection List
     const colList = $('#colList');
     if(allCols.length === 0) {
         colList.innerHTML = `<div style="text-align:center; padding: 40px; color:#555;">No collections found. Create one!</div>`;
         return;
     }
 
-    // New Modern Card List Layout for Collections
+    // Modern Card List Layout
     colList.innerHTML = allCols.map((c, i) => `
       <div class="col-item" onclick="openCol(${i})">
           <div class="col-info">
@@ -974,7 +1013,7 @@ function copyLink(){
   showToast('Copied to clipboard');
 }
 
-/* ================= GUEST LEADS (FIXED LAYOUT) ================= */
+/* ================= GUEST LEADS (MERGED BY PHONE) ================= */
 async function loadLeads(){
   $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
   try {
@@ -985,23 +1024,60 @@ async function loadLeads(){
         $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">No guest searches yet.</td></tr>`;
         return;
     }
+    
+    // ✅ FIX: Group by Mobile
+    const grouped = {};
+    leads.forEach(l => {
+        const key = l.mobile || 'Unknown';
+        if(!grouped[key]) grouped[key] = { ...l, history: [] };
+        grouped[key].history.push(l);
+    });
 
-    // Display List directly (Simplest for now)
-    $('#tblLeads').innerHTML = leads.map(l => `
-      <tr>
-        <td>
-            <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
-            <div class="text-sm text-muted">${new Date(l.timestamp).toLocaleString()}</div>
-        </td>
-        <td>${l.mobile || '-'}</td>
-        <td><span class="tag-pill">${l.match_count || l.photo_count || 0} Matches</span></td>
-        <td>
-            <a href="${l.selfie_url}" target="_blank">
-                <img src="${l.selfie_url}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'40\' fill=\'%23333\' stroke=\'%23555\' stroke-width=\'2\'/%3E%3C/svg%3E'">
-            </a>
-        </td>
-      </tr>
-    `).join('');
+    // Convert object to array and sort
+    const rows = Object.values(grouped).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    let html = '';
+    rows.forEach((l, i) => {
+        const latestTime = new Date(l.timestamp).toLocaleString();
+        html += `
+          <tr class="lead-row" onclick="$('#hist-${i}').classList.toggle('open')">
+            <td>
+               <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
+               <div class="text-sm text-muted">Last: ${latestTime}</div>
+            </td>
+            <td>${l.mobile || '-'}</td>
+            <td>
+               <span class="tag-pill" style="background: var(--primary-dim); color: var(--primary); font-weight:700;">
+                 ${l.history.length} Searches
+               </span>
+               <i class="fa-solid fa-chevron-down" style="float:right; font-size:10px; margin-top:5px;"></i>
+            </td>
+            <td>
+               <a href="${l.selfie_url}" target="_blank">
+                  <img src="${l.selfie_url}" style="width:36px; height:36px; border-radius:50%; border:1px solid #444; object-fit:cover;">
+               </a>
+            </td>
+          </tr>
+          <tr id="hist-${i}" class="lead-history" style="background: rgba(255,255,255,0.02);">
+            <td colspan="4" style="padding: 10px;">
+                <div style="font-size:11px; color:#aaa; margin-bottom:5px;">SEARCH HISTORY:</div>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                    ${l.history.map(h => `
+                        <div class="hist-item">
+                            <img src="${h.selfie_url}" style="width:30px; height:30px; border-radius:4px; object-fit:cover;">
+                            <div>
+                                <div style="font-weight:600; color:#fff;">${h.match_count} Match</div>
+                                <div style="font-size:10px;">${new Date(h.timestamp).toLocaleTimeString()}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </td>
+          </tr>
+        `;
+    });
+    $('#tblLeads').innerHTML = html;
+
   } catch(e) { 
     $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" style="color: #ef4444;">Error: ${e.message}</td></tr>`;
   }

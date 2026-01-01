@@ -1010,11 +1010,17 @@ async function generateLink(){
     const res = await api('/generate-search-link', {
        collection_id: curCol.collection_id, event_ids: eid ? [eid] : [], expiry_hours: parseInt(expiry), password: pin
     });
-    // ✅ FIX: Robust check for link_id
-    const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
-    if(!linkId) throw new Error("No Link ID");
     
-    const finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+    // ✅ FIX: Check for direct 'searchUrl' first, then fallback to 'link_id'
+    let finalUrl = res.searchUrl;
+    
+    if(!finalUrl) {
+        // Fallback: If no searchUrl, try to construct from link_id
+        const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
+        if(!linkId) throw new Error("No Link ID or Search URL returned");
+        finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+    }
+    
     $('#finalLink').value = finalUrl;
     $('#finalLinkBtn').href = finalUrl;
     $('#linkRes').classList.remove('hidden');
@@ -1033,6 +1039,7 @@ async function generateClientLink(){
     const res = await api('/generate-search-link', {
        collection_id: curCol.collection_id, expiry_hours: 87600, password: pin, type: 'client'
     });
+    
     const linkId = res.link_id || res.id;
     if(!linkId) throw new Error("No Link ID");
     const finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}`;

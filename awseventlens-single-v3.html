@@ -59,11 +59,16 @@
     .sel-val { font-size: 24px; font-weight: 700; color: #fff; }
     .sel-label { font-size: 11px; color: #888; text-transform: uppercase; }
     
-    /* LEAD HISTORY (MERGED GUESTS) */
+    /* LEAD HISTORY */
     .lead-row { cursor: pointer; }
     .lead-history { display: none; }
     .lead-history.open { display: table-row; animation: fadeIn 0.3s; }
     .hist-item { display: flex; align-items: center; gap: 10px; background: #222; padding: 8px; border-radius: 8px; border: 1px solid #333; margin-bottom: 5px; }
+
+    /* LINK HISTORY */
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .status-active { background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); }
+    .status-disabled { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
 
     /* PREVIEW CONTAINER */
     .preview-frame { border: 4px solid #333; border-radius: 16px; overflow: hidden; background: #000; margin: 0 auto; transition: all 0.3s ease; position: relative; }
@@ -246,9 +251,7 @@
                 <h3>Batch Photo Upload</h3>
                 <p class="text-sm text-muted">Photos queue up first. Click 'Start Upload' to process.</p>
             </div>
-            <button class="btn secondary" onclick="copyStaffLink()">
-                <i class="fa-solid fa-user-plus"></i> Get Staff Upload Link
-            </button>
+            <!-- REMOVED Staff Link Button from here, moved to Unified Links Tab -->
         </div>
         
         <div class="row" style="margin: 24px 0;">
@@ -286,33 +289,53 @@
       </div>
     </div>
 
-    <!-- TAB 4: LINK GENERATION (FIXED UI) -->
+    <!-- TAB 4: UNIFIED LINK MANAGER (UPDATED) -->
     <div id="tLink" class="tab-content">
       <div class="card">
-        <h3>Generate Guest Link</h3>
-        <div class="row" style="gap: 20px; align-items: flex-end; margin-top: 24px;">
-          <div style="flex: 2;">
-            <label class="text-sm" style="display:block; margin-bottom:6px;">Select Event Scope</label>
+        <div class="row" style="margin-bottom: 20px;">
+            <h3>Unified Link Generator</h3>
+        </div>
+        
+        <div class="row" style="gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+          <!-- Link Type Selector -->
+          <div style="flex: 2; min-width: 250px;">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Link Type</label>
+            <select id="linkType" onchange="updateLinkUI()">
+              <option value="guest">Guest Search (Face Recognition)</option>
+              <option value="client">Client Selection Gallery</option>
+              <option value="staff">Staff Upload Portal</option>
+            </select>
+          </div>
+
+          <!-- Event Scope (Only for Guest/Staff mostly) -->
+          <div style="flex: 2; min-width: 200px;" id="linkScopeWrapper">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Select Scope</label>
             <select id="linkEventSel"></select>
           </div>
-          <div style="flex: 1;">
-            <label class="text-sm" style="display:block; margin-bottom:6px;">Link Expiry</label>
+
+          <!-- Expiry -->
+          <div style="flex: 1; min-width: 120px;">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Expiry</label>
             <select id="linkExpiry">
               <option value="87600">Lifetime</option>
               <option value="168">7 Days</option>
               <option value="24">24 Hours</option>
+              <option value="1">1 Hour</option>
             </select>
           </div>
-          <div style="flex: 1;">
-            <label class="text-sm" style="display:block; margin-bottom:6px;">PIN Protection</label>
-            <input id="linkPin" placeholder="e.g. 1234">
+
+          <!-- PIN -->
+          <div style="flex: 1; min-width: 100px;">
+            <label class="text-sm" style="display:block; margin-bottom:6px;">Set PIN</label>
+            <input id="linkPin" placeholder="1234">
           </div>
-          <button class="btn primary" onclick="generateLink()" style="height: 46px;">Generate Link</button>
+
+          <button class="btn primary" onclick="generateUnifiedLink()" style="height: 46px; min-width: 140px;">Generate</button>
         </div>
 
-        <!-- Corrected Result Box UI -->
+        <!-- Result Box -->
         <div id="linkRes" class="hidden" style="margin-top: 24px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
-           <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">SHAREABLE GUEST LINK</div>
+           <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">GENERATED LINK</div>
            <div class="row" style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
              <input id="finalLink" readonly style="border:none; background:transparent; font-family:monospace; color:var(--primary); font-size:15px; flex:1;">
              <button class="btn secondary" onclick="copyLink()"><i class="fa-regular fa-copy"></i></button>
@@ -322,23 +345,19 @@
         
         <hr style="border:0; border-top:1px solid #333; margin:30px 0;">
         
-        <h3>Generate Client Selection Link</h3>
-        <div class="row" style="gap: 20px; align-items: flex-end;">
-          <div style="flex: 2;">
-            <label class="text-sm" style="display:block; margin-bottom:6px;">Client Gallery PIN</label>
-            <input id="clientPin" placeholder="e.g. 9876">
-          </div>
-          <button class="btn primary" onclick="generateClientLink()" style="height: 46px;">Create Client Link</button>
+        <!-- HISTORY TABLE -->
+        <div class="row" style="justify-content: space-between; margin-bottom: 15px;">
+            <h3>Active Links History</h3>
+            <button class="btn secondary" onclick="renderLinkHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
         </div>
-
-         <!-- Corrected Client Link Result Box UI -->
-         <div id="clientLinkRes" class="hidden" style="margin-top: 24px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
-           <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">CLIENT SELECTION LINK</div>
-           <div class="row" style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
-             <input id="clientFinalLink" readonly style="border:none; background:transparent; font-family:monospace; color:var(--primary); font-size:15px; flex:1;">
-             <button class="btn secondary" onclick="copyClientLink()"><i class="fa-regular fa-copy"></i></button>
-             <a id="clientLinkBtn" target="_blank" class="btn primary"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-           </div>
+        
+        <div class="table-responsive">
+            <table class="styled-table">
+              <thead><tr><th>Type</th><th>Created At</th><th>Expiry</th><th>PIN</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="tblLinkHistory">
+                  <tr><td colspan="6" align="center" class="text-muted">No links generated yet.</td></tr>
+              </tbody>
+            </table>
         </div>
       </div>
     </div>
@@ -373,7 +392,7 @@
           <h3>Guest Leads & Analytics</h3>
           <button class="btn secondary" onclick="loadLeads()"><i class="fa-solid fa-rotate-right"></i> Refresh Data</button>
         </div>
-        <div class="table-responsive">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
           <table class="styled-table">
             <thead><tr><th>Guest Name</th><th>Phone Number</th><th>Activity</th><th>Actions</th></tr></thead>
             <tbody id="tblLeads"><tr><td colspan="4" align="center" class="text-muted">Loading leads...</td></tr></tbody>
@@ -526,6 +545,7 @@ let uploadQueue = [];
 let currentPhotos = [];
 let currentPhotoIndex = -1;
 let previewMode = 'mobile';
+let linkHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
 
 /* ================= INITIALIZATION ================= */
 window.addEventListener('load', async () => {
@@ -638,6 +658,7 @@ function setTab(id){
       if(id === 'tGal') loadPhotos(true);
       if(id === 'tLeads') loadLeads();
       if(id === 'tClient') loadClientSelections();
+      if(id === 'tLink') renderLinkHistory();
       if(id === 'tSettings') loadSettings();
   }
 }
@@ -1004,66 +1025,163 @@ function copyStaffLink() {
     showToast('Link Copied!');
 }
 
-/* ================= LINK GENERATION ================= */
-async function generateLink(){
-  const eid = $('#linkEventSel').value;
-  const expiry = $('#linkExpiry').value;
-  const pin = $('#linkPin').value;
-  try {
-    const res = await api('/generate-search-link', {
-       collection_id: curCol.collection_id, event_ids: eid ? [eid] : [], expiry_hours: parseInt(expiry), password: pin
-    });
+/* ================= UNIFIED LINK MANAGER ================= */
+function updateLinkUI() {
+    const type = $('#linkType').value;
+    const scopeWrapper = $('#linkScopeWrapper');
     
-    // Check for direct 'searchUrl' first, then fallback to 'link_id'
-    let finalUrl = res.searchUrl;
-    
-    if(!finalUrl) {
-        const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
-        if(!linkId) throw new Error("No Link ID or Search URL returned");
-        finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+    // Only show event scope selector for Guest/Staff links, 
+    // Client gallery is typically collection-wide
+    if(type === 'client') {
+       // Optional: Disable or hide scope selection if not needed
+       // scopeWrapper.style.opacity = '0.5';
+       // scopeWrapper.style.pointerEvents = 'none';
+    } else {
+       scopeWrapper.style.opacity = '1';
+       scopeWrapper.style.pointerEvents = 'auto';
     }
-    
-    $('#finalLink').value = finalUrl;
-    $('#finalLinkBtn').href = finalUrl;
-    $('#linkRes').classList.remove('hidden');
-    showToast('Generated!');
-  } catch(e) { showToast(e.message, 'error'); }
 }
+
+async function generateUnifiedLink() {
+    const type = $('#linkType').value;
+    const eid = $('#linkEventSel').value;
+    const expiry = $('#linkExpiry').value;
+    const pin = $('#linkPin').value;
+    
+    let finalUrl = "";
+    
+    // 1. Staff Upload Link (Client Side Generation primarily)
+    if(type === 'staff') {
+        // Staff link base logic
+        const baseUrl = window.location.origin + "/EventLens_Staff_Upload.html";
+        finalUrl = `${baseUrl}?cid=${curCol.collection_id}`;
+        if(eid) finalUrl += `&eid=${eid}`;
+        
+        // Note: Backend might not support PIN/Expiry for upload links natively yet, 
+        // but we add params for future proofing or frontend check
+        if(pin) finalUrl += `&pin=${pin}`; 
+        
+        // Show result immediately
+        $('#finalLink').value = finalUrl;
+        $('#finalLinkBtn').href = finalUrl;
+        $('#linkRes').classList.remove('hidden');
+        
+        // Save to Local History
+        addToLinkHistory('Staff Upload', finalUrl, pin, expiry);
+        showToast('Staff Link Generated!');
+        return;
+    }
+
+    // 2. Guest or Client Link (Backend Generation)
+    try {
+        const payload = {
+            collection_id: curCol.collection_id, 
+            event_ids: eid ? [eid] : [], 
+            expiry_hours: parseInt(expiry), 
+            password: pin
+        };
+        
+        // Add type if supported by backend, otherwise default is 'guest'
+        if(type === 'client') payload.type = 'client';
+
+        const res = await api('/generate-search-link', payload);
+        
+        // Check for direct 'searchUrl' first, then fallback to 'link_id'
+        let genUrl = res.searchUrl;
+        
+        if(!genUrl) {
+            const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
+            if(!linkId) throw new Error("No Link ID returned");
+            
+            // Construct URL based on type
+            if(type === 'client') {
+                genUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
+            } else {
+                genUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+            }
+        }
+        
+        $('#finalLink').value = genUrl;
+        $('#finalLinkBtn').href = genUrl;
+        $('#linkRes').classList.remove('hidden');
+        
+        // Save History
+        addToLinkHistory(type === 'client' ? 'Client Gallery' : 'Guest Search', genUrl, pin, expiry);
+        showToast('Link Generated!');
+        
+    } catch(e) { 
+        showToast(e.message, 'error'); 
+    }
+}
+
 function copyLink(){
   const el = $('#finalLink'); el.select(); document.execCommand('copy'); showToast('Copied');
 }
 
-// Client Link Generation (Fixed to point to client-gallery.html always)
-async function generateClientLink(){
-  const pin = $('#clientPin').value;
-  if(!pin) return showToast('Set a PIN for client access', 'error');
-  try {
-    const res = await api('/generate-search-link', {
-       collection_id: curCol.collection_id, expiry_hours: 87600, password: pin, type: 'client'
-    });
+// History Management (Frontend Storage for now)
+function addToLinkHistory(type, url, pin, expiryHours) {
+    const newEntry = {
+        id: Date.now(),
+        type: type,
+        created: new Date().toISOString(),
+        expiry: new Date(Date.now() + expiryHours * 3600 * 1000).toISOString(),
+        pin: pin || '-',
+        url: url,
+        active: true
+    };
     
-    // Extract Link ID from any available field
-    let linkId = res.link_id || res.id;
-    if(!linkId && res.searchUrl) {
-        try {
-            const urlObj = new URL(res.searchUrl);
-            linkId = urlObj.searchParams.get('linkId') || urlObj.searchParams.get('id');
-        } catch(e) {}
+    // Add to top
+    linkHistory.unshift(newEntry);
+    localStorage.setItem('eventlens_links', JSON.stringify(linkHistory));
+    renderLinkHistory();
+}
+
+function renderLinkHistory() {
+    const tbody = $('#tblLinkHistory');
+    if(linkHistory.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" align="center" class="text-muted">No links generated yet.</td></tr>`;
+        return;
     }
     
-    if(!linkId) throw new Error("No Link ID returned from server");
-
-    // Force link to client-gallery.html page
-    const finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
-    
-    $('#clientFinalLink').value = finalUrl;
-    $('#clientLinkBtn').href = finalUrl;
-    $('#clientLinkRes').classList.remove('hidden');
-    showToast('Client Link Generated!');
-  } catch(e) { showToast(e.message, 'error'); }
+    tbody.innerHTML = linkHistory.map(link => {
+        const isExpired = new Date() > new Date(link.expiry);
+        const statusClass = (!link.active || isExpired) ? 'status-disabled' : 'status-active';
+        const statusText = !link.active ? 'Disabled' : (isExpired ? 'Expired' : 'Active');
+        const createdDate = new Date(link.created).toLocaleDateString();
+        
+        return `
+            <tr style="opacity: ${!link.active ? 0.6 : 1}">
+                <td>${link.type}</td>
+                <td style="font-size:12px">${createdDate}</td>
+                <td style="font-size:12px">${Math.round((new Date(link.expiry) - new Date(link.created))/3600000)}h</td>
+                <td style="font-family:monospace">${link.pin}</td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="copyToClip('${link.url}')"><i class="fa-regular fa-copy"></i></button>
+                    ${link.active ? `<button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="toggleLinkStatus(${link.id})"><i class="fa-solid fa-ban"></i></button>` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
-function copyClientLink(){
-  const el = $('#clientFinalLink'); el.select(); document.execCommand('copy'); showToast('Copied');
+
+function toggleLinkStatus(id) {
+    const idx = linkHistory.findIndex(l => l.id === id);
+    if(idx > -1) {
+        linkHistory[idx].active = !linkHistory[idx].active;
+        localStorage.setItem('eventlens_links', JSON.stringify(linkHistory));
+        renderLinkHistory();
+    }
+}
+
+function copyToClip(text) {
+    const temp = document.createElement("input");
+    temp.value = text;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand("copy");
+    document.body.removeChild(temp);
+    showToast('Copied!');
 }
 
 /* ================= CLIENT SELECTIONS & LEADS ================= */
@@ -1074,17 +1192,6 @@ async function loadClientSelections() {
    $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center">Loading selections...</td></tr>`;
    
    try {
-       // Using the generic 'api' function which handles headers/token
-       // But 'get_selections' is part of our main Lambda, so we call the endpoint directly with payload wrapper
-       // Actually 'api' function assumes certain paths. Let's use it but point to client-api endpoint if needed, 
-       // OR if this is an admin action, we use the standard path but with new payload.
-       // Based on Lambda code, 'get_selections' is available. 
-       // We'll use the '/client-api' path because that's where the updated lambda handler is likely exposed 
-       // or if it's the main handler, any path routed to it works. 
-       // Let's assume standard path '/get-selections' doesn't exist in API Gateway yet, 
-       // so we might need to use '/client-api' or simply POST to the main endpoint with action.
-       // For safety, let's use the '/client-api' endpoint as we did for the gallery view.
-       
        const res = await fetch(`${API_BASE}/client-api`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },

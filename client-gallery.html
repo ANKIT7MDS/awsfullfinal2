@@ -96,6 +96,8 @@
             z-index: 2;
             text-align: center;
             padding-bottom: 30px;
+            width: 100%;
+            padding-inline: 20px;
         }
         .brand-logo {
             width: 80px; height: 80px;
@@ -111,23 +113,27 @@
         .filter-bar {
             position: sticky;
             top: 0;
-            background: rgba(5,5,5,0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(5,5,5,0.85);
+            backdrop-filter: blur(15px);
             z-index: 100;
-            padding: 15px;
+            padding: 12px;
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
             border-bottom: 1px solid var(--border);
+            overflow-x: auto;
         }
         .chip {
             padding: 8px 16px;
             border-radius: 50px;
             background: var(--panel);
             border: 1px solid var(--border);
-            font-size: 13px;
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
             transition: 0.2s;
+            white-space: nowrap;
+            color: var(--text-muted);
         }
         .chip.active { background: var(--primary); color: #000; border-color: var(--primary); }
 
@@ -149,44 +155,46 @@
         }
         .ph-card img {
             width: 100%; height: 100%; object-fit: cover;
-            transition: 0.3s;
+            transition: transform 0.4s ease;
         }
+        .ph-card:hover img { transform: scale(1.05); }
+
         .ph-actions {
             position: absolute;
-            top: 10px; right: 10px;
-            display: flex; flex-direction: column; gap: 8px;
-            opacity: 0.8;
+            top: 8px; right: 8px;
+            display: flex; flex-direction: column; gap: 6px;
         }
         .action-dot {
-            width: 34px; height: 34px;
+            width: 30px; height: 30px;
             border-radius: 50%;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.5);
             display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 14px;
+            color: #fff; font-size: 12px;
             backdrop-filter: blur(4px);
         }
-        .action-dot.selected { color: var(--primary); }
-        .action-dot.fav { color: #ff4081; }
+        .action-dot.selected { color: var(--primary); background: rgba(0, 230, 118, 0.2); border: 1px solid var(--primary); }
+        .action-dot.fav { color: #ff4081; background: rgba(255, 64, 129, 0.2); border: 1px solid #ff4081; }
 
         /* FOOTER / SUBMIT BAR */
         .submit-bar {
             position: fixed;
-            bottom: 20px; left: 50%;
+            bottom: 24px; left: 50%;
             transform: translateX(-50%);
             background: var(--primary);
             color: #000;
-            padding: 12px 24px;
+            padding: 14px 28px;
             border-radius: 50px;
             display: flex;
             align-items: center;
-            gap: 15px;
-            font-weight: 700;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            gap: 12px;
+            font-weight: 800;
+            box-shadow: 0 15px 35px rgba(0, 230, 118, 0.3);
             z-index: 1000;
             cursor: pointer;
             visibility: hidden;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .submit-bar.show { visibility: visible; animation: slideUp 0.3s ease; }
+        .submit-bar.show { visibility: visible; bottom: 30px; }
 
         /* LIGHTBOX */
         #lightbox {
@@ -196,33 +204,64 @@
             display: none;
             flex-direction: column;
         }
-        .lb-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .lb-content { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .lb-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .lb-header { 
+            padding: 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+            position: absolute; top: 0; width: 100%; z-index: 10;
+        }
+        .lb-content { 
+            flex: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative;
+        }
+        .lb-img { 
+            max-width: 100%; 
+            max-height: 100%; 
+            object-fit: contain; 
+            transition: opacity 0.2s;
+        }
+        .lb-nav {
+            position: absolute;
+            top: 50%; transform: translateY(-50%);
+            width: 50px; height: 50px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.1);
+            color: #fff; border-radius: 50%;
+            cursor: pointer; z-index: 5;
+        }
+        .lb-nav.prev { left: 20px; }
+        .lb-nav.next { right: 20px; }
+
         .lb-footer {
-            padding: 30px;
+            padding: 20px 20px 40px;
             display: flex;
             justify-content: center;
-            gap: 40px;
+            gap: 50px;
             background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            position: absolute; bottom: 0; width: 100%;
         }
         .lb-btn {
             display: flex; flex-direction: column; align-items: center; gap: 8px;
-            color: var(--text-muted); cursor: pointer; font-size: 12px;
+            color: var(--text-muted); cursor: pointer; font-size: 11px;
+            transition: 0.2s;
         }
-        .lb-btn i { font-size: 24px; }
-        .lb-btn.active-sel { color: var(--primary); }
-        .lb-btn.active-fav { color: #ff4081; }
+        .lb-btn i { font-size: 26px; }
+        .lb-btn.active-sel { color: var(--primary); text-shadow: 0 0 10px rgba(0, 230, 118, 0.4); }
+        .lb-btn.active-fav { color: #ff4081; text-shadow: 0 0 10px rgba(255, 64, 129, 0.4); }
 
         /* TOAST */
         #toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #222; color: #fff; padding: 12px 24px;
-            border-radius: 12px; border: 1px solid var(--border);
-            z-index: 9999; display: none;
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            background: #1c1c1e; color: #fff; padding: 12px 24px;
+            border-radius: 50px; border: 1px solid var(--border);
+            z-index: 9999; display: none; font-size: 13px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
-
-        @keyframes slideUp { from { bottom: -50px; } to { bottom: 20px; } }
     </style>
 </head>
 <body>
@@ -234,7 +273,7 @@
         <div class="login-card">
             <h1>Welcome</h1>
             <p>Kripya photographer dwara diya gaya PIN enter karein gallery dekhne ke liye.</p>
-            <input type="tel" id="pinInput" class="pin-input" maxlength="6" placeholder="••••">
+            <input type="tel" id="pinInput" class="pin-input" maxlength="6" placeholder="••••" autocomplete="off">
             <button class="btn-open" onclick="accessGallery()">Unlock Gallery</button>
         </div>
     </div>
@@ -267,17 +306,21 @@
     <!-- 3. LIGHTBOX SECTION -->
     <div id="lightbox">
         <div class="lb-header">
-            <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:24px;"><i class="fa-solid fa-xmark"></i></button>
-            <div id="lbCounter" style="font-size: 14px;">1 / 100</div>
+            <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <div id="lbCounter" style="font-size: 13px; font-weight: 600; letter-spacing: 1px;">1 / 0</div>
             <div style="width: 24px;"></div>
         </div>
-        <div class="lb-content">
+        
+        <div class="lb-content" id="lbContent">
+            <div class="lb-nav prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></div>
             <img src="" id="lbImg" class="lb-img">
+            <div class="lb-nav next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
+
         <div class="lb-footer">
             <div class="lb-btn" id="lbBtnSel" onclick="toggleChoice('selected')">
                 <i class="fa-solid fa-circle-check"></i>
-                <span>Select for Album</span>
+                <span>Album Select</span>
             </div>
             <div class="lb-btn" id="lbBtnFav" onclick="toggleChoice('fav')">
                 <i class="fa-solid fa-heart"></i>
@@ -292,6 +335,7 @@
         const linkId = params.get('id') || params.get('linkId');
         
         let allPhotos = [];
+        let filteredPhotos = [];
         let selections = {}; 
         let currentFilter = 'all';
         let currentIdx = 0;
@@ -299,20 +343,25 @@
         // 1. ACCESS GALLERY
         async function accessGallery() {
             const pin = document.getElementById('pinInput').value;
-            if(!pin) return showToast("PIN enter karein");
+            if(!pin) return showToast("PIN enter karein", "error");
 
-            showToast("Opening Gallery...", "info");
+            showToast("Unlocking...", "info");
 
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // FIXED: Changed action to 'get-details' which is standard for EventLens initial fetch
-                    body: JSON.stringify({ action: "get-details", linkId, pin })
+                    // FIXED: Action changed to 'get-link-details' as standard for Link-based clones
+                    body: JSON.stringify({ 
+                        action: "get-link-details", 
+                        linkId: linkId, 
+                        id: linkId, 
+                        pin: pin 
+                    })
                 });
 
                 const data = await res.json();
-                if(!res.ok) throw new Error(data.message || "Invalid PIN or Link");
+                if(!res.ok) throw new Error(data.message || "Invalid PIN or Expired Link");
 
                 initGallery(data);
             } catch (err) {
@@ -322,21 +371,24 @@
 
         // 2. INITIALIZE GALLERY
         function initGallery(data) {
-            // Handle different potential response structures
-            allPhotos = data.photos || data.items || [];
+            // Handle multiple response variants
+            allPhotos = data.photos || data.items || data.Items || [];
             const branding = data.branding || {};
 
             // Apply Branding
             if(branding.color) document.documentElement.style.setProperty('--primary', branding.color);
-            document.getElementById('brandTitle').textContent = data.collection_name || data.name || "Your Event";
+            document.getElementById('brandTitle').textContent = data.collection_name || data.name || "Event Gallery";
             document.getElementById('welcomeMsg').textContent = branding.welcome_msg || "";
+            
             if(branding.logo) document.getElementById('brandLogo').src = branding.logo;
-            if(branding.header_img) document.getElementById('heroBanner').style.backgroundImage = `url('${branding.header_img}')`;
+            if(branding.header_img) {
+                document.getElementById('heroBanner').style.backgroundImage = `url('${branding.header_img}')`;
+            }
 
-            // Load Previous Selections if any
+            // Selections logic
             selections = data.existing_selections || data.selections || {};
-
-            renderGrid();
+            
+            filterGallery('all', document.querySelector('.chip')); // First render
             updateCounters();
 
             document.getElementById('authView').style.display = 'none';
@@ -348,7 +400,7 @@
             const grid = document.getElementById('photoGrid');
             grid.innerHTML = '';
 
-            const filtered = allPhotos.filter(p => {
+            filteredPhotos = allPhotos.filter(p => {
                 if(currentFilter === 'all') return true;
                 const s = selections[p.photo_id] || {};
                 if(currentFilter === 'selected') return s.selected;
@@ -356,11 +408,14 @@
                 return true;
             });
 
-            if(filtered.length === 0) {
-                grid.innerHTML = `<div style="grid-column: 1/-1; padding: 50px; color: var(--text-muted);">No photos found.</div>`;
+            if(filteredPhotos.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; padding: 80px 20px; text-align:center; color: var(--text-muted);">
+                    <i class="fa-regular fa-image" style="font-size: 40px; display:block; margin-bottom:15px; opacity:0.3;"></i>
+                    No photos found in this view.
+                </div>`;
             }
 
-            filtered.forEach((p, idx) => {
+            filteredPhotos.forEach((p, idx) => {
                 const s = selections[p.photo_id] || {};
                 const card = document.createElement('div');
                 card.className = 'ph-card';
@@ -369,7 +424,7 @@
                 card.innerHTML = `
                     <img src="${p.thumbnail_url || p.url}" loading="lazy">
                     <div class="ph-actions">
-                        ${s.selected ? '<div class="action-dot selected"><i class="fa-solid fa-circle-check"></i></div>' : ''}
+                        ${s.selected ? '<div class="action-dot selected"><i class="fa-solid fa-check"></i></div>' : ''}
                         ${s.fav ? '<div class="action-dot fav"><i class="fa-solid fa-heart"></i></div>' : ''}
                     </div>
                 `;
@@ -417,7 +472,7 @@
             document.getElementById('countFav').textContent = fCount;
 
             const sBar = document.getElementById('submitBar');
-            if(sCount > 0 || fCount > 0) sBar.classList.add('show');
+            if(sCount > 0) sBar.classList.add('show');
             else sBar.classList.remove('show');
         }
 
@@ -432,9 +487,15 @@
         function openLightbox(idx) {
             currentIdx = idx;
             const photo = allPhotos[idx];
-            document.getElementById('lbImg').src = photo.url;
+            const img = document.getElementById('lbImg');
+            
+            img.style.opacity = '0';
+            img.src = photo.url;
+            img.onload = () => img.style.opacity = '1';
+            
             document.getElementById('lbCounter').textContent = `${idx + 1} / ${allPhotos.length}`;
             updateLightboxUI();
+            
             document.getElementById('lightbox').style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
@@ -442,6 +503,13 @@
         function closeLightbox() {
             document.getElementById('lightbox').style.display = 'none';
             document.body.style.overflow = 'auto';
+        }
+
+        function navLightbox(dir) {
+            currentIdx += dir;
+            if(currentIdx < 0) currentIdx = allPhotos.length - 1;
+            if(currentIdx >= allPhotos.length) currentIdx = 0;
+            openLightbox(currentIdx);
         }
 
         function updateLightboxUI() {
@@ -455,27 +523,44 @@
             if(s.fav) btnFav.classList.add('active-fav'); else btnFav.classList.remove('active-fav');
         }
 
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if(document.getElementById('lightbox').style.display === 'flex') {
+                if(e.key === 'ArrowRight') navLightbox(1);
+                if(e.key === 'ArrowLeft') navLightbox(-1);
+                if(e.key === 'Escape') closeLightbox();
+            }
+        });
+
+        // Swipe support basic
+        let touchStartX = 0;
+        document.getElementById('lbContent').addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+        document.getElementById('lbContent').addEventListener('touchend', e => {
+            const diff = touchStartX - e.changedTouches[0].screenX;
+            if(Math.abs(diff) > 50) navLightbox(diff > 0 ? 1 : -1);
+        });
+
         // 6. FINAL SUBMISSION
         async function submitSelections() {
-            if(!confirm("Kya aap apni selections photographer ko bhejna chahte hain?")) return;
+            const sCount = document.getElementById('countSel').textContent;
+            if(!confirm(`Aapne ${sCount} photos select kiye hain. Kya aap inhe photographer ko bhejna chahte hain?`)) return;
             
-            showToast("Submitting...", "info");
+            showToast("Submitting your selection...", "info");
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // FIXED: Action changed to submit-selections
                     body: JSON.stringify({ action: "submit-selections", linkId })
                 });
 
                 if(res.ok) {
-                    showToast("Selections safalta purvak bhej di gayi hain!", "success");
-                    document.getElementById('submitBar').style.display = 'none';
+                    showToast("Selections bhej di gayi hain!", "success");
+                    document.getElementById('submitBar').classList.remove('show');
                 } else {
                     const err = await res.json();
-                    showToast(err.message || "Submission failed", "error");
+                    showToast(err.message || "Submit nahi ho paya", "error");
                 }
-            } catch(e) { showToast("Network error during submission", "error"); }
+            } catch(e) { showToast("Network error", "error"); }
         }
 
         // UTILS
@@ -483,7 +568,7 @@
             const t = document.getElementById('toast');
             t.textContent = msg;
             t.style.display = 'block';
-            t.style.background = type === 'error' ? '#f44336' : (type === 'info' ? '#2196f3' : '#222');
+            t.style.borderColor = type === 'error' ? '#f44336' : (type === 'info' ? '#2196f3' : 'var(--primary)');
             setTimeout(() => t.style.display = 'none', 3000);
         }
     </script>

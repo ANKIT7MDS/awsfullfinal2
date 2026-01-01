@@ -61,6 +61,7 @@
     .welcome-text {
         font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.9); margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase;
         display: none; 
+        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
     }
     .brand-title { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin: 0; }
     
@@ -107,8 +108,8 @@
 
 <header id="pageHeader">
     <div class="header-overlay">
-        <!-- Safe SVG Fallback for Logo -->
-        <img id="pageLogo" class="brand-logo" alt="Logo" crossorigin="anonymous" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'40\' fill=\'%23333\' stroke=\'%2300e676\' stroke-width=\'4\'/%3E%3Ctext x=\'50\' y=\'50\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23fff\' font-family=\'sans-serif\' font-size=\'14\'%3ELOGO%3C/text%3E%3C/svg%3E'">
+        <!-- Removed 'crossorigin' to prevent ORB/CORS blocks on S3 images -->
+        <img id="pageLogo" class="brand-logo" alt="Logo" onerror="this.style.display='none'">
         <div id="welcomeText" class="welcome-text"></div>
         <h1 class="brand-title" id="pageTitle">EventLens Gallery</h1>
     </div>
@@ -194,15 +195,21 @@
         
         // --- SAFE HEADER IMAGE LOADING ---
         if(data.header_img) {
-            // Preload to check if valid, else use fallback
             const img = new Image();
-            img.onload = () => { document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`; };
-            img.onerror = () => { console.warn("Header image failed to load"); }; // Keep default or black
+            // Important: Do NOT set crossOrigin if S3 CORS is not configured
+            img.onload = () => { 
+                document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`; 
+            };
+            img.onerror = () => { 
+                console.warn("Header image failed to load - check S3 CORS or URL"); 
+            }; 
             img.src = data.header_img; 
         }
         
         if(data.logo) {
             const logo = document.getElementById('pageLogo');
+            // Remove any CORS attribute to allow loading opaque response
+            logo.removeAttribute('crossorigin');
             logo.src = data.logo;
             logo.style.display = 'block';
         }
@@ -292,7 +299,7 @@
         document.getElementById('resultsTitle').classList.remove('hidden');
         document.getElementById('matchCount').innerText = `(${photos.length})`;
         document.getElementById('galleryGrid').innerHTML = photos.map(p => `
-            <div class="photo-item" onclick="openViewer('${p.url}')"><img src="${p.url}" loading="lazy" crossorigin="anonymous"></div>
+            <div class="photo-item" onclick="openViewer('${p.url}')"><img src="${p.url}" loading="lazy"></div>
         `).join('');
     }
 

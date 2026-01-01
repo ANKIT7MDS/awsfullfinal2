@@ -310,7 +310,7 @@
           <button class="btn primary" onclick="generateLink()" style="height: 46px;">Generate Link</button>
         </div>
 
-        <!-- Result Box for Guest Link -->
+        <!-- Corrected Result Box UI -->
         <div id="linkRes" class="hidden" style="margin-top: 24px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
            <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">SHAREABLE GUEST LINK</div>
            <div class="row" style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -331,7 +331,7 @@
           <button class="btn primary" onclick="generateClientLink()" style="height: 46px;">Create Client Link</button>
         </div>
 
-         <!-- Result Box for Client Link -->
+         <!-- Corrected Client Link Result Box UI -->
          <div id="clientLinkRes" class="hidden" style="margin-top: 24px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
            <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">CLIENT SELECTION LINK</div>
            <div class="row" style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -354,12 +354,12 @@
             <div class="sel-summary">
                 <div class="sel-box"><div class="sel-val" id="sumSel">0</div><div class="sel-label">Selected</div></div>
                 <div class="sel-box"><div class="sel-val" id="sumFav">0</div><div class="sel-label">Favorites</div></div>
-                <div class="sel-box" style="border-color:var(--primary-dim);"><div class="sel-val" style="color:var(--primary)" id="sumDel">0</div><div class="sel-label">Delete Req</div></div>
+                <div class="sel-box" style="border-color:var(--primary-dim);"><div class="sel-val" style="color:var(--primary)" id="sumDel">0</div><div class="sel-label">Total Actions</div></div>
             </div>
             
             <div class="table-responsive">
                <table class="styled-table">
-                   <thead><tr><th>Photo ID</th><th>Status</th><th>Actions</th></tr></thead>
+                   <thead><tr><th>Photo ID</th><th>Status</th><th>Updated At</th></tr></thead>
                    <tbody id="tblSelections"><tr><td colspan="3" align="center" class="text-muted">No client activity yet.</td></tr></tbody>
                </table>
             </div>
@@ -593,8 +593,14 @@ async function api(path, body){
     method: 'POST', 
     headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' }
   };
-  if(path.includes('account-status') || path.includes('get-collections') || path.includes('get-branding')) opts.method = 'GET';
-  if(body) { opts.method = 'POST'; opts.body = JSON.stringify(body); } 
+  // Using POST for client-api actions, GET for others based on path
+  if(path.includes('client-api')) opts.method = 'POST';
+  else if(path.includes('account-status') || path.includes('get-collections') || path.includes('get-branding')) opts.method = 'GET';
+  
+  if(body) { 
+      opts.method = 'POST'; 
+      opts.body = JSON.stringify(body); 
+  } 
 
   const r = await fetch(`${API_BASE}${path}`, opts);
   if(!r.ok) throw new Error(`API Error ${r.status}`);
@@ -647,7 +653,7 @@ async function loadDashboard(){
     // Store globally for indexed access
     allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
-    // ✅ FIX: Calculate Real Totals from All Events
+    // Calculate Real Totals from All Events
     let realTotalPhotos = 0;
     let realTotalStorage = 0;
     
@@ -1061,8 +1067,76 @@ function copyClientLink(){
 }
 
 /* ================= CLIENT SELECTIONS & LEADS ================= */
+// UPDATED: Now calling the Lambda 'get_selections' action
 async function loadClientSelections() {
-   $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center" class="text-muted">Waiting for client activity...</td></tr>`;
+   if(!curCol) return;
+   
+   $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center">Loading selections...</td></tr>`;
+   
+   try {
+       // Using the generic 'api' function which handles headers/token
+       // But 'get_selections' is part of our main Lambda, so we call the endpoint directly with payload wrapper
+       // Actually 'api' function assumes certain paths. Let's use it but point to client-api endpoint if needed, 
+       // OR if this is an admin action, we use the standard path but with new payload.
+       // Based on Lambda code, 'get_selections' is available. 
+       // We'll use the '/client-api' path because that's where the updated lambda handler is likely exposed 
+       // or if it's the main handler, any path routed to it works. 
+       // Let's assume standard path '/get-selections' doesn't exist in API Gateway yet, 
+       // so we might need to use '/client-api' or simply POST to the main endpoint with action.
+       // For safety, let's use the '/client-api' endpoint as we did for the gallery view.
+       
+       const res = await fetch(`${API_BASE}/client-api`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+           body: JSON.stringify({ 
+               action: "get_selections", 
+               payload: { collection_id: curCol.collection_id } 
+           })
+       });
+       
+       const data = await res.json();
+       const selections = data.selections || [];
+       
+       if(selections.length === 0) {
+           $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center" class="text-muted">No photos selected yet.</td></tr>`;
+           $('#sumSel').textContent = 0;
+           $('#sumFav').textContent = 0;
+           $('#sumDel').textContent = 0;
+           return;
+       }
+       
+       // Calculate Summary
+       let totalSel = 0;
+       let totalFav = 0;
+       
+       const rows = selections.map(s => {
+           if(s.status.selected) totalSel++;
+           if(s.status.fav) totalFav++;
+           
+           const badges = [];
+           if(s.status.selected) badges.push(`<span class="tag-pill" style="background:rgba(0,230,118,0.2); color:#00e676;">Selected</span>`);
+           if(s.status.fav) badges.push(`<span class="tag-pill" style="background:rgba(255,64,129,0.2); color:#ff4081;">Favorite</span>`);
+           
+           const dateStr = s.updated_at ? new Date(s.updated_at * 1000).toLocaleString() : '-';
+           
+           return `
+               <tr>
+                   <td style="font-family:monospace; color:#fff;">${s.photo_id}</td>
+                   <td>${badges.join(' ')}</td>
+                   <td class="text-muted text-sm">${dateStr}</td>
+               </tr>
+           `;
+       }).join('');
+       
+       $('#tblSelections').innerHTML = rows;
+       $('#sumSel').textContent = totalSel;
+       $('#sumFav').textContent = totalFav;
+       $('#sumDel').textContent = selections.length; // Total actions count
+       
+   } catch(e) {
+       console.error(e);
+       $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center" class="text-danger">Error loading selections</td></tr>`;
+   }
 }
 
 async function loadLeads(){
@@ -1075,6 +1149,7 @@ async function loadLeads(){
         return;
     }
     
+    // Merge by Phone
     const grouped = {};
     leads.forEach(l => {
         const key = l.mobile || 'Unknown';
@@ -1146,6 +1221,7 @@ function updatePreview() {
         prevLogo.onerror = function() { this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23333' stroke='%2300e676' stroke-width='4'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23fff' font-family='sans-serif' font-size='14'%3ELOGO%3C/text%3E%3C/svg%3E"; };
     } else prevLogo.style.display = 'none';
 
+    // Sizes
     if(previewMode === 'mobile') {
         $('#prevLogo').style.width = `${$('#sizeLogoMob').value}px`;
         $('#prevLogo').style.height = `${$('#sizeLogoMob').value}px`;

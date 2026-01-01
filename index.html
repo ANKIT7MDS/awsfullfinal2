@@ -320,9 +320,25 @@
     async function performSearch(pin) {
         // FIX: Ensure we have a Collection ID before searching
         if (!cid) {
-            document.getElementById('loader').classList.add('hidden');
-            alert("Collection ID not found. Please refresh using a valid link.");
-            return;
+             if (linkId) {
+                 // Try to resolve CID from LinkID on the fly
+                 try {
+                     const res = await fetch(`${API_BASE}/get-branding?linkId=${linkId}`);
+                     if (res.ok) {
+                         const data = await res.json();
+                         if (data.collection_id) {
+                             cid = data.collection_id;
+                         }
+                     }
+                 } catch(e) { console.error("CID resolution failed", e); }
+             }
+             
+             // Check again
+             if (!cid) {
+                document.getElementById('loader').classList.add('hidden');
+                alert("Collection ID not found. Please refresh using a valid link.");
+                return;
+             }
         }
 
         try {

@@ -324,13 +324,13 @@
                     <div class="settings-title"><i class="fa-solid fa-image"></i> Visual Assets</div>
                     <label class="text-sm">Header Image (Banner)</label>
                     <div class="row" style="margin-bottom: 12px;">
-                       <input id="setHeadImg" placeholder="Image URL" oninput="updatePreview()">
+                       <input id="setHeadImg" placeholder="Image URL" oninput="manualUpdate('setHeadImg')">
                        <input type="file" id="fileHeadImg" hidden onchange="uploadAsset(this, 'setHeadImg')">
                        <button class="btn secondary" onclick="$('#fileHeadImg').click()">Upload</button>
                     </div>
                     <label class="text-sm">Logo</label>
                     <div class="row">
-                       <input id="setLogo" placeholder="Logo URL" oninput="updatePreview()">
+                       <input id="setLogo" placeholder="Logo URL" oninput="manualUpdate('setLogo')">
                        <input type="file" id="fileLogo" hidden onchange="uploadAsset(this, 'setLogo')">
                        <button class="btn secondary" onclick="$('#fileLogo').click()">Upload</button>
                     </div>
@@ -411,7 +411,8 @@
                 </div>
 
                 <div id="previewFrame" class="preview-frame mobile">
-                    <div id="prevHeader" class="prev-header" style="background-image: url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2069');">
+                    <!-- Default SVG fallback for Header -->
+                    <div id="prevHeader" class="prev-header" style="background-image: url('data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'400\' viewBox=\'0 0 800 400\'%3E%3Crect width=\'800\' height=\'400\' fill=\'%23333\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' fill=\'%23555\' font-size=\'24\' font-family=\'sans-serif\'%3EBanner Image%3C/text%3E%3C/svg%3E');">
                         <div class="prev-overlay">
                             <!-- Safe SVG Placeholder -->
                             <img id="prevLogo" class="prev-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%23333' stroke='%2300e676' stroke-width='4'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23fff' font-family='sans-serif' font-size='14'%3ELOGO%3C/text%3E%3C/svg%3E">
@@ -653,7 +654,9 @@ async function openCol(index){
 
 /* ================= EVENT MANAGEMENT ================= */
 async function loadEvents(){
-  if(!curCol) return;
+  // SAFETY CHECK: Prevent empty calls causing 400
+  if(!curCol || !curCol.collection_id) return;
+  
   try {
       const data = await api('/get-events', { collection_id: curCol.collection_id });
       curEvents = data.events || [];
@@ -724,7 +727,9 @@ async function updateEvent(){
 /* ================= GALLERY & LIGHTBOX ================= */
 let photosNext = null;
 async function loadPhotos(reset=false, loadMore=false){
-  if(!curCol) return;
+  // SAFETY CHECK: Prevent empty calls causing 400
+  if(!curCol || !curCol.collection_id) return;
+  
   if(reset) photosNext = null;
   
   const eid = $('#galEventFilter').value;
@@ -1067,13 +1072,18 @@ function updatePreview() {
     $('#prevWelcome').textContent = $('#setWelcome').value || '';
     
     // Images
-    const headImg = $('#setHeadImg').value;
-    if(headImg) $('#prevHeader').style.backgroundImage = `url('${headImg}')`;
+    const headImgInput = document.getElementById('setHeadImg');
+    const logoImgInput = document.getElementById('setLogo');
     
-    const logoImg = $('#setLogo').value;
+    // Check if we have a local preview (uploaded just now) OR a value from DB
+    const headImgSrc = headImgInput.dataset.localPreview || headImgInput.value;
+    const logoImgSrc = logoImgInput.dataset.localPreview || logoImgInput.value;
+
+    if(headImgSrc) $('#prevHeader').style.backgroundImage = `url('${headImgSrc}')`;
+    
     const prevLogo = $('#prevLogo');
-    if(logoImg) { 
-        prevLogo.src = logoImg; 
+    if(logoImgSrc) { 
+        prevLogo.src = logoImgSrc; 
         prevLogo.style.display = 'block'; 
         prevLogo.onerror = function() {
             // Fallback SVG if external image fails or is blocked
@@ -1096,6 +1106,13 @@ function updatePreview() {
         $('#prevLogo').style.height = `${logoS}px`;
         $('#prevHeader').style.height = `${banH}px`;
     }
+}
+
+// Clear local preview if user types manually
+function manualUpdate(targetId) {
+    const input = document.getElementById(targetId);
+    delete input.dataset.localPreview; // Remove local blob ref
+    updatePreview();
 }
 
 // --- SETTINGS LOGIC ---
@@ -1157,11 +1174,15 @@ async function uploadAsset(input, targetId) {
     const file = input.files[0];
     if(!file) return;
     
-    // Ensure we have an event ID to attach the upload to
+    // Create local preview immediately
+    const localUrl = URL.createObjectURL(file);
+    const targetInput = document.getElementById(targetId);
+    targetInput.dataset.localPreview = localUrl; // Store local blob ref
+    updatePreview(); // Show it
+    
     let eventIdToUse = null;
     
     if(!curEvents || curEvents.length === 0) { 
-        // Try fetching events if missing
         try {
             const data = await api('/get-events', { collection_id: curCol.collection_id });
             curEvents = data.events || [];
@@ -1171,8 +1192,6 @@ async function uploadAsset(input, targetId) {
     if(curEvents.length > 0) {
         eventIdToUse = curEvents[0].event_id;
     } else {
-        // Create a dummy/hidden system event if no events exist? 
-        // For now, blocking and asking user to create event is safer logic.
         return showToast('Please create an event first to store assets.', 'error');
     }
     
@@ -1191,9 +1210,10 @@ async function uploadAsset(input, targetId) {
             
             // Extract the clean URL (remove query params)
             const publicUrl = u.uploadURL.split('?')[0];
-            $(`#${targetId}`).value = publicUrl; 
             
-            updatePreview(); 
+            // Update the Value for Saving (but keep visual preview local until reload)
+            targetInput.value = publicUrl; 
+            
             showToast('Uploaded!');
         }
     } catch(e) { console.error(e); showToast('Upload failed', 'error'); }

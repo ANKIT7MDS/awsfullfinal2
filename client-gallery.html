@@ -195,12 +195,6 @@
         .action-dot.selected { color: var(--primary); border-color: var(--primary); }
         .action-dot.fav { color: #ff4081; border-color: #ff4081; }
 
-        /* ERROR PLACEHOLDER */
-        .ph-error {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            width: 100%; height: 100%; background: #222; color: #555;
-        }
-
         /* FOOTER / SUBMIT BAR */
         .submit-bar {
             position: fixed;
@@ -320,8 +314,8 @@
         </div>
         <div class="lb-content" id="lbContent">
             <div class="lb-nav prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></div>
-            <!-- Added referrerpolicy="no-referrer" -->
-            <img src="" id="lbImg" class="lb-img" referrerpolicy="no-referrer">
+            <!-- REMOVED referrerpolicy="no-referrer" to fix 403 -->
+            <img src="" id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
             <div class="lb-nav next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
         <div class="lb-footer">
@@ -440,9 +434,9 @@
                 const originalIndex = allPhotos.findIndex(x => x.id === p.id);
                 card.onclick = () => openLightbox(originalIndex);
                 
-                // ADDED: referrerpolicy="no-referrer" and onerror fallback
+                // REMOVED: referrerpolicy="no-referrer"
                 card.innerHTML = `
-                    <img src="${p.thumb || p.url}" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
+                    <img src="${p.thumb || p.url}" loading="lazy" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
                     <div class="ph-actions">
                         ${s.selected ? '<div class="action-dot selected"><i class="fa-solid fa-check"></i></div>' : ''}
                         ${s.fav ? '<div class="action-dot fav"><i class="fa-solid fa-heart"></i></div>' : ''}

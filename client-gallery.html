@@ -314,7 +314,7 @@
         </div>
         <div class="lb-content" id="lbContent">
             <div class="lb-nav prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></div>
-            <img src="" id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
+            <img src="" id="lbImg" class="lb-img" referrerpolicy="origin-when-cross-origin" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
             <div class="lb-nav next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
         <div class="lb-footer">
@@ -433,9 +433,12 @@
                 const originalIndex = allPhotos.findIndex(x => x.id === p.id);
                 card.onclick = () => openLightbox(originalIndex);
                 
-                // Cleanest image tag possible to avoid S3 strict blocks
+                // Cache bust for images to prevent 403 loops
+                const bust = new Date().getTime();
+                const imgSrc = (p.thumb || p.url) + ( (p.thumb || p.url).includes('?') ? '&' : '?' ) + `t=${bust}`;
+
                 card.innerHTML = `
-                    <img src="${p.thumb || p.url}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
+                    <img src="${imgSrc}" loading="lazy" decoding="async" referrerpolicy="origin-when-cross-origin" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
                     <div class="ph-actions">
                         ${s.selected ? '<div class="action-dot selected"><i class="fa-solid fa-check"></i></div>' : ''}
                         ${s.fav ? '<div class="action-dot fav"><i class="fa-solid fa-heart"></i></div>' : ''}
@@ -499,7 +502,12 @@
         function openLightbox(idx) {
             currentIdx = idx;
             const p = allPhotos[idx];
-            document.getElementById('lbImg').src = p.url;
+            
+            // Cache bust for lightbox as well
+            const bust = new Date().getTime();
+            const imgSrc = p.url + (p.url.includes('?') ? '&' : '?') + `t=${bust}`;
+
+            document.getElementById('lbImg').src = imgSrc;
             document.getElementById('lbCounter').textContent = `${idx + 1} / ${allPhotos.length}`;
             updateLightboxUI();
             document.getElementById('lightbox').style.display = 'flex';

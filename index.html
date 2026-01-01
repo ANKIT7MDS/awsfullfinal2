@@ -277,6 +277,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId') || urlParams.get('id');
     const cid = urlParams.get('cid') || urlParams.get('collection_id');
+    const eid = urlParams.get('eid') || urlParams.get('event_id');
     const urlPin = urlParams.get('pin');
 
     /* --- STATE --- */
@@ -289,15 +290,24 @@
 
     /* --- INIT --- */
     window.onload = async () => {
-        if (!cid) {
+        // Soft check for cid/linkId. If linkId exists, we can fetch cid later or backend handles it.
+        // But frontend search-faces API needs cid.
+        // If neither exists, show error.
+        if (!cid && !linkId) {
             alert("Link seems invalid. Missing Collection ID.");
             return;
         }
 
-        // Fetch Branding
+        // Fetch Branding (using either cid or linkId)
         try {
-            const res = await fetch(`${API_BASE}/get-branding?cid=${cid}`);
-            if(res.ok) applyBranding(await res.json());
+            let fetchUrl = "";
+            if (cid) fetchUrl = `${API_BASE}/get-branding?cid=${cid}`;
+            else if (linkId) fetchUrl = `${API_BASE}/get-branding?linkId=${linkId}`;
+            
+            if (fetchUrl) {
+                const res = await fetch(fetchUrl);
+                if(res.ok) applyBranding(await res.json());
+            }
         } catch(e) { console.error("Branding fetch failed", e); }
     };
 
@@ -390,15 +400,23 @@
 
     async function performSearch(pin) {
         try {
+            // Prepare payload with event_id scoping
+            const payload = { 
+                collection_id: cid, 
+                image: pendingSelfieBase64.split(',')[1],
+                min_confidence: 80,
+                pin: pin 
+            };
+            
+            // IF event ID is present in URL, send it to backend for scoping
+            if(eid) {
+                payload.event_id = eid;
+            }
+
             const res = await fetch(`${API_BASE}/search-faces`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    collection_id: cid, 
-                    image: pendingSelfieBase64.split(',')[1],
-                    min_confidence: 80,
-                    pin: pin 
-                })
+                body: JSON.stringify(payload)
             });
             
             const data = await res.json();

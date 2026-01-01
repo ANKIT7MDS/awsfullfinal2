@@ -88,11 +88,18 @@
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     .count-badge { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-left: 5px; }
     #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #222; padding: 10px 20px; border-radius: 30px; font-size: 13px; z-index: 300; display: none; border: 1px solid #333; }
+    #initialLoader { position:fixed; inset:0; background:#000; z-index:999; display:flex; align-items:center; justify-content:center; flex-direction:column; }
   </style>
 </head>
 <body>
 
 <div id="toast">Message</div>
+
+<!-- INITIAL LOADING OVERLAY -->
+<div id="initialLoader">
+  <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--accent); font-size: 40px; margin-bottom:15px;"></i>
+  <span style="color:#666; font-size:14px;">Loading Event...</span>
+</div>
 
 <!-- HEADER -->
 <header id="pageHeader">
@@ -104,7 +111,7 @@
 </header>
 
 <!-- SEARCH SECTION -->
-<div class="container" id="searchContainer">
+<div class="container hidden" id="searchContainer">
     <div class="search-card">
         <i class="fa-solid fa-face-smile-wink search-icon"></i>
         <h3>Find Your Photos</h3>
@@ -122,7 +129,7 @@
         
         <!-- PIN UI (Shows only if needed) -->
         <div id="pinArea" class="hidden" style="margin-top: 20px;">
-            <p style="color: #ff4081; font-size: 13px; margin-bottom: 10px;">🔒 Gallery Protected</p>
+            <p style="color: #ff4081; font-size: 13px; margin-bottom: 10px;">🔒 Protected Gallery</p>
             <input type="tel" id="manualPin" class="lead-input" placeholder="Enter Event PIN" style="text-align: center; letter-spacing: 4px; max-width: 200px;">
             <button class="btn-main" onclick="retrySearchWithPin()" style="padding: 10px 20px; font-size: 14px; margin-top: 10px;">Retry</button>
         </div>
@@ -192,7 +199,6 @@
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId') || urlParams.get('id');
-    // FIX: cid is now 'let' so we can update it if missing from URL
     let cid = urlParams.get('cid') || urlParams.get('collection_id');
     const eid = urlParams.get('eid'); // Scope to specific event
     const urlPin = urlParams.get('pin');
@@ -225,14 +231,20 @@
                 const res = await fetch(fetchUrl);
                 if(res.ok) {
                     const data = await res.json();
-                    applyBranding(data);
-                    // FIX: Populate cid from branding response if it was missing in URL
-                    if (!cid && data.collection_id) {
-                        cid = data.collection_id;
+                    
+                    // FIX: Set global cid from branding if missing
+                    if (!cid && (data.collection_id || data.collectionId)) {
+                        cid = data.collection_id || data.collectionId;
                     }
+                    
+                    applyBranding(data);
                 }
             }
         } catch(e) { console.error("Branding fetch failed", e); }
+        
+        // Hide initial loader and show search
+        document.getElementById('initialLoader').style.display = 'none';
+        document.getElementById('searchContainer').classList.remove('hidden');
     };
 
     /* --- BRANDING --- */
@@ -318,22 +330,19 @@
     }
 
     async function performSearch(pin) {
-        // FIX: Ensure we have a Collection ID before searching
+        // FIX: Double check CID before request. If missing, try resolving again or fail gracefully.
         if (!cid) {
              if (linkId) {
-                 // Try to resolve CID from LinkID on the fly
+                 // Try one last fetch for CID
                  try {
                      const res = await fetch(`${API_BASE}/get-branding?linkId=${linkId}`);
                      if (res.ok) {
                          const data = await res.json();
-                         if (data.collection_id) {
-                             cid = data.collection_id;
-                         }
+                         if (data.collection_id) cid = data.collection_id;
                      }
-                 } catch(e) { console.error("CID resolution failed", e); }
+                 } catch(e) {}
              }
              
-             // Check again
              if (!cid) {
                 document.getElementById('loader').classList.add('hidden');
                 alert("Collection ID not found. Please refresh using a valid link.");

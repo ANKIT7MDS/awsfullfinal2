@@ -182,8 +182,6 @@
         const inputPin = document.getElementById('entryPin').value;
         const err = document.getElementById('pinError');
         
-        // Client-side check against URL pin (if it exists) for basic gating
-        // Ideally backend validates on upload, but this is a UI gate
         if(urlPin && inputPin !== urlPin) {
             err.innerText = "Incorrect PIN";
             return;
@@ -237,12 +235,13 @@
         }
     }
 
-    async function loadEvents(collectionId) {
+    async function loadEvents(cidOverride) {
         const sel = document.getElementById('eventSelect');
+        const collectionId = cidOverride || document.getElementById('colSelect').value;
+        
+        if(!collectionId) return;
+
         try {
-            // Try fetching events without token. 
-            // If backend requires token, this might fail (401).
-            // In that case, we fall back to a manual "Default Event" or trust the URL eid
             const res = await fetch(`${API_BASE}/get-events`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -250,18 +249,30 @@
             });
             
             if(res.ok) {
-                const data = await res.json();
-                sel.innerHTML = '<option value="">Select Event...</option>' + 
-                    (data.events || []).map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+                let data = await res.json();
                 
-                // Pre-select if EID in URL
+                // Handle Lambda Proxy Response Structure
+                if(data.body && typeof data.body === 'string') {
+                    try { data = JSON.parse(data.body); } catch(e){}
+                }
+
+                const events = data.events || [];
+                
+                if(events.length > 0) {
+                    sel.innerHTML = '<option value="">Select Event...</option>' + 
+                        events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+                } else {
+                    sel.innerHTML = `<option value="default">General Upload (No Events)</option>`;
+                }
+                
                 if(eid) sel.value = eid;
             } else {
-                throw new Error("Auth required for events");
+                // Auth failure or other error
+                throw new Error("Fetch failed");
             }
         } catch(e) { 
-            console.warn("Event list fetch failed (likely auth)", e);
-            // Fallback if we can't fetch list but have EID
+            console.warn("Event list fetch failed", e);
+            // Fallback for upload to work even if list fails
             if(eid) {
                 sel.innerHTML = `<option value="${eid}" selected>Current Event</option>`;
             } else {
@@ -290,8 +301,11 @@
 
     // --- 4. UPLOAD ENGINE ---
     async function startUpload() {
-        const targetEid = document.getElementById('eventSelect').value;
-        if(!targetEid && !eid) return alert("Please select an event!");
+        let targetEid = document.getElementById('eventSelect').value;
+        if(!targetEid) return alert("Please select an event or general upload!");
+        
+        // Handle fallback "default" value - send as null to backend
+        if(targetEid === 'default') targetEid = null;
 
         document.getElementById('uploadBtn').disabled = true;
         document.getElementById('progressSection').style.display = 'block';
@@ -355,7 +369,11 @@
                     });
                     
                     if(!res.ok) throw new Error("Server rejected upload request");
-                    const data = await res.json();
+                    
+                    let data = await res.json();
+                    if(data.body && typeof data.body === 'string') {
+                        try { data = JSON.parse(data.body); } catch(e){}
+                    }
 
                     // C. Upload to S3
                     if(data.urls) {

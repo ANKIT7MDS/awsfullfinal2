@@ -310,9 +310,9 @@
             </select>
           </div>
 
-          <!-- Event Scope (Only for Guest/Staff mostly) -->
+          <!-- Event Scope -->
           <div style="flex: 2; min-width: 200px;" id="linkScopeWrapper">
-            <label class="text-sm" style="display:block; margin-bottom:6px;">Select Scope</label>
+            <label class="text-sm" style="display:block; margin-bottom:6px;" id="scopeLabel">Select Scope</label>
             <select id="linkEventSel"></select>
           </div>
 
@@ -376,7 +376,7 @@
             <div class="sel-summary">
                 <div class="sel-box"><div class="sel-val" id="sumSel">0</div><div class="sel-label">Selected</div></div>
                 <div class="sel-box"><div class="sel-val" id="sumFav">0</div><div class="sel-label">Favorites</div></div>
-                <div class="sel-box" style="border-color:var(--primary-dim);"><div class="sel-val" style="color:var(--primary)" id="sumDel">0</div><div class="sel-label">Delete Requests</div></div>
+                <div class="sel-box" style="border-color:var(--primary-dim);"><div class="sel-val" style="color:var(--primary)" id="sumDel">0</div><div class="sel-label">Total Actions</div></div>
             </div>
             
             <div class="table-responsive">
@@ -1095,6 +1095,8 @@ async function generateUnifiedLink() {
                 genUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
             } else {
                 genUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+                // Append eid for scoped guest search
+                if(eid) genUrl += `&eid=${eid}`;
             }
         }
         

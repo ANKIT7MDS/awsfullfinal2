@@ -58,6 +58,12 @@
     .sel-box { flex: 1; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #333; text-align: center; }
     .sel-val { font-size: 24px; font-weight: 700; color: #fff; }
     .sel-label { font-size: 11px; color: #888; text-transform: uppercase; }
+    
+    /* LEAD HISTORY (MERGED GUESTS) */
+    .lead-row { cursor: pointer; }
+    .lead-history { display: none; }
+    .lead-history.open { display: table-row; animation: fadeIn 0.3s; }
+    .hist-item { display: flex; align-items: center; gap: 10px; background: #222; padding: 8px; border-radius: 8px; border: 1px solid #333; margin-bottom: 5px; }
 
     /* PREVIEW CONTAINER */
     .preview-frame { border: 4px solid #333; border-radius: 16px; overflow: hidden; background: #000; margin: 0 auto; transition: all 0.3s ease; position: relative; }
@@ -511,7 +517,7 @@ const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=
 /* ================= STATE MANAGEMENT ================= */
 let idToken = localStorage.getItem('idToken');
 let curCol = null;
-let allCols = []; 
+let allCols = []; // Global Store for Collections
 let curEvents = [];
 let uploadQueue = [];
 let currentPhotos = [];
@@ -699,6 +705,7 @@ function renderCollectionList() {
         return;
     }
 
+    // Modern Card List Layout
     colList.innerHTML = allCols.map((c, i) => `
       <div class="col-card" onclick="openCol(${i})">
           <div class="col-title">${escapeHtml(c.name)}</div>

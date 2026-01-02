@@ -83,7 +83,7 @@
                 </div>
                 <div>
                     <h1 class="text-2xl font-heading font-extrabold tracking-tight leading-none">Bulk <span class="text-emerald-500">Uploader</span></h1>
-                    <p class="text-zinc-500 text-sm mt-1 flex items-center gap-2">
+                    <p class="text-zinc-500 text-sm mt-1 flex items-center gap-2 text-hindi">
                         Smart Resume & Batch Mode
                         <span id="wakeLockStatus" class="hidden text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20 items-center gap-1">
                             <i class="fa-solid fa-sun pulse-green"></i> STAY AWAKE ACTIVE
@@ -198,7 +198,7 @@
         let processedCount = 0;
         let failedCount = 0;
         let skippedCount = 0;
-        let BATCH_SIZE = 40; 
+        let BATCH_SIZE = 20; // Reduced for server stability
         let wakeLock = null;
 
         window.onload = async () => {
@@ -233,28 +233,31 @@
             }
         };
 
-        // Re-acquire lock if tab becomes visible again
         document.addEventListener('visibilitychange', async () => {
             if (wakeLock !== null && document.visibilityState === 'visible') {
                 await requestWakeLock();
             }
         });
 
-        /* ================= CORE LOGIC ================= */
-        function doLogin() { window.location.href = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
-        async function exchangeCode(code) {
-            try {
-                const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: CLIENT_ID, code, redirect_uri: REDIRECT_URI }) });
-                const data = await res.json();
-                if(data.id_token) { localStorage.setItem('idToken', data.id_token); window.location.href = REDIRECT_URI; }
-            } catch(e) { log("Login Error", "error"); }
-        }
-        function doLogout() { localStorage.clear(); window.location.reload(); }
+        /* ================= API WRAPPER WITH RETRY ================= */
+        async function api(path, method = 'GET', body = null, retries = 3) {
+            const headers = { 'Authorization': idToken, 'Content-Type': 'application/json' };
+            const opts = { method, headers };
+            if(body) opts.body = JSON.stringify(body);
 
-        async function api(path, method = 'GET', body = null) {
-            const res = await fetch(`${API_BASE}${path}`, { method, headers: { 'Authorization': idToken, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : null });
-            if(!res.ok) throw new Error(await res.text());
-            return res.json();
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(`${API_BASE}${path}`, opts);
+                    if (res.status === 500) throw new Error("Internal Server Error");
+                    if (!res.ok) throw new Error(await res.text());
+                    return await res.json();
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    const delay = Math.pow(2, i) * 1000;
+                    log(`API Error: Retrying batch in ${delay/1000}s...`, "error");
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            }
         }
 
         async function loadCollections() {
@@ -286,7 +289,7 @@
             failedCount = 0;
             skippedCount = 0;
             
-            document.getElementById('statsText').innerText = `${validFiles.length} files selected. Ready to process.`;
+            document.getElementById('statsText').innerText = `${validFiles.length} files selected. Ready.`;
             document.getElementById('progressBox').classList.remove('hidden');
             document.getElementById('btnStart').disabled = false;
             document.getElementById('btnPause').classList.add('hidden');
@@ -317,26 +320,27 @@
             document.getElementById('btnPause').disabled = false;
             document.getElementById('uploadTitle').innerText = "Processing Photos...";
 
-            // Prevent sleep during bulk process
             await requestWakeLock();
 
             for (let i = currentBatchIndex; i < uploadQueue.length; i += BATCH_SIZE) {
                 if(isPaused || !isUploading) {
                     currentBatchIndex = i;
-                    log(`Upload paused at index: ${i}`);
+                    log(`Paused at index: ${i}`);
                     return; 
                 }
                 const batch = uploadQueue.slice(i, i + BATCH_SIZE);
                 await processBatch(batch, cid, eid);
                 currentBatchIndex = i + BATCH_SIZE;
+                
+                // 1s Breath delay between batches
+                await new Promise(r => setTimeout(r, 1000));
             }
 
             isUploading = false;
             releaseWakeLock();
             document.getElementById('btnPause').classList.add('hidden');
             document.getElementById('uploadTitle').innerText = "Bulk Upload Complete";
-            showToast("Sari photos upload ho gayi hain.");
-            log("Bulk process successfully finished.", "success");
+            showToast("Upload Finished.");
         }
 
         async function processBatch(files, cid, eid) {
@@ -355,6 +359,7 @@
             }
 
             try {
+                // api function handles retries internally now
                 const res = await api('/generate-upload-urls', 'POST', { 
                     collection_id: cid, 
                     event_id: eid, 
@@ -365,7 +370,7 @@
                 const skippedBatch = fileMetas.filter(m => !urls.find(u => u.hash === m.hash));
                 skippedCount += skippedBatch.length;
                 
-                if(skippedBatch.length > 0) log(`Skipped ${skippedBatch.length} existing photos.`);
+                if(skippedBatch.length > 0) log(`Skipped ${skippedBatch.length} existing files.`);
 
                 await Promise.all(urls.map(async u => {
                     const meta = fileMetas.find(m => m.hash === u.hash);
@@ -381,7 +386,7 @@
                     updateUIProgress();
                 }));
             } catch(e) { 
-                log(`Batch error: ${e.message}`, "error");
+                log(`Critical Batch Error: ${e.message}`, "error");
                 failedCount += files.length; 
                 updateUIProgress(); 
             }
@@ -420,7 +425,9 @@
             document.getElementById(id).classList.remove('hidden');
         }
 
-        function showToast(msg, type = 'success') {
+        function doLogin() { window.location.href = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
+
+        function showToast(msg) {
             const t = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
             t.classList.remove('hidden', 'translate-x-full');

@@ -217,7 +217,7 @@
             <i class="fa-solid fa-camera" style="font-size:36px; color:#555;"></i>
             <span style="font-size:12px; color:#666; font-weight:700; margin-top:8px;">UPLOAD</span>
         </div>
-        <input type="file" id="fileIn" hidden accept="image/*" onchange="processSelfie(this.files[0])">
+        <input type="file" id="fileIn" hidden accept="image/*" onchange="handleSelfieSelect(this.files[0])">
         
         <p id="statusText" style="font-size: 13px; color: var(--accent); height: 20px; font-weight:600;"></p>
         
@@ -372,7 +372,6 @@
             reader.readAsDataURL(file);
             reader.onload = (e) => {
                 const img = new Image();
-                img.src = e.target.result;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let w=img.width, h=img.height;
@@ -382,6 +381,7 @@
                     resolve(canvas.toDataURL('image/jpeg', 0.85));
                 };
                 img.onerror = () => reject("Image load error");
+                img.src = e.target.result;
             };
             reader.onerror = () => reject("File read error");
         });
@@ -418,26 +418,22 @@
         try {
             const imageBase64 = pendingSelfieBase64.split(',')[1];
             
-            // HYBRID PAYLOAD
+            // HYBRID PAYLOAD: Sending flat JSON to satisfy strict backend
             const payload = {
                 collection_id: cid,
                 image: imageBase64,
-                selfie_image: imageBase64, 
+                selfie_image: imageBase64, // Legacy key
                 min_confidence: 80,
                 pin: pin,
-                linkId: linkId || 'direct'
+                linkId: linkId || 'direct-search',
+                event_id: eid // Can be undefined
             };
-            if(eid) payload.event_id = eid;
 
-            // Updated: Using /client-api endpoint to hit MAIN LAMBDA
-            const res = await fetch(`${API_BASE}/client-api`, {
+            // FIX: Endpoint changed to /search (Dedicated Lambda)
+            const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: "search_faces", 
-                    ...payload, 
-                    payload: payload
-                })
+                body: JSON.stringify(payload) // Flat JSON directly
             });
 
             const data = await res.json();

@@ -375,7 +375,8 @@
                 let parsedData = data;
                 if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
 
-                const matches = parsedData.photos || parsedData.ids || [];
+                // FIXED: Look for 'matches' key which your backend returns
+                const matches = parsedData.matches || parsedData.photos || parsedData.ids || [];
                 
                 if(matches.length > 0) {
                     allMatches = matches;
@@ -385,6 +386,8 @@
                 } else {
                     document.getElementById('noResultsMsg').classList.remove('hidden');
                     document.getElementById('searchContainer').classList.add('hidden');
+                    // Ensure the container itself is visible, just in case
+                    document.getElementById('galleryContainer').classList.remove('hidden');
                 }
             } else {
                 if(res.status === 401 || res.status === 403 || (data.message && data.message.includes('PIN'))) {

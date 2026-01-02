@@ -1088,22 +1088,22 @@ async function generateUnifiedLink() {
         // Check for direct 'searchUrl' first, then fallback to 'link_id'
         let linkId = res.link_id || res.id;
         
+        // Force extract ID from searchUrl if not directly provided
         if(!linkId && res.searchUrl) {
-            // Robust extraction from searchUrl
             try {
-                // Handle different URL structures
+                // Handle different URL structures robustly
                 const url = new URL(res.searchUrl);
                 linkId = url.searchParams.get('linkId') || url.searchParams.get('id');
             } catch(e) {
-                 const match = res.searchUrl.match(/linkId=([^&]+)/);
+                 const match = res.searchUrl.match(/[?&]linkId=([^&]+)/);
                  if(match) linkId = match[1];
             }
         }
         
+        // If we still don't have an ID, we can't build a link
         if(!linkId) throw new Error("No Link ID returned");
 
-        // Construct URL based on type
-        // Force manual construction to ensure CID and EID are included properly
+        // Construct URL based on type manually to ensure all params are present
         if(type === 'client') {
             finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
         } else {
@@ -1121,6 +1121,7 @@ async function generateUnifiedLink() {
         showToast('Link Generated!');
         
     } catch(e) { 
+        console.error(e);
         showToast(e.message, 'error'); 
     }
 }

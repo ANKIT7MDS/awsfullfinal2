@@ -38,6 +38,7 @@
     .header-bg {
         position: absolute; inset: 0; background-size: cover; background-position: center;
         filter: brightness(0.5); transform: scale(1.05); transition: 0.5s;
+        background-image: none; /* Fallback */
     }
     .header-content { 
         position: relative; z-index: 2; height: 100%;
@@ -354,14 +355,14 @@
             document.documentElement.style.setProperty('--accent-glow', data.color + '66');
             document.getElementById('pageLogo').style.borderColor = data.color;
         }
+        // FIX: Directly apply background image style (No onload wait)
         if(data.header_img) {
-            const img = new Image();
-            img.onload = () => document.getElementById('headerBg').style.backgroundImage = `url('${data.header_img}')`;
-            img.src = data.header_img; 
+            document.getElementById('headerBg').style.backgroundImage = `url('${data.header_img}')`;
         }
         if(data.logo) {
-            document.getElementById('brandLogo').src = data.logo;
-            document.getElementById('brandLogo').style.display = 'block';
+            const logo = document.getElementById('brandLogo');
+            logo.src = data.logo;
+            logo.style.display = 'block';
         }
     }
 
@@ -379,8 +380,6 @@
                     if(w>800){ h*=800/w; w=800; }
                     canvas.width=w; canvas.height=h;
                     canvas.getContext('2d').drawImage(img,0,0,w,h);
-                    
-                    // FIX: Return FULL Data URL to preserve prefix for preview
                     resolve(canvas.toDataURL('image/jpeg', 0.85));
                 };
                 img.onerror = () => reject("Image load error");
@@ -418,7 +417,6 @@
         if(!cid) return alert("Collection ID Missing");
 
         try {
-            // FIX: Split only when sending to API
             const imageBase64 = pendingSelfieBase64.split(',')[1];
             
             // HYBRID PAYLOAD

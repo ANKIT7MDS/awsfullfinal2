@@ -207,6 +207,9 @@
            <button class="btn secondary" onclick="loadPhotos(true)"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
         </div>
         <div class="gallery-grid" id="galGrid"></div>
+        <div style="text-align:center; margin-top: 30px;">
+          <button class="btn secondary hidden" id="btnLoadMore" onclick="loadPhotos(false, true)">Load More Photos</button>
+        </div>
         <div class="pagination" id="galPagination"></div>
       </div>
     </div>
@@ -566,6 +569,8 @@ let leadsCurrentPage = 1;
 let leadsTotalPages = 1;
 let clientSelectionsData = []; // Store full data for client selections
 let leadsData = []; // Store full data for leads
+let photosNext = null;
+let allGalleryPhotos = []; // To store all fetched photos for full count
 
 /* ================= INITIALIZATION ================= */
 window.addEventListener('load', async () => {
@@ -660,7 +665,10 @@ async function api(path, body){
 
   try {
     const r = await fetch(`${API_BASE}${path}`, opts);
-    if(!r.ok) throw new Error(`API Error ${r.status}`);
+    if(!r.ok) {
+      const errText = await r.text();
+      throw new Error(`API Error ${r.status}: ${errText}`);
+    }
     return r.json();
   } catch (e) {
     showToast(e.message, 'error');
@@ -696,7 +704,7 @@ function setTab(id){
   
   // Only load if we have a valid collection
   if(curCol) {
-      if(id === 'tGal') loadPhotos(1); // Load first page
+      if(id === 'tGal') loadPhotos(true);
       if(id === 'tLeads') loadLeads();
       if(id === 'tClient') loadClientSelections();
       if(id === 'tLink') renderLinkHistory(1); // Load first page
@@ -901,28 +909,47 @@ async function updateEvent(){
 }
 
 /* ================= GALLERY & LIGHTBOX ================= */
-async function loadPhotos(page = 1){
+let photosNext = null;
+async function loadPhotos(reset=false, loadMore=false){
   if(!curCol) return;
-  galCurrentPage = page;
+  if(reset) {
+    photosNext = null;
+    allGalleryPhotos = [];
+  }
+  
   const eid = $('#galEventFilter').value;
-  const payload = { collection_id: curCol.collection_id, page: page, limit: ITEMS_PER_PAGE };
+  const payload = { collection_id: curCol.collection_id };
   if(eid) payload.event_id = eid;
+  if(loadMore && photosNext) payload.next_token = photosNext;
 
   try {
-      const res = await api('/get-photos', payload); // Assume backend supports page/limit
-      currentPhotos = res.items || res.photos || []; 
-      galTotalPages = res.total_pages || Math.ceil(res.total_count / ITEMS_PER_PAGE) || 1;
+      const res = await api('/get-photos', payload);
+      const photos = res.items || res.photos || []; 
+      photosNext = res.nextToken; 
 
-      $('#galGrid').innerHTML = currentPhotos.map((p, idx) => {
+      if(reset) {
+          $('#galGrid').innerHTML = '';
+          allGalleryPhotos = photos;
+      } else {
+          allGalleryPhotos = allGalleryPhotos.concat(photos);
+      }
+      
+      currentPhotos = allGalleryPhotos; // For lightbox
+      $('#galCount').textContent = `${allGalleryPhotos.length} photos loaded` + (photosNext ? ' (more available)' : '');
+      
+      const html = photos.map((p, idx) => {
+          const globalIdx = reset ? idx : (allGalleryPhotos.length - photos.length + idx);
           const url = p.thumbnail_url || p.url;
           return `
-            <div class="ph-card" onclick="openLightbox(${idx})">
+            <div class="ph-card" onclick="openLightbox(${globalIdx})">
               <img src="${url}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.style.display='none'" alt="Gallery Photo">
             </div>
           `;
       }).join('');
-      $('#galCount').textContent = `${res.total_count || currentPhotos.length} photos`;
-      renderPagination('galPagination', galCurrentPage, galTotalPages, 'loadPhotos');
+      
+      $('#galGrid').insertAdjacentHTML('beforeend', html);
+      if(photosNext) $('#btnLoadMore').classList.remove('hidden'); else $('#btnLoadMore').classList.add('hidden');
+      renderPagination('galPagination', 0, 0, ''); // No pagination for gallery, as it's load more
   } catch(e) { showToast('Error loading photos', 'error'); }
 }
 
@@ -958,8 +985,9 @@ async function deleteCurrentPhoto() {
     try {
         await api('/delete-photo', { photo_id: p.photo_id, collection_id: curCol.collection_id });
         currentPhotos.splice(currentPhotoIndex, 1);
+        allGalleryPhotos.splice(currentPhotoIndex, 1);
         if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0); 
-        loadPhotos(galCurrentPage); showToast('Deleted');
+        loadPhotos(true); showToast('Deleted');
     } catch(e) { showToast('Error deleting photo', 'error'); }
 }
 
@@ -1004,7 +1032,7 @@ async function startUploadProcess(){
   $('#uploadQueueBox').classList.add('hidden');
   $('#btnStartUpload').disabled = false;
   $('#btnStartUpload').textContent = 'Start Upload';
-  loadPhotos(galCurrentPage);
+  loadPhotos(true);
 }
 
 async function processBatch(files, eventId){
@@ -1232,14 +1260,17 @@ async function loadClientSelections() {
    
    try {
        // 1. Ensure we have photo data for thumbnails (Use cache or fetch)
-       if (currentPhotos.length === 0) {
-           await loadPhotos(1); // Populate currentPhotos for page 1, but fetch all if needed
+       if (allGalleryPhotos.length === 0) {
+           await loadPhotos(true); // Start loading photos
+           while (photosNext) {
+               await loadPhotos(false, true); // Load all pages
+           }
        }
        // Create a quick lookup map
        const photoMap = {};
-       currentPhotos.forEach(p => photoMap[p.photo_id] = p.thumbnail_url || p.url);
+       allGalleryPhotos.forEach(p => photoMap[p.photo_id] = p.thumbnail_url || p.url);
 
-       // 2. Fetch Selections from Backend (assume backend returns all, paginate client-side)
+       // 2. Fetch Selections from Backend
        const res = await fetch(`${API_BASE}/client-api`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
@@ -1248,6 +1279,11 @@ async function loadClientSelections() {
                payload: { collection_id: curCol.collection_id } 
            })
        });
+       
+       if (!res.ok) {
+         const errText = await res.text();
+         throw new Error(`API Error ${res.status}: ${errText}`);
+       }
        
        const data = await res.json();
        clientSelectionsData = data.selections || [];
@@ -1278,8 +1314,9 @@ async function loadClientSelections() {
        renderClientSelections(clientCurrentPage);
        
    } catch(e) {
-       showToast('Error loading selections', 'error');
-       $('#tblSelections').innerHTML = `<tr><td colspan="4" align="center" class="text-danger">Error loading selections</td></tr>`;
+       showToast(e.message, 'error');
+       $('#tblSelections').innerHTML = `<tr><td colspan="4" align="center" class="text-danger">Error loading selections: Check console for details</td></tr>`;
+       console.error(e);
    }
 }
 
@@ -1293,7 +1330,7 @@ function renderClientSelections(page = 1) {
     const rows = paginatedSelections.map(s => {
            const thumbUrl = photoMap[s.photo_id] || '';
            const thumbHtml = thumbUrl 
-                ? `<div class="photo-thumb-cell" onclick="openLightbox(${currentPhotos.findIndex(p => p.photo_id === s.photo_id)})"><img src="${thumbUrl}" alt="Selected Photo"></div>`
+                ? `<div class="photo-thumb-cell" onclick="openLightbox(${allGalleryPhotos.findIndex(p => p.photo_id === s.photo_id)})"><img src="${thumbUrl}" alt="Selected Photo"></div>`
                 : `<div class="photo-thumb-cell" style="background:#222;display:flex;align-items:center;justify-content:center;color:#555;">No Img</div>`;
 
            const badges = [];
@@ -1345,8 +1382,9 @@ async function loadLeads(){
     leadsData = Object.values(grouped).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
     renderLeads(leadsCurrentPage);
   } catch(e) { 
-    showToast('Error loading leads', 'error');
-    $('#tblLeads').innerHTML = `<tr><td colspan="4">Error loading</td></tr>`; 
+    showToast(e.message, 'error');
+    $('#tblLeads').innerHTML = `<tr><td colspan="4">Error loading: Check console</td></tr>`; 
+    console.error(e);
   }
 }
 

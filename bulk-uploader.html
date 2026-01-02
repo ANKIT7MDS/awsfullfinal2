@@ -204,7 +204,7 @@
         let processedCount = 0;
         let failedCount = 0;
         let skippedCount = 0;
-        let BATCH_SIZE = 20; 
+        let BATCH_SIZE = 10; // FURTHER REDUCED to fix Internal Server Errors
         let wakeLock = null;
 
         window.onload = async () => {
@@ -245,8 +245,8 @@
             }
         });
 
-        /* ================= API WRAPPER WITH RETRY ================= */
-        async function api(path, method = 'GET', body = null, retries = 3) {
+        /* ================= API WRAPPER WITH ENHANCED RETRY ================= */
+        async function api(path, method = 'GET', body = null, retries = 5) {
             const headers = { 'Authorization': idToken, 'Content-Type': 'application/json' };
             const opts = { method, headers };
             if(body) opts.body = JSON.stringify(body);
@@ -254,13 +254,13 @@
             for (let i = 0; i < retries; i++) {
                 try {
                     const res = await fetch(`${API_BASE}${path}`, opts);
-                    if (res.status === 500) throw new Error("Internal Server Error");
+                    if (res.status === 500) throw new Error("Internal Server Error (Lambda Overload)");
                     if (!res.ok) throw new Error(await res.text());
                     return await res.json();
                 } catch (err) {
                     if (i === retries - 1) throw err;
                     const delay = Math.pow(2, i) * 1000;
-                    log(`API Connectivity Issue: Retrying in ${delay/1000}s...`, "error");
+                    log(`API Issue: Retrying Lambda [Attempt ${i+1}/5] in ${delay/1000}s...`, "error");
                     await new Promise(r => setTimeout(r, delay));
                 }
             }
@@ -278,7 +278,7 @@
             const cid = document.getElementById('colSelect').value;
             if(!cid) return;
             try {
-                log(`Fetching events for Collection ID: ${cid.substring(0,8)}...`);
+                log(`Fetching event configuration for CID: ${cid.substring(0,8)}...`);
                 const data = await api('/get-events', 'POST', { collection_id: cid });
                 const events = data.events || data.Items || [];
                 document.getElementById('evSelect').innerHTML = '<option value="">Select Event</option>' + events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
@@ -289,7 +289,7 @@
             if(isUploading) return;
             const validFiles = Array.from(files).filter(f => f.name.match(/\.(jpg|jpeg|png|heic)$/i));
             if(validFiles.length === 0) {
-                log("RED ALERT: No valid image files (JPG/PNG/HEIC) found in selection!", "error");
+                log("RED ALERT: Selected folder contains no valid image files!", "error");
                 return;
             }
             
@@ -304,18 +304,18 @@
             document.getElementById('btnStart').disabled = false;
             document.getElementById('btnPause').classList.add('hidden');
             updateUIProgress();
-            log(`Queue initialized: ${validFiles.length} photos found. Waiting for Start Upload...`);
+            log(`Queue ready with ${validFiles.length} images. Click Start Upload to begin task.`);
         }
 
         function togglePause() {
             isPaused = !isPaused;
             document.getElementById('btnPause').innerHTML = isPaused ? '<i class="fa-solid fa-play"></i> Resume' : '<i class="fa-solid fa-pause"></i> Pause';
             if(!isPaused) {
-                log("Manual Resume: Continuing bulk process...");
+                log("Action: Resuming bulk process...");
                 requestWakeLock();
                 startUpload();
             } else {
-                log("Manual Pause: System standby.");
+                log("Action: Bulk process paused by user.");
                 releaseWakeLock();
             }
         }
@@ -325,7 +325,7 @@
             const eid = document.getElementById('evSelect').value;
             
             if(!cid || !eid) {
-                log("RED ALERT: Target Collection or Event ID is missing. Please select both!", "error");
+                log("RED ALERT: Target Collection or Event not selected!", "error");
                 showToast("Select Collection & Event!", "error");
                 return;
             }
@@ -339,7 +339,7 @@
 
             await requestWakeLock();
 
-            log(`TASK START: Bulk Processing ${uploadQueue.length} files in batches of ${BATCH_SIZE}.`, "success");
+            log(`TASK INITIALIZED: Processing ${uploadQueue.length} files in high-stability mode (Batch: ${BATCH_SIZE}).`, "success");
 
             for (let i = currentBatchIndex; i < uploadQueue.length; i += BATCH_SIZE) {
                 if(isPaused || !isUploading) {
@@ -347,23 +347,23 @@
                     return; 
                 }
                 const batch = uploadQueue.slice(i, i + BATCH_SIZE);
-                log(`Batch [${Math.ceil((i+1)/BATCH_SIZE)}]: Starting processing...`);
+                log(`Batch [${Math.ceil((i+1)/BATCH_SIZE)}]: Processing ${batch.length} files...`);
                 await processBatch(batch, cid, eid);
                 currentBatchIndex = i + BATCH_SIZE;
                 
-                await new Promise(r => setTimeout(r, 800)); // Breather delay
+                await new Promise(r => setTimeout(r, 1200)); // Stability breather
             }
 
             isUploading = false;
             releaseWakeLock();
             document.getElementById('btnPause').classList.add('hidden');
-            document.getElementById('uploadTitle').innerText = "All Tasks Finished";
-            showToast("Bulk upload complete.");
-            log("FINAL STATUS: Bulk process successfully finished. All data indexed.", "success");
+            document.getElementById('uploadTitle').innerText = "Tasks Complete";
+            showToast("Bulk upload finished successfully.");
+            log("FINAL STATUS: All photos processed. System returning to standby.", "success");
         }
 
         async function processBatch(files, cid, eid) {
-            log(`Task: Hashing ${files.length} files sequentially...`);
+            log(`Task: Hashing ${files.length} files...`);
             const fileMetas = [];
             
             for(const file of files) {
@@ -378,7 +378,7 @@
             }
 
             try {
-                log("Triggering Lambda: Generating upload URLs & checking duplicates...");
+                log("Requesting Lambda: Checking for duplicates and generating S3 paths...");
                 const res = await api('/generate-upload-urls', 'POST', { 
                     collection_id: cid, 
                     event_id: eid, 
@@ -389,8 +389,8 @@
                 const skippedBatchCount = fileMetas.length - urls.length;
                 skippedCount += skippedBatchCount;
                 
-                if(skippedBatchCount > 0) log(`Info: ${skippedBatchCount} photos skipped (Already indexed in S3/DB).`, "info");
-                if(urls.length > 0) log(`Ready: Received ${urls.length} fresh upload URLs from Lambda.`, "success");
+                if(skippedBatchCount > 0) log(`Info: ${skippedBatchCount} photos skipped (Duplicate detected in DB).`, "info");
+                if(urls.length > 0) log(`Ready: Received ${urls.length} upload tokens. Starting parallel transfer...`, "success");
 
                 await Promise.all(urls.map(async u => {
                     const meta = fileMetas.find(m => m.hash === u.hash);
@@ -403,16 +403,17 @@
                         });
                         if(up.ok) {
                             processedCount++;
-                            log(`Success: ${meta.name} uploaded. S3 Auto-indexing started.`, "success");
+                            log(`Success: ${meta.name} -> S3. Auto-indexing triggered.`, "success");
                         } else {
                             failedCount++;
-                            log(`Fail: ${meta.name} S3 reject.`, "error");
+                            log(`Error: S3 rejected ${meta.name}`, "error");
                         }
                     } catch(e) { failedCount++; }
                     updateUIProgress();
                 }));
             } catch(e) { 
-                log(`RED ALERT: Batch API Error - ${e.message}`, "error");
+                log(`RED ALERT: Batch [${currentBatchIndex}] FAILED - ${e.message}`, "error");
+                log("Action: System will continue to next batch. Check failed count.", "error");
                 failedCount += files.length; 
                 updateUIProgress(); 
             }
@@ -433,7 +434,7 @@
             document.getElementById('countUploaded').innerText = processedCount;
             document.getElementById('countFailed').innerText = failedCount;
             document.getElementById('countSkipped').innerText = skippedCount;
-            document.getElementById('statsText').innerText = `${current} of ${total} items processed.`;
+            document.getElementById('statsText').innerText = `${current} of ${total} files total.`;
         }
 
         function log(msg, type = 'info') {
@@ -456,7 +457,7 @@
             temp.select();
             document.execCommand("copy");
             document.body.removeChild(temp);
-            showToast("Logs copied to clipboard!");
+            showToast("Full logs copied to clipboard!");
         }
 
         function showView(id) {

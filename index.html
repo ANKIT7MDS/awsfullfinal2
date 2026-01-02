@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>EventLens – Smart AI Gallery</title>
   
-  <!-- IMP: No Referrer for S3, Unsafe Inline for Scripts -->
+  <!-- IMP: No Referrer for S3 to prevent 403 -->
   <meta name="referrer" content="no-referrer">
+  
+  <!-- CSP to allow scripts and images -->
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
 
   <!-- Libraries -->
@@ -111,8 +113,8 @@
         position: relative; aspect-ratio: 2/3; background: #151515; overflow: hidden; 
         border-radius: 12px; cursor: pointer; transition: transform 0.2s;
     }
-    .photo-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; opacity: 0; }
-    .photo-card img.loaded { opacity: 1; }
+    /* Fixed: Removed opacity transition that was hiding images */
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
     
     /* RIBBON */
     .ribbon {
@@ -151,12 +153,12 @@
 
     /* --- LIGHTBOX (FIXED SIZE) --- */
     .lightbox { position: fixed; inset: 0; background: #000; z-index: 500; display: none; flex-direction: column; }
-    .lb-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; width: 100%; }
+    .lb-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; width: 100%; height: 100%; }
     
-    /* FIX: Image Constraint to prevent overflow */
+    /* FIX: Image Constraint to stay within viewport */
     .lb-img { 
-        max-width: 100vw; max-height: 85vh; 
-        object-fit: contain; transition: transform 0.2s;
+        max-width: 100%; max-height: 100%; 
+        object-fit: contain; 
     }
     
     .lb-top { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
@@ -281,8 +283,8 @@
     </div>
     
     <div class="lb-img-wrap" id="lbTouchArea">
-        <!-- FIXED ID: lbImg to match JS -->
-        <img id="lbImg" class="lb-img" referrerpolicy="no-referrer" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
+        <!-- FIXED ID: lbImg to match JS, removed broken referrer policy, added fallback -->
+        <img id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
         <div class="nav-arrow nav-left" onclick="nav(-1)"><i class="fa-solid fa-chevron-left"></i></div>
         <div class="nav-arrow nav-right" onclick="nav(1)"><i class="fa-solid fa-chevron-right"></i></div>
     </div>
@@ -327,7 +329,6 @@
                 if(res.ok) {
                     let data = await res.json();
                     
-                    // Handle Lambda stringified body
                     if (data.body && typeof data.body === 'string') {
                         try { data = JSON.parse(data.body); } catch(e){}
                     }
@@ -355,7 +356,6 @@
             document.documentElement.style.setProperty('--accent-glow', data.color + '66');
             document.getElementById('pageLogo').style.borderColor = data.color;
         }
-        // FIX: Directly apply background image style
         if(data.header_img) {
             document.getElementById('headerBg').style.backgroundImage = `url('${data.header_img}')`;
         }
@@ -440,7 +440,6 @@
                 let parsedData = data;
                 if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
 
-                // Robust match extraction
                 const matches = parsedData.matches || parsedData.photos || parsedData.ids || [];
                 
                 if(matches.length > 0) {
@@ -503,11 +502,14 @@
     }
 
     function initGallery() {
+        // Updated: Group by event_name if available, else use event_id logic
         const events = { 'all': { id: 'all', name: 'All Photos', count: allMatches.length } };
         
         allMatches.forEach(p => {
             const rawEid = p.event_id || 'unknown';
-            const rawName = p.event_name || (rawEid === 'unknown' ? 'General' : 'Event');
+            // Use event_name from photo if present, else construct or use ID
+            const rawName = p.event_name || (rawEid === 'unknown' ? 'General' : (rawEid.length > 8 ? 'Event' : rawEid));
+            
             if(!events[rawEid]) events[rawEid] = { id: rawEid, name: rawName, count: 0 };
             events[rawEid].count++;
         });
@@ -552,15 +554,13 @@
             card.className = `photo-card ${selectedIndices.has(idx) ? 'selected' : ''}`;
             card.onclick = () => handleCardClick(p, idx);
             
-            const imgEl = document.createElement('img');
-            imgEl.onload = () => imgEl.classList.add('loaded');
-            // FIX: referrerpolicy no-referrer
-            imgEl.setAttribute('referrerpolicy', 'no-referrer');
-            imgEl.src = p.thumbnail_url || p.url;
-            
-            card.innerHTML = `${isTop ? '<div class="ribbon">Best</div>' : ''}`;
-            card.appendChild(imgEl);
-            card.innerHTML += `<div class="select-overlay"><div class="check-icon"><i class="fa-solid fa-check"></i></div></div>`;
+            // FIXED: Clean Image Tag - Removed opacity logic, replaced with direct error handling
+            // Added referrerpolicy to allow loading without strict checks
+            card.innerHTML = `
+                ${isTop ? '<div class="ribbon">Best</div>' : ''}
+                <img src="${p.thumbnail_url || p.url}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.parentElement.style.backgroundColor='#222';">
+                <div class="select-overlay"><div class="check-icon"><i class="fa-solid fa-check"></i></div></div>
+            `;
             
             grid.appendChild(card);
         });
@@ -675,25 +675,20 @@
     /* --- DOWNLOAD FIX --- */
     function downloadSingle() {
         const url = filteredMatches[currentIdx].url;
-        fetch(url, { referrerPolicy: 'no-referrer' })
-            .then(resp => resp.blob())
-            .then(blob => saveAs(blob, `Photo_${Date.now()}.jpg`))
-            .catch(() => window.open(url, '_blank'));
+        // Direct window open fallback for strict CORS
+        window.open(url, '_blank');
     }
     
     async function downloadSelectedItems() {
         if(selectedIndices.size === 0) return showToast("No photos selected", "error");
-        showToast("Downloading...");
+        showToast("Opening Images...");
         
         const indices = Array.from(selectedIndices);
-        for(let i of indices) {
+        // Fallback: Open in new tabs (Browser blocks automatic downloads from other domains usually)
+        indices.forEach(i => {
             const url = filteredMatches[i].url;
-            try {
-                const blob = await fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.blob());
-                saveAs(blob, `photo_${i+1}.jpg`);
-            } catch(e) { window.open(url, '_blank'); }
-            await new Promise(r => setTimeout(r, 500));
-        }
+            window.open(url, '_blank');
+        });
     }
 
     async function downloadAsZip() {
@@ -705,6 +700,7 @@
         const indices = Array.from(selectedIndices);
         const folder = zip.folder("EventLens_Photos");
         
+        // Try fetch. If fail, show error.
         let successCount = 0;
         await Promise.all(indices.map(async (idx) => {
             try {
@@ -716,8 +712,8 @@
         }));
 
         if (successCount === 0) {
-            showToast("Zip blocked by S3 CORS. Downloading individually.", "error");
-            downloadSelectedItems(); // Fallback
+            showToast("Download blocked by Server. Opening images instead.", "error");
+            downloadSelectedItems(); // Fallback to individual open
             return;
         }
 

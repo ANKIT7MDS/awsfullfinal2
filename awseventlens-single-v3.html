@@ -1086,7 +1086,20 @@ async function generateUnifiedLink() {
         const res = await api('/generate-search-link', payload);
         
         // Check for direct 'searchUrl' first, then fallback to 'link_id'
-        const linkId = res.link_id || res.id || (res.body ? JSON.parse(res.body).link_id : null);
+        let linkId = res.link_id || res.id;
+        
+        if(!linkId && res.searchUrl) {
+            // Robust extraction from searchUrl
+            try {
+                // Handle different URL structures
+                const url = new URL(res.searchUrl);
+                linkId = url.searchParams.get('linkId') || url.searchParams.get('id');
+            } catch(e) {
+                 const match = res.searchUrl.match(/linkId=([^&]+)/);
+                 if(match) linkId = match[1];
+            }
+        }
+        
         if(!linkId) throw new Error("No Link ID returned");
 
         // Construct URL based on type

@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>EventLens – Smart AI Gallery</title>
   
+  <!-- Favicon Fix -->
+  <link rel="icon" href="data:,">
+  
   <!-- IMP: No Referrer for S3, Unsafe Inline for Scripts -->
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
@@ -281,6 +284,7 @@
     </div>
     
     <div class="lb-img-wrap" id="lbTouchArea">
+        <!-- ERROR FIX: Use correct ID lbImg -->
         <img id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
         <div class="nav-arrow nav-left" onclick="nav(-1)"><i class="fa-solid fa-chevron-left"></i></div>
         <div class="nav-arrow nav-right" onclick="nav(1)"><i class="fa-solid fa-chevron-right"></i></div>
@@ -326,7 +330,6 @@
                 if(res.ok) {
                     let data = await res.json();
                     
-                    // Handle Lambda stringified body
                     if (data.body && typeof data.body === 'string') {
                         try { data = JSON.parse(data.body); } catch(e){}
                     }
@@ -354,14 +357,12 @@
             document.documentElement.style.setProperty('--accent-glow', data.color + '66');
             document.getElementById('pageLogo').style.borderColor = data.color;
         }
-        // FIX: Directly apply background image style (No onload wait)
         if(data.header_img) {
             document.getElementById('headerBg').style.backgroundImage = `url('${data.header_img}')`;
         }
         if(data.logo) {
-            const logo = document.getElementById('brandLogo');
-            logo.src = data.logo;
-            logo.style.display = 'block';
+            document.getElementById('brandLogo').src = data.logo;
+            document.getElementById('brandLogo').style.display = 'block';
         }
     }
 
@@ -418,22 +419,20 @@
         try {
             const imageBase64 = pendingSelfieBase64.split(',')[1];
             
-            // HYBRID PAYLOAD: Sending flat JSON to satisfy strict backend
             const payload = {
                 collection_id: cid,
                 image: imageBase64,
-                selfie_image: imageBase64, // Legacy key
+                selfie_image: imageBase64, 
                 min_confidence: 80,
                 pin: pin,
                 linkId: linkId || 'direct-search',
-                event_id: eid // Can be undefined
+                event_id: eid 
             };
 
-            // FIX: Endpoint changed to /search (Dedicated Lambda)
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload) // Flat JSON directly
+                body: JSON.stringify(payload) 
             });
 
             const data = await res.json();
@@ -442,7 +441,6 @@
                 let parsedData = data;
                 if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
 
-                // Robust match extraction
                 const matches = parsedData.matches || parsedData.photos || parsedData.ids || [];
                 
                 if(matches.length > 0) {
@@ -588,7 +586,7 @@
             }
             updateActionBar();
         } else {
-            openViewer(idx);
+            openLightbox(idx);
         }
     }
 
@@ -602,25 +600,25 @@
         showToast("All Selected");
     }
 
-    /* --- LIGHTBOX & ACTIONS --- */
-    function openViewer(idx) {
+    /* --- LIGHTBOX (UNIFIED) --- */
+    function openLightbox(idx) {
         currentIdx = idx;
         updateLbContent();
-        document.getElementById('viewer').classList.add('open');
+        document.getElementById('lightbox').style.display = 'flex';
     }
     
-    function closeViewer() { document.getElementById('viewer').classList.remove('open'); }
+    function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 
     function updateLbContent() {
         const p = filteredMatches[currentIdx];
-        document.getElementById('viewerImg').src = p.url;
+        document.getElementById('lbImg').src = p.url;
         document.getElementById('lbIndex').innerText = currentIdx + 1;
         document.getElementById('lbTotal').innerText = filteredMatches.length;
         
         const btnFav = document.getElementById('btnFav');
         const btnDel = document.getElementById('btnDel');
-        btnFav.className = favSet.has(p.photo_id) ? 'v-btn active fav' : 'v-btn';
-        btnDel.className = 'v-btn'; 
+        btnFav.className = favSet.has(p.photo_id) ? 'lb-action active-fav' : 'lb-action';
+        btnDel.className = 'lb-action'; 
     }
 
     function nav(dir) {
@@ -637,11 +635,11 @@
         
         if(isFav) {
             favSet.add(p.photo_id);
-            btn.classList.add('active'); btn.classList.add('fav');
+            btn.classList.add('active-fav');
             try { confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors:['#ff4081'] }); } catch(e){}
         } else {
             favSet.delete(p.photo_id);
-            btn.classList.remove('active'); btn.classList.remove('fav');
+            btn.classList.remove('active-fav');
         }
         
         document.getElementById('favCount').innerText = favSet.size;

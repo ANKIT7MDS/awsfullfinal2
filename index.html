@@ -88,18 +88,11 @@
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     .count-badge { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-left: 5px; }
     #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #222; padding: 10px 20px; border-radius: 30px; font-size: 13px; z-index: 300; display: none; border: 1px solid #333; }
-    #initialLoader { position:fixed; inset:0; background:#000; z-index:999; display:flex; align-items:center; justify-content:center; flex-direction:column; }
   </style>
 </head>
 <body>
 
 <div id="toast">Message</div>
-
-<!-- INITIAL LOADING OVERLAY -->
-<div id="initialLoader">
-  <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--accent); font-size: 40px; margin-bottom:15px;"></i>
-  <span style="color:#666; font-size:14px;">Loading Event...</span>
-</div>
 
 <!-- HEADER -->
 <header id="pageHeader">
@@ -111,7 +104,7 @@
 </header>
 
 <!-- SEARCH SECTION -->
-<div class="container hidden" id="searchContainer">
+<div class="container" id="searchContainer">
     <div class="search-card">
         <i class="fa-solid fa-face-smile-wink search-icon"></i>
         <h3>Find Your Photos</h3>
@@ -129,14 +122,14 @@
         
         <!-- PIN UI (Shows only if needed) -->
         <div id="pinArea" class="hidden" style="margin-top: 20px;">
-            <p style="color: #ff4081; font-size: 13px; margin-bottom: 10px;">🔒 Protected Gallery</p>
+            <p style="color: #ff4081; font-size: 13px; margin-bottom: 10px;">🔒 Gallery Protected</p>
             <input type="tel" id="manualPin" class="lead-input" placeholder="Enter Event PIN" style="text-align: center; letter-spacing: 4px; max-width: 200px;">
             <button class="btn-main" onclick="retrySearchWithPin()" style="padding: 10px 20px; font-size: 14px; margin-top: 10px;">Retry</button>
         </div>
     </div>
 </div>
 
-<!-- GALLERY SECTION -->
+<!-- GALLERY SECTION (Hidden Initially) -->
 <div class="container hidden" id="galleryContainer">
     <div class="gallery-header">
         <h3 style="margin:0;">Found <span id="matchCount" class="count-badge">0</span></h3>
@@ -199,6 +192,7 @@
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId') || urlParams.get('id');
+    // FIX: cid is now 'let' so we can update it if missing from URL
     let cid = urlParams.get('cid') || urlParams.get('collection_id');
     const eid = urlParams.get('eid'); // Scope to specific event
     const urlPin = urlParams.get('pin');
@@ -241,10 +235,6 @@
                 }
             }
         } catch(e) { console.error("Branding fetch failed", e); }
-        
-        // Hide initial loader and show search
-        document.getElementById('initialLoader').style.display = 'none';
-        document.getElementById('searchContainer').classList.remove('hidden');
     };
 
     /* --- BRANDING --- */
@@ -351,21 +341,27 @@
         }
 
         try {
-            const payload = {
+            // Prepare core data
+            const coreData = {
                 collection_id: cid,
                 image: pendingSelfieBase64.split(',')[1],
                 min_confidence: 80,
                 pin: pin 
             };
-            if(eid) payload.event_id = eid;
+            if(eid) coreData.event_id = eid;
 
-            const res = await fetch(`${API_BASE}/client-api`, {
+            // Hybrid Body: Works for Main Lambda (needs 'payload') and Dedicated Lambda (needs root keys)
+            const requestBody = {
+                action: "search_faces",
+                ...coreData,
+                payload: coreData
+            };
+
+            // UPDATED: Using /search endpoint
+            const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: "search_faces",
-                    payload: payload
-                })
+                body: JSON.stringify(requestBody)
             });
             
             const data = await res.json();
@@ -420,7 +416,8 @@
         
         renderGallery();
         
-        // Log Guest in Background
+        // Log Guest in Background (Replacing save-details)
+        // Uses the NEW log_guest_visit action in Lambda via client-api
         fetch(`${API_BASE}/client-api`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

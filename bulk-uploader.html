@@ -204,7 +204,7 @@
         let processedCount = 0;
         let failedCount = 0;
         let skippedCount = 0;
-        let BATCH_SIZE = 10; // FURTHER REDUCED to fix Internal Server Errors
+        let BATCH_SIZE = 10; // Optimized for stability
         let wakeLock = null;
 
         window.onload = async () => {
@@ -297,14 +297,14 @@
             currentBatchIndex = 0;
             processedCount = 0; 
             failedCount = 0;
-            skippedCount = 0;
+            skippedCount = 0; // RESET skip count on new selection
             
             document.getElementById('statsText').innerText = `${validFiles.length} files selected. Ready.`;
             document.getElementById('progressBox').classList.remove('hidden');
             document.getElementById('btnStart').disabled = false;
             document.getElementById('btnPause').classList.add('hidden');
             updateUIProgress();
-            log(`Queue ready with ${validFiles.length} images. Click Start Upload to begin task.`);
+            log(`Queue initialized with ${validFiles.length} images.`);
         }
 
         function togglePause() {
@@ -344,6 +344,7 @@
             for (let i = currentBatchIndex; i < uploadQueue.length; i += BATCH_SIZE) {
                 if(isPaused || !isUploading) {
                     currentBatchIndex = i;
+                    log(`Paused at index: ${i}`);
                     return; 
                 }
                 const batch = uploadQueue.slice(i, i + BATCH_SIZE);
@@ -387,7 +388,7 @@
                 
                 const urls = res.urls || [];
                 const skippedBatchCount = fileMetas.length - urls.length;
-                skippedCount += skippedBatchCount;
+                skippedCount += skippedBatchCount; // Accumulate skipped count
                 
                 if(skippedBatchCount > 0) log(`Info: ${skippedBatchCount} photos skipped (Duplicate detected in DB).`, "info");
                 if(urls.length > 0) log(`Ready: Received ${urls.length} upload tokens. Starting parallel transfer...`, "success");
@@ -434,7 +435,7 @@
             document.getElementById('countUploaded').innerText = processedCount;
             document.getElementById('countFailed').innerText = failedCount;
             document.getElementById('countSkipped').innerText = skippedCount;
-            document.getElementById('statsText').innerText = `${current} of ${total} files total.`;
+            document.getElementById('statsText').innerText = `${current} of ${total} files processed.`;
         }
 
         function log(msg, type = 'info') {

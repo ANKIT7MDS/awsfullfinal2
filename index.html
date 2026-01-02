@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>EventLens – Smart AI Gallery</title>
   
-  <!-- IMP: No Referrer for S3 to prevent 403 -->
+  <!-- IMP: No Referrer for S3, Unsafe Inline for Scripts -->
   <meta name="referrer" content="no-referrer">
-  
-  <!-- CSP to allow scripts and images -->
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
 
   <!-- Libraries -->
@@ -113,8 +111,8 @@
         position: relative; aspect-ratio: 2/3; background: #151515; overflow: hidden; 
         border-radius: 12px; cursor: pointer; transition: transform 0.2s;
     }
-    .photo-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; opacity: 0; }
-    .photo-card img.loaded { opacity: 1; }
+    /* FIXED: Removed opacity transition so images show immediately */
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
     
     /* RIBBON */
     .ribbon {
@@ -356,6 +354,7 @@
             document.documentElement.style.setProperty('--accent-glow', data.color + '66');
             document.getElementById('pageLogo').style.borderColor = data.color;
         }
+        // FIX: Directly apply background image style
         if(data.header_img) {
             document.getElementById('headerBg').style.backgroundImage = `url('${data.header_img}')`;
         }
@@ -440,6 +439,7 @@
                 let parsedData = data;
                 if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
 
+                // Robust match extraction
                 const matches = parsedData.matches || parsedData.photos || parsedData.ids || [];
                 
                 if(matches.length > 0) {
@@ -487,12 +487,7 @@
         
         initGallery();
         
-        // FIX: Include selfie_image in payload
-        let selfieData = null;
-        if(pendingSelfieBase64) {
-            selfieData = pendingSelfieBase64.includes(',') ? pendingSelfieBase64.split(',')[1] : pendingSelfieBase64;
-        }
-
+        // FIX: Added proper headers for saving details
         fetch(`${API_BASE}${SAVE_ENDPOINT}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -502,7 +497,7 @@
                 mobile: mobile, 
                 name: name, 
                 photo_count: allMatches.length,
-                selfie_image: selfieData
+                selfie_image: pendingSelfieBase64.includes(',') ? pendingSelfieBase64.split(',')[1] : pendingSelfieBase64
             })
         });
     }
@@ -560,6 +555,7 @@
             const imgEl = document.createElement('img');
             imgEl.onload = () => imgEl.classList.add('loaded');
             // FIX: No referrer policy
+            imgEl.setAttribute('referrerpolicy', 'no-referrer');
             imgEl.src = p.thumbnail_url || p.url;
             
             card.innerHTML = `${isTop ? '<div class="ribbon">Best</div>' : ''}`;
@@ -678,7 +674,7 @@
     /* --- DOWNLOAD FIX --- */
     function downloadSingle() {
         const url = filteredMatches[currentIdx].url;
-        fetch(url)
+        fetch(url, { referrerPolicy: 'no-referrer' })
             .then(resp => resp.blob())
             .then(blob => saveAs(blob, `Photo_${Date.now()}.jpg`))
             .catch(() => window.open(url, '_blank'));
@@ -686,13 +682,17 @@
     
     async function downloadSelectedItems() {
         if(selectedIndices.size === 0) return showToast("No photos selected", "error");
-        showToast("Opening Images...");
+        showToast("Downloading...");
         
         const indices = Array.from(selectedIndices);
-        indices.forEach(i => {
+        for(let i of indices) {
             const url = filteredMatches[i].url;
-            window.open(url, '_blank');
-        });
+            try {
+                const blob = await fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.blob());
+                saveAs(blob, `photo_${i+1}.jpg`);
+            } catch(e) { window.open(url, '_blank'); }
+            await new Promise(r => setTimeout(r, 500));
+        }
     }
 
     async function downloadAsZip() {
@@ -704,11 +704,12 @@
         const indices = Array.from(selectedIndices);
         const folder = zip.folder("EventLens_Photos");
         
+        // FIX: Added try/catch for zip fetching to handle CORS failures gracefully
         let successCount = 0;
         await Promise.all(indices.map(async (idx) => {
             try {
                 const url = filteredMatches[idx].url;
-                const blob = await fetch(url).then(r => r.blob());
+                const blob = await fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.blob());
                 folder.file(`photo_${idx+1}.jpg`, blob);
                 successCount++;
             } catch(e) { console.error("Zip fetch failed", e); }

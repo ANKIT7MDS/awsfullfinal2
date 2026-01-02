@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventLens – Bulk Upload Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #00e676;
+            --bg: #050505;
+            --card: #111111;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .font-heading { font-family: 'Outfit', sans-serif; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #111; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: black;
+            font-weight: 700;
+            padding: 12px 24px;
+            border-radius: 50px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.05);
+            background-color: #00c868;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10">
+
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-zinc-900 border border-zinc-800 p-4 rounded-xl shadow-2xl hidden">
+        <p id="toastMsg"></p>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-10">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-black shadow-lg">
+                    <i class="fa-solid fa-bolt-lightning text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-heading font-extrabold tracking-tight leading-none">Bulk <span class="text-emerald-500">Uploader</span></h1>
+                    <p class="text-zinc-500 text-sm mt-1">20k+ High Volume Mode</p>
+                </div>
+            </div>
+            <div id="userInfo" class="hidden text-right">
+                <p class="text-xs text-zinc-500">Logged in as</p>
+                <p class="text-sm font-bold text-emerald-400">Photographer</p>
+                <button onclick="doLogout()" class="text-[10px] text-red-500 underline uppercase tracking-widest mt-1">Logout</button>
+            </div>
+        </div>
+
+        <div id="viewLogin" class="bg-zinc-950 border border-zinc-900 rounded-3xl p-10 text-center">
+            <i class="fa-solid fa-shield-halved text-5xl text-zinc-800 mb-6"></i>
+            <h2 class="text-3xl font-heading font-bold mb-4">Auth Required</h2>
+            <button onclick="doLogin()" class="btn-primary w-full max-w-xs">Login via Cognito</button>
+        </div>
+
+        <div id="viewMain" class="hidden space-y-6">
+            
+            <div class="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-500 mb-2">COLLECTION</label>
+                        <select id="colSelect" class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white" onchange="loadEvents()"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-500 mb-2">EVENT</label>
+                        <select id="evSelect" class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-zinc-800 hover:border-emerald-500 rounded-2xl p-8 text-center cursor-pointer bg-zinc-900/30">
+                        <i class="fa-solid fa-images text-3xl text-zinc-600 mb-3"></i>
+                        <h4 class="font-bold text-sm">Select Individual Files</h4>
+                        <input type="file" id="fileInput" multiple accept="image/*" class="hidden" onchange="handleFiles(this.files)">
+                    </div>
+
+                    <div onclick="document.getElementById('folderInput').click()" class="border-2 border-dashed border-zinc-800 hover:border-emerald-500 rounded-2xl p-8 text-center cursor-pointer bg-emerald-500/5">
+                        <i class="fa-solid fa-folder-tree text-3xl text-emerald-500 mb-3"></i>
+                        <h4 class="font-bold text-sm text-emerald-500">Select Full Folder</h4>
+                        <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden" onchange="handleFiles(this.files)">
+                    </div>
+                </div>
+            </div>
+
+            <div id="progressBox" class="hidden bg-zinc-950 border border-zinc-900 rounded-3xl p-6">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <h3 class="font-bold text-lg" id="uploadTitle">Queue Ready</h3>
+                        <p class="text-zinc-500 text-xs mt-1" id="statsText">0 files found</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-3xl font-heading font-black text-emerald-500 leading-none" id="totalPct">0%</p>
+                    </div>
+                </div>
+                
+                <div class="h-3 bg-zinc-900 rounded-full overflow-hidden mb-6">
+                    <div id="progressBar" class="h-full bg-emerald-500 w-0 transition-all duration-300"></div>
+                </div>
+
+                <div class="flex flex-wrap gap-4 items-center justify-between">
+                    <div class="flex gap-4">
+                        <div class="bg-zinc-900 px-4 py-2 rounded-lg text-center">
+                            <p class="text-[10px] text-zinc-500 font-bold">UPLOADED</p>
+                            <p class="text-lg font-bold" id="countUploaded">0</p>
+                        </div>
+                        <div class="bg-zinc-900 px-4 py-2 rounded-lg text-center">
+                            <p class="text-[10px] text-zinc-500 font-bold">FAILED</p>
+                            <p class="text-lg font-bold text-red-500" id="countFailed">0</p>
+                        </div>
+                    </div>
+                    <button id="btnStart" disabled onclick="startUpload()" class="btn-primary min-w-[200px]">Start Processing</button>
+                </div>
+            </div>
+
+            <div class="bg-zinc-950 border border-zinc-900 rounded-3xl p-6">
+                <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">System Log</h3>
+                <div id="logList" class="space-y-1 h-32 overflow-y-auto custom-scroll text-[10px] font-mono">
+                    <div class="text-zinc-600 italic">Logs will appear here...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod"; 
+        const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+        const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+        let idToken = localStorage.getItem('idToken');
+        let uploadQueue = [];
+        let isUploading = false;
+        let processedCount = 0;
+        let failedCount = 0;
+        let BATCH_SIZE = 40; // Smaller batch for lower RAM usage
+
+        window.onload = async () => {
+            const params = new URLSearchParams(window.location.search);
+            if(params.has('code')){ await exchangeCode(params.get('code')); return; }
+            if(!idToken) showView('viewLogin'); else { showView('viewMain'); document.getElementById('userInfo').classList.remove('hidden'); loadCollections(); }
+        };
+
+        function doLogin() { window.location.href = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
+        async function exchangeCode(code) {
+            try {
+                const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: CLIENT_ID, code, redirect_uri: REDIRECT_URI }) });
+                const data = await res.json();
+                if(data.id_token) { localStorage.setItem('idToken', data.id_token); window.location.href = REDIRECT_URI; }
+            } catch(e) { log("Login Error", "error"); }
+        }
+        function doLogout() { localStorage.clear(); window.location.reload(); }
+
+        async function api(path, method = 'GET', body = null) {
+            const res = await fetch(`${API_BASE}${path}`, { method, headers: { 'Authorization': idToken, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : null });
+            if(!res.ok) throw new Error(await res.text());
+            return res.json();
+        }
+
+        async function loadCollections() {
+            try {
+                const data = await api('/get-collections');
+                const list = data.Items || data;
+                document.getElementById('colSelect').innerHTML = '<option value="">Select Collection</option>' + list.map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
+            } catch(e) { log("Col Load Error", "error"); }
+        }
+
+        async function loadEvents() {
+            const cid = document.getElementById('colSelect').value;
+            if(!cid) return;
+            try {
+                const data = await api('/get-events', 'POST', { collection_id: cid });
+                const events = data.events || data.Items || [];
+                document.getElementById('evSelect').innerHTML = '<option value="">Select Event</option>' + events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+            } catch(e) { log("Event Load Error", "error"); }
+        }
+
+        function handleFiles(files) {
+            if(isUploading) return;
+            const validFiles = Array.from(files).filter(f => f.name.match(/\.(jpg|jpeg|png|heic)$/i));
+            if(validFiles.length === 0) return;
+            uploadQueue = validFiles; processedCount = 0; failedCount = 0;
+            document.getElementById('statsText').innerText = `${validFiles.length} files in queue.`;
+            document.getElementById('progressBox').classList.remove('hidden');
+            document.getElementById('btnStart').disabled = false;
+            updateUIProgress();
+            log(`Added ${validFiles.length} files to queue.`);
+        }
+
+        async function startUpload() {
+            const cid = document.getElementById('colSelect').value;
+            const eid = document.getElementById('evSelect').value;
+            if(!cid || !eid) return showToast("Select Collection & Event!", "error");
+
+            isUploading = true;
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('uploadTitle').innerText = "Processing Queue...";
+
+            for (let i = 0; i < uploadQueue.length; i += BATCH_SIZE) {
+                if(!isUploading) break;
+                const batch = uploadQueue.slice(i, i + BATCH_SIZE);
+                await processBatch(batch, cid, eid);
+                // Mini cleanup hint for browser
+                if(i % 200 === 0) log(`Check-point: ${i} files done.`);
+            }
+
+            isUploading = false;
+            document.getElementById('uploadTitle').innerText = "Process Finished";
+            showToast("Bulk upload complete.");
+        }
+
+        async function processBatch(files, cid, eid) {
+            log(`Starting Batch...`);
+            const fileMetas = [];
+            
+            // Sequential Hashing to prevent RAM spikes
+            for(const file of files) {
+                const hash = await computeHash(file);
+                fileMetas.push({ name: file.name.replace(/[^a-zA-Z0-9.]/g, '_'), type: 'image/jpeg', size: file.size, hash, fileObj: file });
+            }
+
+            try {
+                const res = await api('/generate-upload-urls', 'POST', { collection_id: cid, event_id: eid, files: fileMetas.map(m => ({ name: m.name, hash: m.hash, size: m.size })) });
+                const urls = res.urls || [];
+                
+                // Concurrency 5 for upload to not choke the browser socket
+                await Promise.all(urls.map(async u => {
+                    const meta = fileMetas.find(m => m.hash === u.hash);
+                    if(!meta) return;
+                    try {
+                        const up = await fetch(u.uploadURL, { method: 'PUT', body: meta.fileObj, headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': meta.hash } });
+                        if(up.ok) processedCount++; else failedCount++;
+                    } catch(e) { failedCount++; }
+                    updateUIProgress();
+                }));
+            } catch(e) { failedCount += files.length; updateUIProgress(); }
+        }
+
+        async function computeHash(file) {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function updateUIProgress() {
+            const total = uploadQueue.length;
+            const current = processedCount + failedCount;
+            const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+            document.getElementById('totalPct').innerText = `${pct}%`;
+            document.getElementById('progressBar').style.width = `${pct}%`;
+            document.getElementById('countUploaded').innerText = processedCount;
+            document.getElementById('countFailed').innerText = failedCount;
+            document.getElementById('statsText').innerText = `${current} of ${total} processed.`;
+        }
+
+        function log(msg, type = 'info') {
+            const list = document.getElementById('logList');
+            const el = document.createElement('div');
+            el.className = type === 'error' ? 'text-red-500' : (type === 'success' ? 'text-emerald-500' : 'text-zinc-500');
+            el.innerHTML = `> ${msg}`;
+            list.prepend(el);
+            if(list.children.length > 50) list.removeChild(list.lastChild); // DOM Cleanup
+        }
+
+        function showView(id) {
+            document.getElementById('viewLogin').classList.add('hidden');
+            document.getElementById('viewMain').classList.add('hidden');
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('hidden', 'translate-x-full');
+            setTimeout(() => t.classList.add('translate-x-full'), 3000);
+        }
+    </script>
+</body>
+</html>

@@ -141,11 +141,11 @@
     .action-bar.visible { transform: translateX(-50%) translateY(0); }
     
     .fab-btn {
-        background: none; border: none; color: #fff; font-size: 11px; 
-        display: flex; flex-direction: column; align-items: center; gap: 5px; 
-        opacity: 0.6; transition: 0.2s; cursor: pointer; min-width: 50px; font-weight: 500;
+        background: none; border: none; color: #fff; font-size: 10px; 
+        display: flex; flex-direction: column; align-items: center; gap: 4px; 
+        opacity: 0.7; transition: 0.2s; cursor: pointer; min-width: 40px;
     }
-    .fab-btn i { font-size: 22px; margin-bottom: 2px; }
+    .fab-btn i { font-size: 20px; margin-bottom: 2px; }
     .fab-btn:hover, .fab-btn.active { opacity: 1; color: var(--accent); transform: translateY(-3px); }
     .divider { width: 1px; height: 30px; background: rgba(255,255,255,0.1); }
 
@@ -184,11 +184,15 @@
     .btn-main:active { transform: scale(0.98); }
     
     #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 600; display: none; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
+    /* Loading Spinner */
+    .spinner { width: 24px; height: 24px; border: 3px solid rgba(0, 230, 118, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-<div id="toast">Notification</div>
+<div id="toast">Message</div>
 
 <!-- HEADER (Branding) -->
 <header id="header">
@@ -377,7 +381,7 @@
         });
     }
 
-    async function processSelfie(file) {
+    async function handleSelfieSelect(file) {
         if(!file) return;
         
         const img = document.getElementById('previewImg');
@@ -406,16 +410,20 @@
         if(!cid) return alert("Collection ID Missing");
 
         try {
+            const imageBase64 = pendingSelfieBase64.split(',')[1];
+            
+            // HYBRID PAYLOAD
             const payload = {
                 collection_id: cid,
-                image: pendingSelfieBase64,
-                selfie_image: pendingSelfieBase64, 
+                image: imageBase64,
+                selfie_image: imageBase64, // For legacy
                 min_confidence: 80,
                 pin: pin,
                 linkId: linkId || 'direct'
             };
             if(eid) payload.event_id = eid;
 
+            // Updated: Using /search endpoint
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -432,12 +440,20 @@
                 let parsedData = data;
                 if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
 
+                // Robust match extraction
                 const matches = parsedData.matches || parsedData.photos || parsedData.ids || [];
                 
                 if(matches.length > 0) {
                     allMatches = matches;
                     document.getElementById('leadMatchCount').innerText = allMatches.length;
-                    document.getElementById('leadModal').classList.add('open');
+                    
+                    // Force Modal Open Logic
+                    const modal = document.getElementById('leadModal');
+                    if(modal) {
+                         modal.style.display = 'flex'; // Direct style override
+                         modal.classList.add('open');
+                    }
+                    
                     try { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors:['#00e676', '#ffffff'] }); } catch(e){}
                 } else {
                     alert("No matching photos found.");
@@ -464,14 +480,16 @@
 
         guestInfo = { name, mobile };
 
+        document.getElementById('leadModal').style.display = 'none';
         document.getElementById('leadModal').classList.remove('open');
+        
         document.getElementById('screenSearch').classList.remove('active');
         document.getElementById('galleryContainer').classList.remove('hidden');
         document.getElementById('actionBar').classList.add('visible');
         
         initGallery();
         
-        // Log to Backend
+        // Log to Backend (Using Requested /save-details)
         fetch(`${API_BASE}${SAVE_ENDPOINT}`, {
             method: 'POST',
             body: JSON.stringify({ 

@@ -113,8 +113,8 @@
         position: relative; aspect-ratio: 2/3; background: #151515; overflow: hidden; 
         border-radius: 12px; cursor: pointer; transition: transform 0.2s;
     }
-    /* Fixed: Removed opacity transition that was hiding images */
-    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; opacity: 0; }
+    .photo-card img.loaded { opacity: 1; }
     
     /* RIBBON */
     .ribbon {
@@ -155,10 +155,10 @@
     .lightbox { position: fixed; inset: 0; background: #000; z-index: 500; display: none; flex-direction: column; }
     .lb-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; width: 100%; height: 100%; }
     
-    /* FIX: Image Constraint to stay within viewport */
+    /* FIX: Image Constraint */
     .lb-img { 
-        max-width: 100%; max-height: 100%; 
-        object-fit: contain; 
+        max-width: 100vw; max-height: 85vh; 
+        object-fit: contain; transition: transform 0.2s;
     }
     
     .lb-top { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
@@ -487,7 +487,12 @@
         
         initGallery();
         
-        // FIX: Added proper headers for saving details
+        // FIX: Include selfie_image in payload
+        let selfieData = null;
+        if(pendingSelfieBase64) {
+            selfieData = pendingSelfieBase64.includes(',') ? pendingSelfieBase64.split(',')[1] : pendingSelfieBase64;
+        }
+
         fetch(`${API_BASE}${SAVE_ENDPOINT}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -496,20 +501,18 @@
                 linkId: linkId, 
                 mobile: mobile, 
                 name: name, 
-                photo_count: allMatches.length 
+                photo_count: allMatches.length,
+                selfie_image: selfieData
             })
         });
     }
 
     function initGallery() {
-        // Updated: Group by event_name if available, else use event_id logic
         const events = { 'all': { id: 'all', name: 'All Photos', count: allMatches.length } };
         
         allMatches.forEach(p => {
             const rawEid = p.event_id || 'unknown';
-            // Use event_name from photo if present, else construct or use ID
-            const rawName = p.event_name || (rawEid === 'unknown' ? 'General' : (rawEid.length > 8 ? 'Event' : rawEid));
-            
+            const rawName = p.event_name || (rawEid === 'unknown' ? 'General' : 'Event');
             if(!events[rawEid]) events[rawEid] = { id: rawEid, name: rawName, count: 0 };
             events[rawEid].count++;
         });
@@ -554,13 +557,14 @@
             card.className = `photo-card ${selectedIndices.has(idx) ? 'selected' : ''}`;
             card.onclick = () => handleCardClick(p, idx);
             
-            // FIXED: Clean Image Tag - Removed opacity logic, replaced with direct error handling
-            // Added referrerpolicy to allow loading without strict checks
-            card.innerHTML = `
-                ${isTop ? '<div class="ribbon">Best</div>' : ''}
-                <img src="${p.thumbnail_url || p.url}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.parentElement.style.backgroundColor='#222';">
-                <div class="select-overlay"><div class="check-icon"><i class="fa-solid fa-check"></i></div></div>
-            `;
+            const imgEl = document.createElement('img');
+            imgEl.onload = () => imgEl.classList.add('loaded');
+            // FIX: No referrer policy
+            imgEl.src = p.thumbnail_url || p.url;
+            
+            card.innerHTML = `${isTop ? '<div class="ribbon">Best</div>' : ''}`;
+            card.appendChild(imgEl);
+            card.innerHTML += `<div class="select-overlay"><div class="check-icon"><i class="fa-solid fa-check"></i></div></div>`;
             
             grid.appendChild(card);
         });
@@ -612,7 +616,6 @@
 
     function updateLbContent() {
         const p = filteredMatches[currentIdx];
-        // Ensure ID is correct (lbImg)
         const img = document.getElementById('lbImg');
         img.src = p.url;
         
@@ -675,8 +678,10 @@
     /* --- DOWNLOAD FIX --- */
     function downloadSingle() {
         const url = filteredMatches[currentIdx].url;
-        // Direct window open fallback for strict CORS
-        window.open(url, '_blank');
+        fetch(url)
+            .then(resp => resp.blob())
+            .then(blob => saveAs(blob, `Photo_${Date.now()}.jpg`))
+            .catch(() => window.open(url, '_blank'));
     }
     
     async function downloadSelectedItems() {
@@ -684,7 +689,6 @@
         showToast("Opening Images...");
         
         const indices = Array.from(selectedIndices);
-        // Fallback: Open in new tabs (Browser blocks automatic downloads from other domains usually)
         indices.forEach(i => {
             const url = filteredMatches[i].url;
             window.open(url, '_blank');
@@ -700,12 +704,11 @@
         const indices = Array.from(selectedIndices);
         const folder = zip.folder("EventLens_Photos");
         
-        // Try fetch. If fail, show error.
         let successCount = 0;
         await Promise.all(indices.map(async (idx) => {
             try {
                 const url = filteredMatches[idx].url;
-                const blob = await fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.blob());
+                const blob = await fetch(url).then(r => r.blob());
                 folder.file(`photo_${idx+1}.jpg`, blob);
                 successCount++;
             } catch(e) { console.error("Zip fetch failed", e); }
@@ -713,7 +716,7 @@
 
         if (successCount === 0) {
             showToast("Download blocked by Server. Opening images instead.", "error");
-            downloadSelectedItems(); // Fallback to individual open
+            downloadSelectedItems(); 
             return;
         }
 

@@ -286,8 +286,8 @@
     /* --- CONFIG --- */
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
     const urlParams = new URLSearchParams(window.location.search);
-    let cid = urlParams.get('cid') || urlParams.get('collection_id');
     const linkId = urlParams.get('linkId') || urlParams.get('id');
+    let cid = urlParams.get('cid') || urlParams.get('collection_id');
     const eid = urlParams.get('eid'); // Optional Scope
     const urlPin = urlParams.get('pin');
 
@@ -374,14 +374,18 @@
         if(!cid) return alert("Collection ID Missing");
 
         try {
+            const imageBase64 = selfieBase64;
+            
+            // FIXED: Sending both 'image' and 'selfie_image' to satisfy old/new backend requirements
             const payload = {
                 collection_id: cid,
-                image: selfieBase64,
+                image: imageBase64,
+                selfie_image: imageBase64, 
                 min_confidence: 80,
                 pin: pin,
                 linkId: linkId || 'direct'
             };
-            if(eid) payload.event_id = eid; // Scope
+            if(eid) payload.event_id = eid;
 
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
@@ -394,7 +398,7 @@
 
             if(res.ok) {
                 // Success
-                let results = data.matches || data.photos || [];
+                let results = data.matches || data.photos || data.ids || [];
                 if(results.length > 0) {
                     allMatches = results;
                     document.getElementById('leadModal').classList.add('open');

@@ -184,6 +184,10 @@
     .btn-main:active { transform: scale(0.98); }
     
     #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 600; display: none; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    
+    /* Loading Spinner */
+    .spinner { width: 24px; height: 24px; border: 3px solid rgba(0, 230, 118, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -320,7 +324,13 @@
             if (fetchUrl) {
                 const res = await fetch(fetchUrl);
                 if(res.ok) {
-                    const data = await res.json();
+                    let data = await res.json();
+                    
+                    // Handle Lambda stringified body
+                    if (data.body && typeof data.body === 'string') {
+                        try { data = JSON.parse(data.body); } catch(e){}
+                    }
+
                     if(!cid) cid = data.collection_id || data.collectionId; 
                     applyBranding(data);
                 }
@@ -369,7 +379,9 @@
                     if(w>800){ h*=800/w; w=800; }
                     canvas.width=w; canvas.height=h;
                     canvas.getContext('2d').drawImage(img,0,0,w,h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+                    
+                    // FIX: Return FULL Data URL to preserve prefix for preview
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
                 };
                 img.onerror = () => reject("Image load error");
             };
@@ -406,6 +418,7 @@
         if(!cid) return alert("Collection ID Missing");
 
         try {
+            // FIX: Split only when sending to API
             const imageBase64 = pendingSelfieBase64.split(',')[1];
             
             // HYBRID PAYLOAD
@@ -419,7 +432,6 @@
             };
             if(eid) payload.event_id = eid;
 
-            // Updated: Using /search endpoint
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -443,10 +455,9 @@
                     allMatches = matches;
                     document.getElementById('leadMatchCount').innerText = allMatches.length;
                     
-                    // Force Modal Open Logic
                     const modal = document.getElementById('leadModal');
                     if(modal) {
-                         modal.style.display = 'flex'; // Direct style override
+                         modal.style.display = 'flex'; 
                          modal.classList.add('open');
                     }
                     

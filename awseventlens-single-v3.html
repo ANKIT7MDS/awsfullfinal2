@@ -114,6 +114,11 @@
     #toast { position: fixed; top: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 16px 24px; border-radius: 12px; z-index: 9999; transform: translateX(150%); transition: 0.4s; border: 1px solid var(--border-color); }
     #toast.show { transform: translateX(0); }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Pagination Styles */
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+    .pagination .btn { padding: 8px 16px; font-size: 12px; }
+    .pagination .btn.disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -202,9 +207,7 @@
            <button class="btn secondary" onclick="loadPhotos(true)"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
         </div>
         <div class="gallery-grid" id="galGrid"></div>
-        <div style="text-align:center; margin-top: 30px;">
-          <button class="btn secondary hidden" id="btnLoadMore" onclick="loadPhotos(false, true)">Load More Photos</button>
-        </div>
+        <div class="pagination" id="galPagination"></div>
       </div>
     </div>
 
@@ -357,11 +360,10 @@
         <div class="table-responsive">
             <table class="styled-table">
               <thead><tr><th>Type</th><th>Created At</th><th>Expiry</th><th>PIN</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody id="tblLinkHistory">
-                  <tr><td colspan="6" align="center" class="text-muted">No links generated yet.</td></tr>
-              </tbody>
+              <tbody id="tblLinkHistory"></tbody>
             </table>
         </div>
+        <div class="pagination" id="linkPagination"></div>
       </div>
     </div>
     
@@ -385,6 +387,7 @@
                    <tbody id="tblSelections"><tr><td colspan="4" align="center" class="text-muted">Loading activity...</td></tr></tbody>
                </table>
             </div>
+            <div class="pagination" id="clientPagination"></div>
         </div>
     </div>
 
@@ -401,6 +404,7 @@
             <tbody id="tblLeads"><tr><td colspan="4" align="center" class="text-muted">Loading leads...</td></tr></tbody>
           </table>
         </div>
+        <div class="pagination" id="leadsPagination"></div>
       </div>
     </div>
 
@@ -550,6 +554,19 @@ let currentPhotoIndex = -1;
 let previewMode = 'mobile';
 let linkHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
 
+// Pagination states
+const ITEMS_PER_PAGE = 20;
+let galCurrentPage = 1;
+let galTotalPages = 1;
+let linkCurrentPage = 1;
+let linkTotalPages = 1;
+let clientCurrentPage = 1;
+let clientTotalPages = 1;
+let leadsCurrentPage = 1;
+let leadsTotalPages = 1;
+let clientSelectionsData = []; // Store full data for client selections
+let leadsData = []; // Store full data for leads
+
 /* ================= INITIALIZATION ================= */
 window.addEventListener('load', async () => {
   const params = new URLSearchParams(location.search);
@@ -679,10 +696,10 @@ function setTab(id){
   
   // Only load if we have a valid collection
   if(curCol) {
-      if(id === 'tGal') loadPhotos(true);
+      if(id === 'tGal') loadPhotos(1); // Load first page
       if(id === 'tLeads') loadLeads();
       if(id === 'tClient') loadClientSelections();
-      if(id === 'tLink') renderLinkHistory();
+      if(id === 'tLink') renderLinkHistory(1); // Load first page
       if(id === 'tSettings') loadSettings();
   }
 }
@@ -884,41 +901,28 @@ async function updateEvent(){
 }
 
 /* ================= GALLERY & LIGHTBOX ================= */
-let photosNext = null;
-async function loadPhotos(reset=false, loadMore=false){
+async function loadPhotos(page = 1){
   if(!curCol) return;
-  if(reset) photosNext = null;
-  
+  galCurrentPage = page;
   const eid = $('#galEventFilter').value;
-  const payload = { collection_id: curCol.collection_id };
+  const payload = { collection_id: curCol.collection_id, page: page, limit: ITEMS_PER_PAGE };
   if(eid) payload.event_id = eid;
-  if(loadMore && photosNext) payload.next_token = photosNext;
 
   try {
-      const res = await api('/get-photos', payload);
-      const photos = res.items || res.photos || []; 
-      photosNext = res.nextToken; 
+      const res = await api('/get-photos', payload); // Assume backend supports page/limit
+      currentPhotos = res.items || res.photos || []; 
+      galTotalPages = res.total_pages || Math.ceil(res.total_count / ITEMS_PER_PAGE) || 1;
 
-      if(reset) {
-          $('#galGrid').innerHTML = '';
-          currentPhotos = [];
-      }
-      
-      currentPhotos = reset ? photos : currentPhotos.concat(photos);
-      $('#galCount').textContent = `${currentPhotos.length} photos displayed`;
-      
-      const html = photos.map((p, idx) => {
-          const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
+      $('#galGrid').innerHTML = currentPhotos.map((p, idx) => {
           const url = p.thumbnail_url || p.url;
           return `
-            <div class="ph-card" onclick="openLightbox(${globalIdx})">
+            <div class="ph-card" onclick="openLightbox(${idx})">
               <img src="${url}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.style.display='none'" alt="Gallery Photo">
             </div>
           `;
       }).join('');
-      
-      $('#galGrid').insertAdjacentHTML('beforeend', html);
-      if(photosNext) $('#btnLoadMore').classList.remove('hidden'); else $('#btnLoadMore').classList.add('hidden');
+      $('#galCount').textContent = `${res.total_count || currentPhotos.length} photos`;
+      renderPagination('galPagination', galCurrentPage, galTotalPages, 'loadPhotos');
   } catch(e) { showToast('Error loading photos', 'error'); }
 }
 
@@ -955,7 +959,7 @@ async function deleteCurrentPhoto() {
         await api('/delete-photo', { photo_id: p.photo_id, collection_id: curCol.collection_id });
         currentPhotos.splice(currentPhotoIndex, 1);
         if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0); 
-        loadPhotos(true); showToast('Deleted');
+        loadPhotos(galCurrentPage); showToast('Deleted');
     } catch(e) { showToast('Error deleting photo', 'error'); }
 }
 
@@ -1000,7 +1004,7 @@ async function startUploadProcess(){
   $('#uploadQueueBox').classList.add('hidden');
   $('#btnStartUpload').disabled = false;
   $('#btnStartUpload').textContent = 'Start Upload';
-  loadPhotos(true);
+  loadPhotos(galCurrentPage);
 }
 
 async function processBatch(files, eventId){
@@ -1163,36 +1167,42 @@ function addToLinkHistory(type, url, pin, expiryHours) {
     // Add to top
     linkHistory.unshift(newEntry);
     localStorage.setItem('eventlens_links', JSON.stringify(linkHistory));
-    renderLinkHistory();
+    renderLinkHistory(linkCurrentPage);
 }
 
-function renderLinkHistory() {
-    const tbody = $('#tblLinkHistory');
-    if(linkHistory.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" align="center" class="text-muted">No links generated yet.</td></tr>`;
-        return;
-    }
+function renderLinkHistory(page = 1) {
+    linkCurrentPage = page;
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    const paginatedHistory = linkHistory.slice(start, end);
+    linkTotalPages = Math.ceil(linkHistory.length / ITEMS_PER_PAGE);
     
-    tbody.innerHTML = linkHistory.map(link => {
-        const isExpired = new Date() > new Date(link.expiry);
-        const statusClass = (!link.active || isExpired) ? 'status-disabled' : 'status-active';
-        const statusText = !link.active ? 'Disabled' : (isExpired ? 'Expired' : 'Active');
-        const createdDate = new Date(link.created).toLocaleDateString();
-        
-        return `
-            <tr style="opacity: ${!link.active ? 0.6 : 1}">
-                <td>${escapeHtml(link.type)}</td>
-                <td style="font-size:12px">${createdDate}</td>
-                <td style="font-size:12px">${Math.round((new Date(link.expiry) - new Date(link.created))/3600000)}h</td>
-                <td style="font-family:monospace">${link.pin}</td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                <td>
-                    <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="copyToClip('${link.url}')"><i class="fa-regular fa-copy"></i></button>
-                    ${link.active ? `<button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="toggleLinkStatus(${link.id})"><i class="fa-solid fa-ban"></i></button>` : ''}
-                </td>
-            </tr>
-        `;
-    }).join('');
+    const tbody = $('#tblLinkHistory');
+    if(paginatedHistory.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" align="center" class="text-muted">No links generated yet.</td></tr>`;
+    } else {
+        tbody.innerHTML = paginatedHistory.map(link => {
+            const isExpired = new Date() > new Date(link.expiry);
+            const statusClass = (!link.active || isExpired) ? 'status-disabled' : 'status-active';
+            const statusText = !link.active ? 'Disabled' : (isExpired ? 'Expired' : 'Active');
+            const createdDate = new Date(link.created).toLocaleDateString();
+            
+            return `
+                <tr style="opacity: ${!link.active ? 0.6 : 1}">
+                    <td>${escapeHtml(link.type)}</td>
+                    <td style="font-size:12px">${createdDate}</td>
+                    <td style="font-size:12px">${Math.round((new Date(link.expiry) - new Date(link.created))/3600000)}h</td>
+                    <td style="font-family:monospace">${link.pin}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="copyToClip('${link.url}')"><i class="fa-regular fa-copy"></i></button>
+                        ${link.active ? `<button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="toggleLinkStatus(${link.id})"><i class="fa-solid fa-ban"></i></button>` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    renderPagination('linkPagination', linkCurrentPage, linkTotalPages, 'renderLinkHistory');
 }
 
 function toggleLinkStatus(id) {
@@ -1200,7 +1210,7 @@ function toggleLinkStatus(id) {
     if(idx > -1) {
         linkHistory[idx].active = !linkHistory[idx].active;
         localStorage.setItem('eventlens_links', JSON.stringify(linkHistory));
-        renderLinkHistory();
+        renderLinkHistory(linkCurrentPage);
     }
 }
 
@@ -1223,13 +1233,13 @@ async function loadClientSelections() {
    try {
        // 1. Ensure we have photo data for thumbnails (Use cache or fetch)
        if (currentPhotos.length === 0) {
-           await loadPhotos(true); // Populate currentPhotos
+           await loadPhotos(1); // Populate currentPhotos for page 1, but fetch all if needed
        }
        // Create a quick lookup map
        const photoMap = {};
        currentPhotos.forEach(p => photoMap[p.photo_id] = p.thumbnail_url || p.url);
 
-       // 2. Fetch Selections from Backend
+       // 2. Fetch Selections from Backend (assume backend returns all, paginate client-side)
        const res = await fetch(`${API_BASE}/client-api`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
@@ -1240,9 +1250,9 @@ async function loadClientSelections() {
        });
        
        const data = await res.json();
-       const selections = data.selections || [];
+       clientSelectionsData = data.selections || [];
        
-       if(selections.length === 0) {
+       if(clientSelectionsData.length === 0) {
            $('#tblSelections').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">No photos selected yet.</td></tr>`;
            $('#sumSel').textContent = 0;
            $('#sumFav').textContent = 0;
@@ -1255,11 +1265,32 @@ async function loadClientSelections() {
        let totalFav = 0;
        let totalDel = 0;
        
-       const rows = selections.map(s => {
+       clientSelectionsData.forEach(s => {
            if(s.status.selected) totalSel++;
            if(s.status.fav) totalFav++;
-           if(s.status.delete_req) totalDel++; // Assuming delete request might be added later
-           
+           if(s.status.delete_req) totalDel++;
+       });
+       
+       $('#sumSel').textContent = totalSel;
+       $('#sumFav').textContent = totalFav;
+       $('#sumDel').textContent = totalDel;
+       
+       renderClientSelections(clientCurrentPage);
+       
+   } catch(e) {
+       showToast('Error loading selections', 'error');
+       $('#tblSelections').innerHTML = `<tr><td colspan="4" align="center" class="text-danger">Error loading selections</td></tr>`;
+   }
+}
+
+function renderClientSelections(page = 1) {
+    clientCurrentPage = page;
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    const paginatedSelections = clientSelectionsData.slice(start, end);
+    clientTotalPages = Math.ceil(clientSelectionsData.length / ITEMS_PER_PAGE);
+
+    const rows = paginatedSelections.map(s => {
            const thumbUrl = photoMap[s.photo_id] || '';
            const thumbHtml = thumbUrl 
                 ? `<div class="photo-thumb-cell" onclick="openLightbox(${currentPhotos.findIndex(p => p.photo_id === s.photo_id)})"><img src="${thumbUrl}" alt="Selected Photo"></div>`
@@ -1290,14 +1321,7 @@ async function loadClientSelections() {
        }).join('');
        
        $('#tblSelections').innerHTML = rows;
-       $('#sumSel').textContent = totalSel;
-       $('#sumFav').textContent = totalFav;
-       $('#sumDel').textContent = totalDel;
-       
-   } catch(e) {
-       showToast('Error loading selections', 'error');
-       $('#tblSelections').innerHTML = `<tr><td colspan="4" align="center" class="text-danger">Error loading selections</td></tr>`;
-   }
+       renderPagination('clientPagination', clientCurrentPage, clientTotalPages, 'renderClientSelections');
 }
 
 async function loadLeads(){
@@ -1318,9 +1342,22 @@ async function loadLeads(){
         grouped[key].history.push(l);
     });
 
-    const rows = Object.values(grouped).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    leadsData = Object.values(grouped).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    renderLeads(leadsCurrentPage);
+  } catch(e) { 
+    showToast('Error loading leads', 'error');
+    $('#tblLeads').innerHTML = `<tr><td colspan="4">Error loading</td></tr>`; 
+  }
+}
 
-    $('#tblLeads').innerHTML = rows.map((l, i) => `
+function renderLeads(page = 1) {
+    leadsCurrentPage = page;
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    const end = start + ITEMS_PER_PAGE;
+    const paginatedLeads = leadsData.slice(start, end);
+    leadsTotalPages = Math.ceil(leadsData.length / ITEMS_PER_PAGE);
+
+    $('#tblLeads').innerHTML = paginatedLeads.map((l, i) => `
       <tr class="lead-row" onclick="$('#hist-${i}').classList.toggle('open')">
         <td>
            <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
@@ -1347,10 +1384,7 @@ async function loadLeads(){
         </td>
       </tr>
     `).join('');
-  } catch(e) { 
-    showToast('Error loading leads', 'error');
-    $('#tblLeads').innerHTML = `<tr><td colspan="4">Error loading</td></tr>`; 
-  }
+    renderPagination('leadsPagination', leadsCurrentPage, leadsTotalPages, 'renderLeads');
 }
 
 /* ================= LIVE PREVIEW & SETTINGS ================= */
@@ -1475,6 +1509,34 @@ async function uploadAsset(input, targetId) {
             showToast('Uploaded!');
         }
     } catch(e) { showToast('Upload failed', 'error'); }
+}
+
+/* ================= PAGINATION HELPER ================= */
+function renderPagination(containerId, currentPage, totalPages, callbackName) {
+    const container = $(`#${containerId}`);
+    if (!container) return;
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'btn secondary' + (currentPage === 1 ? ' disabled' : '');
+    prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+    prevBtn.onclick = currentPage > 1 ? () => window[callbackName](currentPage - 1) : null;
+    container.appendChild(prevBtn);
+
+    for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = 'btn' + (i === currentPage ? ' primary' : ' secondary');
+        pageBtn.textContent = i;
+        pageBtn.onclick = () => window[callbackName](i);
+        container.appendChild(pageBtn);
+    }
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn secondary' + (currentPage === totalPages ? ' disabled' : '');
+    nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+    nextBtn.onclick = currentPage < totalPages ? () => window[callbackName](currentPage + 1) : null;
+    container.appendChild(nextBtn);
 }
 
 /* ================= UTILS ================= */

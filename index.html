@@ -143,9 +143,9 @@
     .fab-btn {
         background: none; border: none; color: #fff; font-size: 10px; 
         display: flex; flex-direction: column; align-items: center; gap: 4px; 
-        opacity: 0.7; transition: 0.2s; cursor: pointer; min-width: 40px;
+        opacity: 0.6; transition: 0.2s; cursor: pointer; min-width: 50px; font-weight: 500;
     }
-    .fab-btn i { font-size: 20px; margin-bottom: 2px; }
+    .fab-btn i { font-size: 22px; margin-bottom: 2px; }
     .fab-btn:hover, .fab-btn.active { opacity: 1; color: var(--accent); transform: translateY(-3px); }
     .divider { width: 1px; height: 30px; background: rgba(255,255,255,0.1); }
 
@@ -184,10 +184,6 @@
     .btn-main:active { transform: scale(0.98); }
     
     #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 600; display: none; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    
-    /* Loading Spinner */
-    .spinner { width: 24px; height: 24px; border: 3px solid rgba(0, 230, 118, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -416,7 +412,7 @@
             const payload = {
                 collection_id: cid,
                 image: imageBase64,
-                selfie_image: imageBase64, // For legacy
+                selfie_image: imageBase64, 
                 min_confidence: 80,
                 pin: pin,
                 linkId: linkId || 'direct'
@@ -489,9 +485,10 @@
         
         initGallery();
         
-        // Log to Backend (Using Requested /save-details)
+        // FIX: Added proper headers for saving details
         fetch(`${API_BASE}${SAVE_ENDPOINT}`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 collection_id: cid, 
                 linkId: linkId, 
@@ -657,6 +654,7 @@
     function sendAction(pid, type, val) {
         fetch(`${API_BASE}/client-api`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: "update_selection",
                 payload: {
@@ -700,13 +698,21 @@
         const indices = Array.from(selectedIndices);
         const folder = zip.folder("EventLens_Photos");
         
+        // FIX: Added try/catch for zip fetching to handle CORS failures gracefully
+        let successCount = 0;
         await Promise.all(indices.map(async (idx) => {
             try {
                 const url = filteredMatches[idx].url;
                 const blob = await fetch(url).then(r => r.blob());
                 folder.file(`photo_${idx+1}.jpg`, blob);
-            } catch(e) {}
+                successCount++;
+            } catch(e) { console.error("Zip fetch failed for one item", e); }
         }));
+
+        if (successCount === 0) {
+            showToast("Failed to create Zip (CORS Blocked)", "error");
+            return;
+        }
 
         const content = await zip.generateAsync({type:"blob"});
         saveAs(content, "My_Photos.zip");
@@ -721,7 +727,8 @@
         const t = document.getElementById('toast');
         t.innerText = msg;
         t.style.display = 'block';
-        t.style.borderColor = type === 'error' ? '#ff4444' : '#00e676';
+        if(type === 'error') t.style.borderColor = '#ff4444';
+        else t.style.borderColor = '#333';
         setTimeout(() => t.style.display = 'none', 3000);
     }
     

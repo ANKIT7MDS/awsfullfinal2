@@ -4,15 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>EventLens – Smart AI Gallery</title>
-  <!-- Policy: No Referrer for S3 compliance -->
+  
+  <!-- IMP: No Referrer for S3, Unsafe Inline for Scripts -->
   <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
 
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -21,52 +23,61 @@
       --text: #ffffff; --muted: #a0a0a0; --border: #333;
       --font-main: 'Plus Jakarta Sans', sans-serif;
       --font-head: 'Outfit', sans-serif;
-      --overlay-op: 0.4;
-      --logo-size: 80px; 
-      --banner-height: 240px;
+      --overlay-op: 0.6;
+      --logo-size: 90px; 
+      --banner-height: 280px;
     }
-    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; padding-bottom: 80px; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-main); overflow-x: hidden; padding-bottom: 100px; }
 
     /* --- PREMIUM HEADER --- */
     header { 
         position: relative; height: var(--banner-height); overflow: hidden; 
-        background-color: #222; background-size: cover; background-position: center;
-        border-bottom: 1px solid var(--border); transition: height 0.3s ease;
+        background: #111; border-bottom: 1px solid var(--border);
     }
-    .header-overlay { 
-        position: absolute; inset: 0; 
-        background: linear-gradient(to bottom, rgba(0,0,0,0.2), #050505); 
-        display: flex; flex-direction: column; justify-content: flex-end; padding: 25px; text-align: center; align-items: center; 
+    .header-bg {
+        position: absolute; inset: 0; background-size: cover; background-position: center;
+        filter: brightness(0.5); transform: scale(1.05); transition: 0.5s;
+    }
+    .header-content { 
+        position: relative; z-index: 2; height: 100%;
+        display: flex; flex-direction: column; justify-content: flex-end; align-items: center; 
+        padding: 30px; background: linear-gradient(to top, var(--bg) 5%, transparent);
     }
     .brand-logo { 
         width: var(--logo-size); height: var(--logo-size); border-radius: 50%; border: 3px solid var(--accent); 
-        object-fit: cover; margin-bottom: 12px; background: #000; display: none; box-shadow: 0 8px 30px rgba(0,0,0,0.5); 
+        object-fit: cover; margin-bottom: 15px; background: #000; display: none; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
     }
-    .welcome-text { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; display: none; }
-    .brand-title { font-family: var(--font-head); font-size: 32px; font-weight: 700; letter-spacing: -0.5px; text-shadow: 0 4px 15px rgba(0,0,0,0.8); margin: 0; }
+    .welcome-text { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 5px; letter-spacing: 2px; text-transform: uppercase; display: none; }
+    .brand-title { font-family: var(--font-head); font-size: 36px; font-weight: 800; letter-spacing: -1px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); margin: 0; }
 
     /* --- CONTAINER --- */
     .container { max-width: 1200px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
     
     /* --- SEARCH UI --- */
-    .search-card { 
-        background: rgba(18, 18, 18, 0.8); border: 1px solid var(--border); border-radius: 24px; padding: 40px 20px; 
-        text-align: center; margin-top: -50px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); backdrop-filter: blur(20px); 
+    .screen { display: none; min-height: 70vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+    .screen.active { display: flex; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+    .upload-card {
+        width: 100%; max-width: 400px; background: rgba(20,20,20,0.6); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 30px; padding: 40px 30px; text-align: center; position: relative; overflow: hidden;
+        backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        margin-top: -60px;
     }
-    .upload-circle {
-        width: 160px; height: 160px; border-radius: 50%; background: #1a1a1a; border: 2px dashed #444;
+    
+    .selfie-ring {
+        width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 2px dashed #555;
         margin: 30px auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
         cursor: pointer; position: relative; overflow: hidden; transition: 0.3s;
     }
-    .upload-circle:active { transform: scale(0.96); border-color: var(--accent); }
-    .upload-circle i { font-size: 40px; color: #555; margin-bottom: 10px; }
-    .upload-circle span { font-size: 11px; color: #666; font-weight: 700; text-transform: uppercase; }
-    .upload-circle img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; display: none; }
+    .selfie-ring:active { transform: scale(0.95); border-color: var(--accent); background: var(--accent-soft); }
+    .selfie-ring img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; }
     
     .scan-line {
-        position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-        background: var(--accent); box-shadow: 0 0 15px var(--accent);
+        position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+        background: var(--accent); box-shadow: 0 0 20px var(--accent);
         animation: scan 1.5s infinite linear; display: none; z-index: 10;
     }
     @keyframes scan { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
@@ -74,152 +85,146 @@
     /* --- GALLERY TABS --- */
     .tabs-wrapper {
         display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;
+        margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;
     }
-    .tabs-list { display: flex; gap: 8px; }
+    .tabs-list { display: flex; gap: 10px; }
     .tab {
-        background: var(--surface); color: var(--muted); padding: 8px 16px; border-radius: 50px; 
-        font-size: 13px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; white-space: nowrap; transition: 0.2s;
+        background: rgba(255,255,255,0.05); color: var(--muted); padding: 10px 20px; border-radius: 50px; 
+        font-size: 14px; font-weight: 600; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: 0.3s;
     }
-    .tab.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    .tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .tab.active { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-soft); }
     
     .fav-badge {
-        font-size: 14px; font-weight: 700; color: #ff4081; display: flex; align-items: center; gap: 6px;
-        background: rgba(255, 64, 129, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255, 64, 129, 0.2);
+        font-size: 14px; font-weight: 700; color: #ff4081; display: flex; align-items: center; gap: 8px;
+        background: rgba(255, 64, 129, 0.1); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255, 64, 129, 0.3);
     }
 
     /* --- GRID --- */
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; transition: opacity 0.3s; }
-    @media(min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; } }
-
-    .photo-item { 
-        aspect-ratio: 2/3; background: #1a1a1a; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; 
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s;
+    .grid { 
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; 
+        padding-bottom: 40px;
     }
-    .photo-item:active { transform: scale(0.98); }
-    .photo-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+    @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; } }
+
+    .photo-card {
+        position: relative; aspect-ratio: 2/3; background: #151515; overflow: hidden; 
+        border-radius: 12px; cursor: pointer; transition: transform 0.2s;
+    }
+    .photo-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; opacity: 0; }
+    .photo-card img.loaded { opacity: 1; }
     
-    /* Ribbon & Selection */
+    /* RIBBON */
     .ribbon {
-        position: absolute; top: 12px; left: -26px; width: 100px; background: var(--accent); color: #000;
-        font-size: 9px; font-weight: 800; text-align: center; transform: rotate(-45deg);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 5; pointer-events: none; text-transform: uppercase;
+        position: absolute; top: 12px; left: -28px; width: 100px; background: var(--accent); color: #000;
+        font-size: 10px; font-weight: 800; text-align: center; transform: rotate(-45deg);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 5; pointer-events: none; text-transform: uppercase; letter-spacing: 1px;
     }
-    
-    .photo-item.selected img { opacity: 0.4; transform: scale(0.95); }
-    .select-overlay {
-        position: absolute; inset: 0; background: rgba(0, 230, 118, 0.2); border: 2px solid var(--accent); border-radius: 12px;
-        display: none; align-items: center; justify-content: center;
-    }
-    .photo-item.selected .select-overlay { display: flex; }
-    .check-icon { width: 40px; height: 40px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
 
-    /* --- ACTION BAR (FLOATING) --- */
-    .action-bar { 
-        position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%) translateY(120px); 
-        background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(16px); 
-        border: 1px solid rgba(255,255,255,0.1); border-radius: 60px; 
-        padding: 10px 25px; display: flex; align-items: center; gap: 20px; 
-        box-shadow: 0 15px 40px rgba(0,0,0,0.6); z-index: 100; width: auto; 
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    /* SELECTION OVERLAY */
+    .select-overlay {
+        position: absolute; inset: 0; background: rgba(0, 230, 118, 0.3); border: 3px solid var(--accent); border-radius: 12px;
+        display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px);
+    }
+    .photo-card.selected .select-overlay { display: flex; }
+    .check-icon { width: 45px; height: 45px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); }
+
+    /* --- FLOATING ACTION BAR --- */
+    .action-bar {
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150px);
+        background: rgba(18, 18, 18, 0.95); backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.15); border-radius: 100px;
+        padding: 12px 30px; display: flex; gap: 25px; align-items: center;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.7); z-index: 200; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .action-bar.visible { transform: translateX(-50%) translateY(0); }
-    .act-btn { background: none; border: none; color: #fff; font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; opacity: 0.7; transition: 0.2s; min-width: 45px; }
-    .act-btn i { font-size: 20px; margin-bottom: 2px; }
-    .act-btn:hover, .act-btn.active { opacity: 1; color: var(--accent); transform: translateY(-3px); }
-    .divider { width: 1px; height: 25px; background: rgba(255,255,255,0.15); }
-
-    /* --- MODALS --- */
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-    .modal.open { display: flex; animation: fadeIn 0.3s; }
-    .modal-card { background: var(--card); border: 1px solid var(--border); width: 90%; max-width: 380px; padding: 35px 25px; border-radius: 24px; text-align: center; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
     
-    .lead-input { 
-        width: 100%; padding: 16px; margin-bottom: 12px; background: #080808; border: 1px solid #333; 
-        border-radius: 12px; color: #fff; font-size: 16px; transition: 0.2s;
+    .fab-btn {
+        background: none; border: none; color: #fff; font-size: 11px; 
+        display: flex; flex-direction: column; align-items: center; gap: 5px; 
+        opacity: 0.6; transition: 0.2s; cursor: pointer; min-width: 50px; font-weight: 500;
     }
-    .lead-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-    .btn-primary { background: var(--accent); color: #000; border: none; padding: 16px; width: 100%; border-radius: 12px; font-weight: 800; font-size: 16px; cursor: pointer; letter-spacing: 0.5px; }
+    .fab-btn i { font-size: 22px; }
+    .fab-btn:hover, .fab-btn.active { opacity: 1; color: var(--accent); transform: translateY(-3px); }
+    .divider { width: 1px; height: 30px; background: rgba(255,255,255,0.1); }
 
-    /* --- LIGHTBOX (PREMIUM SLIDER) --- */
-    .viewer { position: fixed; inset: 0; background: #000; z-index: 300; display: none; flex-direction: column; }
-    .viewer.open { display: flex; }
+    /* --- LIGHTBOX (FIXED SIZE) --- */
+    .lightbox { position: fixed; inset: 0; background: #000; z-index: 500; display: none; flex-direction: column; }
+    .lb-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; width: 100%; }
     
-    .v-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; position: absolute; top: 0; width: 100%; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
-    .v-counter { font-size: 14px; font-weight: 600; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-    .v-close { color: #fff; font-size: 28px; background: none; border: none; cursor: pointer; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
-
-    .v-content { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-    .v-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.2s; }
-    
-    /* Navigation Arrows */
-    .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); padding: 20px; color: rgba(255,255,255,0.6); font-size: 30px; cursor: pointer; z-index: 5; transition: 0.2s; }
-    .nav-arrow:hover { color: #fff; background: rgba(0,0,0,0.2); border-radius: 50%; }
-    .nav-left { left: 10px; } .nav-right { right: 10px; }
-
-    .v-footer { 
-        padding: 30px 20px 40px; display: flex; justify-content: space-evenly; align-items: center;
-        background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+    /* FIX: Image Constraint */
+    .lb-img { 
+        max-width: 100vw; max-height: 85vh; 
+        object-fit: contain; transition: transform 0.2s;
     }
-    .v-btn {
+    
+    .lb-top { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+    .lb-bot { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; display: flex; justify-content: space-around; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
+    
+    .lb-action { 
         background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); 
         width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-        color: #fff; font-size: 22px; cursor: pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        color: #fff; font-size: 22px; transition: 0.2s; cursor: pointer; backdrop-filter: blur(10px);
     }
-    .v-btn:active { transform: scale(0.9); }
-    .v-btn.active.fav { background: #ff4081; border-color: #ff4081; box-shadow: 0 0 20px rgba(255, 64, 129, 0.4); }
-    .v-btn.active.del { background: #ff4444; border-color: #ff4444; box-shadow: 0 0 20px rgba(255, 68, 68, 0.4); }
+    .lb-action.active-fav { background: #ff4081; border-color: #ff4081; box-shadow: 0 0 20px rgba(255, 64, 129, 0.4); }
+    .lb-action.active-del { background: #ff4444; border-color: #ff4444; }
 
-    /* UTILS */
+    .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); padding: 20px; color: rgba(255,255,255,0.4); font-size: 30px; cursor: pointer; z-index: 5; transition: 0.2s; }
+    .nav-arrow:hover { color: #fff; background: rgba(0,0,0,0.3); border-radius: 50%; }
+    .nav-left { left: 10px; } .nav-right { right: 10px; }
+
+    /* MODAL */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 400; display: none; align-items: center; justify-content: center; }
+    .lead-input { width: 100%; padding: 18px; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 14px; margin-bottom: 15px; font-size: 16px; outline:none; transition:0.2s; }
+    .lead-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
     .hidden { display: none !important; }
-    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: #222; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 600; display: none; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .btn-main { background: var(--accent); color: #000; border: none; padding: 18px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; letter-spacing: 0.5px; box-shadow: 0 5px 20px var(--accent-soft); transition: 0.2s; }
+    .btn-main:active { transform: scale(0.98); }
     
-    /* Loading Spinner */
-    .spinner { width: 24px; height: 24px; border: 3px solid rgba(0, 230, 118, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 600; display: none; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.6); white-space: nowrap; }
   </style>
 </head>
 <body>
 
-<div id="toast">Message</div>
+<div id="toast">Notification</div>
 
-<!-- HEADER -->
-<header id="pageHeader">
-    <div class="header-overlay">
-        <img id="pageLogo" class="brand-logo" alt="Logo" onerror="this.style.display='none'">
-        <div id="welcomeText" class="welcome-text"></div>
-        <h1 class="brand-title" id="pageTitle">EventLens Gallery</h1>
+<!-- HEADER (Branding) -->
+<header id="header">
+    <div class="header-bg" id="headerBg"></div>
+    <div class="header-content">
+        <img id="brandLogo" class="brand-logo" onerror="this.style.display='none'">
+        <h1 class="brand-title" id="brandTitle">Gallery</h1>
+        <p class="welcome-text" id="welcomeText" style="display:block; margin-top:5px; opacity:0.8;">Welcome Guest</p>
     </div>
 </header>
 
-<!-- SEARCH SECTION -->
-<div class="container" id="searchContainer">
-    <div class="search-card">
+<!-- SCREEN 1: SEARCH -->
+<div id="screenSearch" class="screen active">
+    <div class="upload-card">
         <i class="fa-solid fa-face-smile-wink" style="font-size: 40px; color: var(--accent); margin-bottom: 15px;"></i>
         <h2 style="margin: 0 0 10px; font-family: var(--font-head);">Find Your Photos</h2>
-        <p style="color:var(--muted); font-size: 14px; margin-bottom: 30px; line-height: 1.5;">Upload a selfie to instantly find all your photos from this event using AI.</p>
+        <p style="color:var(--muted); font-size: 14px; margin-bottom: 30px; line-height: 1.6;">AI Magic! Upload a clear selfie to instantly find your photos from the event.</p>
         
-        <div class="upload-circle" onclick="document.getElementById('selfieInput').click()">
+        <div class="selfie-ring" onclick="document.getElementById('fileIn').click()">
             <div class="scan-line" id="scanLine"></div>
             <img id="previewImg">
-            <i class="fa-solid fa-camera"></i>
-            <span>Upload Selfie</span>
+            <i class="fa-solid fa-camera" style="font-size:36px; color:#555;"></i>
+            <span style="font-size:12px; color:#666; font-weight:700; margin-top:8px;">UPLOAD</span>
         </div>
-        <input type="file" id="selfieInput" accept="image/*" hidden onchange="handleSelfieSelect(this.files[0])">
+        <input type="file" id="fileIn" hidden accept="image/*" onchange="processSelfie(this.files[0])">
         
-        <p id="statusText" style="font-size: 13px; color: var(--accent); height: 20px;"></p>
+        <p id="statusText" style="font-size: 13px; color: var(--accent); height: 20px; font-weight:600;"></p>
         
-        <!-- PIN UI -->
-        <div id="pinArea" class="hidden" style="margin-top: 25px; animation: fadeIn 0.3s;">
-            <p style="color: #ff4081; font-size: 13px; margin-bottom: 10px; font-weight: 600;"><i class="fa-solid fa-lock"></i> Gallery Protected</p>
-            <input type="tel" id="manualPin" class="lead-input" placeholder="Enter PIN" style="text-align: center; letter-spacing: 5px; font-size: 20px; font-weight: 700; width: 200px;">
-            <button class="btn-main" onclick="retrySearchWithPin()" style="padding: 12px 30px; font-size: 14px; width: auto; margin: 0 auto; display: block;">Unlock</button>
+        <!-- PIN Input -->
+        <div id="pinBox" class="hidden" style="margin-top:20px;">
+            <input type="tel" id="pinInput" class="lead-input" placeholder="Enter Event PIN" style="text-align:center; letter-spacing:5px; font-weight:700;">
+            <button class="btn-main" onclick="retrySearch()">Unlock Gallery</button>
         </div>
     </div>
 </div>
 
-<!-- GALLERY SECTION -->
+<!-- SCREEN 2: GALLERY -->
 <div class="container hidden" id="galleryContainer">
     <div class="tabs-wrapper">
         <div class="tabs-list" id="eventTabs">
@@ -233,60 +238,60 @@
     <div style="text-align:center; padding: 60px 20px; color: #555;" class="hidden" id="noResultsMsg">
         <i class="fa-regular fa-face-frown-open" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
         <p>No photos found in this category.</p>
-        <button class="btn-main" onclick="location.reload()" style="margin-top: 20px; font-size: 14px; padding: 12px 24px; width: auto;">Try Another Selfie</button>
     </div>
 </div>
 
-<!-- PREMIUM ACTION BAR -->
+<!-- ACTION BAR -->
 <div class="action-bar" id="actionBar">
-    <button class="act-btn" onclick="toggleSelectionMode()" id="btnSelectMode"><i class="fa-solid fa-check-double"></i> Select</button>
+    <button class="fab-btn" onclick="toggleSelectionMode()" id="btnSelectMode"><i class="fa-solid fa-check-double"></i><span>Select</span></button>
     <div class="divider"></div>
-    <button class="act-btn" onclick="downloadSelectedItems()"><i class="fa-solid fa-download"></i> Save</button>
-    <button class="act-btn" onclick="downloadAsZip()"><i class="fa-solid fa-file-zipper"></i> Zip</button>
-    <button class="act-btn" onclick="shareOnWhatsapp()"><i class="fa-brands fa-whatsapp"></i> Share</button>
+    <button class="fab-btn" onclick="downloadSelectedItems()"><i class="fa-solid fa-download"></i><span>Save</span></button>
+    <button class="fab-btn" onclick="downloadAsZip()"><i class="fa-solid fa-file-zipper"></i><span>Zip</span></button>
+    <button class="fab-btn" onclick="shareOnWhatsapp()"><i class="fa-brands fa-whatsapp"></i><span>Share</span></button>
     <div class="divider"></div>
-    <button class="act-btn" style="color:#ff4444;" onclick="location.reload()"><i class="fa-solid fa-power-off"></i> Exit</button>
+    <button class="fab-btn" style="color:#ff4444;" onclick="location.reload()"><i class="fa-solid fa-power-off"></i><span>Exit</span></button>
 </div>
 
 <!-- LEAD MODAL -->
 <div class="modal" id="leadModal">
-    <div class="modal-card">
+    <div class="upload-card" style="margin-top:0;">
         <div style="width: 70px; height: 70px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--accent-soft);">
             <i class="fa-solid fa-check" style="color: var(--accent); font-size: 32px;"></i>
         </div>
         <h2 style="margin: 0 0 10px; font-family: var(--font-head);">Success!</h2>
-        <p style="color: var(--muted); margin-bottom: 30px; font-size: 15px;">We found <span id="leadMatchCount" style="color: #fff; font-weight: 800; font-size: 18px;">0</span> photos matching your face. Please enter your details to view them.</p>
+        <p style="color: var(--muted); margin-bottom: 30px; font-size: 15px;">We found <span id="leadMatchCount" style="color: #fff; font-weight: 800; font-size: 18px;">0</span> photos matching your face.</p>
         
         <input id="guestName" class="lead-input" placeholder="Full Name">
         <input id="guestMobile" class="lead-input" placeholder="Mobile Number" type="tel">
         
-        <button class="btn-primary" onclick="unlockGallery()">View My Photos</button>
+        <button class="btn-main" onclick="unlockGallery()">View My Photos</button>
     </div>
 </div>
 
-<!-- PREMIUM LIGHTBOX -->
-<div class="viewer" id="viewer">
-    <div class="v-header">
-        <div class="v-counter"><span id="lbIndex">1</span> / <span id="lbTotal">10</span></div>
-        <button class="v-close" onclick="closeViewer()">&times;</button>
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+    <div class="lb-top">
+        <span style="color:#fff; font-size:16px; font-weight:600;"><span id="lbIndex">1</span> / <span id="lbTotal">10</span></span>
+        <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:28px;"><i class="fa-solid fa-xmark"></i></button>
     </div>
     
-    <div class="v-content" id="lbTouchArea">
+    <div class="lb-img-wrap" id="lbTouchArea">
+        <img id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
         <div class="nav-arrow nav-left" onclick="nav(-1)"><i class="fa-solid fa-chevron-left"></i></div>
-        <img id="viewerImg" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
         <div class="nav-arrow nav-right" onclick="nav(1)"><i class="fa-solid fa-chevron-right"></i></div>
     </div>
     
-    <div class="v-footer">
-        <button class="v-btn" id="btnFav" onclick="toggleAction('fav')"><i class="fa-solid fa-heart"></i></button>
-        <button class="v-btn" onclick="downloadSingle()"><i class="fa-solid fa-download"></i></button>
-        <button class="v-btn" id="btnDel" onclick="toggleAction('delete_req')"><i class="fa-solid fa-trash"></i></button>
+    <div class="lb-bot">
+        <button class="lb-action" id="btnFav" onclick="toggleFav()"><i class="fa-solid fa-heart"></i></button>
+        <button class="lb-action" onclick="downloadSingle()"><i class="fa-solid fa-download"></i></button>
+        <button class="lb-action" id="btnDel" onclick="toggleDel()"><i class="fa-solid fa-trash"></i></button>
     </div>
 </div>
 
 <script>
     /* --- CONFIG & STATE --- */
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+    const SAVE_ENDPOINT = "/save-details"; // Explicitly requested endpoint
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId') || urlParams.get('id');
     let cid = urlParams.get('cid') || urlParams.get('collection_id');
@@ -304,29 +309,18 @@
 
     /* --- INIT --- */
     window.onload = async () => {
-        if (!cid && !linkId) {
-            document.body.innerHTML = `<div style="display:flex;height:100vh;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;">
-                <div><i class="fa-solid fa-link-slash" style="font-size:40px;margin-bottom:15px;color:#ff4444;"></i><br>
-                Invalid Link<br><span style="font-size:12px;color:#888;">Missing Collection ID</span></div>
-            </div>`;
-            return;
-        }
+        if(!cid && !linkId) return alert("Invalid Link");
 
-        // Fetch Branding & Auto-Resolve CID
+        // Fetch Branding & Resolve CID
         try {
-            let fetchUrl = "";
-            if (cid) fetchUrl = `${API_BASE}/get-branding?cid=${cid}`;
-            else if (linkId) fetchUrl = `${API_BASE}/get-branding?linkId=${linkId}`;
-            
-            if (fetchUrl) {
-                const res = await fetch(fetchUrl);
-                if(res.ok) {
-                    const data = await res.json();
-                    if (!cid && (data.collection_id || data.collectionId)) cid = data.collection_id || data.collectionId;
-                    applyBranding(data);
-                }
+            const endpoint = cid ? `cid=${cid}` : `linkId=${linkId}`;
+            const res = await fetch(`${API_BASE}/get-branding?${endpoint}`);
+            if(res.ok) {
+                const data = await res.json();
+                if(!cid) cid = data.collection_id || data.collectionId; 
+                applyBranding(data);
             }
-        } catch(e) { console.error("Branding fetch failed", e); }
+        } catch(e) {}
     };
 
     function applyBranding(data) {
@@ -347,17 +341,16 @@
         }
         if(data.header_img) {
             const img = new Image();
-            img.onload = () => document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
+            img.onload = () => document.getElementById('headerBg').style.backgroundImage = `url('${data.header_img}')`;
             img.src = data.header_img; 
         }
         if(data.logo) {
-            const logo = document.getElementById('pageLogo');
-            logo.src = data.logo;
-            logo.style.display = 'block';
+            document.getElementById('brandLogo').src = data.logo;
+            document.getElementById('brandLogo').style.display = 'block';
         }
     }
 
-    /* --- STEP 1: SELFIE & SEARCH --- */
+    /* --- SEARCH FLOW --- */
     function resizeImage(file, maxWidth = 800) {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -367,73 +360,56 @@
                 img.src = e.target.result;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if (w > maxWidth) { h *= maxWidth/w; w = maxWidth; }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.85));
-                };
-            };
+                    let w=img.width, h=img.height;
+                    if(w>800){ h*=800/w; w=800; }
+                    canvas.width=w; canvas.height=h;
+                    canvas.getContext('2d').drawImage(img,0,0,w,h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+                }
+            }
         });
     }
 
     async function handleSelfieSelect(file) {
         if(!file) return;
         
-        // UI
         const img = document.getElementById('previewImg');
         img.src = URL.createObjectURL(file);
         img.style.display = 'block';
         document.getElementById('scanLine').style.display = 'block';
         document.getElementById('statusText').innerText = "Scanning database...";
-        document.getElementById('pinArea').classList.add('hidden'); 
+        document.getElementById('pinBox').classList.add('hidden');
         
         try {
             pendingSelfieBase64 = await resizeImage(file, 800);
-            performSearch(urlPin); 
+            performSearch(urlPin);
         } catch(e) {
             console.error(e);
-            alert("Image processing failed.");
+            alert("Image Error");
         }
     }
 
-    async function retrySearchWithPin() {
-        const pin = document.getElementById('manualPin').value;
+    async function retrySearch() {
+        const pin = document.getElementById('pinInput').value;
         if(!pin) return showToast("Enter PIN", "error");
-        document.getElementById('statusText').innerText = "Verifying...";
         performSearch(pin);
     }
 
     async function performSearch(pin) {
-        // Double check CID
-        if (!cid) {
-             if (linkId) {
-                 try {
-                     const res = await fetch(`${API_BASE}/get-branding?linkId=${linkId}`);
-                     if (res.ok) {
-                         const data = await res.json();
-                         if (data.collection_id) cid = data.collection_id;
-                     }
-                 } catch(e) {}
-             }
-             if (!cid) return alert("System Error: Collection ID not found.");
-        }
+        if(!cid) return alert("Collection ID Missing");
 
         try {
-            const imageBase64 = pendingSelfieBase64.split(',')[1];
-            
-            // Payload compatible with both Lambda versions
+            // HYBRID PAYLOAD
             const payload = {
                 collection_id: cid,
-                image: imageBase64,
-                selfie_image: imageBase64, 
+                image: pendingSelfieBase64,
+                selfie_image: pendingSelfieBase64, // For legacy
                 min_confidence: 80,
                 pin: pin,
-                linkId: linkId || 'direct-search'
+                linkId: linkId || 'direct'
             };
             if(eid) payload.event_id = eid;
 
-            // Using /search endpoint
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -443,15 +419,13 @@
                     payload: payload
                 })
             });
-            
+
             const data = await res.json();
             
             if(res.ok) {
-                // Parse potentially stringified body
                 let parsedData = data;
                 if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
 
-                // Find results array
                 const matches = parsedData.matches || parsedData.photos || parsedData.ids || [];
                 
                 if(matches.length > 0) {
@@ -460,93 +434,82 @@
                     document.getElementById('leadModal').classList.add('open');
                     try { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors:['#00e676', '#ffffff'] }); } catch(e){}
                 } else {
-                    alert("No photos found matching your face.");
+                    alert("No matching photos found.");
                     document.getElementById('scanLine').style.display = 'none';
                     document.getElementById('statusText').innerText = "";
                 }
             } else {
-                if(res.status === 401 || res.status === 403 || (data.message && data.message.includes('PIN'))) {
-                    document.getElementById('statusText').innerText = "Gallery is protected.";
-                    document.getElementById('pinArea').classList.remove('hidden');
+                if(res.status === 401 || res.status === 403) {
+                    document.getElementById('pinBox').classList.remove('hidden');
                     document.getElementById('scanLine').style.display = 'none';
-                    showToast("PIN Required", "error");
+                    showToast("Protected Gallery. Enter PIN.", "error");
                 } else {
-                    throw new Error(data.message || "Search failed");
+                    alert("Search Failed: " + (data.message || "Unknown error"));
                 }
             }
-        } catch(e) {
-            console.error(e);
-            alert("Error: " + e.message);
-            document.getElementById('scanLine').style.display = 'none';
-        }
+        } catch(e) { console.error(e); alert("Network Error"); }
     }
 
-    /* --- STEP 2: LEAD CAPTURE & GALLERY --- */
+    /* --- LEAD & GALLERY --- */
     function unlockGallery() {
-        const name = document.getElementById('guestName').value.trim();
-        const mobile = document.getElementById('guestMobile').value.trim();
-        
-        if(!name || !mobile) return showToast("Name and Mobile required", "error");
+        const name = document.getElementById('guestName').value;
+        const mobile = document.getElementById('guestMobile').value;
+        if(!name || !mobile) return showToast("Details required!", "error");
 
         guestInfo = { name, mobile };
 
         document.getElementById('leadModal').classList.remove('open');
-        document.getElementById('searchContainer').classList.add('hidden');
+        document.getElementById('screenSearch').classList.remove('active');
         document.getElementById('galleryContainer').classList.remove('hidden');
         document.getElementById('actionBar').classList.add('visible');
         
         initGallery();
         
-        // Log Guest
-        fetch(`${API_BASE}/client-api`, {
+        // Log to Backend using Requested Endpoint
+        fetch(`${API_BASE}${SAVE_ENDPOINT}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: "log_guest_visit",
-                payload: { collection_id: cid, mobile: mobile, name: name, photo_count: allMatches.length }
+            body: JSON.stringify({ 
+                collection_id: cid, 
+                linkId: linkId, 
+                mobile: mobile, 
+                name: name, 
+                photo_count: allMatches.length 
             })
         });
     }
 
-    /* --- GALLERY LOGIC (WITH TABS & RIBBONS) --- */
     function initGallery() {
-        // 1. Generate Event Tabs
+        // Generate Event Tabs
         const events = { 'all': { id: 'all', name: 'All Photos', count: allMatches.length } };
         
         allMatches.forEach(p => {
-            // Logic to get event name/id from photo object
-            // If backend doesn't send it, we fallback to 'General'
             const rawEid = p.event_id || 'unknown';
             const rawName = p.event_name || (rawEid === 'unknown' ? 'General' : 'Event');
-            
             if(!events[rawEid]) events[rawEid] = { id: rawEid, name: rawName, count: 0 };
             events[rawEid].count++;
         });
 
         const tabsEl = document.getElementById('eventTabs');
-        let tabsHtml = ``;
-        
-        Object.values(events).forEach(e => {
-            const activeClass = e.id === 'all' ? 'active' : '';
-            tabsHtml += `<div class="tab ${activeClass}" onclick="filterGrid('${e.id}', this)">${e.name} <span>${e.count}</span></div>`;
-        });
-        
-        tabsEl.innerHTML = tabsHtml;
-        document.querySelector('.tabs-wrapper').style.display = 'flex';
+        if(Object.keys(events).length > 1) {
+            let tabsHtml = ``;
+            Object.values(events).forEach(e => {
+                const activeClass = e.id === 'all' ? 'active' : '';
+                tabsHtml += `<div class="tab ${activeClass}" onclick="filterGrid('${e.id}', this)">${e.name} <span>${e.count}</span></div>`;
+            });
+            tabsEl.innerHTML = tabsHtml;
+            document.querySelector('.tabs-wrapper').style.display = 'flex';
+        }
 
-        // Initial Render
         renderGrid(allMatches);
     }
 
     function filterGrid(filterEid, el) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
-
-        if(filterEid === 'all') {
-            filteredMatches = allMatches;
-        } else {
-            filteredMatches = allMatches.filter(p => (p.event_id || 'unknown') === filterEid);
-        }
+        
+        if(filterEid === 'all') filteredMatches = allMatches;
+        else filteredMatches = allMatches.filter(p => (p.event_id || 'unknown') === filterEid);
+        
         renderGrid(filteredMatches);
     }
 
@@ -555,29 +518,33 @@
         grid.innerHTML = '';
         
         if(photos.length === 0) {
-            document.getElementById('emptyState').classList.remove('hidden'); // Need to add emptyState HTML or reuse noResultsMsg logic
+            document.getElementById('noResultsMsg').classList.remove('hidden');
             return;
         }
+        document.getElementById('noResultsMsg').classList.add('hidden');
 
         photos.forEach((p, idx) => {
-            const isTop = idx < 3; // Top 3 are best matches
+            const isTop = idx < 3;
             const card = document.createElement('div');
-            card.className = `photo-item ${selectedIndices.has(idx) ? 'selected' : ''}`;
+            card.className = `photo-card ${selectedIndices.has(idx) ? 'selected' : ''}`;
             card.onclick = () => handleCardClick(p, idx);
             
-            // Clean img tag for S3
-            card.innerHTML = `
-                ${isTop ? '<div class="ribbon">Best</div>' : ''}
-                <img src="${p.thumbnail_url || p.url}" loading="lazy" referrerpolicy="no-referrer">
-                <div class="select-overlay"><div class="check-icon"><i class="fa-solid fa-check"></i></div></div>
-            `;
+            // Fixed: Standard Img Tag
+            const imgEl = document.createElement('img');
+            imgEl.onload = () => imgEl.classList.add('loaded');
+            imgEl.src = p.thumbnail_url || p.url;
+            
+            card.innerHTML = `${isTop ? '<div class="ribbon">Best</div>' : ''}`;
+            card.appendChild(imgEl);
+            card.innerHTML += `<div class="select-overlay"><div class="check-icon"><i class="fa-solid fa-check"></i></div></div>`;
+            
             grid.appendChild(card);
         });
         
         filteredMatches = photos; 
     }
 
-    /* --- INTERACTION MODES --- */
+    /* --- INTERACTION --- */
     function toggleSelectionMode() {
         isSelectMode = !isSelectMode;
         document.getElementById('btnSelectMode').classList.toggle('active', isSelectMode);
@@ -586,7 +553,7 @@
 
     function handleCardClick(photo, idx) {
         if(isSelectMode) {
-            const el = document.querySelectorAll('.photo-item')[idx];
+            const el = document.querySelectorAll('.photo-card')[idx];
             if(selectedIndices.has(idx)) {
                 selectedIndices.delete(idx);
                 el.classList.remove('selected');
@@ -594,43 +561,37 @@
                 selectedIndices.add(idx);
                 el.classList.add('selected');
             }
-            updateActionBar();
+            // Update UI count if needed
         } else {
-            openViewer(idx);
+            openLightbox(idx);
         }
-    }
-
-    function updateActionBar() {
-        document.getElementById('selCount').innerText = selectedIndices.size;
     }
 
     function selectAllMatches() {
         filteredMatches.forEach((_, i) => selectedIndices.add(i));
-        renderGrid(filteredMatches); // Redraw to show selection
-        updateActionBar();
+        renderGrid(filteredMatches);
+        showToast("All Selected");
     }
 
-    /* --- PREMIUM LIGHTBOX --- */
-    function openViewer(idx) {
+    /* --- LIGHTBOX & ACTIONS --- */
+    function openLightbox(idx) {
         currentIdx = idx;
         updateLbContent();
-        document.getElementById('viewer').classList.add('open');
+        document.getElementById('lightbox').style.display = 'flex';
     }
     
-    function closeViewer() { document.getElementById('viewer').classList.remove('open'); }
+    function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 
     function updateLbContent() {
         const p = filteredMatches[currentIdx];
-        document.getElementById('viewerImg').src = p.url;
+        document.getElementById('lbImg').src = p.url;
         document.getElementById('lbIndex').innerText = currentIdx + 1;
         document.getElementById('lbTotal').innerText = filteredMatches.length;
         
-        // Update Buttons
         const btnFav = document.getElementById('btnFav');
         const btnDel = document.getElementById('btnDel');
-        
-        btnFav.className = favSet.has(p.photo_id) ? 'v-btn active fav' : 'v-btn';
-        btnDel.className = 'v-btn'; // Reset
+        btnFav.className = favSet.has(p.photo_id) ? 'lb-action active-fav' : 'lb-action';
+        btnDel.className = 'lb-action'; 
     }
 
     function nav(dir) {
@@ -640,73 +601,92 @@
         updateLbContent();
     }
 
-    /* --- ACTIONS --- */
-    async function toggleAction(type) {
+    async function toggleFav() {
         const p = filteredMatches[currentIdx];
-        const isFav = type === 'fav';
+        const btn = document.getElementById('btnFav');
+        const isFav = !favSet.has(p.photo_id);
         
         if(isFav) {
-            if(favSet.has(p.photo_id)) favSet.delete(p.photo_id);
-            else { 
-                favSet.add(p.photo_id); 
-                confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors:['#ff4081'] });
-            }
-            document.getElementById('favCount').innerText = favSet.size;
-            updateLbContent();
+            favSet.add(p.photo_id);
+            btn.classList.add('active-fav');
+            try { confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors:['#ff4081'] }); } catch(e){}
         } else {
-            if(!confirm("Request deletion?")) return;
-            showToast("Delete Request Sent");
+            favSet.delete(p.photo_id);
+            btn.classList.remove('active-fav');
         }
-
-        // Backend Sync
-        try {
-            await fetch(`${API_BASE}/client-api`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: "update_selection",
-                    payload: {
-                        collection_id: cid, photo_id: p.photo_id || p.id,
-                        status: { [type]: true, guest_name: guestInfo.name, guest_mobile: guestInfo.mobile, timestamp: Date.now() }
-                    }
-                })
-            });
-        } catch(e) {}
+        
+        document.getElementById('favCount').innerText = favSet.size;
+        
+        // Backend Update
+        sendAction(p.photo_id, 'fav', isFav);
     }
 
+    async function toggleDel() {
+        const p = filteredMatches[currentIdx];
+        if(!confirm("Request deletion?")) return;
+        sendAction(p.photo_id, 'delete_req', true);
+        showToast("Delete Request Sent");
+    }
+
+    function sendAction(pid, type, val) {
+        fetch(`${API_BASE}/client-api`, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: "update_selection",
+                payload: {
+                    collection_id: cid, photo_id: pid,
+                    status: { [type]: val, guest_name: guestInfo.name, guest_mobile: guestInfo.mobile, timestamp: Date.now() }
+                }
+            })
+        });
+    }
+
+    /* --- DOWNLOAD FIX --- */
     function downloadSingle() {
-        saveAs(filteredMatches[currentIdx].url, `Photo_${Date.now()}.jpg`);
+        const url = filteredMatches[currentIdx].url;
+        // Direct fetch blob download to avoid cross-origin issues
+        fetch(url)
+            .then(resp => resp.blob())
+            .then(blob => saveAs(blob, `Photo_${Date.now()}.jpg`))
+            .catch(() => window.open(url, '_blank')); // Fallback
     }
     
     async function downloadSelectedItems() {
         if(selectedIndices.size === 0) return showToast("No photos selected", "error");
-        showToast("Starting Download...");
+        showToast("Downloading...");
+        
         const indices = Array.from(selectedIndices);
         for(let i of indices) {
-            saveAs(filteredMatches[i].url, `photo_${i+1}.jpg`);
-            await new Promise(r => setTimeout(r, 300));
+            const url = filteredMatches[i].url;
+            try {
+                const blob = await fetch(url).then(r => r.blob());
+                saveAs(blob, `photo_${i+1}.jpg`);
+            } catch(e) { window.open(url, '_blank'); }
+            await new Promise(r => setTimeout(r, 500)); // Delay to prevent browser throttle
         }
     }
 
     async function downloadAsZip() {
         if(selectedIndices.size === 0) return showToast("No photos selected", "error");
+        
         const zip = new JSZip();
-        const btn = document.querySelector('.act-btn .fa-file-zipper').parentElement;
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Zipping...`;
+        showToast("Creating Zip... Please Wait", "info");
         
         const indices = Array.from(selectedIndices);
+        const folder = zip.folder("EventLens_Photos");
+        
+        // Fetch all in parallel
         await Promise.all(indices.map(async (idx) => {
             try {
                 const url = filteredMatches[idx].url;
                 const blob = await fetch(url).then(r => r.blob());
-                zip.file(`photo_${idx+1}.jpg`, blob);
+                folder.file(`photo_${idx+1}.jpg`, blob);
             } catch(e) {}
         }));
 
         const content = await zip.generateAsync({type:"blob"});
         saveAs(content, "My_Photos.zip");
-        btn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> Zip`;
-        showToast("Zip Downloaded!");
+        showToast("Zip Downloaded");
     }
 
     function shareOnWhatsapp() {
@@ -721,7 +701,7 @@
         setTimeout(() => t.style.display = 'none', 3000);
     }
     
-    // Swipe
+    // Swipe Logic
     let ts = 0;
     const touchArea = document.getElementById('lbTouchArea');
     touchArea.addEventListener('touchstart', e => ts = e.changedTouches[0].screenX);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>EventLens – Find Your Photos</title>
+  <title>EventLens – Smart AI Gallery</title>
 
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -70,7 +70,7 @@
 
     /* --- GALLERY CONTROLS --- */
     .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 20px; }
-    .tag-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+    
     .tag-pill { background: var(--surface); color: var(--muted); padding: 6px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; border: 1px solid var(--border); cursor: pointer; }
     .tag-pill.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
 
@@ -112,9 +112,29 @@
     body.select-mode .select-ring { display: block; }
     body.select-mode .photo-item.selected .select-ring { background: var(--accent); border-color: var(--accent); }
 
+    /* Favorite Icon */
+    .fav-btn {
+        position: absolute; bottom: 8px; right: 8px; 
+        background: rgba(0,0,0,0.6); border: none; border-radius: 50%;
+        width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+        color: #fff; cursor: pointer; z-index: 5; font-size: 14px;
+        transition: all 0.2s;
+    }
+    .fav-btn.active { color: #ff4081; background: #fff; }
+    .fav-btn:active { transform: scale(1.2); }
+
+    /* --- RIBBON --- */
+    .ribbon {
+        position: absolute; top: 12px; left: -25px; width: 100px; height: 24px;
+        background: #ff4081; color: #fff; font-size: 10px; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        transform: rotate(-45deg); box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        z-index: 10; pointer-events: none;
+    }
+
     /* --- BOTTOM BAR (ACTIONS) --- */
     .action-bar {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(150px);
         background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(12px);
         border: 1px solid var(--border); border-radius: 50px; padding: 10px 20px;
         display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
@@ -125,6 +145,11 @@
     .act-btn { background: none; border: none; color: #fff; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; opacity: 0.7; }
     .act-btn i { font-size: 20px; }
     .act-btn:hover, .act-btn.active { opacity: 1; color: var(--accent); }
+
+    /* --- LOAD MORE --- */
+    .load-more-container { text-align: center; margin-top: 30px; margin-bottom: 40px; }
+    .btn-load { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 10px 25px; border-radius: 30px; cursor: pointer; font-size: 14px; }
+    .btn-load:hover { border-color: var(--accent); }
 
     /* --- MODALS --- */
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
@@ -152,6 +177,9 @@
 </head>
 <body>
 
+<!-- SOUND EFFECT -->
+<audio id="popSound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+
 <!-- HEADER -->
 <header id="pageHeader">
     <div class="header-overlay">
@@ -173,7 +201,7 @@
             <i class="fa-solid fa-camera"></i> Upload Selfie
         </button>
 
-        <!-- Preview of uploaded selfie -->
+        <!-- Preview of uploaded selfie (Optional feedback) -->
         <div id="selfiePreviewContainer" class="hidden" style="margin-top: 15px;">
             <img id="selfiePreviewImg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
         </div>
@@ -193,6 +221,11 @@
     </div>
     
     <div class="grid" id="galleryGrid" style="margin-top: 15px;"></div>
+    
+    <!-- PAGINATION -->
+    <div id="loadMoreContainer" class="load-more-container hidden">
+        <button class="btn-load" onclick="loadMorePhotos()">Load More <i class="fa-solid fa-chevron-down"></i></button>
+    </div>
     
     <div style="text-align:center; padding: 40px; color: #555;" class="hidden" id="noResultsMsg">
         <i class="fa-regular fa-face-frown-open" style="font-size: 40px; margin-bottom: 10px;"></i>
@@ -243,16 +276,26 @@
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId');
     const cid = urlParams.get('cid'); 
+    
+    // Pagination Config
+    const PAGE_SIZE = 50;
+    let currentPage = 0;
 
     /* --- STATE --- */
     let allMatches = []; 
+    let displayedMatches = [];
     let selectedIndices = new Set();
+    let favorites = new Set(); // Local Storage Favorites
     let pendingSelfieBase64 = null;
     let isSelectMode = false;
     let currentViewUrl = null;
 
     /* --- INIT --- */
     window.onload = async () => {
+        // Load Favorites
+        const storedFavs = localStorage.getItem('el_favs_' + (linkId || cid));
+        if(storedFavs) favorites = new Set(JSON.parse(storedFavs));
+
         // Branding Load
         let brandingApiUrl = "";
         if (linkId) brandingApiUrl = `${API_BASE}/get-branding?linkId=${linkId}`;
@@ -284,7 +327,6 @@
         }
         if(data.overlay_opacity) document.documentElement.style.setProperty('--overlay-op', data.overlay_opacity);
         
-        // Safe Image Loading
         if(data.header_img) {
             const img = new Image();
             img.onload = () => document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
@@ -295,7 +337,6 @@
             logo.src = data.logo;
             logo.style.display = 'block';
         }
-        if(data.footer) document.getElementById('pageFooter').innerText = data.footer;
         
         const style = document.createElement('style');
         style.innerHTML = `
@@ -313,20 +354,13 @@
             reader.onload = (e) => {
                 const img = new Image();
                 img.src = e.target.result;
-                img.onerror = () => reject("Image load error. Maybe file format not supported.");
+                img.onerror = () => reject("Image load error.");
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let w = img.width, h = img.height;
-                    // Keep aspect ratio
-                    if (w > maxWidth) { 
-                        h = Math.round(h * (maxWidth / w)); 
-                        w = maxWidth; 
-                    }
-                    canvas.width = w; 
-                    canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    // Use somewhat high quality for better facial recognition
+                    if (w > maxWidth) { h = Math.round(h * (maxWidth / w)); w = maxWidth; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                     resolve(canvas.toDataURL('image/jpeg', 0.90));
                 };
             };
@@ -348,40 +382,31 @@
         loaderText.innerText = "Scanning your face...";
         
         try {
-            // 1. Resize & Preview
             pendingSelfieBase64 = await resizeImage(file, 800);
             document.getElementById('selfiePreviewImg').src = pendingSelfieBase64;
             document.getElementById('selfiePreviewContainer').classList.remove('hidden');
 
-            // 2. Search API
             loaderText.innerText = "Searching gallery...";
-            
-            // Clean base64 string (remove data:image/jpeg;base64, prefix if needed by backend, 
-            // but your updated lambda seems to handle splits or direct base64)
-            // Safety: sending cleaned base64 just in case
             const base64Clean = pendingSelfieBase64.split(',')[1];
 
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    linkId: linkId || cid, 
-                    selfie_image: base64Clean,
-                    // Optional: Pin agar future mein zaroorat ho
-                    pin: null
-                })
+                body: JSON.stringify({ linkId: linkId || cid, selfie_image: base64Clean })
             });
             
             if (!res.ok) throw new Error("Server error");
             const data = await res.json();
-            
             loader.classList.add('hidden');
 
-            // Handle Matches
             if(data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
-                allMatches = data.matches; 
+                allMatches = data.matches;
+                currentPage = 0; // Reset pagination
                 document.getElementById('leadMatchCount').innerText = allMatches.length;
                 document.getElementById('leadModal').classList.add('open');
+                
+                // Sound & Confetti
+                document.getElementById('popSound').play().catch(()=>{});
                 confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             } else {
                 document.getElementById('noResultsMsg').classList.remove('hidden');
@@ -389,7 +414,7 @@
             }
         } catch(e) {
             console.error("Search Error:", e);
-            alert("Search failed. Please checking your internet connection and try again.");
+            alert("Search failed. Please checking your internet.");
             loader.classList.add('hidden');
         }
     }
@@ -404,16 +429,13 @@
             return;
         }
 
-        // Close Modal & Show Gallery
         document.getElementById('leadModal').classList.remove('open');
         document.getElementById('searchContainer').classList.add('hidden'); 
         document.getElementById('galleryContainer').classList.remove('hidden');
         
-        // Render
-        renderGallery(allMatches);
+        // Initial Render (First 50)
+        renderBatch();
         
-        // Async: Save Lead details to DynamoDB
-        // Payload matches your selfie-search-save-details.py requirements
         try {
             const base64Clean = pendingSelfieBase64.split(',')[1];
             fetch(`${API_BASE}/save-details`, {
@@ -425,37 +447,89 @@
                     name: name, 
                     selfie_image: base64Clean, 
                     photo_count: allMatches.length,
-                    collection_id: cid || linkId // Fallback if cid not in URL
+                    collection_id: cid || linkId
                 })
             });
         } catch(e) { console.error("Lead save error", e); }
     }
 
-    /* --- STEP 3: GALLERY & ACTIONS --- */
-    function renderGallery(photos) {
-        document.getElementById('matchCount').innerText = photos.length;
+    /* --- STEP 3: PAGINATION & RENDER --- */
+    function renderBatch() {
+        const start = currentPage * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        const batch = allMatches.slice(start, end);
         const grid = document.getElementById('galleryGrid');
         
-        if (photos.length === 0) {
+        if (start === 0 && batch.length === 0) {
             document.getElementById('noResultsMsg').classList.remove('hidden');
             return;
         }
 
-        grid.innerHTML = photos.map((p, i) => {
-            // Updated Lambda returns 'url' directly (Presigned S3 URL)
-            // No manual construction needed.
+        // Add Ribbon for new matches only if quality score is high (Optional logic)
+        // Using "New" ribbon for first batch
+        const isFirstBatch = (currentPage === 0);
+
+        const html = batch.map((p, i) => {
+            const globalIndex = start + i;
             const imgUrl = p.url;
-            
+            const isFav = favorites.has(p.photo_id) ? 'active' : '';
+            const ribbon = (isFirstBatch && i < 3) ? '<div class="ribbon">TOP</div>' : '';
+
             return `
-            <div class="photo-item" id="pitem-${i}" onclick="handleItemClick(${i})">
-                <img src="${imgUrl}" referrerpolicy="no-referrer" loading="lazy" alt="Photo ${i+1}" 
-                     onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:10px;text-align:center;padding:5px;word-break:break-all;background:#222;\'><span>Not Found<br>${p.photo_id}</span></div>'">
+            <div class="photo-item" id="pitem-${globalIndex}" onclick="handleItemClick(${globalIndex})">
+                ${ribbon}
+                <img src="${imgUrl}" referrerpolicy="no-referrer" loading="lazy" alt="Photo ${globalIndex+1}" 
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:10px;text-align:center;padding:5px;word-break:break-all;background:#222;\'><span>Not Found<br>${p.photo_id.substring(0,10)}...</span></div>'">
                 <div class="select-ring"></div>
+                <button class="fav-btn ${isFav}" onclick="toggleFav(event, '${p.photo_id}')">
+                    <i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
+                </button>
             </div>
             `;
         }).join('');
+
+        if (currentPage === 0) grid.innerHTML = html;
+        else grid.insertAdjacentHTML('beforeend', html);
+
+        displayedMatches = allMatches.slice(0, end);
+
+        // Show/Hide Load More
+        const loadBtn = document.getElementById('loadMoreContainer');
+        if (end < allMatches.length) loadBtn.classList.remove('hidden');
+        else loadBtn.classList.add('hidden');
     }
 
+    function loadMorePhotos() {
+        currentPage++;
+        renderBatch();
+    }
+
+    /* --- FAVORITES --- */
+    function toggleFav(e, photoId) {
+        e.stopPropagation(); // Stop click from opening viewer/selecting
+        const btn = e.currentTarget;
+        const icon = btn.querySelector('i');
+        
+        if (favorites.has(photoId)) {
+            favorites.delete(photoId);
+            btn.classList.remove('active');
+            icon.classList.remove('fa-solid');
+            icon.classList.add('fa-regular');
+        } else {
+            favorites.add(photoId);
+            btn.classList.add('active');
+            icon.classList.remove('fa-regular');
+            icon.classList.add('fa-solid');
+            
+            // Pulse Animation
+            btn.style.transform = "scale(1.3)";
+            setTimeout(() => btn.style.transform = "scale(1)", 200);
+        }
+        // Save locally
+        localStorage.setItem('el_favs_' + (linkId || cid), JSON.stringify([...favorites]));
+    }
+
+    /* --- SELECTION & VIEWER --- */
     function toggleSelectionMode() {
         isSelectMode = !isSelectMode;
         document.body.classList.toggle('select-mode', isSelectMode);
@@ -485,7 +559,6 @@
             }
             updateActionBar();
         } else {
-            // Viewer Open
             const p = allMatches[index];
             if(p.url) {
                 currentViewUrl = p.url;
@@ -504,7 +577,8 @@
     }
 
     function selectAllMatches() {
-        allMatches.forEach((_, i) => {
+        // Select only currently loaded
+        displayedMatches.forEach((_, i) => {
             selectedIndices.add(i);
             const el = document.getElementById(`pitem-${i}`);
             if(el) el.classList.add('selected');
@@ -525,10 +599,12 @@
             const p = allMatches[i];
             if(p.url) {
                 try {
+                    // Direct Blob Download (No New Window)
                     const resp = await fetch(p.url);
                     const blob = await resp.blob();
                     saveAs(blob, `photo_${i+1}.jpg`);
                 } catch(e) {
+                    // Fallback
                     saveAs(p.url, `photo_${i+1}.jpg`);
                 }
             }
@@ -563,12 +639,19 @@
     }
 
     function shareOnWhatsapp() {
-        const text = `Hey! I found my photos from the event using EventLens. Check them out here: ${window.location.href}`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        const text = `Hey! Check out my photos from the event: ${window.location.href}`;
+        // WhatsApp API link
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
     }
 
     function downloadSingle() {
-        if(currentViewUrl) saveAs(currentViewUrl, "photo.jpg");
+        if(currentViewUrl) {
+            fetch(currentViewUrl)
+                .then(resp => resp.blob())
+                .then(blob => saveAs(blob, "photo.jpg"))
+                .catch(() => saveAs(currentViewUrl, "photo.jpg"));
+        }
     }
     
     function closeViewer() { document.getElementById('viewer').classList.remove('open'); }

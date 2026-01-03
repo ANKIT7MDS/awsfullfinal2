@@ -367,7 +367,13 @@
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ linkId: linkId || cid, selfie_image: base64Data })
+                // SEND BOTH KEYS ('selfie_image' and 'image') to solve backend NoneType error
+                body: JSON.stringify({ 
+                    linkId: linkId, 
+                    collection_id: cid, // Send explictly if available
+                    selfie_image: base64Data,
+                    image: base64Data 
+                })
             });
             
             if (!res.ok) throw new Error("Server error");
@@ -429,6 +435,7 @@
                     mobile: mobile, 
                     name: name, 
                     selfie_image: base64Data, 
+                    image: base64Data, // Add here too for safety
                     photo_count: allMatches.length 
                 })
             });

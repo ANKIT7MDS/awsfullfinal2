@@ -436,8 +436,26 @@
 // ==========================================
 // CONFIG & STATE
 // ==========================================
-// ⚠️ REPLACE THIS WITH YOUR ACTUAL API GATEWAY URL
-const API = "https://40316g826c.execute-api.ap-south-1.amazonaws.com/prod"; 
+// ✅ CORRECTED API URL (From your chat)
+const API = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+
+// ==========================================
+// AWS COGNITO CONFIGURATION
+// ==========================================
+const AUTH_CONFIG = {
+    // Domain Prefix based on UserPool 'ap-south-1_MvA8s6f3W' (Usually standard, but custom domain is better)
+    // NOTE: This might need to be your specific domain prefix like "eventlens-auth"
+    domain: "https://eventlens.auth.ap-south-1.amazoncognito.com", 
+    
+    // ⚠️ BHAI, CLIENT ID YAHAN PASTE KARO (Frontend JS me ye secret nahi hota)
+    // Yeh backend files me hardcoded nahi tha, isliye mujhe nahi mila.
+    clientId: "YOUR_COGNITO_CLIENT_ID_HERE", 
+    
+    // Callback URL (Must match Cognito settings exactly)
+    redirectUri: window.location.href.split('?')[0].split('#')[0],
+    
+    region: "ap-south-1"
+};
 
 let state = {
     user: null,
@@ -452,19 +470,17 @@ let state = {
 };
 
 // ==========================================
-// AUTH (MOCK/PLACEHOLDER)
+// AUTHENTICATION LOGIC
 // ==========================================
 function doLogin() {
-    // In production, integrate Amazon Cognito Hosted UI here
-    state.user = { id: 'admin_1', email: 'admin@eventlens.com' };
-    state.token = "mock-token";
-    
-    document.getElementById('btnLogin').classList.add('hidden');
-    document.getElementById('btnLogout').classList.remove('hidden');
-    document.getElementById('userBadge').innerText = state.user.email;
-    
-    route('dashboard');
-    loadCollections();
+    // ⚠️ Check if Client ID is still placeholder
+    if (AUTH_CONFIG.clientId.includes("YOUR_COGNITO")) {
+        alert("⚠️ LOGIN SETUP REQUIRED:\n\nCode open karke line 535 par apna Cognito 'App Client ID' paste karein.\n\nBackend files me ye ID nahi thi.");
+        return;
+    }
+
+    const loginUrl = `${AUTH_CONFIG.domain}/login?client_id=${AUTH_CONFIG.clientId}&response_type=token&scope=email+openid+profile&redirect_uri=${encodeURIComponent(AUTH_CONFIG.redirectUri)}`;
+    window.location.href = loginUrl;
 }
 
 function doLogout() {
@@ -473,6 +489,33 @@ function doLogout() {
     document.getElementById('btnLogin').classList.remove('hidden');
     document.getElementById('btnLogout').classList.add('hidden');
     document.getElementById('userBadge').innerText = 'Guest';
+    history.replaceState(null, null, ' ');
+}
+
+function checkAuthCallback() {
+    const hash = window.location.hash;
+    if (hash && hash.includes('id_token=')) {
+        try {
+            const params = new URLSearchParams(hash.substring(1));
+            const idToken = params.get('id_token');
+            if (idToken) {
+                state.token = idToken;
+                const payload = JSON.parse(atob(idToken.split('.')[1]));
+                state.user = { id: payload.sub, email: payload.email || 'User' };
+                
+                document.getElementById('btnLogin').classList.add('hidden');
+                document.getElementById('btnLogout').classList.remove('hidden');
+                document.getElementById('userBadge').innerText = state.user.email;
+                
+                history.replaceState(null, null, ' ');
+                route('dashboard');
+                loadCollections();
+            }
+        } catch (e) {
+            console.error("Auth Error", e);
+            toast("Login Failed");
+        }
+    }
 }
 
 // ==========================================
@@ -488,17 +531,14 @@ function route(viewName) {
 function setTab(tabId) {
     document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    
-    // Find the button that called this
     const btn = Array.from(document.querySelectorAll('.tab')).find(b => b.getAttribute('onclick').includes(tabId));
     if(btn) btn.classList.add('active');
     document.getElementById(tabId).classList.add('active');
 
-    // Load data specific to tab
     if (tabId === 'tGal' && state.photos.length === 0) loadPhotos(true);
-    if (tabId === 'tLink') loadLinks(); // Implement loadLinks
+    if (tabId === 'tLink') loadLinks();
     if (tabId === 'tLeads') loadLeads();
-    if (tabId === 'tClient') loadClientSelections(); // Implement
+    if (tabId === 'tClient') loadClientSelections();
 }
 
 function toast(msg) {
@@ -518,8 +558,6 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     try {
         const opts = { method, headers };
         if (body) opts.body = JSON.stringify(body);
-        
-        // Ensure endpoint starts with slash if not present, assume base URL handling
         const url = `${API}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
         const res = await fetch(url, opts);
         return await res.json();
@@ -534,7 +572,6 @@ async function apiCall(endpoint, method = 'GET', body = null) {
 // DASHBOARD LOGIC
 // ==========================================
 async function loadCollections() {
-    // GET /get-collections
     const res = await apiCall('/get-collections');
     if (res && res.Items) {
         state.cols = res.Items;
@@ -564,7 +601,7 @@ function updateStats() {
     document.getElementById('dCols').innerText = state.cols.length;
     const totalPhotos = state.cols.reduce((acc, c) => acc + (parseInt(c.total_photo_count)||0), 0);
     document.getElementById('dPhotos').innerText = totalPhotos;
-    document.getElementById('dStorage').innerText = "0 GB"; // Implement real calculation if available
+    document.getElementById('dStorage').innerText = "0 GB"; 
 }
 
 function toggleNewCol(show) {
@@ -575,7 +612,6 @@ function toggleNewCol(show) {
 async function createCollection() {
     const name = document.getElementById('ncName').value;
     if (!name) return toast("Name required");
-    
     const res = await apiCall('/upsert-collection', 'POST', { name });
     if (res) {
         toast("Collection Created");
@@ -593,8 +629,6 @@ async function openCol(id) {
 
     document.getElementById('cdTitle').innerText = state.currCol.name;
     document.getElementById('cdId').innerText = "ID: " + state.currCol.collection_id;
-    
-    // Reset collection specific state
     state.events = [];
     state.photos = [];
     state.nextToken = null;
@@ -602,7 +636,6 @@ async function openCol(id) {
     route('col');
     loadEvents();
     
-    // Fill Settings Form
     if(state.currCol.branding) {
         const b = state.currCol.branding;
         document.getElementById('bHeader').value = b.header_img || '';
@@ -629,8 +662,6 @@ async function loadEvents() {
     if (res && res.events) {
         state.events = res.events;
         renderEvents();
-        
-        // Populate dropdowns
         const opts = state.events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
         document.getElementById('galEventFilter').innerHTML = `<option value="">All Events</option>` + opts;
         document.getElementById('upEventSel').innerHTML = `<option value="" disabled selected>Select Event...</option>` + opts;
@@ -690,14 +721,12 @@ async function updateEvent() {
     const id = document.getElementById('eeId').value;
     const name = document.getElementById('eeName').value;
     const date = document.getElementById('eeDate').value;
-    
     await apiCall('/edit-event', 'POST', {
         event_id: id,
         collection_id: state.currCol.collection_id,
         name,
         event_date: date
     });
-    
     toast("Event Updated");
     cancelEditEvent();
     loadEvents();
@@ -716,10 +745,9 @@ function queueFiles(files) {
     const eid = document.getElementById('upEventSel').value;
     if (!eid) {
         alert("Please select an Event first!");
-        document.getElementById('upInput').value = ""; // Reset
+        document.getElementById('upInput').value = ""; 
         return;
     }
-
     state.queue = Array.from(files).map(f => ({ file: f, status: 'pending', eid }));
     renderQueue();
     document.getElementById('uploadQueueBox').classList.remove('hidden');
@@ -739,10 +767,9 @@ async function startBatchUpload() {
     const pending = state.queue.filter(i => i.status === 'pending');
     if(pending.length === 0) return toast("Nothing to upload");
 
-    // 1. Get Presigned URLs
     const payload = {
         collection_id: state.currCol.collection_id,
-        event_id: pending[0].eid, // Assuming all batch same event for simplicity
+        event_id: pending[0].eid,
         files: pending.map(i => ({ name: i.file.name }))
     };
 
@@ -750,9 +777,7 @@ async function startBatchUpload() {
     const res = await apiCall('/generate-upload-urls', 'POST', payload);
     if (!res || !res.urls) return;
 
-    // 2. Upload to S3
     toast(`Uploading ${res.urls.length} files...`);
-    let completed = 0;
     
     for (let u of res.urls) {
         const item = state.queue.find(q => q.file.name === u.originalName);
@@ -763,13 +788,11 @@ async function startBatchUpload() {
             } catch(e) {
                 item.status = 'failed';
             }
-            completed++;
             renderQueue();
         }
     }
-    
     toast("Upload Batch Complete!");
-    loadPhotos(true); // Refresh gallery
+    loadPhotos(true);
 }
 
 // ==========================================
@@ -789,7 +812,6 @@ async function loadPhotos(reset = false) {
         state.photos = [...state.photos, ...res.photos];
         state.nextToken = res.next_token;
         renderGallery();
-        
         document.getElementById('galCount').innerText = state.photos.length + " Photos Loaded";
         const btn = document.getElementById('btnLoadMore');
         state.nextToken ? btn.classList.remove('hidden') : btn.classList.add('hidden');
@@ -808,7 +830,6 @@ function renderGallery() {
     `).join('');
 }
 
-// Lightbox
 let currPhotoId = null;
 function openLightbox(url, pid) {
     document.getElementById('lbImage').src = url;
@@ -839,13 +860,11 @@ function downloadCurrentPhoto() {
 async function generateSearchLink() {
     const hours = document.getElementById('linkExpiry').value;
     const pin = document.getElementById('linkPin').value;
-    
     const res = await apiCall('/generate-search-link', 'POST', {
         collection_id: state.currCol.collection_id,
         expiry_hours: parseInt(hours),
         password: pin
     });
-    
     if (res && res.searchUrl) {
         const list = document.getElementById('linksList');
         const newItem = `
@@ -858,8 +877,6 @@ async function generateSearchLink() {
                     <button class="btn secondary" onclick="navigator.clipboard.writeText('${res.searchUrl}')">Copy</button>
                 </div>
             </div>`;
-        
-        // Remove 'no links' msg if present
         if(list.innerText.includes('No active')) list.innerHTML = '';
         list.innerHTML = newItem + list.innerHTML;
         toast("Link Generated");
@@ -867,17 +884,13 @@ async function generateSearchLink() {
 }
 
 // ==========================================
-// LEADS LOGIC
+// LEADS & SETTINGS
 // ==========================================
 async function loadLeads() {
-    // Uses the generic /save-details endpoint with action='list' or dedicated GET
-    // Based on mapping, it might be GET /list_people or POST /save-details (action: list)
-    // Assuming POST based on common patterns in your structure
     const res = await apiCall('/save-details', 'POST', { 
         action: 'list', 
         collection_id: state.currCol.collection_id 
     });
-    
     const tbody = document.getElementById('tblLeads');
     if (res && Array.isArray(res) && res.length > 0) {
         tbody.innerHTML = res.map(l => `
@@ -896,15 +909,11 @@ async function loadLeads() {
     }
 }
 
-// ==========================================
-// BRANDING / SETTINGS
-// ==========================================
 function updatePrev() {
     const h = document.getElementById('bHeader').value;
     const l = document.getElementById('bLogo').value;
     const c = document.getElementById('bColor').value;
     const m = document.getElementById('bMsg').value;
-    
     if(h) document.getElementById('prevHeader').style.backgroundImage = `url('${h}')`;
     if(l) document.getElementById('prevLogo').src = l;
     if(c) document.getElementById('prevLogo').style.borderColor = c;
@@ -927,7 +936,6 @@ async function saveSettings() {
         color: document.getElementById('bColor').value,
         welcome_msg: document.getElementById('bMsg').value
     };
-    
     await apiCall('/upsert-collection', 'POST', {
         collection_id: state.currCol.collection_id,
         name: state.currCol.name,
@@ -936,7 +944,6 @@ async function saveSettings() {
     toast("Settings Saved");
 }
 
-// Utils
 function formatBytes(bytes, decimals = 2) {
     if (!+bytes) return '0 Bytes';
     const k = 1024;
@@ -947,10 +954,11 @@ function formatBytes(bytes, decimals = 2) {
 }
 
 // Init
+checkAuthCallback();
 if(state.user) {
-    doLogin();
+   // User Logged In
 } else {
-    route('login');
+   route('login');
 }
 </script>
 </body>

@@ -887,6 +887,8 @@ async function loadPhotos(reset=false, loadMore=false){
       const html = photos.map((p, idx) => {
           const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
           const url = p.thumbnail_url || p.url;
+          // SAFEGUARD AGAINST NULL URLS
+          if (!url) return '';
           return `
             <div class="ph-card" onclick="openLightbox(${globalIdx})">
               <img src="${url}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.style.display='none'">
@@ -1304,7 +1306,13 @@ async function loadLeads(){
 
     const rows = Object.values(grouped).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    $('#tblLeads').innerHTML = rows.map((l, i) => `
+    $('#tblLeads').innerHTML = rows.map((l, i) => {
+      // FIX: Handle missing selfie_url to prevent 404/null errors
+      const selfieImg = l.selfie_url 
+          ? `<a href="${l.selfie_url}" target="_blank"><img src="${l.selfie_url}" style="width:36px; height:36px; border-radius:50%; border:1px solid #444; object-fit:cover;"></a>`
+          : `<div style="width:36px; height:36px; border-radius:50%; background:#333; display:flex; align-items:center; justify-content:center; color:#555; font-size:10px;">N/A</div>`;
+
+      return `
       <tr class="lead-row" onclick="$('#hist-${i}').classList.toggle('open')">
         <td>
            <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
@@ -1312,25 +1320,30 @@ async function loadLeads(){
         </td>
         <td>${l.mobile || '-'}</td>
         <td><span class="tag-pill">${l.history.length} Searches</span> <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i></td>
-        <td><a href="${l.selfie_url}" target="_blank"><img src="${l.selfie_url}" style="width:36px; height:36px; border-radius:50%; border:1px solid #444; object-fit:cover;"></a></td>
+        <td>${selfieImg}</td>
       </tr>
       <tr id="hist-${i}" class="lead-history" style="background: rgba(255,255,255,0.02);">
         <td colspan="4" style="padding: 10px;">
             <div style="font-size:11px; color:#aaa; margin-bottom:5px;">HISTORY:</div>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                ${l.history.map(h => `
+                ${l.history.map(h => {
+                    const hImg = h.selfie_url 
+                        ? `<img src="${h.selfie_url}" style="width:30px; height:30px; border-radius:4px; object-fit:cover;">`
+                        : `<div style="width:30px; height:30px; border-radius:4px; background:#444;"></div>`;
+                    return `
                     <div class="hist-item">
-                        <img src="${h.selfie_url}" style="width:30px; height:30px; border-radius:4px; object-fit:cover;">
+                        ${hImg}
                         <div>
                             <div style="font-weight:600; color:#fff;">${h.match_count} Matches</div>
                             <div style="font-size:10px;">${new Date(h.timestamp).toLocaleTimeString()}</div>
                         </div>
-                    </div>
-                `).join('')}
+                    </div>`;
+                }).join('')}
             </div>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   } catch(e) { $('#tblLeads').innerHTML = `<tr><td colspan="4">Error loading</td></tr>`; }
 }
 

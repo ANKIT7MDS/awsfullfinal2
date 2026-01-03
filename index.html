@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>EventLens – Smart AI Gallery</title>
+  <title>EventLens – Find Your Photos</title>
 
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -173,7 +173,7 @@
             <i class="fa-solid fa-camera"></i> Upload Selfie
         </button>
 
-        <!-- Preview of uploaded selfie (Optional feedback) -->
+        <!-- Preview of uploaded selfie -->
         <div id="selfiePreviewContainer" class="hidden" style="margin-top: 15px;">
             <img id="selfiePreviewImg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
         </div>
@@ -192,9 +192,6 @@
         <button id="btnToggleSelect" class="tag-pill" onclick="toggleSelectionMode()"><i class="fa-solid fa-check-double"></i> Select</button>
     </div>
     
-    <!-- TAGS (Optional) -->
-    <div class="tag-scroll hidden" id="tagList"></div>
-
     <div class="grid" id="galleryGrid" style="margin-top: 15px;"></div>
     
     <div style="text-align:center; padding: 40px; color: #555;" class="hidden" id="noResultsMsg">
@@ -243,11 +240,6 @@
 <script>
     /* --- CONFIG --- */
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    // Fallback Bucket Config (Extracted from your Lambda)
-    const BUCKET_NAME = "selfie-project-photos-anu-25092025";
-    const BUCKET_REGION = "ap-south-1";
-    const S3_BASE_URL = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/`;
-
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId');
     const cid = urlParams.get('cid'); 
@@ -261,6 +253,7 @@
 
     /* --- INIT --- */
     window.onload = async () => {
+        // Branding Load
         let brandingApiUrl = "";
         if (linkId) brandingApiUrl = `${API_BASE}/get-branding?linkId=${linkId}`;
         else if (cid) brandingApiUrl = `${API_BASE}/get-branding?cid=${cid}`;
@@ -333,8 +326,8 @@
                     canvas.height = h;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
-                    // Use somewhat high quality
-                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                    // Use somewhat high quality for better facial recognition
+                    resolve(canvas.toDataURL('image/jpeg', 0.90));
                 };
             };
             reader.onerror = error => reject(error);
@@ -344,7 +337,6 @@
     async function handleSelfieSelect(file) {
         if(!file) return;
         
-        // Basic Validation
         if (!linkId && !cid) {
             alert("Configuration Error: Missing linkId in URL.");
             return;
@@ -356,43 +348,28 @@
         loaderText.innerText = "Scanning your face...";
         
         try {
-            // 1. Resize
+            // 1. Resize & Preview
             pendingSelfieBase64 = await resizeImage(file, 800);
-            
-            // Show small preview
             document.getElementById('selfiePreviewImg').src = pendingSelfieBase64;
             document.getElementById('selfiePreviewContainer').classList.remove('hidden');
 
             // 2. Search API
             loaderText.innerText = "Searching gallery...";
             
-            // FIX: Robust Base64 Extraction
-            let base64Data = "";
-            if (pendingSelfieBase64.includes(",")) {
-                base64Data = pendingSelfieBase64.split(',')[1];
-            } else {
-                base64Data = pendingSelfieBase64;
-            }
+            // Clean base64 string (remove data:image/jpeg;base64, prefix if needed by backend, 
+            // but your updated lambda seems to handle splits or direct base64)
+            // Safety: sending cleaned base64 just in case
+            const base64Clean = pendingSelfieBase64.split(',')[1];
 
-            if (!base64Data) {
-                throw new Error("Failed to process image data.");
-            }
-            
-            // PAYLOAD UPDATE: Exactly as requested by user
-            const payload = {
-                collection_id: cid || linkId,
-                event_id: null,
-                image: base64Data,
-                linkId: linkId,
-                min_confidence: 80,
-                pin: null,
-                selfie_image: base64Data
-            };
-            
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ 
+                    linkId: linkId || cid, 
+                    selfie_image: base64Clean,
+                    // Optional: Pin agar future mein zaroorat ho
+                    pin: null
+                })
             });
             
             if (!res.ok) throw new Error("Server error");
@@ -400,28 +377,14 @@
             
             loader.classList.add('hidden');
 
-            // FIX: Fallback to all_matched_ids if matches is empty
-            // The backend returns { matches: [], all_matched_ids: [...], total: 534 }
-            let foundMatches = [];
-            if (data.matches && data.matches.length > 0) {
-                foundMatches = data.matches;
-            } else if (data.all_matched_ids && data.all_matched_ids.length > 0) {
-                console.warn("Using all_matched_ids as fallback. Constructing S3 URLs.");
-                foundMatches = data.all_matched_ids;
-            }
-
-            // Check if matches exist
-            if(foundMatches.length > 0) {
-                // Success: Show Intermediate Modal
-                allMatches = foundMatches; 
+            // Handle Matches
+            if(data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
+                allMatches = data.matches; 
                 document.getElementById('leadMatchCount').innerText = allMatches.length;
                 document.getElementById('leadModal').classList.add('open');
-                
-                // Blast confetti
                 confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             } else {
                 document.getElementById('noResultsMsg').classList.remove('hidden');
-                // Allow them to proceed to empty gallery if they want, or just alert
                 alert("No matching photos found. Try a selfie with better lighting.");
             }
         } catch(e) {
@@ -449,26 +412,20 @@
         // Render
         renderGallery(allMatches);
         
-        // Async: Save Lead
-        // Fire and forget
+        // Async: Save Lead details to DynamoDB
+        // Payload matches your selfie-search-save-details.py requirements
         try {
-            // FIX: Ensure raw base64 is sent here too
-            let base64Data = null;
-            if (pendingSelfieBase64) {
-                 base64Data = pendingSelfieBase64.includes(",") ? pendingSelfieBase64.split(',')[1] : pendingSelfieBase64;
-            }
-
+            const base64Clean = pendingSelfieBase64.split(',')[1];
             fetch(`${API_BASE}/save-details`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
+                    mobile: mobile,
                     linkId: linkId, 
-                    collection_id: cid, 
-                    mobile: mobile, 
                     name: name, 
-                    selfie_image: base64Data, 
-                    image: base64Data, // Add here too for safety
-                    photo_count: allMatches.length 
+                    selfie_image: base64Clean, 
+                    photo_count: allMatches.length,
+                    collection_id: cid || linkId // Fallback if cid not in URL
                 })
             });
         } catch(e) { console.error("Lead save error", e); }
@@ -485,48 +442,14 @@
         }
 
         grid.innerHTML = photos.map((p, i) => {
-            // FIX: SMART URL FINDER & S3 FALLBACK
-            let imgUrl = "";
-            let debugName = "";
+            // Updated Lambda returns 'url' directly (Presigned S3 URL)
+            // No manual construction needed.
+            const imgUrl = p.url;
             
-            if (typeof p === 'string') {
-                // If p is just a string ID (e.g. "IMG_123.jpg") and not a URL, construct the S3 URL
-                debugName = p;
-                if(p.startsWith('http') || p.startsWith('data:')) {
-                    imgUrl = p;
-                } else {
-                    // FALLBACK: Construct S3 URL from ID with Encoding
-                    // Warning: This assumes Bucket is public or allows public read
-                    imgUrl = `${S3_BASE_URL}${encodeURIComponent(p)}`;
-                }
-            } else if (typeof p === 'object' && p !== null) {
-                // Try to find the URL in common property names
-                imgUrl = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
-                debugName = p.photo_id || p.id || JSON.stringify(p).slice(0, 20);
-                
-                // If still not found, look for valid string values
-                if (!imgUrl) {
-                    const values = Object.values(p);
-                    const found = values.find(v => typeof v === 'string' && (v.startsWith('http') || v.startsWith('https')));
-                    if (found) imgUrl = found;
-                }
-            }
-
-            // If we absolutely cannot find a URL, show a placeholder error
-            if (!imgUrl) {
-                console.warn("Could not extract URL for item:", p);
-                return `
-                <div class="photo-item" style="background:#222; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#666; font-size:10px; padding:5px; overflow:hidden;">
-                    <i class="fa-solid fa-image" style="font-size:20px; margin-bottom:5px;"></i>
-                    <span>Image ${i+1}</span>
-                </div>`;
-            }
-
-            // Added Debug Error Handler to show filename on failure
             return `
             <div class="photo-item" id="pitem-${i}" onclick="handleItemClick(${i})">
                 <img src="${imgUrl}" referrerpolicy="no-referrer" loading="lazy" alt="Photo ${i+1}" 
-                     onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:10px;text-align:center;padding:5px;word-break:break-all;background:#222;\'><span>Not Found<br>${debugName}</span></div>'">
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:10px;text-align:center;padding:5px;word-break:break-all;background:#222;\'><span>Not Found<br>${p.photo_id}</span></div>'">
                 <div class="select-ring"></div>
             </div>
             `;
@@ -562,25 +485,10 @@
             }
             updateActionBar();
         } else {
-            // Helper to get URL regardless of format
-            // RE-USE THE SMART LOGIC for the viewer click
+            // Viewer Open
             const p = allMatches[index];
-            let url = "";
-            
-            if (typeof p === 'string') {
-                if(p.startsWith('http') || p.startsWith('data:')) url = p;
-                else url = `${S3_BASE_URL}${p}`; // Fallback S3
-            } else if (typeof p === 'object' && p !== null) {
-                url = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
-                 if (!url) {
-                    const values = Object.values(p);
-                    const found = values.find(v => typeof v === 'string' && (v.startsWith('http') || v.startsWith('https')));
-                    if (found) url = found;
-                }
-            }
-            
-            if(url) {
-                currentViewUrl = url;
+            if(p.url) {
+                currentViewUrl = p.url;
                 document.getElementById('viewerImg').src = currentViewUrl;
                 document.getElementById('viewer').classList.add('open');
             }
@@ -609,37 +517,19 @@
         if(selectedIndices.size === 0) return;
         const indices = Array.from(selectedIndices);
         
-        // Notify user download started
         const btn = document.querySelector('.act-btn .fa-download').parentElement;
         const originalText = btn.innerHTML;
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
 
         for(let i of indices) {
             const p = allMatches[i];
-            
-            // SMART URL FINDER AGAIN for download
-            let url = "";
-            if (typeof p === 'string') {
-                if(p.startsWith('http') || p.startsWith('data:')) url = p;
-                else url = `${S3_BASE_URL}${p}`;
-            } else if (typeof p === 'object' && p !== null) {
-                url = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
-                 if (!url) {
-                    const values = Object.values(p);
-                    const found = values.find(v => typeof v === 'string' && (v.startsWith('http') || v.startsWith('https')));
-                    if (found) url = found;
-                }
-            }
-
-            if(url) {
-                // Use fetch to get blob to bypass some CORS issues on direct saveAs
+            if(p.url) {
                 try {
-                    const resp = await fetch(url);
+                    const resp = await fetch(p.url);
                     const blob = await resp.blob();
                     saveAs(blob, `photo_${i+1}.jpg`);
                 } catch(e) {
-                    // Fallback
-                    saveAs(url, `photo_${i+1}.jpg`);
+                    saveAs(p.url, `photo_${i+1}.jpg`);
                 }
             }
             await new Promise(r => setTimeout(r, 500)); 
@@ -660,23 +550,8 @@
         await Promise.all(indices.map(async (idx) => {
             try {
                 const p = allMatches[idx];
-                
-                // SMART URL FINDER AGAIN for zip
-                let url = "";
-                if (typeof p === 'string') {
-                    if(p.startsWith('http') || p.startsWith('data:')) url = p;
-                    else url = `${S3_BASE_URL}${p}`;
-                } else if (typeof p === 'object' && p !== null) {
-                    url = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
-                     if (!url) {
-                        const values = Object.values(p);
-                        const found = values.find(v => typeof v === 'string' && (v.startsWith('http') || v.startsWith('https')));
-                        if (found) url = found;
-                    }
-                }
-
-                if(url) {
-                    const blob = await fetch(url).then(r => r.blob());
+                if(p.url) {
+                    const blob = await fetch(p.url).then(r => r.blob());
                     folder.file(`photo_${idx+1}.jpg`, blob);
                 }
             } catch(e) { console.error(e); }

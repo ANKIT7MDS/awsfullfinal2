@@ -4,750 +4,460 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>EventLens – Smart AI Gallery</title>
-  
-  <!-- IMP: No Referrer for S3, Unsafe Inline for Scripts -->
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-
+  
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
     :root {
       --bg: #050505; --card: #121212; --surface: #1e1e1e;
       --accent: #00e676; --accent-dark: #00b35c; --accent-soft: rgba(0, 230, 118, 0.15);
-      --text: #ffffff; --muted: #a0a0a0; --border: #333;
+      --text: #ffffff; --muted: #a1a1aa; --border: #27272a;
       --font-main: 'Plus Jakarta Sans', sans-serif;
       --font-head: 'Outfit', sans-serif;
-      --overlay-op: 0.6;
-      --logo-size: 90px; 
-      --banner-height: 280px;
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-main); overflow-x: hidden; padding-bottom: 100px; }
-
-    /* --- PREMIUM HEADER --- */
-    header { 
-        position: relative; height: var(--banner-height); overflow: hidden; 
-        background: #111; border-bottom: 1px solid var(--border);
-    }
-    .header-bg {
-        position: absolute; inset: 0; background-size: cover; background-position: center;
-        filter: brightness(0.5); transform: scale(1.05); transition: 0.5s;
-    }
-    .header-content { 
-        position: relative; z-index: 2; height: 100%;
-        display: flex; flex-direction: column; justify-content: flex-end; align-items: center; 
-        padding: 30px; background: linear-gradient(to top, var(--bg) 5%, transparent);
-    }
-    .brand-logo { 
-        width: var(--logo-size); height: var(--logo-size); border-radius: 50%; border: 3px solid var(--accent); 
-        object-fit: cover; margin-bottom: 15px; background: #000; display: none; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-    }
-    .welcome-text { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 5px; letter-spacing: 2px; text-transform: uppercase; display: none; }
-    .brand-title { font-family: var(--font-head); font-size: 36px; font-weight: 800; letter-spacing: -1px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); margin: 0; }
-
-    /* --- CONTAINER --- */
-    .container { max-width: 1200px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-main); overflow-x: hidden; padding-bottom: 80px; }
     
-    /* --- SEARCH UI --- */
-    .screen { display: none; min-height: 70vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+    /* Branding Header */
+    header { position: relative; height: 260px; overflow: hidden; background: #111; border-bottom: 1px solid var(--border); }
+    .header-bg { position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(0.4); transform: scale(1.05); transition: 0.5s; }
+    .header-content { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 30px; background: linear-gradient(to top, var(--bg) 10%, transparent); }
+    .brand-logo { width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; margin-bottom: 15px; background: #000; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .brand-title { font-family: var(--font-head); font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 0; text-align: center; }
+    .welcome-msg { font-size: 13px; color: var(--muted); margin-top: 5px; text-align: center; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 16px; width: 100%; }
+    .screen { display: none; min-height: 60vh; flex-direction: column; align-items: center; justify-content: center; }
     .screen.active { display: flex; }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
-    .upload-card {
-        width: 100%; max-width: 400px; background: rgba(20,20,20,0.6); border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 30px; padding: 40px 30px; text-align: center; position: relative; overflow: hidden;
-        backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-        margin-top: -60px;
-    }
+    /* Selfie Search Box */
+    .upload-card { width: 100%; max-width: 400px; background: var(--card); border: 1px solid var(--border); border-radius: 30px; padding: 40px 30px; text-align: center; margin-top: -50px; position: relative; z-index: 10; backdrop-filter: blur(10px); }
+    .selfie-trigger { width: 160px; height: 160px; border-radius: 50%; background: var(--surface); border: 2px dashed #444; margin: 25px auto; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
+    .selfie-trigger:active { transform: scale(0.95); border-color: var(--accent); }
+    .selfie-trigger img { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+    .scan-line { position: absolute; width: 100%; height: 4px; background: var(--accent); box-shadow: 0 0 15px var(--accent); top: 0; animation: scan 2s infinite linear; display: none; z-index: 5; }
+    @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+    /* Counter */
+    .counter-box { margin-top: 20px; display: none; font-family: var(--font-head); }
+    .counter-val { font-size: 22px; font-weight: 800; color: var(--accent); }
+
+    /* Lead Modal - Professional UI */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s; }
+    .modal-content { background: #1a1a1a; border: 1px solid var(--border); border-radius: 24px; padding: 35px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
+    .input-group { margin-bottom: 15px; text-align: left; }
+    .input-group label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    .lead-input { width: 100%; padding: 16px; background: #0a0a0a; border: 1px solid var(--border); color: #fff; border-radius: 12px; font-size: 16px; transition: 0.3s; }
+    .lead-input:focus { border-color: var(--accent); background: #000; }
+    .btn-unlock { background: var(--accent); color: #000; border: none; padding: 18px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 10px; }
+
+    /* Gallery Grid - Responsive & Small Thumbs for Mobile */
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; }
+    @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 16px; } }
+    .ph-card { position: relative; aspect-ratio: 1; background: #111; overflow: hidden; cursor: pointer; border-radius: 4px; }
+    .ph-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: 0.3s; }
+    .ph-card img.loaded { opacity: 1; }
+    .event-tag { position: absolute; bottom: 5px; left: 5px; background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; font-size: 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
+    .sel-indicator { position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #000; display: none; align-items: center; justify-content: center; font-size: 10px; }
+    .ph-card.is-selected .sel-indicator { display: flex; }
+
+    /* Results Info */
+    .results-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; }
+    .res-count { font-weight: 800; font-size: 15px; font-family: var(--font-head); }
+
+    /* Action Bar */
+    .action-bar { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(20,20,20,0.9); border: 1px solid var(--border); padding: 12px 25px; border-radius: 100px; display: flex; gap: 20px; backdrop-filter: blur(10px); z-index: 500; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .action-bar.show { transform: translateX(-50%) translateY(0); }
+    .action-btn { background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; cursor: pointer; opacity: 0.8; }
+    .action-btn i { font-size: 20px; }
+    .action-btn.active { color: var(--accent); opacity: 1; }
+
+    /* Lightbox / Slide View */
+    .lightbox { position: fixed; inset: 0; background: #000; z-index: 4000; display: none; flex-direction: column; }
+    .lb-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .lb-content { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+    .lb-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .lb-footer { padding: 20px 20px 40px; display: flex; justify-content: center; gap: 30px; background: linear-gradient(to top, #000, transparent); }
+    .lb-action { display: flex; flex-direction: column; align-items: center; gap: 5px; color: #fff; font-size: 11px; cursor: pointer; }
+    .lb-action i { font-size: 26px; }
+    .lb-action.active-fav { color: #ff4081; }
+
+    /* Pagination Button */
+    .load-more-btn { background: var(--surface); color: #fff; border: 1px solid var(--border); padding: 14px 28px; border-radius: 50px; font-weight: 700; margin: 30px auto; display: none; cursor: pointer; }
+
+    #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); padding: 10px 20px; border-radius: 50px; z-index: 9999; display: none; }
     
-    .selfie-ring {
-        width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 2px dashed #555;
-        margin: 30px auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        cursor: pointer; position: relative; overflow: hidden; transition: 0.3s;
-    }
-    .selfie-ring:active { transform: scale(0.95); border-color: var(--accent); background: var(--accent-soft); }
-    .selfie-ring img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; }
-    
-    .scan-line {
-        position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-        background: var(--accent); box-shadow: 0 0 20px var(--accent);
-        animation: scan 1.5s infinite linear; display: none; z-index: 10;
-    }
-    @keyframes scan { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-
-    /* --- GALLERY TABS --- */
-    .tabs-wrapper {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;
-    }
-    .tabs-list { display: flex; gap: 10px; }
-    .tab {
-        background: rgba(255,255,255,0.05); color: var(--muted); padding: 10px 20px; border-radius: 50px; 
-        font-size: 14px; font-weight: 600; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: 0.3s;
-    }
-    .tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .tab.active { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-soft); }
-    
-    .fav-badge {
-        font-size: 14px; font-weight: 700; color: #ff4081; display: flex; align-items: center; gap: 8px;
-        background: rgba(255, 64, 129, 0.1); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255, 64, 129, 0.3);
-    }
-
-    /* --- GRID --- */
-    .grid { 
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; 
-        padding-bottom: 40px;
-    }
-    @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; } }
-
-    .photo-card {
-        position: relative; aspect-ratio: 2/3; background: #151515; overflow: hidden; 
-        border-radius: 12px; cursor: pointer; transition: transform 0.2s;
-    }
-    /* FIXED: Removed opacity transition so images show immediately */
-    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
-    
-    /* RIBBON */
-    .ribbon {
-        position: absolute; top: 12px; left: -28px; width: 100px; background: var(--accent); color: #000;
-        font-size: 10px; font-weight: 800; text-align: center; transform: rotate(-45deg);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 5; pointer-events: none; text-transform: uppercase; letter-spacing: 1px;
-    }
-
-    /* SELECTION OVERLAY */
-    .select-overlay {
-        position: absolute; inset: 0; background: rgba(0, 230, 118, 0.3); border: 3px solid var(--accent); border-radius: 12px;
-        display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px);
-    }
-    .photo-card.selected .select-overlay { display: flex; }
-    .check-icon { width: 45px; height: 45px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); }
-
-    /* --- FLOATING ACTION BAR --- */
-    .action-bar {
-        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150px);
-        background: rgba(18, 18, 18, 0.9); backdrop-filter: blur(16px);
-        border: 1px solid rgba(255,255,255,0.15); border-radius: 100px;
-        padding: 12px 30px; display: flex; gap: 25px; align-items: center;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.6); z-index: 100; width: auto; 
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-    }
-    .action-bar.visible { transform: translateX(-50%) translateY(0); }
-    
-    .fab-btn {
-        background: none; border: none; color: #fff; font-size: 10px; 
-        display: flex; flex-direction: column; align-items: center; gap: 4px; 
-        opacity: 0.6; transition: 0.2s; cursor: pointer; min-width: 50px; font-weight: 500;
-    }
-    .fab-btn i { font-size: 22px; margin-bottom: 2px; }
-    .fab-btn:hover, .fab-btn.active { opacity: 1; color: var(--accent); transform: translateY(-3px); }
-    .divider { width: 1px; height: 30px; background: rgba(255,255,255,0.1); }
-
-    /* --- LIGHTBOX (FIXED SIZE) --- */
-    .lightbox { position: fixed; inset: 0; background: #000; z-index: 500; display: none; flex-direction: column; }
-    .lb-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; width: 100%; height: 100%; }
-    
-    /* FIX: Image Constraint */
-    .lb-img { 
-        max-width: 100vw; max-height: 85vh; 
-        object-fit: contain; transition: transform 0.2s;
-    }
-    
-    .lb-top { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
-    .lb-bot { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; display: flex; justify-content: space-around; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
-    
-    .lb-action { 
-        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); 
-        width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-        color: #fff; font-size: 22px; transition: 0.2s; cursor: pointer; backdrop-filter: blur(10px);
-    }
-    .lb-action.active-fav { background: #ff4081; border-color: #ff4081; box-shadow: 0 0 20px rgba(255, 64, 129, 0.4); }
-    .lb-action.active-del { background: #ff4444; border-color: #ff4444; }
-
-    .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); padding: 20px; color: rgba(255,255,255,0.4); font-size: 30px; cursor: pointer; z-index: 5; transition: 0.2s; }
-    .nav-arrow:hover { color: #fff; background: rgba(0,0,0,0.3); border-radius: 50%; }
-    .nav-left { left: 10px; } .nav-right { right: 10px; }
-
-    /* MODAL */
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 400; display: none; align-items: center; justify-content: center; }
-    .lead-input { width: 100%; padding: 18px; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 14px; margin-bottom: 15px; font-size: 16px; outline:none; transition:0.2s; }
-    .lead-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-
     .hidden { display: none !important; }
-    .btn-main { background: var(--accent); color: #000; border: none; padding: 18px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; letter-spacing: 0.5px; box-shadow: 0 5px 20px var(--accent-soft); transition: 0.2s; }
-    .btn-main:active { transform: scale(0.98); }
-    
-    #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 600; display: none; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    
-    /* Loading Spinner */
-    .spinner { width: 24px; height: 24px; border: 3px solid rgba(0, 230, 118, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
+<audio id="successSound" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" preload="auto"></audio>
 <div id="toast">Message</div>
 
-<!-- HEADER (Branding) -->
+<!-- BRANDING HEADER -->
 <header id="header">
     <div class="header-bg" id="headerBg"></div>
     <div class="header-content">
         <img id="brandLogo" class="brand-logo" onerror="this.style.display='none'">
-        <h1 class="brand-title" id="brandTitle">Gallery</h1>
-        <p class="welcome-text" id="welcomeText" style="display:block; margin-top:5px; opacity:0.8;">Welcome Guest</p>
+        <h1 class="brand-title" id="brandTitle">AI Face Search</h1>
+        <p class="welcome-msg" id="welcomeMsg">Checking 15,000+ photos instantly...</p>
     </div>
 </header>
 
-<!-- SCREEN 1: SEARCH -->
-<div id="screenSearch" class="screen active">
-    <div class="upload-card">
-        <i class="fa-solid fa-face-smile-wink" style="font-size: 40px; color: var(--accent); margin-bottom: 15px;"></i>
-        <h2 style="margin: 0 0 10px; font-family: var(--font-head);">Find Your Photos</h2>
-        <p style="color:var(--muted); font-size: 14px; margin-bottom: 30px; line-height: 1.6;">AI Magic! Upload a clear selfie to instantly find your photos from the event.</p>
-        
-        <div class="selfie-ring" onclick="document.getElementById('fileIn').click()">
-            <div class="scan-line" id="scanLine"></div>
-            <img id="previewImg">
-            <i class="fa-solid fa-camera" style="font-size:36px; color:#555;"></i>
-            <span style="font-size:12px; color:#666; font-weight:700; margin-top:8px;">UPLOAD</span>
+<div class="container">
+    <!-- SEARCH SCREEN -->
+    <div id="screenSearch" class="screen active">
+        <div class="upload-card">
+            <h2 style="font-family: var(--font-head); margin-bottom: 10px;">Find Your Photos</h2>
+            <p style="color: var(--muted); font-size: 13px;">AI magic will find you in thousands of photos.</p>
+            
+            <div class="selfie-trigger" onclick="document.getElementById('fileIn').click()">
+                <div class="scan-line" id="scanLine"></div>
+                <img id="previewImg" class="hidden">
+                <i class="fa-solid fa-camera" id="camIcon" style="font-size: 40px; color: #333;"></i>
+                <span id="triggerLabel" style="font-size: 11px; font-weight: 800; color: #555; margin-top: 10px;">OPEN CAMERA</span>
+            </div>
+            <!-- FIXED: Direct Camera Trigger -->
+            <input type="file" id="fileIn" hidden capture="user" accept="image/*" onchange="handleSelfie(this.files[0])">
+            
+            <div class="counter-box" id="counterBox">
+                <div style="font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 5px;">SCANNING GALLERY</div>
+                <div class="counter-val"><span id="liveCount">0</span> / 15,000</div>
+            </div>
+            
+            <p id="statusText" style="height: 20px; margin-top: 15px; color: var(--accent); font-weight: 700; font-size: 14px;"></p>
         </div>
-        <input type="file" id="fileIn" hidden accept="image/*" onchange="handleSelfieSelect(this.files[0])">
-        
-        <p id="statusText" style="font-size: 13px; color: var(--accent); height: 20px; font-weight:600;"></p>
-        
-        <!-- PIN Input -->
-        <div id="pinBox" class="hidden" style="margin-top:20px;">
-            <input type="tel" id="pinInput" class="lead-input" placeholder="Enter Event PIN" style="text-align:center; letter-spacing:5px; font-weight:700;">
-            <button class="btn-main" onclick="retrySearch()">Unlock Gallery</button>
+    </div>
+
+    <!-- GALLERY SCREEN -->
+    <div id="screenGallery" class="hidden">
+        <div class="results-header">
+            <div class="res-count" id="resCountText">Matched 0 Photos</div>
+            <div class="row" style="display:flex; gap:10px;">
+                <button class="action-btn" onclick="location.reload()" style="opacity:1;"><i class="fa-solid fa-rotate"></i></button>
+            </div>
         </div>
+        
+        <div class="grid" id="photoGrid"></div>
+        <button id="btnLoadMore" class="load-more-btn" onclick="fetchNextBatch()">Load More Matched Photos</button>
     </div>
 </div>
 
-<!-- SCREEN 2: GALLERY -->
-<div class="container hidden" id="galleryContainer">
-    <div class="tabs-wrapper">
-        <div class="tabs-list" id="eventTabs">
-            <!-- Tabs injected by JS -->
-        </div>
-        <div class="fav-badge"><i class="fa-solid fa-heart"></i> <span id="favCount">0</span></div>
-    </div>
-    
-    <div class="grid" id="galleryGrid"></div>
-    
-    <div style="text-align:center; padding: 60px 20px; color: #555;" class="hidden" id="noResultsMsg">
-        <i class="fa-regular fa-face-frown-open" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
-        <p>No photos found in this category.</p>
-    </div>
-</div>
-
-<!-- ACTION BAR -->
+<!-- ACTION BAR (MULTI-SELECT & TOOLS) -->
 <div class="action-bar" id="actionBar">
-    <button class="fab-btn" onclick="toggleSelectionMode()" id="btnSelectMode"><i class="fa-solid fa-check-double"></i><span>Select</span></button>
-    <div class="divider"></div>
-    <button class="fab-btn" onclick="downloadSelectedItems()"><i class="fa-solid fa-download"></i><span>Save</span></button>
-    <button class="fab-btn" onclick="downloadAsZip()"><i class="fa-solid fa-file-zipper"></i><span>Zip</span></button>
-    <button class="fab-btn" onclick="shareOnWhatsapp()"><i class="fa-brands fa-whatsapp"></i><span>Share</span></button>
-    <div class="divider"></div>
-    <button class="fab-btn" style="color:#ff4444;" onclick="location.reload()"><i class="fa-solid fa-power-off"></i><span>Exit</span></button>
+    <button class="action-btn" id="btnSelectMode" onclick="toggleSelectMode()">
+        <i class="fa-solid fa-check-double"></i><span>Select</span>
+    </button>
+    <button class="action-btn" onclick="downloadSelected()">
+        <i class="fa-solid fa-download"></i><span>Download</span>
+    </button>
+    <button class="action-btn" onclick="shareGallery()">
+        <i class="fa-brands fa-whatsapp"></i><span>Share</span>
+    </button>
+    <button class="action-btn" onclick="showFavorites()">
+        <i class="fa-solid fa-heart"></i><span>My Favs</span>
+    </button>
 </div>
 
 <!-- LEAD MODAL -->
 <div class="modal" id="leadModal">
-    <div class="upload-card" style="margin-top:0;">
-        <div style="width: 70px; height: 70px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--accent-soft);">
-            <i class="fa-solid fa-check" style="color: var(--accent); font-size: 32px;"></i>
+    <div class="modal-content">
+        <div style="width: 60px; height: 60px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent); font-size: 24px;"></i>
         </div>
-        <h2 style="margin: 0 0 10px; font-family: var(--font-head);">Success!</h2>
-        <p style="color: var(--muted); margin-bottom: 30px; font-size: 15px;">We found <span id="leadMatchCount" style="color: #fff; font-weight: 800; font-size: 18px;">0</span> photos matching your face.</p>
+        <h2 style="font-family: var(--font-head); margin-bottom: 5px;">Bingo! We found you.</h2>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 25px;">Found <span id="foundTotal" style="color: #fff; font-weight: 800;">0</span> photos of you.</p>
         
-        <input id="guestName" class="lead-input" placeholder="Full Name">
-        <input id="guestMobile" class="lead-input" placeholder="Mobile Number" type="tel">
+        <div class="input-group">
+            <label>Aapka Naam</label>
+            <input id="gName" class="lead-input" placeholder="e.g. Rahul Sharma">
+        </div>
+        <div class="input-group">
+            <label>Mobile Number</label>
+            <input id="gMobile" class="lead-input" type="tel" placeholder="98XXXXXXXX">
+        </div>
         
-        <button class="btn-main" onclick="unlockGallery()">View My Photos</button>
+        <button class="btn-unlock" onclick="saveLeadAndShow()">View My Personal Gallery</button>
     </div>
 </div>
 
-<!-- LIGHTBOX (UNIFIED ID FIX) -->
+<!-- LIGHTBOX (Slide View) -->
 <div class="lightbox" id="lightbox">
-    <div class="lb-top">
-        <span style="color:#fff; font-size:16px; font-weight:600;"><span id="lbIndex">1</span> / <span id="lbTotal">10</span></span>
-        <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:28px;"><i class="fa-solid fa-xmark"></i></button>
+    <div class="lb-header">
+        <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:24px;"><i class="fa-solid fa-xmark"></i></button>
+        <span id="lbCounter" style="font-weight:600; color: #888;">1 / 1</span>
+        <button onclick="downloadSingle()" style="background:none; border:none; color:var(--accent); font-size:20px;"><i class="fa-solid fa-download"></i></button>
     </div>
-    
-    <div class="lb-img-wrap" id="lbTouchArea">
-        <!-- FIXED ID: lbImg to match JS, removed broken referrer policy, added fallback -->
-        <img id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
-        <div class="nav-arrow nav-left" onclick="nav(-1)"><i class="fa-solid fa-chevron-left"></i></div>
-        <div class="nav-arrow nav-right" onclick="nav(1)"><i class="fa-solid fa-chevron-right"></i></div>
+    <div class="lb-content">
+        <img id="lbImg" class="lb-img">
     </div>
-    
-    <div class="lb-bot">
-        <button class="lb-action" id="btnFav" onclick="toggleFav()"><i class="fa-solid fa-heart"></i></button>
-        <button class="lb-action" onclick="downloadSingle()"><i class="fa-solid fa-download"></i></button>
-        <button class="lb-action" id="btnDel" onclick="toggleDel()"><i class="fa-solid fa-trash"></i></button>
+    <div class="lb-footer">
+        <div class="lb-action" id="lbBtnFav" onclick="toggleChoice('fav')">
+            <i class="fa-solid fa-heart"></i>
+            <span>Favorite</span>
+        </div>
+        <div class="lb-action" id="lbBtnSel" onclick="toggleChoice('selected')">
+            <i class="fa-solid fa-album-circle-plus"></i>
+            <span>Select for Album</span>
+        </div>
     </div>
 </div>
 
 <script>
-    /* --- CONFIG & STATE --- */
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    const SAVE_ENDPOINT = "/save-details"; 
-    const urlParams = new URLSearchParams(window.location.search);
-    const linkId = urlParams.get('linkId') || urlParams.get('id');
-    let cid = urlParams.get('cid') || urlParams.get('collection_id');
-    const eid = urlParams.get('eid'); 
-    const urlPin = urlParams.get('pin');
-
-    let allMatches = []; 
-    let filteredMatches = [];
-    let selectedIndices = new Set();
-    let favSet = new Set();
-    let pendingSelfieBase64 = null;
-    let isSelectMode = false;
+    const cid = new URLSearchParams(window.location.search).get('cid');
+    
+    let allMatchedIds = [];
+    let loadedPhotos = [];
+    let selections = {}; // { photo_id: { fav: bool, selected: bool } }
+    let multiSelectMode = false;
+    let selectedSet = new Set();
     let currentIdx = 0;
-    let guestInfo = { name: '', mobile: '' };
+    let currentSelfieB64 = "";
+    let scanInterval = null;
 
-    /* --- INIT --- */
+    /* --- BRANDING --- */
     window.onload = async () => {
-        if(!cid && !linkId) return alert("Invalid Link");
-
+        if(!cid) return alert("Invalid Link");
         try {
-            let fetchUrl = "";
-            if (cid) fetchUrl = `${API_BASE}/get-branding?cid=${cid}`;
-            else if (linkId) fetchUrl = `${API_BASE}/get-branding?linkId=${linkId}`;
-            
-            if (fetchUrl) {
-                const res = await fetch(fetchUrl);
-                if(res.ok) {
-                    let data = await res.json();
-                    
-                    if (data.body && typeof data.body === 'string') {
-                        try { data = JSON.parse(data.body); } catch(e){}
-                    }
-
-                    if(!cid) cid = data.collection_id || data.collectionId; 
-                    applyBranding(data);
-                }
+            const res = await fetch(`${API_BASE}/get-branding?cid=${cid}`);
+            const data = await res.json();
+            const b = data.branding || data;
+            if(b.collection_name || b.name) document.getElementById('brandTitle').innerText = b.collection_name || b.name;
+            if(b.welcome_msg) document.getElementById('welcomeMsg').innerText = b.welcome_msg;
+            if(b.header_img && b.header_img !== "null") document.getElementById('headerBg').style.backgroundImage = `url('${b.header_img}')`;
+            if(b.logo && b.logo !== "null") {
+                const logo = document.getElementById('brandLogo');
+                logo.src = b.logo; logo.style.display = 'block';
             }
+            if(b.color) document.documentElement.style.setProperty('--accent', b.color);
         } catch(e) {}
     };
 
-    function applyBranding(data) {
-        if(data.collection_name) {
-            document.getElementById('brandTitle').innerText = data.collection_name;
-            document.title = data.collection_name;
-        }
-        if(data.welcome_msg) {
-            const el = document.getElementById('welcomeText');
-            el.innerText = data.welcome_msg;
-            el.style.display = 'block';
-        }
-        if(data.color) {
-            document.documentElement.style.setProperty('--accent', data.color);
-            document.documentElement.style.setProperty('--accent-soft', data.color + '26');
-            document.documentElement.style.setProperty('--accent-glow', data.color + '66');
-            document.getElementById('pageLogo').style.borderColor = data.color;
-        }
-        // FIX: Directly apply background image style
-        if(data.header_img) {
-            document.getElementById('headerBg').style.backgroundImage = `url('${data.header_img}')`;
-        }
-        if(data.logo) {
-            document.getElementById('brandLogo').src = data.logo;
-            document.getElementById('brandLogo').style.display = 'block';
-        }
-    }
-
-    /* --- SEARCH FLOW --- */
-    function resizeImage(file, maxWidth = 800) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w=img.width, h=img.height;
-                    if(w>800){ h*=800/w; w=800; }
-                    canvas.width=w; canvas.height=h;
-                    canvas.getContext('2d').drawImage(img,0,0,w,h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.85));
-                };
-                img.onerror = () => reject("Image load error");
-                img.src = e.target.result;
-            };
-            reader.onerror = () => reject("File read error");
-        });
-    }
-
-    async function handleSelfieSelect(file) {
+    /* --- SEARCH ENGINE --- */
+    function handleSelfie(file) {
         if(!file) return;
-        
-        const img = document.getElementById('previewImg');
-        img.src = URL.createObjectURL(file);
-        img.style.display = 'block';
-        document.getElementById('scanLine').style.display = 'block';
-        document.getElementById('statusText').innerText = "Scanning database...";
-        document.getElementById('pinBox').classList.add('hidden');
-        
-        try {
-            pendingSelfieBase64 = await resizeImage(file, 800);
-            performSearch(urlPin);
-        } catch(e) {
-            console.error(e);
-            alert("Image Error");
-        }
-    }
-
-    async function retrySearch() {
-        const pin = document.getElementById('pinInput').value;
-        if(!pin) return showToast("Enter PIN", "error");
-        performSearch(pin);
-    }
-
-    async function performSearch(pin) {
-        if(!cid) return alert("Collection ID Missing");
-
-        try {
-            const imageBase64 = pendingSelfieBase64.split(',')[1];
+        const reader = new FileReader();
+        reader.onload = e => {
+            currentSelfieB64 = e.target.result;
+            document.getElementById('previewImg').src = e.target.result;
+            document.getElementById('previewImg').classList.remove('hidden');
+            document.getElementById('camIcon').classList.add('hidden');
+            document.getElementById('triggerLabel').classList.add('hidden');
+            document.getElementById('scanLine').style.display = 'block';
+            document.getElementById('counterBox').style.display = 'block';
+            document.getElementById('statusText').innerText = "AI is looking for you...";
             
-            const payload = {
-                collection_id: cid,
-                image: imageBase64,
-                selfie_image: imageBase64, 
-                min_confidence: 80,
-                pin: pin,
-                linkId: linkId || 'direct-search',
-                event_id: eid 
-            };
+            startLiveCounter();
+            performSearch();
+        };
+        reader.readAsDataURL(file);
+    }
 
+    function startLiveCounter() {
+        let c = 0;
+        scanInterval = setInterval(() => {
+            c += Math.floor(Math.random() * 400) + 150;
+            if(c > 14900) c = 14900 + Math.floor(Math.random() * 50);
+            document.getElementById('liveCount').innerText = c.toLocaleString();
+        }, 150);
+    }
+
+    async function performSearch() {
+        try {
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload) 
+                body: JSON.stringify({ collection_id: cid, image: currentSelfieB64.split(',')[1] })
             });
-
             const data = await res.json();
+            clearInterval(scanInterval);
             
             if(res.ok) {
-                let parsedData = data;
-                if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
-
-                // Robust match extraction
-                const matches = parsedData.matches || parsedData.photos || parsedData.ids || [];
+                allMatchedIds = data.all_matched_ids || [];
+                loadedPhotos = data.matches || [];
                 
-                if(matches.length > 0) {
-                    allMatches = matches;
-                    document.getElementById('leadMatchCount').innerText = allMatches.length;
-                    
-                    const modal = document.getElementById('leadModal');
-                    if(modal) {
-                         modal.style.display = 'flex'; 
-                         modal.classList.add('open');
-                    }
-                    
-                    try { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors:['#00e676', '#ffffff'] }); } catch(e){}
-                } else {
-                    alert("No matching photos found.");
-                    document.getElementById('scanLine').style.display = 'none';
-                    document.getElementById('statusText').innerText = "";
-                }
+                // Sound Effect
+                document.getElementById('successSound').play().catch(e => {});
+                
+                // Confetti & Lead Modal
+                document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
+                document.getElementById('leadModal').style.display = 'flex';
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             } else {
-                if(res.status === 401 || res.status === 403) {
-                    document.getElementById('pinBox').classList.remove('hidden');
-                    document.getElementById('scanLine').style.display = 'none';
-                    showToast("Protected Gallery. Enter PIN.", "error");
-                } else {
-                    alert("Search Failed: " + (data.message || "Unknown error"));
-                }
+                alert("Koi photo nahi mili. Please dobara try karein.");
+                location.reload();
             }
-        } catch(e) { console.error(e); alert("Network Error"); }
+        } catch(e) { alert("Timeout error! Bahut saari photos hain, kripya refresh karein."); }
     }
 
-    /* --- LEAD & GALLERY --- */
-    function unlockGallery() {
-        const name = document.getElementById('guestName').value;
-        const mobile = document.getElementById('guestMobile').value;
-        if(!name || !mobile) return showToast("Details required!", "error");
+    /* --- LEAD & GALLERY DISPLAY --- */
+    function saveLeadAndShow() {
+        const name = document.getElementById('gName').value;
+        const mobile = document.getElementById('gMobile').value;
+        if(!name || !mobile) return alert("Please fill name & mobile");
 
-        guestInfo = { name, mobile };
+        // Background Save
+        fetch(`${API_BASE}/save-details`, {
+            method: 'POST',
+            body: JSON.stringify({ collection_id: cid, guest_name: name, guest_mobile: mobile, photo_count: allMatchedIds.length, selfie_image: currentSelfieB64.split(',')[1] })
+        });
 
         document.getElementById('leadModal').style.display = 'none';
-        document.getElementById('leadModal').classList.remove('open');
-        
         document.getElementById('screenSearch').classList.remove('active');
-        document.getElementById('galleryContainer').classList.remove('hidden');
-        document.getElementById('actionBar').classList.add('visible');
+        document.getElementById('screenGallery').classList.add('active');
+        document.getElementById('actionBar').classList.add('show');
         
-        initGallery();
+        let countDisplay = allMatchedIds.length > 100 ? "100+ Photos Found" : `${allMatchedIds.length} Photos Found`;
+        document.getElementById('resCountText').innerText = countDisplay;
         
-        // FIX: Added proper headers for saving details
-        fetch(`${API_BASE}${SAVE_ENDPOINT}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                collection_id: cid, 
-                linkId: linkId, 
-                mobile: mobile, 
-                name: name, 
-                photo_count: allMatches.length,
-                selfie_image: pendingSelfieBase64.includes(',') ? pendingSelfieBase64.split(',')[1] : pendingSelfieBase64
-            })
-        });
+        renderGrid();
+        checkPagination();
     }
 
-    function initGallery() {
-        const events = { 'all': { id: 'all', name: 'All Photos', count: allMatches.length } };
+    function renderGrid() {
+        const grid = document.getElementById('photoGrid');
+        const displayList = loadedPhotos.slice(0, 50); // Pagination 50 per page local logic
         
-        allMatches.forEach(p => {
-            const rawEid = p.event_id || 'unknown';
-            const rawName = p.event_name || (rawEid === 'unknown' ? 'General' : 'Event');
-            if(!events[rawEid]) events[rawEid] = { id: rawEid, name: rawName, count: 0 };
-            events[rawEid].count++;
-        });
+        grid.innerHTML = displayList.map((p, i) => `
+            <div class="ph-card ${selectedSet.has(p.photo_id) ? 'is-selected' : ''}" onclick="handlePhotoClick(${i})">
+                <img src="${p.thumbnail_url || p.url}" onload="this.classList.add('loaded')">
+                <div class="sel-indicator"><i class="fa-solid fa-check"></i></div>
+                ${p.event_name ? `<div class="event-tag">${p.event_name}</div>` : ''}
+            </div>
+        `).join('');
+    }
 
-        const tabsEl = document.getElementById('eventTabs');
-        if(Object.keys(events).length > 1) {
-            let tabsHtml = ``;
-            Object.values(events).forEach(e => {
-                const activeClass = e.id === 'all' ? 'active' : '';
-                tabsHtml += `<div class="tab ${activeClass}" onclick="filterGrid('${e.id}', this)">${e.name} <span>${e.count}</span></div>`;
+    function checkPagination() {
+        const btn = document.getElementById('btnLoadMore');
+        if(loadedPhotos.length < allMatchedIds.length) {
+            btn.style.display = 'block';
+            btn.innerText = `Load More Matched Photos (${allMatchedIds.length - loadedPhotos.length} remaining)`;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
+    async function fetchNextBatch() {
+        const btn = document.getElementById('btnLoadMore');
+        btn.disabled = true;
+        btn.innerText = "Finding more photos...";
+
+        const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 100);
+        
+        try {
+            const res = await fetch(`${API_BASE}/get-more-matches`, {
+                method: 'POST',
+                body: JSON.stringify({ ids: nextIds })
             });
-            tabsEl.innerHTML = tabsHtml;
-            document.querySelector('.tabs-wrapper').style.display = 'flex';
-        }
-
-        renderGrid(allMatches);
+            const data = await res.json();
+            loadedPhotos = [...loadedPhotos, ...data.matches];
+            renderGrid();
+            checkPagination();
+        } catch(e) { showToast("Batch load failed"); }
+        btn.disabled = false;
     }
 
-    function filterGrid(filterEid, el) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
-        
-        if(filterEid === 'all') filteredMatches = allMatches;
-        else filteredMatches = allMatches.filter(p => (p.event_id || 'unknown') === filterEid);
-        
-        renderGrid(filteredMatches);
-    }
-
-    function renderGrid(photos) {
-        const grid = document.getElementById('galleryGrid');
-        grid.innerHTML = '';
-        
-        if(photos.length === 0) {
-            document.getElementById('noResultsMsg').classList.remove('hidden');
-            return;
-        }
-        document.getElementById('noResultsMsg').classList.add('hidden');
-
-        photos.forEach((p, idx) => {
-            const isTop = idx < 3;
-            const card = document.createElement('div');
-            card.className = `photo-card ${selectedIndices.has(idx) ? 'selected' : ''}`;
-            card.onclick = () => handleCardClick(p, idx);
-            
-            const imgEl = document.createElement('img');
-            imgEl.onload = () => imgEl.classList.add('loaded');
-            // FIX: No referrer policy
-            imgEl.setAttribute('referrerpolicy', 'no-referrer');
-            imgEl.src = p.thumbnail_url || p.url;
-            
-            card.innerHTML = `${isTop ? '<div class="ribbon">Best</div>' : ''}`;
-            card.appendChild(imgEl);
-            card.innerHTML += `<div class="select-overlay"><div class="check-icon"><i class="fa-solid fa-check"></i></div></div>`;
-            
-            grid.appendChild(card);
-        });
-        
-        filteredMatches = photos; 
-    }
-
-    /* --- INTERACTION --- */
-    function toggleSelectionMode() {
-        isSelectMode = !isSelectMode;
-        document.getElementById('btnSelectMode').classList.toggle('active', isSelectMode);
-        showToast(isSelectMode ? "Tap photos to select" : "Selection Mode Off");
-    }
-
-    function handleCardClick(photo, idx) {
-        if(isSelectMode) {
-            const el = document.querySelectorAll('.photo-card')[idx];
-            if(selectedIndices.has(idx)) {
-                selectedIndices.delete(idx);
-                el.classList.remove('selected');
-            } else {
-                selectedIndices.add(idx);
-                el.classList.add('selected');
-            }
-            updateActionBar();
+    /* --- INTERACTIONS --- */
+    function handlePhotoClick(i) {
+        if(multiSelectMode) {
+            const id = loadedPhotos[i].photo_id;
+            if(selectedSet.has(id)) selectedSet.delete(id);
+            else selectedSet.add(id);
+            renderGrid();
         } else {
-            openLightbox(idx);
+            openLightbox(i);
         }
     }
 
-    function updateActionBar() {
-        document.getElementById('selCount').innerText = selectedIndices.size;
+    function toggleSelectMode() {
+        multiSelectMode = !multiSelectMode;
+        document.getElementById('btnSelectMode').classList.toggle('active');
+        if(!multiSelectMode) selectedSet.clear();
+        renderGrid();
     }
 
-    function selectAllMatches() {
-        filteredMatches.forEach((_, i) => selectedIndices.add(i));
-        renderGrid(filteredMatches);
-        showToast("All Selected");
-    }
-
-    /* --- LIGHTBOX (UNIFIED) --- */
-    function openLightbox(idx) {
-        currentIdx = idx;
-        updateLbContent();
+    /* --- LIGHTBOX --- */
+    function openLightbox(i) {
+        currentIdx = i;
+        const p = loadedPhotos[i];
+        document.getElementById('lbImg').src = p.url;
+        document.getElementById('lbCounter').innerText = `${i+1} / ${loadedPhotos.length}`;
+        
+        // Sync UI
+        const s = selections[p.photo_id] || { fav: false, selected: false };
+        document.getElementById('lbBtnFav').className = s.fav ? 'lb-action active-fav' : 'lb-action';
+        document.getElementById('lbBtnSel').className = s.selected ? 'lb-action active-sel' : 'lb-action';
+        
         document.getElementById('lightbox').style.display = 'flex';
-    }
-    
-    function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
-
-    function updateLbContent() {
-        const p = filteredMatches[currentIdx];
-        const img = document.getElementById('lbImg');
-        img.src = p.url;
-        
-        document.getElementById('lbIndex').innerText = currentIdx + 1;
-        document.getElementById('lbTotal').innerText = filteredMatches.length;
-        
-        const btnFav = document.getElementById('btnFav');
-        const btnDel = document.getElementById('btnDel');
-        btnFav.className = favSet.has(p.photo_id) ? 'lb-action active-fav' : 'lb-action';
-        btnDel.className = 'lb-action'; 
+        document.body.style.overflow = 'hidden';
     }
 
-    function nav(dir) {
-        currentIdx += dir;
-        if(currentIdx < 0) currentIdx = filteredMatches.length - 1;
-        if(currentIdx >= filteredMatches.length) currentIdx = 0;
-        updateLbContent();
+    function closeLightbox() {
+        document.getElementById('lightbox').style.display = 'none';
+        document.body.style.overflow = 'auto';
     }
 
-    async function toggleFav() {
-        const p = filteredMatches[currentIdx];
-        const btn = document.getElementById('btnFav');
-        const isFav = !favSet.has(p.photo_id);
+    function toggleChoice(type) {
+        const p = loadedPhotos[currentIdx];
+        if(!selections[p.photo_id]) selections[p.photo_id] = { fav: false, selected: false };
         
-        if(isFav) {
-            favSet.add(p.photo_id);
-            btn.classList.add('active-fav');
-            try { confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors:['#ff4081'] }); } catch(e){}
-        } else {
-            favSet.delete(p.photo_id);
-            btn.classList.remove('active-fav');
-        }
+        selections[p.photo_id][type] = !selections[p.photo_id][type];
         
-        document.getElementById('favCount').innerText = favSet.size;
+        // Sync with UI
+        openLightbox(currentIdx); 
         
-        sendAction(p.photo_id, 'fav', isFav);
-    }
-
-    async function toggleDel() {
-        const p = filteredMatches[currentIdx];
-        if(!confirm("Request deletion?")) return;
-        sendAction(p.photo_id, 'delete_req', true);
-        showToast("Delete Request Sent");
-    }
-
-    function sendAction(pid, type, val) {
+        // Sync with Backend (Guest Selection Tracking)
         fetch(`${API_BASE}/client-api`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: "update_selection",
-                payload: {
-                    collection_id: cid, photo_id: pid,
-                    status: { [type]: val, guest_name: guestInfo.name, guest_mobile: guestInfo.mobile, timestamp: Date.now() }
-                }
+            body: JSON.stringify({ 
+                action: "update_selection", 
+                payload: { collection_id: cid, photo_id: p.photo_id, status: selections[p.photo_id] } 
             })
         });
     }
 
-    /* --- DOWNLOAD FIX --- */
+    /* --- TOOLS --- */
     function downloadSingle() {
-        const url = filteredMatches[currentIdx].url;
-        fetch(url, { referrerPolicy: 'no-referrer' })
-            .then(resp => resp.blob())
-            .then(blob => saveAs(blob, `Photo_${Date.now()}.jpg`))
-            .catch(() => window.open(url, '_blank'));
-    }
-    
-    async function downloadSelectedItems() {
-        if(selectedIndices.size === 0) return showToast("No photos selected", "error");
-        showToast("Downloading...");
-        
-        const indices = Array.from(selectedIndices);
-        for(let i of indices) {
-            const url = filteredMatches[i].url;
-            try {
-                const blob = await fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.blob());
-                saveAs(blob, `photo_${i+1}.jpg`);
-            } catch(e) { window.open(url, '_blank'); }
-            await new Promise(r => setTimeout(r, 500));
-        }
+        saveAs(loadedPhotos[currentIdx].url, `Photo_${loadedPhotos[currentIdx].photo_id}.jpg`);
     }
 
-    async function downloadAsZip() {
-        if(selectedIndices.size === 0) return showToast("No photos selected", "error");
+    async function downloadSelected() {
+        const list = multiSelectMode ? Array.from(selectedSet) : [loadedPhotos[currentIdx]?.photo_id];
+        if(!list.length || !list[0]) return showToast("Pehle photos select karein");
         
+        showToast("Zipping photos...");
         const zip = new JSZip();
-        showToast("Creating Zip... Please Wait", "info");
+        const photosToZip = loadedPhotos.filter(p => list.includes(p.photo_id));
         
-        const indices = Array.from(selectedIndices);
-        const folder = zip.folder("EventLens_Photos");
-        
-        // FIX: Added try/catch for zip fetching to handle CORS failures gracefully
-        let successCount = 0;
-        await Promise.all(indices.map(async (idx) => {
-            try {
-                const url = filteredMatches[idx].url;
-                const blob = await fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.blob());
-                folder.file(`photo_${idx+1}.jpg`, blob);
-                successCount++;
-            } catch(e) { console.error("Zip fetch failed", e); }
-        }));
-
-        if (successCount === 0) {
-            showToast("Download blocked by Server. Opening images instead.", "error");
-            downloadSelectedItems(); 
-            return;
+        for(let p of photosToZip) {
+            const res = await fetch(p.url);
+            const blob = await res.blob();
+            zip.file(`Photo_${p.photo_id}.jpg`, blob);
         }
-
-        const content = await zip.generateAsync({type:"blob"});
-        saveAs(content, "My_Photos.zip");
-        showToast("Zip Downloaded");
+        
+        zip.generateAsync({type:"blob"}).then(c => {
+            saveAs(c, "EventLens_Selected.zip");
+            showToast("Complete!");
+        });
     }
 
-    function shareOnWhatsapp() {
-        window.open(`https://wa.me/?text=Check out my photos! ${window.location.href}`, '_blank');
-    }
-
-    function showToast(msg, type='success') {
+    function showToast(msg) {
         const t = document.getElementById('toast');
-        t.innerText = msg;
-        t.style.display = 'block';
-        if(type === 'error') t.style.borderColor = '#ff4444';
-        else t.style.borderColor = '#333';
+        t.innerText = msg; t.style.display = 'block';
         setTimeout(() => t.style.display = 'none', 3000);
     }
-    
-    // Swipe
-    let ts = 0;
-    const touchArea = document.getElementById('lbTouchArea');
-    touchArea.addEventListener('touchstart', e => ts = e.changedTouches[0].screenX);
-    touchArea.addEventListener('touchend', e => {
-        if(ts - e.changedTouches[0].screenX > 50) nav(1);
-        if(e.changedTouches[0].screenX - ts > 50) nav(-1);
-    });
 
+    function shareGallery() {
+        const url = encodeURIComponent(window.location.href);
+        window.open(`https://wa.me/?text=Check out my photos from the event: ${url}`);
+    }
 </script>
 </body>
 </html>

@@ -47,14 +47,15 @@
     .counter-box { margin-top: 20px; display: none; background: #000; padding: 12px; border-radius: 15px; border: 1px solid var(--border); }
     .counter-val { font-size: 20px; font-weight: 800; color: var(--accent); }
 
-    /* Lead Modal */
+    /* Lead Modal - Updated Window */
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s; }
     .modal-content { background: #1a1a1a; border: 1px solid var(--border); border-radius: 24px; padding: 35px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
-    .lead-input { width: 100%; padding: 16px; background: #0a0a0a; border: 1px solid var(--border); color: #fff; border-radius: 12px; font-size: 16px; margin-bottom: 12px; transition: 0.3s; }
+    .lead-label { display: block; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
+    .lead-input { width: 100%; padding: 16px; background: #0a0a0a; border: 1px solid var(--border); color: #fff; border-radius: 12px; font-size: 16px; margin-bottom: 15px; transition: 0.3s; }
     .lead-input:focus { border-color: var(--accent); background: #000; }
     .btn-unlock { background: var(--accent); color: #000; border: none; padding: 18px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 10px; }
 
-    /* Gallery - 3 columns for mobile */
+    /* Gallery - Small Thumbs */
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; }
     @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 16px; } }
     .ph-card { position: relative; aspect-ratio: 1; background: #111; overflow: hidden; cursor: pointer; border-radius: 4px; }
@@ -156,8 +157,13 @@
         <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent); font-size: 32px; margin-bottom:15px;"></i>
         <h2 style="font-family: var(--font-head); margin-bottom: 5px;">बिंगो! हमने आपको ढूँढ लिया।</h2>
         <p style="color: var(--muted); font-size: 14px; margin-bottom: 25px;">आपकी <span id="foundTotal" style="color: #fff; font-weight: 800;">0</span> फोटोज मिलीं।</p>
-        <input id="gName" class="lead-input" placeholder="आपका नाम (e.g. Rahul)">
-        <input id="gMobile" class="lead-input" type="tel" placeholder="मोबाइल नंबर">
+        
+        <label class="lead-label">आपका नाम</label>
+        <input id="gName" class="lead-input" placeholder="Rahul Soni">
+        
+        <label class="lead-label">मोबाइल नंबर</label>
+        <input id="gMobile" class="lead-input" type="tel" placeholder="98XXXXXXXX">
+        
         <button class="btn-unlock" onclick="saveLeadAndShow()">अपनी गैलरी देखें</button>
     </div>
 </div>
@@ -201,7 +207,6 @@
             const url = cid ? `${API_BASE}/get-branding?cid=${cid}` : `${API_BASE}/get-branding?linkId=${linkId}`;
             const res = await fetch(url);
             const raw = await res.json();
-            // PROXY PARSING FIX
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : (raw.branding || raw);
             applyBranding(data);
             if(!cid) cid = data.collection_id || data.collectionId;
@@ -264,9 +269,12 @@
                 allMatchedIds = data.all_matched_ids || [];
                 loadedPhotos = data.matches || [];
                 
-                // Effects
+                // Show 100+ logic
                 document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
+                
+                // Audio Effect
                 document.getElementById('successSound').play().catch(e => {});
+                
                 document.getElementById('leadModal').style.display = 'flex';
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00e676', '#ffffff'] });
             } else {
@@ -284,10 +292,16 @@
         
         guestInfo = { name, mobile };
 
-        // Save Guest Details (Action logic)
+        // Save Guest Details (Action logic) - Double Mapping to fix "Unknown"
         fetch(`${API_BASE}/save-details`, {
             method: 'POST',
-            body: JSON.stringify({ collection_id: cid, guest_name: name, guest_mobile: mobile, photo_count: allMatchedIds.length, selfie_image: currentSelfieB64.split(',')[1] })
+            body: JSON.stringify({ 
+                collection_id: cid, 
+                guest_name: name, name: name,
+                guest_mobile: mobile, mobile: mobile,
+                photo_count: allMatchedIds.length, 
+                selfie_image: currentSelfieB64.split(',')[1] 
+            })
         });
 
         document.getElementById('leadModal').style.display = 'none';
@@ -311,22 +325,26 @@
         `).join('');
     }
 
-    /* --- PAGINATION --- */
+    /* --- PAGINATION (FIXED ENDPOINT) --- */
     async function fetchNextBatch() {
         const btn = document.getElementById('btnLoadMore');
         btn.disabled = true; btn.innerText = "लोड हो रहा है...";
         const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 100);
         
         try {
-            const res = await fetch(`${API_BASE}/client-api`, {
+            // FIX: Calling root endpoint or ensuring correct action
+            const res = await fetch(`${API_BASE}/get_more_matches`, {
                 method: 'POST',
-                body: JSON.stringify({ action: "get_more_matches", ids: nextIds })
+                body: JSON.stringify({ ids: nextIds })
             });
             const raw = await res.json();
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : raw;
-            loadedPhotos = [...loadedPhotos, ...data.matches];
-            renderGrid();
-            checkPagination();
+            
+            if(data.matches) {
+                loadedPhotos = [...loadedPhotos, ...data.matches];
+                renderGrid();
+                checkPagination();
+            }
         } catch(e) { showToast("लोड करने में त्रुटि आई"); }
         btn.disabled = false;
         btn.innerText = "और लोड करें...";
@@ -352,7 +370,7 @@
         renderGrid();
     }
 
-    /* --- LIGHTBOX --- */
+    /* --- LIGHTBOX & CHOICE SYNC --- */
     function openLightbox(i) {
         currentIdx = i; const p = loadedPhotos[i];
         document.getElementById('lbImg').src = p.url;
@@ -373,14 +391,19 @@
         selections[p.photo_id][type] = !selections[p.photo_id][type];
         openLightbox(currentIdx);
         
-        // Sync with backend (Tracking)
+        // SYNC WITH ADMIN DASHBOARD (Client Selection API)
         fetch(`${API_BASE}/client-api`, { 
             method: 'POST', 
             body: JSON.stringify({ 
                 action: "update_selection", 
                 payload: { 
                     collection_id: cid, photo_id: p.photo_id, 
-                    status: { ...selections[p.photo_id], guest_name: guestInfo.name, guest_mobile: guestInfo.mobile } 
+                    status: { 
+                        ...selections[p.photo_id], 
+                        guest_name: guestInfo.name, 
+                        guest_mobile: guestInfo.mobile,
+                        timestamp: Date.now()
+                    } 
                 } 
             })
         });

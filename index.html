@@ -361,19 +361,33 @@
             // 2. Search API
             loaderText.innerText = "Searching gallery...";
             
-            // FIX: Split the header to send only raw base64 to avoid backend decode errors
-            const base64Data = pendingSelfieBase64.split(',')[1];
+            // FIX: Robust Base64 Extraction
+            let base64Data = "";
+            if (pendingSelfieBase64.includes(",")) {
+                base64Data = pendingSelfieBase64.split(',')[1];
+            } else {
+                base64Data = pendingSelfieBase64;
+            }
+
+            if (!base64Data) {
+                throw new Error("Failed to process image data.");
+            }
+            
+            // SEND EVERYTHING: Sending multiple keys to ensure backend finds what it needs
+            const payload = {
+                linkId: linkId || cid,
+                collection_id: cid, 
+                // Try all common naming conventions to prevent NoneType error
+                selfie_image: base64Data,
+                image: base64Data,
+                file: base64Data,
+                face_image: base64Data
+            };
             
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // SEND BOTH KEYS ('selfie_image' and 'image') to solve backend NoneType error
-                body: JSON.stringify({ 
-                    linkId: linkId, 
-                    collection_id: cid, // Send explictly if available
-                    selfie_image: base64Data,
-                    image: base64Data 
-                })
+                body: JSON.stringify(payload)
             });
             
             if (!res.ok) throw new Error("Server error");
@@ -424,7 +438,10 @@
         // Fire and forget
         try {
             // FIX: Ensure raw base64 is sent here too
-            const base64Data = pendingSelfieBase64 ? pendingSelfieBase64.split(',')[1] : null;
+            let base64Data = null;
+            if (pendingSelfieBase64) {
+                 base64Data = pendingSelfieBase64.includes(",") ? pendingSelfieBase64.split(',')[1] : pendingSelfieBase64;
+            }
 
             fetch(`${API_BASE}/save-details`, {
                 method: 'POST',
@@ -453,16 +470,37 @@
         }
 
         grid.innerHTML = photos.map((p, i) => {
-            // FIX: Handle both object {url: "..."} and string "http..." formats
-            // Also adds referrerPolicy to fix image display issues
+            // FIX: SMART URL FINDER
+            // Backend might send keys like 'url', 'image_url', 'link', 'src', etc.
             let imgUrl = "";
-            if (typeof p === 'string') imgUrl = p;
-            else if (p && p.url) imgUrl = p.url;
-            else return ""; // Skip invalid items
+            
+            if (typeof p === 'string') {
+                imgUrl = p;
+            } else if (typeof p === 'object' && p !== null) {
+                // Try to find the URL in common property names
+                imgUrl = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
+                
+                // If still not found, try to find ANY string value that looks like a URL
+                if (!imgUrl) {
+                    const values = Object.values(p);
+                    const found = values.find(v => typeof v === 'string' && (v.startsWith('http') || v.startsWith('https') || v.startsWith('data:')));
+                    if (found) imgUrl = found;
+                }
+            }
+
+            // If we absolutely cannot find a URL, show a placeholder error
+            // This prevents "invisible" items in the grid
+            if (!imgUrl) {
+                console.warn("Could not extract URL for item:", p);
+                return `
+                <div class="photo-item" style="background:#333; display:flex; align-items:center; justify-content:center; color:#666; font-size:10px;">
+                    Error
+                </div>`;
+            }
 
             return `
             <div class="photo-item" id="pitem-${i}" onclick="handleItemClick(${i})">
-                <img src="${imgUrl}" referrerpolicy="no-referrer" alt="Photo ${i+1}">
+                <img src="${imgUrl}" referrerpolicy="no-referrer" loading="lazy" alt="Photo ${i+1}">
                 <div class="select-ring"></div>
             </div>
             `;
@@ -499,12 +537,25 @@
             updateActionBar();
         } else {
             // Helper to get URL regardless of format
+            // RE-USE THE SMART LOGIC for the viewer click
             const p = allMatches[index];
-            const url = (typeof p === 'string') ? p : p.url;
+            let url = "";
+             if (typeof p === 'string') {
+                url = p;
+            } else if (typeof p === 'object' && p !== null) {
+                url = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
+                 if (!url) {
+                    const values = Object.values(p);
+                    const found = values.find(v => typeof v === 'string' && (v.startsWith('http') || v.startsWith('https')));
+                    if (found) url = found;
+                }
+            }
             
-            currentViewUrl = url;
-            document.getElementById('viewerImg').src = currentViewUrl;
-            document.getElementById('viewer').classList.add('open');
+            if(url) {
+                currentViewUrl = url;
+                document.getElementById('viewerImg').src = currentViewUrl;
+                document.getElementById('viewer').classList.add('open');
+            }
         }
     }
 
@@ -537,15 +588,29 @@
 
         for(let i of indices) {
             const p = allMatches[i];
-            const url = (typeof p === 'string') ? p : p.url;
-            // Use fetch to get blob to bypass some CORS issues on direct saveAs
-            try {
-                const resp = await fetch(url);
-                const blob = await resp.blob();
-                saveAs(blob, `photo_${i+1}.jpg`);
-            } catch(e) {
-                // Fallback
-                saveAs(url, `photo_${i+1}.jpg`);
+            
+            // SMART URL FINDER AGAIN for download
+            let url = "";
+            if (typeof p === 'string') url = p;
+            else if (typeof p === 'object' && p !== null) {
+                url = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
+                 if (!url) {
+                    const values = Object.values(p);
+                    const found = values.find(v => typeof v === 'string' && (v.startsWith('http') || v.startsWith('https')));
+                    if (found) url = found;
+                }
+            }
+
+            if(url) {
+                // Use fetch to get blob to bypass some CORS issues on direct saveAs
+                try {
+                    const resp = await fetch(url);
+                    const blob = await resp.blob();
+                    saveAs(blob, `photo_${i+1}.jpg`);
+                } catch(e) {
+                    // Fallback
+                    saveAs(url, `photo_${i+1}.jpg`);
+                }
             }
             await new Promise(r => setTimeout(r, 500)); 
         }
@@ -565,9 +630,23 @@
         await Promise.all(indices.map(async (idx) => {
             try {
                 const p = allMatches[idx];
-                const url = (typeof p === 'string') ? p : p.url;
-                const blob = await fetch(url).then(r => r.blob());
-                folder.file(`photo_${idx+1}.jpg`, blob);
+                
+                // SMART URL FINDER AGAIN for zip
+                let url = "";
+                if (typeof p === 'string') url = p;
+                else if (typeof p === 'object' && p !== null) {
+                    url = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
+                     if (!url) {
+                        const values = Object.values(p);
+                        const found = values.find(v => typeof v === 'string' && (v.startsWith('http') || v.startsWith('https')));
+                        if (found) url = found;
+                    }
+                }
+
+                if(url) {
+                    const blob = await fetch(url).then(r => r.blob());
+                    folder.file(`photo_${idx+1}.jpg`, blob);
+                }
             } catch(e) { console.error(e); }
         }));
 

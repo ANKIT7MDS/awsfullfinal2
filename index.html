@@ -1,245 +1,3 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>EventLens – Smart AI Gallery</title>
-
-  <!-- Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --bg: #050505; --card: #121212; --surface: #1e1e1e;
-      --accent: #00e676; --accent-dark: #00b35c; --accent-soft: rgba(0, 230, 118, 0.15);
-      --text: #ffffff; --muted: #a0a0a0; --border: #333;
-      --font-main: 'Plus Jakarta Sans', sans-serif;
-      --overlay-op: 0.4;
-      
-      /* Dynamic Vars */
-      --logo-size: 80px; 
-      --banner-height: 220px;
-    }
-
-    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; padding-bottom: 80px; }
-
-    /* --- HEADER & BRANDING --- */
-    header { 
-        position: relative; height: var(--banner-height); overflow: hidden; 
-        background-color: #222; background-size: cover; background-position: center;
-        transition: height 0.3s ease; border-bottom: 1px solid var(--border);
-    }
-    .header-overlay {
-        position: absolute; inset: 0; 
-        background: linear-gradient(to bottom, rgba(0,0,0,var(--overlay-op)), #050505);
-        display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; text-align: center; align-items: center;
-    }
-    .brand-logo {
-        width: var(--logo-size); height: var(--logo-size);
-        border-radius: 50%; border: 3px solid var(--accent);
-        object-fit: cover; margin-bottom: 10px; background: #000;
-        display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-    }
-    .welcome-text {
-        font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); margin-bottom: 4px; 
-        letter-spacing: 0.5px; text-transform: uppercase; display: none;
-    }
-    .brand-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin: 0; }
-
-    /* --- MAIN CONTAINER --- */
-    .container { max-width: 1000px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
-
-    /* --- SEARCH BOX --- */
-    .search-card {
-        background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 30px 20px;
-        text-align: center; margin-top: -40px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-        backdrop-filter: blur(10px);
-    }
-    .search-icon { font-size: 40px; color: var(--accent); margin-bottom: 15px; }
-    .btn-main {
-        background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px;
-        font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
-        transition: transform 0.2s; box-shadow: 0 4px 15px var(--accent-soft);
-    }
-    .btn-main:active { transform: scale(0.96); }
-
-    /* --- GALLERY CONTROLS --- */
-    .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 20px; }
-    .tag-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-    .tag-pill { background: var(--surface); color: var(--muted); padding: 6px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; border: 1px solid var(--border); cursor: pointer; }
-    .tag-pill.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
-
-    /* --- GRID --- */
-    .grid { 
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 6px; 
-        transition: opacity 0.3s;
-    }
-    /* Mobile optimization for grid */
-    @media (max-width: 480px) {
-        .grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
-    }
-
-    .photo-item { 
-        aspect-ratio: 1; background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; 
-        cursor: pointer; -webkit-tap-highlight-color: transparent; 
-    }
-    /* Ensure image fills the box */
-    .photo-item img { 
-        width: 100%; height: 100%; object-fit: cover; display: block; 
-        transition: transform 0.3s; 
-    }
-    
-    /* Selection State */
-    .photo-item.selected img { opacity: 0.4; transform: scale(0.9); }
-    .photo-item.selected::after {
-        content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900;
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        color: #fff; font-size: 24px; background: var(--accent); 
-        width: 40px; height: 40px; border-radius: 50%; 
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none;
-    }
-    .select-ring {
-        position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; 
-        border: 2px solid rgba(255,255,255,0.7); border-radius: 50%; pointer-events: none;
-        display: none; /* Only show in select mode */
-    }
-    body.select-mode .select-ring { display: block; }
-    body.select-mode .photo-item.selected .select-ring { background: var(--accent); border-color: var(--accent); }
-
-    /* --- BOTTOM BAR (ACTIONS) --- */
-    .action-bar {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
-        background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(12px);
-        border: 1px solid var(--border); border-radius: 50px; padding: 10px 20px;
-        display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100;
-        width: 90%; max-width: 400px; justify-content: space-around;
-    }
-    .action-bar.visible { transform: translateX(-50%) translateY(0); }
-    .act-btn { background: none; border: none; color: #fff; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; opacity: 0.7; }
-    .act-btn i { font-size: 20px; }
-    .act-btn:hover, .act-btn.active { opacity: 1; color: var(--accent); }
-
-    /* --- MODALS --- */
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-    .modal.open { display: flex; animation: fadeIn 0.3s; }
-    
-    .modal-card { background: var(--card); border: 1px solid var(--border); width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; text-align: center; position: relative; }
-    .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #666; font-size: 20px; cursor: pointer; }
-    
-    .lead-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 16px; }
-    .lead-input:focus { border-color: var(--accent); }
-
-    /* --- LIGHTBOX --- */
-    .viewer { position: fixed; inset: 0; background: #000; z-index: 300; display: none; align-items: center; justify-content: center; }
-    .viewer.open { display: flex; }
-    .viewer img { max-width: 100%; max-height: 90vh; }
-    .v-close { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 30px; background: none; border: none; cursor: pointer; }
-    .v-dl { position: absolute; bottom: 30px; background: var(--accent); color: #000; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 700; cursor: pointer; }
-
-    /* --- UTILS --- */
-    .hidden { display: none !important; }
-    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    .count-badge { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-left: 5px; }
-
-  </style>
-</head>
-<body>
-
-<!-- HEADER -->
-<header id="pageHeader">
-    <div class="header-overlay">
-        <img id="pageLogo" class="brand-logo" alt="Logo" onerror="this.style.display='none'">
-        <div id="welcomeText" class="welcome-text"></div>
-        <h1 class="brand-title" id="pageTitle">EventLens Gallery</h1>
-    </div>
-</header>
-
-<!-- SEARCH SECTION -->
-<div class="container" id="searchContainer">
-    <div class="search-card">
-        <i class="fa-solid fa-face-smile-wink search-icon"></i>
-        <h3>Find Your Photos</h3>
-        <p style="color:var(--muted); margin-bottom: 25px; line-height: 1.5;">Upload a selfie to instantly find all your photos from this event using AI.</p>
-        
-        <input type="file" id="selfieInput" accept="image/*" hidden onchange="handleSelfieSelect(this.files[0])">
-        <button class="btn-main" onclick="document.getElementById('selfieInput').click()">
-            <i class="fa-solid fa-camera"></i> Upload Selfie
-        </button>
-
-        <!-- Preview of uploaded selfie (Optional feedback) -->
-        <div id="selfiePreviewContainer" class="hidden" style="margin-top: 15px;">
-            <img id="selfiePreviewImg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
-        </div>
-
-        <div id="loader" class="hidden" style="margin-top: 25px;">
-            <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--accent); font-size: 24px;"></i>
-            <p style="color:var(--muted); font-size: 14px; margin-top: 10px;" id="loaderText">Processing...</p>
-        </div>
-    </div>
-</div>
-
-<!-- GALLERY SECTION (Hidden Initially) -->
-<div class="container hidden" id="galleryContainer">
-    <div class="gallery-header">
-        <h3 style="margin:0;">Results <span id="matchCount" class="count-badge">0</span></h3>
-        <button id="btnToggleSelect" class="tag-pill" onclick="toggleSelectionMode()"><i class="fa-solid fa-check-double"></i> Select</button>
-    </div>
-    
-    <!-- TAGS (Optional) -->
-    <div class="tag-scroll hidden" id="tagList"></div>
-
-    <div class="grid" id="galleryGrid" style="margin-top: 15px;"></div>
-    
-    <div style="text-align:center; padding: 40px; color: #555;" class="hidden" id="noResultsMsg">
-        <i class="fa-regular fa-face-frown-open" style="font-size: 40px; margin-bottom: 10px;"></i>
-        <p>No matches found. Try a clearer selfie.</p>
-        <button class="btn-main" onclick="location.reload()" style="margin-top: 15px; font-size: 14px;">Try Again</button>
-    </div>
-</div>
-
-<!-- STICKY ACTION BAR -->
-<div class="action-bar" id="actionBar">
-    <div style="color: var(--muted); font-size: 12px; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #111; padding: 4px 12px; border-radius: 12px; border: 1px solid #333;">
-        <span id="selCount">0</span> Selected
-    </div>
-    <button class="act-btn" onclick="selectAllMatches()"><i class="fa-solid fa-check-square"></i> All</button>
-    <button class="act-btn" onclick="downloadSelectedItems()"><i class="fa-solid fa-download"></i> Save</button>
-    <button class="act-btn" onclick="downloadAsZip()"><i class="fa-solid fa-file-zipper"></i> Zip</button>
-    <button class="act-btn" onclick="shareOnWhatsapp()"><i class="fa-brands fa-whatsapp"></i> Share</button>
-</div>
-
-<!-- LEAD MODAL (Intermediate Step) -->
-<div class="modal" id="leadModal">
-    <div class="modal-card">
-        <div style="width: 60px; height: 60px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
-            <i class="fa-solid fa-check" style="color: var(--accent); font-size: 24px;"></i>
-        </div>
-        <h2 style="margin: 0 0 10px;">Photos Found!</h2>
-        <p style="color: var(--muted); margin-bottom: 25px;">We found <span id="leadMatchCount" style="color: #fff; font-weight: 700;">0</span> photos matching your selfie. Enter details to view them.</p>
-        
-        <input id="guestName" class="lead-input" placeholder="Your Name">
-        <input id="guestMobile" class="lead-input" placeholder="Mobile Number" type="tel">
-        
-        <button class="btn-main" style="width: 100%; justify-content: center;" onclick="unlockGallery()">
-            View Photos
-        </button>
-    </div>
-</div>
-
-<!-- VIEWER (Lightbox) -->
-<div class="viewer" id="viewer">
-    <button class="v-close" onclick="closeViewer()">&times;</button>
-    <img id="viewerImg">
-    <button class="v-dl" onclick="downloadSingle()">Download HD</button>
-</div>
-
 <script>
     /* --- CONFIG --- */
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
@@ -395,10 +153,20 @@
             
             loader.classList.add('hidden');
 
+            // FIX: Fallback to all_matched_ids if matches is empty
+            // The backend returns { matches: [], all_matched_ids: [...], total: 534 }
+            let foundMatches = [];
+            if (data.matches && data.matches.length > 0) {
+                foundMatches = data.matches;
+            } else if (data.all_matched_ids && data.all_matched_ids.length > 0) {
+                console.warn("Using all_matched_ids as fallback. Images might need URL construction.");
+                foundMatches = data.all_matched_ids;
+            }
+
             // Check if matches exist
-            if(data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
+            if(foundMatches.length > 0) {
                 // Success: Show Intermediate Modal
-                allMatches = data.matches; 
+                allMatches = foundMatches; 
                 document.getElementById('leadMatchCount').innerText = allMatches.length;
                 document.getElementById('leadModal').classList.add('open');
                 
@@ -492,9 +260,11 @@
             // This prevents "invisible" items in the grid
             if (!imgUrl) {
                 console.warn("Could not extract URL for item:", p);
+                // Try to show the ID itself if no URL found, maybe user can debug
                 return `
-                <div class="photo-item" style="background:#333; display:flex; align-items:center; justify-content:center; color:#666; font-size:10px;">
-                    Error
+                <div class="photo-item" style="background:#222; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#666; font-size:10px; padding:5px; overflow:hidden;">
+                    <i class="fa-solid fa-image" style="font-size:20px; margin-bottom:5px;"></i>
+                    <span>Image ${i+1}</span>
                 </div>`;
             }
 
@@ -667,5 +437,3 @@
     function closeViewer() { document.getElementById('viewer').classList.remove('open'); }
 
 </script>
-</body>
-</html>

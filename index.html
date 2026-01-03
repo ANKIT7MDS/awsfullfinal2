@@ -4,17 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>EventLens – Smart AI Gallery</title>
-  
-  <!-- IMP: No Referrer for S3, Unsafe Inline for Scripts -->
-  <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
 
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -22,402 +18,261 @@
       --accent: #00e676; --accent-dark: #00b35c; --accent-soft: rgba(0, 230, 118, 0.15);
       --text: #ffffff; --muted: #a0a0a0; --border: #333;
       --font-main: 'Plus Jakarta Sans', sans-serif;
-      --font-head: 'Outfit', sans-serif;
-      --overlay-op: 0.6;
-      --logo-size: 90px; 
-      --banner-height: 280px;
+      --overlay-op: 0.4;
+      
+      /* Dynamic Vars */
+      --logo-size: 80px; 
+      --banner-height: 220px;
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-main); overflow-x: hidden; padding-bottom: 100px; }
 
-    /* --- PREMIUM HEADER --- */
+    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; padding-bottom: 80px; }
+
+    /* --- HEADER & BRANDING --- */
     header { 
         position: relative; height: var(--banner-height); overflow: hidden; 
-        background: #111; border-bottom: 1px solid var(--border);
+        background-color: #222; background-size: cover; background-position: center;
+        transition: height 0.3s ease; border-bottom: 1px solid var(--border);
     }
-    .header-bg {
-        position: absolute; inset: 0; background-size: cover; background-position: center;
-        filter: brightness(0.5); transform: scale(1.05); transition: 0.5s;
+    .header-overlay {
+        position: absolute; inset: 0; 
+        background: linear-gradient(to bottom, rgba(0,0,0,var(--overlay-op)), #050505);
+        display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; text-align: center; align-items: center;
     }
-    .header-content { 
-        position: relative; z-index: 2; height: 100%;
-        display: flex; flex-direction: column; justify-content: flex-end; align-items: center; 
-        padding: 30px; background: linear-gradient(to top, var(--bg) 5%, transparent);
+    .brand-logo {
+        width: var(--logo-size); height: var(--logo-size);
+        border-radius: 50%; border: 3px solid var(--accent);
+        object-fit: cover; margin-bottom: 10px; background: #000;
+        display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
     }
-    .brand-logo { 
-        width: var(--logo-size); height: var(--logo-size); border-radius: 50%; border: 3px solid var(--accent); 
-        object-fit: cover; margin-bottom: 15px; background: #000; display: none; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    .welcome-text {
+        font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); margin-bottom: 4px; 
+        letter-spacing: 0.5px; text-transform: uppercase; display: none;
     }
-    .welcome-text { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 5px; letter-spacing: 2px; text-transform: uppercase; display: none; }
-    .brand-title { font-family: var(--font-head); font-size: 36px; font-weight: 800; letter-spacing: -1px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); margin: 0; }
+    .brand-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin: 0; }
 
-    /* --- CONTAINER --- */
-    .container { max-width: 1200px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
-    
-    /* --- SEARCH UI --- */
-    .screen { display: none; min-height: 70vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
-    .screen.active { display: flex; }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    /* --- MAIN CONTAINER --- */
+    .container { max-width: 1000px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
 
-    .upload-card {
-        width: 100%; max-width: 400px; background: rgba(20,20,20,0.6); border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 30px; padding: 40px 30px; text-align: center; position: relative; overflow: hidden;
-        backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-        margin-top: -60px;
+    /* --- SEARCH BOX --- */
+    .search-card {
+        background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 30px 20px;
+        text-align: center; margin-top: -40px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        backdrop-filter: blur(10px);
     }
-    
-    .selfie-ring {
-        width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 2px dashed #555;
-        margin: 30px auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        cursor: pointer; position: relative; overflow: hidden; transition: 0.3s;
+    .search-icon { font-size: 40px; color: var(--accent); margin-bottom: 15px; }
+    .btn-main {
+        background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px;
+        font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+        transition: transform 0.2s; box-shadow: 0 4px 15px var(--accent-soft);
     }
-    .selfie-ring:active { transform: scale(0.95); border-color: var(--accent); background: var(--accent-soft); }
-    .selfie-ring img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; }
-    
-    .scan-line {
-        position: absolute; top: 0; left: 0; width: 100%; height: 3px;
-        background: var(--accent); box-shadow: 0 0 20px var(--accent);
-        animation: scan 1.5s infinite linear; display: none; z-index: 10;
-    }
-    @keyframes scan { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+    .btn-main:active { transform: scale(0.96); }
 
-    /* --- GALLERY TABS --- */
-    .tabs-wrapper {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;
-    }
-    .tabs-list { display: flex; gap: 10px; }
-    .tab {
-        background: rgba(255,255,255,0.05); color: var(--muted); padding: 10px 20px; border-radius: 50px; 
-        font-size: 14px; font-weight: 600; border: 1px solid transparent; cursor: pointer; white-space: nowrap; transition: 0.3s;
-    }
-    .tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .tab.active { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 4px 15px var(--accent-soft); }
-    
-    .fav-badge {
-        font-size: 14px; font-weight: 700; color: #ff4081; display: flex; align-items: center; gap: 8px;
-        background: rgba(255, 64, 129, 0.1); padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255, 64, 129, 0.3);
-    }
+    /* --- GALLERY CONTROLS --- */
+    .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 20px; }
+    .tag-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+    .tag-pill { background: var(--surface); color: var(--muted); padding: 6px 14px; border-radius: 20px; font-size: 13px; white-space: nowrap; border: 1px solid var(--border); cursor: pointer; }
+    .tag-pill.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
 
     /* --- GRID --- */
     .grid { 
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; 
-        padding-bottom: 40px;
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 6px; 
+        transition: opacity 0.3s;
     }
-    @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; } }
+    /* Mobile optimization for grid */
+    @media (max-width: 480px) {
+        .grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    }
 
-    .photo-card {
-        position: relative; aspect-ratio: 2/3; background: #151515; overflow: hidden; 
-        border-radius: 12px; cursor: pointer; transition: transform 0.2s;
+    .photo-item { 
+        aspect-ratio: 1; background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; 
+        cursor: pointer; -webkit-tap-highlight-color: transparent; 
     }
-    /* FIXED: Removed opacity transition so images show immediately */
-    .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+    /* Ensure image fills the box */
+    .photo-item img { 
+        width: 100%; height: 100%; object-fit: cover; display: block; 
+        transition: transform 0.3s; 
+    }
     
-    /* RIBBON */
-    .ribbon {
-        position: absolute; top: 12px; left: -28px; width: 100px; background: var(--accent); color: #000;
-        font-size: 10px; font-weight: 800; text-align: center; transform: rotate(-45deg);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 5; pointer-events: none; text-transform: uppercase; letter-spacing: 1px;
+    /* Selection State */
+    .photo-item.selected img { opacity: 0.4; transform: scale(0.9); }
+    .photo-item.selected::after {
+        content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900;
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        color: #fff; font-size: 24px; background: var(--accent); 
+        width: 40px; height: 40px; border-radius: 50%; 
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none;
     }
-
-    /* SELECTION OVERLAY */
-    .select-overlay {
-        position: absolute; inset: 0; background: rgba(0, 230, 118, 0.3); border: 3px solid var(--accent); border-radius: 12px;
-        display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px);
+    .select-ring {
+        position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; 
+        border: 2px solid rgba(255,255,255,0.7); border-radius: 50%; pointer-events: none;
+        display: none; /* Only show in select mode */
     }
-    .photo-card.selected .select-overlay { display: flex; }
-    .check-icon { width: 45px; height: 45px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); }
+    body.select-mode .select-ring { display: block; }
+    body.select-mode .photo-item.selected .select-ring { background: var(--accent); border-color: var(--accent); }
 
-    /* --- FLOATING ACTION BAR --- */
+    /* --- BOTTOM BAR (ACTIONS) --- */
     .action-bar {
-        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150px);
-        background: rgba(18, 18, 18, 0.9); backdrop-filter: blur(16px);
-        border: 1px solid rgba(255,255,255,0.15); border-radius: 100px;
-        padding: 12px 30px; display: flex; gap: 25px; align-items: center;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.6); z-index: 100; width: auto; 
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+        background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(12px);
+        border: 1px solid var(--border); border-radius: 50px; padding: 10px 20px;
+        display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100;
+        width: 90%; max-width: 400px; justify-content: space-around;
     }
     .action-bar.visible { transform: translateX(-50%) translateY(0); }
-    
-    .fab-btn {
-        background: none; border: none; color: #fff; font-size: 10px; 
-        display: flex; flex-direction: column; align-items: center; gap: 4px; 
-        opacity: 0.6; transition: 0.2s; cursor: pointer; min-width: 50px; font-weight: 500;
-    }
-    .fab-btn i { font-size: 22px; margin-bottom: 2px; }
-    .fab-btn:hover, .fab-btn.active { opacity: 1; color: var(--accent); transform: translateY(-3px); }
-    .divider { width: 1px; height: 30px; background: rgba(255,255,255,0.1); }
+    .act-btn { background: none; border: none; color: #fff; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; opacity: 0.7; }
+    .act-btn i { font-size: 20px; }
+    .act-btn:hover, .act-btn.active { opacity: 1; color: var(--accent); }
 
-    /* --- LIGHTBOX (FIXED SIZE) --- */
-    .lightbox { position: fixed; inset: 0; background: #000; z-index: 500; display: none; flex-direction: column; }
-    .lb-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; width: 100%; height: 100%; }
+    /* --- MODALS --- */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .modal.open { display: flex; animation: fadeIn 0.3s; }
     
-    /* FIX: Image Constraint */
-    .lb-img { 
-        max-width: 100vw; max-height: 85vh; 
-        object-fit: contain; transition: transform 0.2s;
-    }
+    .modal-card { background: var(--card); border: 1px solid var(--border); width: 90%; max-width: 400px; padding: 30px; border-radius: 20px; text-align: center; position: relative; }
+    .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #666; font-size: 20px; cursor: pointer; }
     
-    .lb-top { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
-    .lb-bot { position: absolute; bottom: 0; left: 0; right: 0; padding: 30px; display: flex; justify-content: space-around; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
-    
-    .lb-action { 
-        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); 
-        width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
-        color: #fff; font-size: 22px; transition: 0.2s; cursor: pointer; backdrop-filter: blur(10px);
-    }
-    .lb-action.active-fav { background: #ff4081; border-color: #ff4081; box-shadow: 0 0 20px rgba(255, 64, 129, 0.4); }
-    .lb-action.active-del { background: #ff4444; border-color: #ff4444; }
+    .lead-input { width: 100%; padding: 14px; margin-bottom: 12px; background: #000; border: 1px solid #333; border-radius: 10px; color: #fff; font-size: 16px; }
+    .lead-input:focus { border-color: var(--accent); }
 
-    .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); padding: 20px; color: rgba(255,255,255,0.4); font-size: 30px; cursor: pointer; z-index: 5; transition: 0.2s; }
-    .nav-arrow:hover { color: #fff; background: rgba(0,0,0,0.3); border-radius: 50%; }
-    .nav-left { left: 10px; } .nav-right { right: 10px; }
+    /* --- LIGHTBOX --- */
+    .viewer { position: fixed; inset: 0; background: #000; z-index: 300; display: none; align-items: center; justify-content: center; }
+    .viewer.open { display: flex; }
+    .viewer img { max-width: 100%; max-height: 90vh; }
+    .v-close { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 30px; background: none; border: none; cursor: pointer; }
+    .v-dl { position: absolute; bottom: 30px; background: var(--accent); color: #000; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 700; cursor: pointer; }
 
-    /* MODAL */
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 400; display: none; align-items: center; justify-content: center; }
-    .lead-input { width: 100%; padding: 18px; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 14px; margin-bottom: 15px; font-size: 16px; outline:none; transition:0.2s; }
-    .lead-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-
+    /* --- UTILS --- */
     .hidden { display: none !important; }
-    .btn-main { background: var(--accent); color: #000; border: none; padding: 18px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; letter-spacing: 0.5px; box-shadow: 0 5px 20px var(--accent-soft); transition: 0.2s; }
-    .btn-main:active { transform: scale(0.98); }
-    
-    #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: #1a1a1a; padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 600; display: none; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    
-    /* Loading Spinner */
-    .spinner { width: 24px; height: 24px; border: 3px solid rgba(0, 230, 118, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  /* === Premium UI Enhancements (non-breaking) === */
-:root{
-  --radius-xl: 22px;
-  --shadow-soft: 0 10px 30px rgba(0,0,0,.35);
-  --shadow-pop: 0 18px 50px rgba(0,0,0,.55);
-  --glow: 0 0 0 2px rgba(99,102,241,.22), 0 0 30px rgba(99,102,241,.18);
-}
-body{ -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .count-badge { background: var(--accent); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-left: 5px; }
 
-#header{ backdrop-filter: blur(12px); }
-#galleryContainer{ max-width: 1200px; margin: 0 auto; padding-left: 14px; padding-right: 14px; }
-#galleryGrid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-@media (min-width: 640px){ #galleryGrid{ grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; } }
-@media (min-width: 1024px){ #galleryGrid{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; } }
-
-.photo-card{
-  border-radius: var(--radius-xl) !important;
-  box-shadow: var(--shadow-soft);
-  transform: translateY(8px);
-  opacity: 0;
-  animation: cardIn .42s ease forwards;
-  overflow: hidden;
-  position: relative;
-}
-.photo-card::before{
-  content:"";
-  position:absolute; inset:0;
-  background: radial-gradient(900px 220px at 15% -10%, rgba(99,102,241,.18), transparent 55%);
-  pointer-events:none;
-}
-.photo-card:hover{ transform: translateY(-2px) scale(1.01); box-shadow: var(--shadow-pop); }
-@keyframes cardIn{ to{ transform: translateY(0); opacity: 1; } }
-
-.photo-card img{
-  width:100%; height:100%; object-fit:cover;
-  transform: scale(1.02);
-  transition: opacity .25s ease, transform .35s ease;
-  opacity: 0;
-}
-.photo-card img.loaded{ opacity:1; transform: scale(1.0); }
-.photo-card .skeleton{
-  position:absolute; inset:0;
-  background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.10), rgba(255,255,255,.06));
-  background-size: 200% 100%;
-  animation: shimmer 1.2s infinite linear;
-}
-@keyframes shimmer{ 0%{ background-position:200% 0;} 100%{ background-position:-200% 0;} }
-
-body.match-found #statusText{
-  color:#a7f3d0 !important;
-  text-shadow: 0 0 22px rgba(16,185,129,.22);
-}
-body.match-found #galleryContainer{ animation: popGlow .55s ease; }
-@keyframes popGlow{ 0%{ filter:none;} 35%{ filter: drop-shadow(0 0 20px rgba(99,102,241,.18)); } 100%{ filter:none;} }
-
-#actionBar{ border-radius: 18px !important; backdrop-filter: blur(14px); box-shadow: 0 10px 32px rgba(0,0,0,.35); }
-
-#lightbox .content{ border-radius: 22px !important; box-shadow: 0 30px 80px rgba(0,0,0,.7); }
-
-</style>
+  </style>
 </head>
 <body>
 
-<div id="toast">Message</div>
-
-<!-- HEADER (Branding) -->
-<header id="header">
-    <div class="header-bg" id="headerBg"></div>
-    <div class="header-content">
-        <img id="brandLogo" class="brand-logo" onerror="this.style.display='none'">
-        <h1 class="brand-title" id="brandTitle">Gallery</h1>
-        <p class="welcome-text" id="welcomeText" style="display:block; margin-top:5px; opacity:0.8;">Welcome Guest</p>
+<!-- HEADER -->
+<header id="pageHeader">
+    <div class="header-overlay">
+        <img id="pageLogo" class="brand-logo" alt="Logo" onerror="this.style.display='none'">
+        <div id="welcomeText" class="welcome-text"></div>
+        <h1 class="brand-title" id="pageTitle">EventLens Gallery</h1>
     </div>
 </header>
 
-<!-- SCREEN 1: SEARCH -->
-<div id="screenSearch" class="screen active">
-    <div class="upload-card">
-        <i class="fa-solid fa-face-smile-wink" style="font-size: 40px; color: var(--accent); margin-bottom: 15px;"></i>
-        <h2 style="margin: 0 0 10px; font-family: var(--font-head);">Find Your Photos</h2>
-        <p style="color:var(--muted); font-size: 14px; margin-bottom: 30px; line-height: 1.6;">AI Magic! Upload a clear selfie to instantly find your photos from the event.</p>
+<!-- SEARCH SECTION -->
+<div class="container" id="searchContainer">
+    <div class="search-card">
+        <i class="fa-solid fa-face-smile-wink search-icon"></i>
+        <h3>Find Your Photos</h3>
+        <p style="color:var(--muted); margin-bottom: 25px; line-height: 1.5;">Upload a selfie to instantly find all your photos from this event using AI.</p>
         
-        <div class="selfie-ring" onclick="document.getElementById('fileIn').click()">
-            <div class="scan-line" id="scanLine"></div>
-            <img id="previewImg">
-            <i class="fa-solid fa-camera" style="font-size:36px; color:#555;"></i>
-            <span style="font-size:12px; color:#666; font-weight:700; margin-top:8px;">UPLOAD</span>
+        <input type="file" id="selfieInput" accept="image/*" hidden onchange="handleSelfieSelect(this.files[0])">
+        <button class="btn-main" onclick="document.getElementById('selfieInput').click()">
+            <i class="fa-solid fa-camera"></i> Upload Selfie
+        </button>
+
+        <!-- Preview of uploaded selfie (Optional feedback) -->
+        <div id="selfiePreviewContainer" class="hidden" style="margin-top: 15px;">
+            <img id="selfiePreviewImg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
         </div>
-        <input type="file" id="fileIn" hidden accept="image/*" onchange="handleSelfieSelect(this.files[0])">
-        
-        <p id="statusText" style="font-size: 13px; color: var(--accent); height: 20px; font-weight:600;"></p>
-        
-        <!-- PIN Input -->
-        <div id="pinBox" class="hidden" style="margin-top:20px;">
-            <input type="tel" id="pinInput" class="lead-input" placeholder="Enter Event PIN" style="text-align:center; letter-spacing:5px; font-weight:700;">
-            <button class="btn-main" onclick="retrySearch()">Unlock Gallery</button>
+
+        <div id="loader" class="hidden" style="margin-top: 25px;">
+            <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--accent); font-size: 24px;"></i>
+            <p style="color:var(--muted); font-size: 14px; margin-top: 10px;" id="loaderText">Processing...</p>
         </div>
     </div>
 </div>
 
-<!-- SCREEN 2: GALLERY -->
+<!-- GALLERY SECTION (Hidden Initially) -->
 <div class="container hidden" id="galleryContainer">
-    <div class="tabs-wrapper">
-        <div class="tabs-list" id="eventTabs">
-            <!-- Tabs injected by JS -->
-        </div>
-        <div class="fav-badge"><i class="fa-solid fa-heart"></i> <span id="favCount">0</span></div>
+    <div class="gallery-header">
+        <h3 style="margin:0;">Results <span id="matchCount" class="count-badge">0</span></h3>
+        <button id="btnToggleSelect" class="tag-pill" onclick="toggleSelectionMode()"><i class="fa-solid fa-check-double"></i> Select</button>
     </div>
     
-    <div class="grid" id="galleryGrid"></div>
+    <!-- TAGS (Optional) -->
+    <div class="tag-scroll hidden" id="tagList"></div>
+
+    <div class="grid" id="galleryGrid" style="margin-top: 15px;"></div>
     
-    <div style="text-align:center; padding: 60px 20px; color: #555;" class="hidden" id="noResultsMsg">
-        <i class="fa-regular fa-face-frown-open" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
-        <p>No photos found in this category.</p>
+    <div style="text-align:center; padding: 40px; color: #555;" class="hidden" id="noResultsMsg">
+        <i class="fa-regular fa-face-frown-open" style="font-size: 40px; margin-bottom: 10px;"></i>
+        <p>No matches found. Try a clearer selfie.</p>
+        <button class="btn-main" onclick="location.reload()" style="margin-top: 15px; font-size: 14px;">Try Again</button>
     </div>
 </div>
 
-<!-- ACTION BAR -->
+<!-- STICKY ACTION BAR -->
 <div class="action-bar" id="actionBar">
-    <button class="fab-btn" onclick="toggleSelectionMode()" id="btnSelectMode"><i class="fa-solid fa-check-double"></i><span>Select</span></button>
-    <div class="divider"></div>
-    <button class="fab-btn" onclick="downloadSelectedItems()"><i class="fa-solid fa-download"></i><span>Save</span></button>
-    <button class="fab-btn" onclick="downloadAsZip()"><i class="fa-solid fa-file-zipper"></i><span>Zip</span></button>
-    <button class="fab-btn" onclick="shareOnWhatsapp()"><i class="fa-brands fa-whatsapp"></i><span>Share</span></button>
-    <div class="divider"></div>
-    <button class="fab-btn" style="color:#ff4444;" onclick="location.reload()"><i class="fa-solid fa-power-off"></i><span>Exit</span></button>
+    <div style="color: var(--muted); font-size: 12px; position: absolute; top: -30px; left: 50%; transform: translateX(-50%); background: #111; padding: 4px 12px; border-radius: 12px; border: 1px solid #333;">
+        <span id="selCount">0</span> Selected
+    </div>
+    <button class="act-btn" onclick="selectAllMatches()"><i class="fa-solid fa-check-square"></i> All</button>
+    <button class="act-btn" onclick="downloadSelectedItems()"><i class="fa-solid fa-download"></i> Save</button>
+    <button class="act-btn" onclick="downloadAsZip()"><i class="fa-solid fa-file-zipper"></i> Zip</button>
+    <button class="act-btn" onclick="shareOnWhatsapp()"><i class="fa-brands fa-whatsapp"></i> Share</button>
 </div>
 
-<!-- LEAD MODAL -->
+<!-- LEAD MODAL (Intermediate Step) -->
 <div class="modal" id="leadModal">
-    <div class="upload-card" style="margin-top:0;">
-        <div style="width: 70px; height: 70px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--accent-soft);">
-            <i class="fa-solid fa-check" style="color: var(--accent); font-size: 32px;"></i>
+    <div class="modal-card">
+        <div style="width: 60px; height: 60px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+            <i class="fa-solid fa-check" style="color: var(--accent); font-size: 24px;"></i>
         </div>
-        <h2 style="margin: 0 0 10px; font-family: var(--font-head);">Success!</h2>
-        <p style="color: var(--muted); margin-bottom: 30px; font-size: 15px;">We found <span id="leadMatchCount" style="color: #fff; font-weight: 800; font-size: 18px;">0</span> photos matching your face.</p>
+        <h2 style="margin: 0 0 10px;">Photos Found!</h2>
+        <p style="color: var(--muted); margin-bottom: 25px;">We found <span id="leadMatchCount" style="color: #fff; font-weight: 700;">0</span> photos matching your selfie. Enter details to view them.</p>
         
-        <input id="guestName" class="lead-input" placeholder="Full Name">
+        <input id="guestName" class="lead-input" placeholder="Your Name">
         <input id="guestMobile" class="lead-input" placeholder="Mobile Number" type="tel">
         
-        <button class="btn-main" onclick="unlockGallery()">View My Photos</button>
+        <button class="btn-main" style="width: 100%; justify-content: center;" onclick="unlockGallery()">
+            View Photos
+        </button>
     </div>
 </div>
 
-<!-- LIGHTBOX (UNIFIED ID FIX) -->
-<div class="lightbox" id="lightbox">
-    <div class="lb-top">
-        <span style="color:#fff; font-size:16px; font-weight:600;"><span id="lbIndex">1</span> / <span id="lbTotal">10</span></span>
-        <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:28px;"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    
-    <div class="lb-img-wrap" id="lbTouchArea">
-        <!-- FIXED ID: lbImg to match JS, removed broken referrer policy, added fallback -->
-        <img id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
-        <div class="nav-arrow nav-left" onclick="nav(-1)"><i class="fa-solid fa-chevron-left"></i></div>
-        <div class="nav-arrow nav-right" onclick="nav(1)"><i class="fa-solid fa-chevron-right"></i></div>
-    </div>
-    
-    <div class="lb-bot">
-        <button class="lb-action" id="btnFav" onclick="toggleFav()"><i class="fa-solid fa-heart"></i></button>
-        <button class="lb-action" onclick="downloadSingle()"><i class="fa-solid fa-download"></i></button>
-        <button class="lb-action" id="btnDel" onclick="toggleDel()"><i class="fa-solid fa-trash"></i></button>
-    </div>
+<!-- VIEWER (Lightbox) -->
+<div class="viewer" id="viewer">
+    <button class="v-close" onclick="closeViewer()">&times;</button>
+    <img id="viewerImg">
+    <button class="v-dl" onclick="downloadSingle()">Download HD</button>
 </div>
 
 <script>
-    /* --- CONFIG & STATE --- */
+    /* --- CONFIG --- */
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    const SAVE_ENDPOINT = "/save-details"; 
     const urlParams = new URLSearchParams(window.location.search);
-    const linkId = urlParams.get('linkId') || urlParams.get('id');
-    let cid = urlParams.get('cid') || urlParams.get('collection_id');
-    const eid = urlParams.get('eid'); 
-    const urlPin = urlParams.get('pin');
+    const linkId = urlParams.get('linkId');
+    const cid = urlParams.get('cid'); 
 
-    \1
-
-// === Performance: lazy image loader (IntersectionObserver) ===
-let __imgObserver = null;
-function ensureImgObserver() {
-  if (__imgObserver) return __imgObserver;
-  if (!('IntersectionObserver' in window)) return null;
-  __imgObserver = new IntersectionObserver((entries) => {
-    entries.forEach((e) => {
-      if (!e.isIntersecting) return;
-      const img = e.target;
-      const src = img.dataset.src;
-      if (src && img.src !== src) img.src = src;
-      __imgObserver.unobserve(img);
-    });
-  }, { rootMargin: "600px 0px", threshold: 0.01 });
-  return __imgObserver;
-}
-let filteredMatches = [];
+    /* --- STATE --- */
+    let allMatches = []; 
     let selectedIndices = new Set();
-    let favSet = new Set();
     let pendingSelfieBase64 = null;
     let isSelectMode = false;
-    let currentIdx = 0;
-    let guestInfo = { name: '', mobile: '' };
+    let currentViewUrl = null;
 
     /* --- INIT --- */
     window.onload = async () => {
-        if(!cid && !linkId) return alert("Invalid Link");
-
-        try {
-            let fetchUrl = "";
-            if (cid) fetchUrl = `${API_BASE}/get-branding?cid=${cid}`;
-            else if (linkId) fetchUrl = `${API_BASE}/get-branding?linkId=${linkId}`;
-            
-            if (fetchUrl) {
-                const res = await fetch(fetchUrl);
-                if(res.ok) {
-                    let data = await res.json();
-                    
-                    if (data.body && typeof data.body === 'string') {
-                        try { data = JSON.parse(data.body); } catch(e){}
-                    }
-
-                    if(!cid) cid = data.collection_id || data.collectionId; 
-                    applyBranding(data);
-                }
-            }
-        } catch(e) {}
+        let brandingApiUrl = "";
+        if (linkId) brandingApiUrl = `${API_BASE}/get-branding?linkId=${linkId}`;
+        else if (cid) brandingApiUrl = `${API_BASE}/get-branding?cid=${cid}`;
+        
+        if (brandingApiUrl) {
+            try {
+                const res = await fetch(brandingApiUrl);
+                if(res.ok) applyBranding(await res.json());
+            } catch(e) { console.error("Branding fetch failed", e); }
+        }
     };
 
+    /* --- BRANDING --- */
     function applyBranding(data) {
         if(data.collection_name) {
-            document.getElementById('brandTitle').innerText = data.collection_name;
-            document.title = data.collection_name;
+            document.getElementById('pageTitle').innerText = data.collection_name;
+            document.title = `${data.collection_name} – Gallery`;
         }
         if(data.welcome_msg) {
             const el = document.getElementById('welcomeText');
@@ -427,413 +282,296 @@ let filteredMatches = [];
         if(data.color) {
             document.documentElement.style.setProperty('--accent', data.color);
             document.documentElement.style.setProperty('--accent-soft', data.color + '26');
-            document.documentElement.style.setProperty('--accent-glow', data.color + '66');
             document.getElementById('pageLogo').style.borderColor = data.color;
         }
-        // FIX: Directly apply background image style
+        if(data.overlay_opacity) document.documentElement.style.setProperty('--overlay-op', data.overlay_opacity);
+        
+        // Safe Image Loading
         if(data.header_img) {
-            document.getElementById('headerBg').style.backgroundImage = `url('${data.header_img}')`;
+            const img = new Image();
+            img.onload = () => document.getElementById('pageHeader').style.backgroundImage = `url('${data.header_img}')`;
+            img.src = data.header_img; 
         }
         if(data.logo) {
-            document.getElementById('brandLogo').src = data.logo;
-            document.getElementById('brandLogo').style.display = 'block';
+            const logo = document.getElementById('pageLogo');
+            logo.src = data.logo;
+            logo.style.display = 'block';
         }
+        if(data.footer) document.getElementById('pageFooter').innerText = data.footer;
+        
+        const style = document.createElement('style');
+        style.innerHTML = `
+            :root { --logo-size: ${data.logo_size_mob || '80'}px; --banner-height: ${data.banner_h_mob || '220'}px; }
+            @media (min-width: 768px) { :root { --logo-size: ${data.logo_size_desk || '120'}px; --banner-height: ${data.banner_h_desk || '350'}px; } }
+        `;
+        document.head.appendChild(style);
     }
 
-    /* --- SEARCH FLOW --- */
+    /* --- STEP 1: SELFIE & SEARCH --- */
     function resizeImage(file, maxWidth = 800) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = (e) => {
                 const img = new Image();
+                img.src = e.target.result;
+                img.onerror = () => reject("Image load error. Maybe file format not supported.");
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    let w=img.width, h=img.height;
-                    if(w>800){ h*=800/w; w=800; }
-                    canvas.width=w; canvas.height=h;
-                    canvas.getContext('2d').drawImage(img,0,0,w,h);
+                    let w = img.width, h = img.height;
+                    // Keep aspect ratio
+                    if (w > maxWidth) { 
+                        h = Math.round(h * (maxWidth / w)); 
+                        w = maxWidth; 
+                    }
+                    canvas.width = w; 
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    // Use somewhat high quality
                     resolve(canvas.toDataURL('image/jpeg', 0.85));
                 };
-                img.onerror = () => reject("Image load error");
-                img.src = e.target.result;
             };
-            reader.onerror = () => reject("File read error");
+            reader.onerror = error => reject(error);
         });
     }
 
     async function handleSelfieSelect(file) {
         if(!file) return;
         
-        const img = document.getElementById('previewImg');
-        img.src = URL.createObjectURL(file);
-        img.style.display = 'block';
-        document.getElementById('scanLine').style.display = 'block';
-        document.getElementById('statusText').innerText = "Scanning database...";
-        document.getElementById('pinBox').classList.add('hidden');
+        // Basic Validation
+        if (!linkId && !cid) {
+            alert("Configuration Error: Missing linkId in URL.");
+            return;
+        }
+
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loaderText');
+        loader.classList.remove('hidden');
+        loaderText.innerText = "Scanning your face...";
         
         try {
+            // 1. Resize
             pendingSelfieBase64 = await resizeImage(file, 800);
-            performSearch(urlPin);
-        } catch(e) {
-            console.error(e);
-            alert("Image Error");
-        }
-    }
-
-    async function retrySearch() {
-        const pin = document.getElementById('pinInput').value;
-        if(!pin) return showToast("Enter PIN", "error");
-        performSearch(pin);
-    }
-
-    async function performSearch(pin) {
-        if(!cid) return alert("Collection ID Missing");
-
-        try {
-            const imageBase64 = pendingSelfieBase64.split(',')[1];
             
-            const payload = {
-                collection_id: cid,
-                image: imageBase64,
-                selfie_image: imageBase64, 
-                min_confidence: 80,
-                pin: pin,
-                linkId: linkId || 'direct-search',
-                event_id: eid 
-            };
+            // Show small preview
+            document.getElementById('selfiePreviewImg').src = pendingSelfieBase64;
+            document.getElementById('selfiePreviewContainer').classList.remove('hidden');
 
+            // 2. Search API
+            loaderText.innerText = "Searching gallery...";
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload) 
+                body: JSON.stringify({ linkId: linkId || cid, selfie_image: pendingSelfieBase64 })
             });
-
+            
+            if (!res.ok) throw new Error("Server error");
             const data = await res.json();
             
-            if(res.ok) {
-                let parsedData = data;
-                if(data.body && typeof data.body === 'string') try{parsedData=JSON.parse(data.body)}catch(e){}
+            loader.classList.add('hidden');
 
-                // Robust match extraction
-                const matches = parsedData.matches || parsedData.photos || parsedData.ids || [];
+            // Check if matches exist
+            if(data.matches && Array.isArray(data.matches) && data.matches.length > 0) {
+                // Success: Show Intermediate Modal
+                allMatches = data.matches; 
+                document.getElementById('leadMatchCount').innerText = allMatches.length;
+                document.getElementById('leadModal').classList.add('open');
                 
-                if(matches.length > 0) {
-                    allMatches = matches;
-                    document.getElementById('leadMatchCount').innerText = allMatches.length;
-                    
-                    const modal = document.getElementById('leadModal');
-                    if(modal) {
-                         modal.style.display = 'flex'; 
-                         modal.classList.add('open');
-                    }
-                    
-                    try { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors:['#00e676', '#ffffff'] }); } catch(e){}
-                } else {
-                    alert("No matching photos found.");
-                    document.getElementById('scanLine').style.display = 'none';
-                    document.getElementById('statusText').innerText = "";
-                }
+                // Blast confetti
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             } else {
-                if(res.status === 401 || res.status === 403) {
-                    document.getElementById('pinBox').classList.remove('hidden');
-                    document.getElementById('scanLine').style.display = 'none';
-                    showToast("Protected Gallery. Enter PIN.", "error");
-                } else {
-                    alert("Search Failed: " + (data.message || "Unknown error"));
-                }
+                document.getElementById('noResultsMsg').classList.remove('hidden');
+                // Allow them to proceed to empty gallery if they want, or just alert
+                alert("No matching photos found. Try a selfie with better lighting.");
             }
-        } catch(e) { console.error(e); alert("Network Error"); }
+        } catch(e) {
+            console.error("Search Error:", e);
+            alert("Search failed. Please checking your internet connection and try again.");
+            loader.classList.add('hidden');
+        }
     }
 
-    /* --- LEAD & GALLERY --- */
-    function unlockGallery() {
+    /* --- STEP 2: LEAD CAPTURE & GALLERY --- */
+    async function unlockGallery() {
         const name = document.getElementById('guestName').value;
         const mobile = document.getElementById('guestMobile').value;
-        if(!name || !mobile) return showToast("Details required!", "error");
-
-        guestInfo = { name, mobile };
-
-        document.getElementById('leadModal').style.display = 'none';
-        document.getElementById('leadModal').classList.remove('open');
         
-        document.getElementById('screenSearch').classList.remove('active');
-        document.getElementById('galleryContainer').classList.remove('hidden');
-        document.getElementById('actionBar').classList.add('visible');
-        
-        initGallery();
-        
-        // FIX: Added proper headers for saving details
-        fetch(`${API_BASE}${SAVE_ENDPOINT}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                collection_id: cid, 
-                linkId: linkId, 
-                mobile: mobile, 
-                name: name, 
-                photo_count: allMatches.length,
-                selfie_image: pendingSelfieBase64.includes(',') ? pendingSelfieBase64.split(',')[1] : pendingSelfieBase64
-            })
-        });
-    }
-
-    function initGallery() {
-        const events = { 'all': { id: 'all', name: 'All Photos', count: allMatches.length } };
-        
-        allMatches.forEach(p => {
-            const rawEid = p.event_id || 'unknown';
-            const rawName = p.event_name || (rawEid === 'unknown' ? 'General' : 'Event');
-            if(!events[rawEid]) events[rawEid] = { id: rawEid, name: rawName, count: 0 };
-            events[rawEid].count++;
-        });
-
-        const tabsEl = document.getElementById('eventTabs');
-        if(Object.keys(events).length > 1) {
-            let tabsHtml = ``;
-            Object.values(events).forEach(e => {
-                const activeClass = e.id === 'all' ? 'active' : '';
-                tabsHtml += `<div class="tab ${activeClass}" onclick="filterGrid('${e.id}', this)">${e.name} <span>${e.count}</span></div>`;
-            });
-            tabsEl.innerHTML = tabsHtml;
-            document.querySelector('.tabs-wrapper').style.display = 'flex';
+        if(!name || !mobile) {
+            alert("Please enter your Name and Mobile Number to verify.");
+            return;
         }
 
-        renderGrid(allMatches);
+        // Close Modal & Show Gallery
+        document.getElementById('leadModal').classList.remove('open');
+        document.getElementById('searchContainer').classList.add('hidden'); 
+        document.getElementById('galleryContainer').classList.remove('hidden');
+        
+        // Render
+        renderGallery(allMatches);
+        
+        // Async: Save Lead
+        // Fire and forget
+        try {
+            fetch(`${API_BASE}/save-details`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    linkId: linkId, 
+                    collection_id: cid, 
+                    mobile: mobile, 
+                    name: name, 
+                    selfie_image: pendingSelfieBase64, 
+                    photo_count: allMatches.length 
+                })
+            });
+        } catch(e) { console.error("Lead save error", e); }
     }
 
-    function filterGrid(filterEid, el) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
-        
-        if(filterEid === 'all') filteredMatches = allMatches;
-        else filteredMatches = allMatches.filter(p => (p.event_id || 'unknown') === filterEid);
-        
-        renderGrid(filteredMatches);
-    }
-
-    function renderGrid(photos) {
+    /* --- STEP 3: GALLERY & ACTIONS --- */
+    function renderGallery(photos) {
+        document.getElementById('matchCount').innerText = photos.length;
         const grid = document.getElementById('galleryGrid');
-        grid.innerHTML = '';
         
-        if(photos.length === 0) {
+        if (photos.length === 0) {
             document.getElementById('noResultsMsg').classList.remove('hidden');
             return;
         }
-        \1
-        document.body.classList.add('match-found');
-        window.setTimeout(()=>document.body.classList.remove('match-found'), 900);
-photos.forEach((p, idx) => {
-            const isTop = idx < 3;
-            const card = document.createElement('div');
-            card.className = `photo-card ${selectedIndices.has(idx) ? 'selected' : ''}`;
-            card.onclick = () => handleCardClick(p, idx);
-            
-            const imgEl = document.createElement('img');
-            imgEl.onload = () => imgEl.classList.add('loaded');
-            // FIX: No referrer policy
-            imgEl.setAttribute('referrerpolicy', 'no-referrer');
-            imgEl.loading = 'lazy';
-                imgEl.decoding = 'async';
-                imgEl.setAttribute('referrerpolicy', 'no-referrer');
-                const __realSrc = p.thumbnail_url || p.url;
-                imgEl.dataset.src = __realSrc;
-                imgEl.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw='; // tiny placeholder
-                const obs = ensureImgObserver();
-                if (obs) obs.observe(imgEl);
-                else imgEl.src = __realSrc;
-            
-            card.innerHTML = `${isTop ? '<div class="ribbon">Best</div>' : ''}`;
-            card.insertAdjacentHTML('beforeend','<div class="skeleton"></div>');
-            card.appendChild(imgEl);
-            imgEl.onload = () => { imgEl.classList.add('loaded'); const sk = card.querySelector('.skeleton'); if(sk) sk.remove(); };
-            card.innerHTML += `<div class="select-overlay"><div class="check-icon"><i class="fa-solid fa-check"></i></div></div>`;
-            
-            grid.appendChild(card);
-        });
-        
-        filteredMatches = photos; 
+
+        grid.innerHTML = photos.map((p, i) => {
+            // FIX: Handle both object {url: "..."} and string "http..." formats
+            // Also adds referrerPolicy to fix image display issues
+            let imgUrl = "";
+            if (typeof p === 'string') imgUrl = p;
+            else if (p && p.url) imgUrl = p.url;
+            else return ""; // Skip invalid items
+
+            return `
+            <div class="photo-item" id="pitem-${i}" onclick="handleItemClick(${i})">
+                <img src="${imgUrl}" referrerpolicy="no-referrer" alt="Photo ${i+1}">
+                <div class="select-ring"></div>
+            </div>
+            `;
+        }).join('');
     }
 
-    /* --- INTERACTION --- */
     function toggleSelectionMode() {
         isSelectMode = !isSelectMode;
-        document.getElementById('btnSelectMode').classList.toggle('active', isSelectMode);
-        showToast(isSelectMode ? "Tap photos to select" : "Selection Mode Off");
+        document.body.classList.toggle('select-mode', isSelectMode);
+        
+        const btn = document.getElementById('btnToggleSelect');
+        if(isSelectMode) {
+            btn.classList.add('active');
+            btn.innerHTML = `<i class="fa-solid fa-times"></i> Cancel`;
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Select`;
+            selectedIndices.clear();
+            updateActionBar();
+            document.querySelectorAll('.photo-item.selected').forEach(el => el.classList.remove('selected'));
+        }
     }
 
-    function handleCardClick(photo, idx) {
+    function handleItemClick(index) {
         if(isSelectMode) {
-            const el = document.querySelectorAll('.photo-card')[idx];
-            if(selectedIndices.has(idx)) {
-                selectedIndices.delete(idx);
+            const el = document.getElementById(`pitem-${index}`);
+            if(selectedIndices.has(index)) {
+                selectedIndices.delete(index);
                 el.classList.remove('selected');
             } else {
-                selectedIndices.add(idx);
+                selectedIndices.add(index);
                 el.classList.add('selected');
             }
             updateActionBar();
         } else {
-            openLightbox(idx);
+            // Helper to get URL regardless of format
+            const p = allMatches[index];
+            const url = (typeof p === 'string') ? p : p.url;
+            
+            currentViewUrl = url;
+            document.getElementById('viewerImg').src = currentViewUrl;
+            document.getElementById('viewer').classList.add('open');
         }
     }
 
     function updateActionBar() {
+        const bar = document.getElementById('actionBar');
         document.getElementById('selCount').innerText = selectedIndices.size;
+        
+        if(selectedIndices.size > 0) bar.classList.add('visible');
+        else bar.classList.remove('visible');
     }
 
     function selectAllMatches() {
-        filteredMatches.forEach((_, i) => selectedIndices.add(i));
-        renderGrid(filteredMatches);
-        showToast("All Selected");
-    }
-
-    /* --- LIGHTBOX (UNIFIED) --- */
-    function openLightbox(idx) {
-        currentIdx = idx;
-        updateLbContent();
-        document.getElementById('lightbox').style.display = 'flex';
-    }
-    
-    function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
-
-    function updateLbContent() {
-        const p = filteredMatches[currentIdx];
-        const img = document.getElementById('lbImg');
-        img.src = p.url;
-        
-        document.getElementById('lbIndex').innerText = currentIdx + 1;
-        document.getElementById('lbTotal').innerText = filteredMatches.length;
-        
-        const btnFav = document.getElementById('btnFav');
-        const btnDel = document.getElementById('btnDel');
-        btnFav.className = favSet.has(p.photo_id) ? 'lb-action active-fav' : 'lb-action';
-        btnDel.className = 'lb-action'; 
-    }
-
-    function nav(dir) {
-        currentIdx += dir;
-        if(currentIdx < 0) currentIdx = filteredMatches.length - 1;
-        if(currentIdx >= filteredMatches.length) currentIdx = 0;
-        updateLbContent();
-    }
-
-    async function toggleFav() {
-        const p = filteredMatches[currentIdx];
-        const btn = document.getElementById('btnFav');
-        const isFav = !favSet.has(p.photo_id);
-        
-        if(isFav) {
-            favSet.add(p.photo_id);
-            btn.classList.add('active-fav');
-            try { confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors:['#ff4081'] }); } catch(e){}
-        } else {
-            favSet.delete(p.photo_id);
-            btn.classList.remove('active-fav');
-        }
-        
-        document.getElementById('favCount').innerText = favSet.size;
-        
-        sendAction(p.photo_id, 'fav', isFav);
-    }
-
-    async function toggleDel() {
-        const p = filteredMatches[currentIdx];
-        if(!confirm("Request deletion?")) return;
-        sendAction(p.photo_id, 'delete_req', true);
-        showToast("Delete Request Sent");
-    }
-
-    function sendAction(pid, type, val) {
-        fetch(`${API_BASE}/client-api`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: "update_selection",
-                payload: {
-                    collection_id: cid, photo_id: pid,
-                    status: { [type]: val, guest_name: guestInfo.name, guest_mobile: guestInfo.mobile, timestamp: Date.now() }
-                }
-            })
+        allMatches.forEach((_, i) => {
+            selectedIndices.add(i);
+            const el = document.getElementById(`pitem-${i}`);
+            if(el) el.classList.add('selected');
         });
+        updateActionBar();
     }
 
-    /* --- DOWNLOAD FIX --- */
-    function downloadSingle() {
-        const url = filteredMatches[currentIdx].url;
-        fetch(url, { referrerPolicy: 'no-referrer' })
-            .then(resp => resp.blob())
-            .then(blob => saveAs(blob, `Photo_${Date.now()}.jpg`))
-            .catch(() => window.open(url, '_blank'));
-    }
-    
+    /* --- DOWNLOAD & SHARE LOGIC --- */
     async function downloadSelectedItems() {
-        if(selectedIndices.size === 0) return showToast("No photos selected", "error");
-        showToast("Downloading...");
-        
+        if(selectedIndices.size === 0) return;
         const indices = Array.from(selectedIndices);
+        
+        // Notify user download started
+        const btn = document.querySelector('.act-btn .fa-download').parentElement;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+
         for(let i of indices) {
-            const url = filteredMatches[i].url;
+            const p = allMatches[i];
+            const url = (typeof p === 'string') ? p : p.url;
+            // Use fetch to get blob to bypass some CORS issues on direct saveAs
             try {
-                const blob = await fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.blob());
+                const resp = await fetch(url);
+                const blob = await resp.blob();
                 saveAs(blob, `photo_${i+1}.jpg`);
-            } catch(e) { window.open(url, '_blank'); }
-            await new Promise(r => setTimeout(r, 500));
+            } catch(e) {
+                // Fallback
+                saveAs(url, `photo_${i+1}.jpg`);
+            }
+            await new Promise(r => setTimeout(r, 500)); 
         }
+        btn.innerHTML = originalText;
     }
 
     async function downloadAsZip() {
-        if(selectedIndices.size === 0) return showToast("No photos selected", "error");
-        
+        if(selectedIndices.size === 0) return;
         const zip = new JSZip();
-        showToast("Creating Zip... Please Wait", "info");
-        
-        const indices = Array.from(selectedIndices);
         const folder = zip.folder("EventLens_Photos");
+        const btn = document.querySelector('.act-btn .fa-file-zipper').parentElement;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Zipping...`;
+
+        const indices = Array.from(selectedIndices);
         
-        // FIX: Added try/catch for zip fetching to handle CORS failures gracefully
-        let successCount = 0;
         await Promise.all(indices.map(async (idx) => {
             try {
-                const url = filteredMatches[idx].url;
-                const blob = await fetch(url, { referrerPolicy: 'no-referrer' }).then(r => r.blob());
+                const p = allMatches[idx];
+                const url = (typeof p === 'string') ? p : p.url;
+                const blob = await fetch(url).then(r => r.blob());
                 folder.file(`photo_${idx+1}.jpg`, blob);
-                successCount++;
-            } catch(e) { console.error("Zip fetch failed", e); }
+            } catch(e) { console.error(e); }
         }));
-
-        if (successCount === 0) {
-            showToast("Download blocked by Server. Opening images instead.", "error");
-            downloadSelectedItems(); 
-            return;
-        }
 
         const content = await zip.generateAsync({type:"blob"});
         saveAs(content, "My_Photos.zip");
-        showToast("Zip Downloaded");
+        btn.innerHTML = originalText;
     }
 
     function shareOnWhatsapp() {
-        window.open(`https://wa.me/?text=Check out my photos! ${window.location.href}`, '_blank');
+        const text = `Hey! I found my photos from the event using EventLens. Check them out here: ${window.location.href}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
 
-    function showToast(msg, type='success') {
-        const t = document.getElementById('toast');
-        t.innerText = msg;
-        t.style.display = 'block';
-        if(type === 'error') t.style.borderColor = '#ff4444';
-        else t.style.borderColor = '#333';
-        setTimeout(() => t.style.display = 'none', 3000);
+    function downloadSingle() {
+        if(currentViewUrl) saveAs(currentViewUrl, "photo.jpg");
     }
     
-    // Swipe
-    let ts = 0;
-    const touchArea = document.getElementById('lbTouchArea');
-    touchArea.addEventListener('touchstart', e => ts = e.changedTouches[0].screenX);
-    touchArea.addEventListener('touchend', e => {
-        if(ts - e.changedTouches[0].screenX > 50) nav(1);
-        if(e.changedTouches[0].screenX - ts > 50) nav(-1);
-    });
+    function closeViewer() { document.getElementById('viewer').classList.remove('open'); }
 
 </script>
 </body>

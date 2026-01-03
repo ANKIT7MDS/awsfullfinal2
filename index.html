@@ -360,10 +360,14 @@
 
             // 2. Search API
             loaderText.innerText = "Searching gallery...";
+            
+            // FIX: Split the header to send only raw base64 to avoid backend decode errors
+            const base64Data = pendingSelfieBase64.split(',')[1];
+            
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ linkId: linkId || cid, selfie_image: pendingSelfieBase64 })
+                body: JSON.stringify({ linkId: linkId || cid, selfie_image: base64Data })
             });
             
             if (!res.ok) throw new Error("Server error");
@@ -413,6 +417,9 @@
         // Async: Save Lead
         // Fire and forget
         try {
+            // FIX: Ensure raw base64 is sent here too
+            const base64Data = pendingSelfieBase64 ? pendingSelfieBase64.split(',')[1] : null;
+
             fetch(`${API_BASE}/save-details`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -421,7 +428,7 @@
                     collection_id: cid, 
                     mobile: mobile, 
                     name: name, 
-                    selfie_image: pendingSelfieBase64, 
+                    selfie_image: base64Data, 
                     photo_count: allMatches.length 
                 })
             });

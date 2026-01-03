@@ -378,15 +378,15 @@
                 throw new Error("Failed to process image data.");
             }
             
-            // SEND EVERYTHING: Sending multiple keys to ensure backend finds what it needs
+            // PAYLOAD UPDATE: Exactly as requested by user
             const payload = {
-                linkId: linkId || cid,
-                collection_id: cid, 
-                // Try all common naming conventions to prevent NoneType error
-                selfie_image: base64Data,
+                collection_id: cid || linkId,
+                event_id: null,
                 image: base64Data,
-                file: base64Data,
-                face_image: base64Data
+                linkId: linkId,
+                min_confidence: 80,
+                pin: null,
+                selfie_image: base64Data
             };
             
             const res = await fetch(`${API_BASE}/search`, {
@@ -487,9 +487,11 @@
         grid.innerHTML = photos.map((p, i) => {
             // FIX: SMART URL FINDER & S3 FALLBACK
             let imgUrl = "";
+            let debugName = "";
             
             if (typeof p === 'string') {
                 // If p is just a string ID (e.g. "IMG_123.jpg") and not a URL, construct the S3 URL
+                debugName = p;
                 if(p.startsWith('http') || p.startsWith('data:')) {
                     imgUrl = p;
                 } else {
@@ -500,6 +502,7 @@
             } else if (typeof p === 'object' && p !== null) {
                 // Try to find the URL in common property names
                 imgUrl = p.url || p.image || p.link || p.src || p.image_url || p.file || p.s3_url || p.signed_url;
+                debugName = p.photo_id || p.id || JSON.stringify(p).slice(0, 20);
                 
                 // If still not found, look for valid string values
                 if (!imgUrl) {
@@ -519,9 +522,11 @@
                 </div>`;
             }
 
+            // Added Debug Error Handler to show filename on failure
             return `
             <div class="photo-item" id="pitem-${i}" onclick="handleItemClick(${i})">
-                <img src="${imgUrl}" referrerpolicy="no-referrer" loading="lazy" alt="Photo ${i+1}" onerror="this.src='https://placehold.co/400?text=Private+Image'">
+                <img src="${imgUrl}" referrerpolicy="no-referrer" loading="lazy" alt="Photo ${i+1}" 
+                     onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:10px;text-align:center;padding:5px;word-break:break-all;background:#222;\'><span>Not Found<br>${debugName}</span></div>'">
                 <div class="select-ring"></div>
             </div>
             `;

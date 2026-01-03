@@ -76,7 +76,14 @@
     .lightbox { position: fixed; inset: 0; background: #000; z-index: 4000; display: none; flex-direction: column; }
     .lb-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
     .lb-content { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; overflow: hidden; }
-    .lb-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .lb-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    
+    .lb-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 15px; border-radius: 50%; cursor: pointer; z-index: 20; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .lb-nav-btn:active { background: var(--accent); color: #000; }
+    .lb-nav-prev { left: 15px; }
+    .lb-nav-next { right: 15px; }
+    @media (max-width: 768px) { .lb-nav-btn { display: none; } } /* Use swipe on mobile */
+
     .lb-footer { padding: 20px 20px 40px; display: flex; justify-content: center; gap: 40px; background: linear-gradient(to top, #000, transparent); position: relative; z-index: 10; }
     .lb-action { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; font-size: 10px; cursor: pointer; }
     .lb-action i { font-size: 26px; }
@@ -111,20 +118,20 @@
     <!-- SEARCH SCREEN -->
     <div id="screenSearch" class="screen active">
         <div class="upload-card">
-            <h2 style="font-family: var(--font-head); margin-bottom: 10px;">अपनी फोटोज ढूँढें</h2>
-            <p style="color: var(--muted); font-size: 13px;">AI मैजिक से हजारों फोटोज में खुद को तुरंत पाएं।</p>
+            <h2 style="font-family: var(--font-head); margin-bottom: 10px;">Find Your Photos</h2>
+            <p style="color: var(--muted); font-size: 13px;">AI magic will find you in thousands of photos.</p>
             
             <div class="selfie-trigger" onclick="document.getElementById('fileIn').click()">
                 <div class="scan-line" id="scanLine"></div>
                 <img id="previewImg" class="hidden">
                 <i class="fa-solid fa-camera" id="camIcon" style="font-size: 40px; color: #333;"></i>
-                <span id="triggerLabel" style="font-size: 11px; font-weight: 800; color: #555; margin-top: 10px;">सेल्फी लें</span>
+                <span id="triggerLabel" style="font-size: 11px; font-weight: 800; color: #555; margin-top: 10px;">OPEN CAMERA</span>
             </div>
             <!-- capture="user" triggers camera on mobile -->
             <input type="file" id="fileIn" hidden capture="user" accept="image/*" onchange="handleSelfie(this.files[0])">
             
             <div class="counter-box" id="counterBox">
-                <div style="font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 5px;">गैलरी स्कैन हो रही है</div>
+                <div style="font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 5px;">SCANNING GALLERY</div>
                 <div class="counter-val"><span id="liveCount">0</span> / 15,000</div>
             </div>
             
@@ -135,36 +142,42 @@
     <!-- GALLERY SCREEN -->
     <div id="screenGallery" class="hidden">
         <div style="display:flex; justify-content:space-between; padding: 15px; background:var(--bg); position:sticky; top:0; z-index:100; border-bottom:1px solid var(--border);">
-            <div id="resCountText" style="font-weight:800; font-family: var(--font-head);">0 फोटोज मिलीं</div>
+            <div id="resCountText" style="font-weight:800; font-family: var(--font-head);">0 Photos Found</div>
             <button class="action-btn" onclick="location.reload()" style="opacity:1; color:var(--accent);"><i class="fa-solid fa-rotate"></i></button>
         </div>
         
         <div class="grid" id="photoGrid"></div>
-        <div id="btnLoadMore" class="load-more-btn" onclick="fetchNextBatch()">और लोड करें...</div>
+        <button id="btnLoadMore" class="load-more-btn" onclick="fetchNextBatch()">Load More Matched Photos</button>
     </div>
 </div>
 
 <!-- ACTION BAR -->
 <div class="action-bar" id="actionBar">
-    <button class="action-btn" id="btnSelectMode" onclick="toggleSelectMode()"><i class="fa-solid fa-check-double"></i><span>सिलेक्ट</span></button>
-    <button class="action-btn" onclick="downloadSelected()"><i class="fa-solid fa-download"></i><span>डाउनलोड</span></button>
-    <button class="action-btn" onclick="shareGallery()"><i class="fa-brands fa-whatsapp"></i><span>शेयर</span></button>
+    <button class="action-btn" id="btnSelectMode" onclick="toggleSelectMode()"><i class="fa-solid fa-check-double"></i><span>Select</span></button>
+    <button class="action-btn" onclick="downloadSelected()"><i class="fa-solid fa-download"></i><span>Download</span></button>
+    <button class="action-btn" onclick="shareGallery()"><i class="fa-brands fa-whatsapp"></i><span>Share</span></button>
+    <button class="action-btn" onclick="showFavorites()"><i class="fa-solid fa-heart"></i><span>My Favs</span></button>
 </div>
 
 <!-- LEAD MODAL -->
 <div class="modal" id="leadModal">
     <div class="modal-content">
-        <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent); font-size: 32px; margin-bottom:15px;"></i>
-        <h2 style="font-family: var(--font-head); margin-bottom: 5px;">बिंगो! हमने आपको ढूँढ लिया।</h2>
-        <p style="color: var(--muted); font-size: 14px; margin-bottom: 25px;">आपकी <span id="foundTotal" style="color: #fff; font-weight: 800;">0</span> फोटोज मिलीं।</p>
+        <div style="width: 60px; height: 60px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent); font-size: 24px;"></i>
+        </div>
+        <h2 style="font-family: var(--font-head); margin-bottom: 5px;">Bingo! We found you.</h2>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 25px;">Found <span id="foundTotal" style="color: #fff; font-weight: 800;">0</span> matches.</p>
         
-        <label class="lead-label">आपका नाम</label>
-        <input id="gName" class="lead-input" placeholder="जैसे: राहुल सोनी">
+        <div style="text-align:left;">
+            <label class="lead-label">Your Name</label>
+            <input id="gName" class="lead-input" placeholder="e.g. Rahul Sharma">
+        </div>
+        <div style="text-align:left;">
+            <label class="lead-label">Mobile Number</label>
+            <input id="gMobile" class="lead-input" type="tel" placeholder="98XXXXXXXX">
+        </div>
         
-        <label class="lead-label">मोबाइल नंबर</label>
-        <input id="gMobile" class="lead-input" type="tel" placeholder="98XXXXXXXX">
-        
-        <button class="btn-unlock" onclick="saveLeadAndShow()">अपनी गैलरी देखें</button>
+        <button class="btn-unlock" onclick="saveLeadAndShow()">View My Personal Gallery</button>
     </div>
 </div>
 
@@ -175,20 +188,29 @@
         <span id="lbCounter" style="color: #888; font-weight: 600;">1 / 1</span>
         <button onclick="downloadSingle()" style="background:none; border:none; color:var(--accent); font-size:20px;"><i class="fa-solid fa-download"></i></button>
     </div>
-    <div class="lb-content">
+    
+    <div class="lb-content" id="lbTouchArea">
+        <button class="lb-nav-btn lb-nav-prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></button>
         <img id="lbImg" class="lb-img">
+        <button class="lb-nav-btn lb-nav-next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
+    
     <div class="lb-footer">
-        <div class="lb-action" id="lbBtnFav" onclick="toggleChoice('fav')"><i class="fa-solid fa-heart"></i><span>Favorite</span></div>
-        <div class="lb-action" id="lbBtnSel" onclick="toggleChoice('selected')"><i class="fa-solid fa-check-circle"></i><span>Select</span></div>
+        <div class="lb-action" id="lbBtnFav" onclick="toggleChoice('fav')">
+            <i class="fa-solid fa-heart"></i>
+            <span>Favorite</span>
+        </div>
+        <div class="lb-action" id="lbBtnSel" onclick="toggleChoice('selected')">
+            <i class="fa-solid fa-album-circle-plus"></i>
+            <span>Select</span>
+        </div>
     </div>
 </div>
 
 <script>
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    const urlParams = new URLSearchParams(window.location.search);
-    const linkId = urlParams.get('linkId') || urlParams.get('id');
-    let cid = urlParams.get('cid');
+    const cid = new URLSearchParams(window.location.search).get('cid');
+    const linkId = new URLSearchParams(window.location.search).get('linkId') || new URLSearchParams(window.location.search).get('id');
     
     let allMatchedIds = [];
     let loadedPhotos = [];
@@ -206,14 +228,18 @@
         try {
             const url = cid ? `${API_BASE}/get-branding?cid=${cid}` : `${API_BASE}/get-branding?linkId=${linkId}`;
             const res = await fetch(url);
-            const raw = await res.json();
-            const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : (raw.branding || raw);
-            applyBranding(data);
-            if(!cid) cid = data.collection_id || data.collectionId;
+            if(res.ok) {
+                let data = await res.json();
+                if(data.body && typeof data.body === 'string') data = JSON.parse(data.body);
+                applyBranding(data);
+                // If CID wasn't in URL, try to get it from branding response if available
+                // (Depends on backend implementation, but usually safer to rely on URL param)
+            }
         } catch(e) {}
     };
 
-    function applyBranding(b) {
+    function applyBranding(data) {
+        const b = data.branding || data; 
         if(b.collection_name || b.name) document.getElementById('brandTitle').innerText = b.collection_name || b.name;
         if(b.welcome_msg) document.getElementById('welcomeMsg').innerText = b.welcome_msg;
         if(b.header_img && b.header_img !== "null") document.getElementById('headerBg').style.backgroundImage = `url('${b.header_img}')`;
@@ -227,7 +253,7 @@
         }
     }
 
-    /* --- SEARCH --- */
+    /* --- SEARCH ENGINE --- */
     function handleSelfie(file) {
         if(!file) return;
         const reader = new FileReader();
@@ -239,6 +265,8 @@
             document.getElementById('triggerLabel').classList.add('hidden');
             document.getElementById('scanLine').style.display = 'block';
             document.getElementById('counterBox').style.display = 'block';
+            document.getElementById('statusText').innerText = "AI is scanning...";
+            
             startLiveCounter();
             performSearch();
         };
@@ -258,35 +286,44 @@
         try {
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: "search_faces", collection_id: cid, image: currentSelfieB64.split(',')[1], linkId: linkId })
+                body: JSON.stringify({ collection_id: cid, image: currentSelfieB64.split(',')[1], linkId: linkId })
             });
-            const raw = await res.json();
-            const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : raw;
+            const data = await res.json();
             clearInterval(scanInterval);
             
-            if(res.ok && (data.matches || data.all_matched_ids)) {
-                allMatchedIds = data.all_matched_ids || [];
-                loadedPhotos = data.matches || [];
+            // Handle Lambda Proxy Response Structure
+            let body = data;
+            if (data.body && typeof data.body === 'string') {
+                body = JSON.parse(data.body);
+            }
+
+            if(res.ok) {
+                allMatchedIds = body.all_matched_ids || [];
+                loadedPhotos = body.matches || [];
                 
-                document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
+                // Audio Effect
                 document.getElementById('successSound').play().catch(e => {});
+                
+                // Lead Modal Logic
+                document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
                 document.getElementById('leadModal').style.display = 'flex';
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00e676', '#ffffff'] });
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             } else {
-                alert("कोई फोटो नहीं मिली। कृपया साफ़ फोटो के साथ दोबारा कोशिश करें।");
+                alert("No photos found. Please try again with a clearer photo.");
                 location.reload();
             }
-        } catch(e) { alert("Timeout error! पेज रिफ्रेश करके दोबारा कोशिश करें।"); }
+        } catch(e) { alert("Search timed out. Please refresh and try again."); }
     }
 
+    /* --- LEAD & GALLERY DISPLAY --- */
     function saveLeadAndShow() {
         const name = document.getElementById('gName').value;
         const mobile = document.getElementById('gMobile').value;
-        if(!name || !mobile) return alert("कृपया नाम और मोबाइल नंबर भरें");
+        if(!name || !mobile) return alert("Please fill your details");
         
         guestInfo = { name, mobile };
 
+        // Save Guest Details (Sending multiple key formats for compatibility)
         fetch(`${API_BASE}/save-details`, {
             method: 'POST',
             body: JSON.stringify({ 
@@ -298,12 +335,15 @@
             })
         });
 
+        // Switch to Gallery View
         document.getElementById('leadModal').style.display = 'none';
-        document.getElementById('screenSearch').classList.add('hidden');
+        document.getElementById('screenSearch').classList.remove('active');
         document.getElementById('screenGallery').classList.remove('hidden');
         document.getElementById('actionBar').classList.add('show');
         
-        document.getElementById('resCountText').innerText = `${allMatchedIds.length} Photos Found`;
+        let countDisplay = allMatchedIds.length > 100 ? "100+ Photos Found" : `${allMatchedIds.length} Photos Found`;
+        document.getElementById('resCountText').innerText = countDisplay;
+        
         renderGrid();
         checkPagination();
     }
@@ -319,19 +359,34 @@
         `).join('');
     }
 
-    /* --- PAGINATION FIX --- */
+    function checkPagination() {
+        const btn = document.getElementById('btnLoadMore');
+        if(loadedPhotos.length < allMatchedIds.length) {
+            btn.style.display = 'block';
+            btn.innerText = `Load More (${allMatchedIds.length - loadedPhotos.length} left)`;
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+
     async function fetchNextBatch() {
         const btn = document.getElementById('btnLoadMore');
-        btn.disabled = true; btn.innerText = "लोड हो रहा है...";
-        const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 100);
+        btn.disabled = true;
+        btn.innerText = "Loading next batch...";
+
+        const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 50);
         
         try {
-            // FIX: Using /search endpoint with proper action
+            // Updated to use correct action on the main search endpoint
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: "get_more_matches", ids: nextIds })
+                body: JSON.stringify({ 
+                    action: "get_more_matches", 
+                    ids: nextIds 
+                })
             });
+            
             const raw = await res.json();
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : raw;
             
@@ -340,22 +395,20 @@
                 renderGrid();
                 checkPagination();
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Load more failed", e); }
         btn.disabled = false;
-        btn.innerText = "और लोड करें...";
-    }
-
-    function checkPagination() {
-        document.getElementById('btnLoadMore').style.display = loadedPhotos.length < allMatchedIds.length ? 'block' : 'none';
     }
 
     /* --- INTERACTIONS --- */
     function handlePhotoClick(i) {
         if(multiSelectMode) {
             const id = loadedPhotos[i].photo_id;
-            if(selectedSet.has(id)) selectedSet.delete(id); else selectedSet.add(id);
+            if(selectedSet.has(id)) selectedSet.delete(id);
+            else selectedSet.add(id);
             renderGrid();
-        } else { openLightbox(i); }
+        } else {
+            openLightbox(i);
+        }
     }
 
     function toggleSelectMode() {
@@ -364,77 +417,106 @@
         if(!multiSelectMode) selectedSet.clear();
         renderGrid();
     }
+    
+    function showFavorites() {
+        // Filter loaded photos to show only favorites
+        const favIds = Object.keys(selections).filter(id => selections[id].fav);
+        if(favIds.length === 0) return alert("No favorites yet.");
+        
+        const favPhotos = loadedPhotos.filter(p => favIds.includes(p.photo_id));
+        // Simple alert for now, ideally filter the grid
+        alert(`You have ${favPhotos.length} favorites!`);
+    }
 
+    /* --- LIGHTBOX --- */
     function openLightbox(i) {
         currentIdx = i;
         showLbPhoto();
         document.getElementById('lightbox').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
     }
 
     function showLbPhoto() {
         const p = loadedPhotos[currentIdx];
-        if(!p) return;
         document.getElementById('lbImg').src = p.url;
         document.getElementById('lbCounter').innerText = `${currentIdx + 1} / ${loadedPhotos.length}`;
         
         const s = selections[p.photo_id] || { fav: false, selected: false };
-        document.getElementById('lbBtnFav').style.color = s.fav ? '#ff4081' : '#fff';
-        document.getElementById('lbBtnSel').style.color = s.selected ? 'var(--accent)' : '#fff';
+        document.getElementById('lbBtnFav').className = s.fav ? 'lb-action active-fav' : 'lb-action';
+        document.getElementById('lbBtnSel').className = s.selected ? 'lb-action active-sel' : 'lb-action';
+    }
+
+    function navLightbox(dir) {
+        currentIdx += dir;
+        if(currentIdx < 0) currentIdx = loadedPhotos.length - 1;
+        if(currentIdx >= loadedPhotos.length) currentIdx = 0;
+        showLbPhoto();
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').style.display = 'none';
+        document.body.style.overflow = 'auto';
     }
 
     function toggleChoice(type) {
         const p = loadedPhotos[currentIdx];
         if(!selections[p.photo_id]) selections[p.photo_id] = { fav: false, selected: false };
         selections[p.photo_id][type] = !selections[p.photo_id][type];
+        
         showLbPhoto();
         
-        fetch(`${API_BASE}/client-api`, { 
-            method: 'POST', 
+        // Sync with Backend (Updated payload with guest info)
+        fetch(`${API_BASE}/client-api`, {
+            method: 'POST',
             body: JSON.stringify({ 
                 action: "update_selection", 
                 payload: { 
-                    collection_id: cid, photo_id: p.photo_id, 
-                    status: { ...selections[p.photo_id], guest_name: guestInfo.name, guest_mobile: guestInfo.mobile, timestamp: Date.now() } 
+                    collection_id: cid, 
+                    photo_id: p.photo_id, 
+                    status: { ...selections[p.photo_id], guest_name: guestInfo.name, guest_mobile: guestInfo.mobile } 
                 } 
             })
         });
     }
 
-    function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
-    function downloadSingle() { saveAs(loadedPhotos[currentIdx].url, `Photo_${currentIdx}.jpg`); }
+    function downloadSingle() {
+        const url = loadedPhotos[currentIdx].url;
+        saveAs(url, `Photo_${loadedPhotos[currentIdx].photo_id}.jpg`);
+    }
 
     async function downloadSelected() {
         const list = multiSelectMode ? Array.from(selectedSet) : [loadedPhotos[currentIdx]?.photo_id];
-        if(!list.length || !list[0]) return showToast("कृपया फोटोज सिलेक्ट करें");
+        if(!list.length || !list[0]) return alert("Select photos first");
         
-        showToast("Zip फाइल तैयार हो रही है...");
         const zip = new JSZip();
         const photosToZip = loadedPhotos.filter(p => list.includes(p.photo_id));
         
         for(let p of photosToZip) {
-            try {
-                const res = await fetch(p.url);
-                const blob = await res.blob();
-                zip.file(`Photo_${p.photo_id}.jpg`, blob);
-            } catch(e) {}
+            const res = await fetch(p.url);
+            const blob = await res.blob();
+            zip.file(`Photo_${p.photo_id}.jpg`, blob);
         }
         
         zip.generateAsync({type:"blob"}).then(c => {
-            saveAs(c, "EventLens_Selected.zip");
-            showToast("Complete!");
+            saveAs(c, "My_Photos.zip");
         });
-    }
-
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.innerText = msg; t.style.display = 'block';
-        setTimeout(() => t.style.display = 'none', 3000);
     }
 
     function shareGallery() {
         const url = encodeURIComponent(window.location.href);
-        window.open(`https://wa.me/?text=मेरे इवेंट की फोटोज यहाँ देखें: ${url}`);
+        window.open(`https://wa.me/?text=Check out my photos: ${url}`);
     }
+
+    /* Swipe Logic */
+    let touchStartX = 0;
+    document.getElementById('lbTouchArea').addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, false);
+    document.getElementById('lbTouchArea').addEventListener('touchend', e => {
+        let touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 50) navLightbox(1);
+        if (touchEndX - touchStartX > 50) navLightbox(-1);
+    }, false);
 </script>
 </body>
 </html>

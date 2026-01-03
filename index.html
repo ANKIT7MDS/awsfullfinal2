@@ -51,7 +51,7 @@
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s; }
     .modal-content { background: #1a1a1a; border: 1px solid var(--border); border-radius: 24px; padding: 35px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
     .lead-label { display: block; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
-    .lead-input { width: 100%; padding: 16px; background: #0a0a0a; border: 1px solid var(--border); color: #fff; border-radius: 12px; font-size: 16px; margin-bottom: 15px; transition: 0.3s; }
+    .lead-input { width: 100%; padding: 16px; background: #0a0a0a; border: 1px solid var(--border); color: #fff; border-radius: 12px; font-size: 16px; margin-bottom: 12px; transition: 0.3s; }
     .lead-input:focus { border-color: var(--accent); background: #000; }
     .btn-unlock { background: var(--accent); color: #000; border: none; padding: 18px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 10px; }
 
@@ -72,12 +72,19 @@
     .action-btn i { font-size: 20px; }
     .action-btn.active { color: var(--accent); opacity: 1; }
 
-    /* Slide View */
+    /* --- LIGHTBOX / SLIDE VIEW --- */
     .lightbox { position: fixed; inset: 0; background: #000; z-index: 4000; display: none; flex-direction: column; }
-    .lb-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-    .lb-content { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-    .lb-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .lb-footer { padding: 20px 20px 40px; display: flex; justify-content: center; gap: 40px; background: linear-gradient(to top, #000, transparent); }
+    .lb-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+    .lb-content { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; overflow: hidden; }
+    .lb-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    
+    .lb-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 15px; border-radius: 50%; cursor: pointer; z-index: 20; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .lb-nav-btn:active { background: var(--accent); color: #000; }
+    .lb-nav-prev { left: 15px; }
+    .lb-nav-next { right: 15px; }
+    @media (max-width: 768px) { .lb-nav-btn { display: none; } } /* Use swipe on mobile */
+
+    .lb-footer { padding: 20px 20px 40px; display: flex; justify-content: center; gap: 40px; background: linear-gradient(to top, #000, transparent); position: relative; z-index: 10; }
     .lb-action { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; font-size: 10px; cursor: pointer; }
     .lb-action i { font-size: 26px; }
     .lb-action.active-fav { color: #ff4081; }
@@ -171,13 +178,17 @@
 <!-- LIGHTBOX (Slide View) -->
 <div class="lightbox" id="lightbox">
     <div class="lb-header">
-        <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:24px;"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
         <span id="lbCounter" style="color: #888; font-weight: 600;">1 / 1</span>
-        <button onclick="downloadSingle()" style="background:none; border:none; color:var(--accent); font-size:20px;"><i class="fa-solid fa-download"></i></button>
+        <button onclick="downloadSingle()" style="background:none; border:none; color:var(--accent); font-size:20px; cursor:pointer;"><i class="fa-solid fa-download"></i></button>
     </div>
-    <div class="lb-content">
+    
+    <div class="lb-content" id="lbTouchArea">
+        <button class="lb-nav-btn lb-nav-prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></button>
         <img id="lbImg" class="lb-img">
+        <button class="lb-nav-btn lb-nav-next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
+    
     <div class="lb-footer">
         <div class="lb-action" id="lbBtnFav" onclick="toggleChoice('fav')"><i class="fa-solid fa-heart" style="font-size:26px;"></i><span>Favorite</span></div>
         <div class="lb-action" id="lbBtnSel" onclick="toggleChoice('selected')"><i class="fa-solid fa-check-circle" style="font-size:26px;"></i><span>Select</span></div>
@@ -207,7 +218,6 @@
             const url = cid ? `${API_BASE}/get-branding?cid=${cid}` : `${API_BASE}/get-branding?linkId=${linkId}`;
             const res = await fetch(url);
             const raw = await res.json();
-            // JSON parsing handles proxy response strings
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : (raw.branding || raw);
             applyBranding(data);
             if(!cid) cid = data.collection_id || data.collectionId;
@@ -269,13 +279,8 @@
             if(res.ok) {
                 allMatchedIds = data.all_matched_ids || [];
                 loadedPhotos = data.matches || [];
-                
-                // Audio Effect on success
-                document.getElementById('successSound').play().catch(e => {});
-                
-                // Show 100+ logic in modal
                 document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
-                
+                document.getElementById('successSound').play().catch(e => {});
                 document.getElementById('leadModal').style.display = 'flex';
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00e676', '#ffffff'] });
             } else {
@@ -285,7 +290,7 @@
         } catch(e) { alert("Timeout error! पेज रिफ्रेश करके दोबारा कोशिश करें।"); }
     }
 
-    /* --- LEAD & GALLERY --- */
+    /* --- LEAD & GRID --- */
     function saveLeadAndShow() {
         const name = document.getElementById('gName').value;
         const mobile = document.getElementById('gMobile').value;
@@ -293,7 +298,6 @@
         
         guestInfo = { name, mobile };
 
-        // Save Guest Details (Dashing logic fix: sending both name and guest_name keys)
         fetch(`${API_BASE}/save-details`, {
             method: 'POST',
             body: JSON.stringify({ 
@@ -310,7 +314,6 @@
         document.getElementById('screenGallery').classList.remove('hidden');
         document.getElementById('actionBar').classList.add('show');
         
-        // Show accurate match count in gallery
         document.getElementById('resCountText').innerText = `${allMatchedIds.length} Photos Found`;
         renderGrid();
         checkPagination();
@@ -327,14 +330,13 @@
         `).join('');
     }
 
-    /* --- PAGINATION (FIXED ENDPOINT) --- */
+    /* --- PAGINATION --- */
     async function fetchNextBatch() {
         const btn = document.getElementById('btnLoadMore');
         btn.disabled = true; btn.innerText = "लोड हो रहा है...";
         const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 100);
         
         try {
-            // FIX: Using direct root endpoint to avoid action errors
             const res = await fetch(`${API_BASE}/get_more_matches`, {
                 method: 'POST',
                 body: JSON.stringify({ ids: nextIds })
@@ -372,27 +374,40 @@
         renderGrid();
     }
 
-    /* --- LIGHTBOX & CHOICE SYNC --- */
+    /* --- LIGHTBOX (Improved Slide View) --- */
     function openLightbox(i) {
-        currentIdx = i; const p = loadedPhotos[i];
-        document.getElementById('lbImg').src = p.url;
-        document.getElementById('lbCounter').innerText = `${i+1} / ${loadedPhotos.length}`;
+        currentIdx = i;
+        showLbPhoto();
+        document.getElementById('lightbox').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function showLbPhoto() {
+        const p = loadedPhotos[currentIdx];
+        const img = document.getElementById('lbImg');
+        img.src = p.url;
+        document.getElementById('lbCounter').innerText = `${currentIdx + 1} / ${loadedPhotos.length}`;
         
+        // Sync UI choices
         const s = selections[p.photo_id] || { fav: false, selected: false };
         document.getElementById('lbBtnFav').style.color = s.fav ? '#ff4081' : '#fff';
         document.getElementById('lbBtnSel').style.color = s.selected ? 'var(--accent)' : '#fff';
-        
-        document.getElementById('lightbox').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+    }
+
+    function navLightbox(dir) {
+        currentIdx += dir;
+        if(currentIdx < 0) currentIdx = loadedPhotos.length - 1;
+        if(currentIdx >= loadedPhotos.length) currentIdx = 0;
+        showLbPhoto();
     }
 
     function toggleChoice(type) {
         const p = loadedPhotos[currentIdx];
         if(!selections[p.photo_id]) selections[p.photo_id] = { fav: false, selected: false };
         selections[p.photo_id][type] = !selections[p.photo_id][type];
-        openLightbox(currentIdx);
+        showLbPhoto();
         
-        // SYNC SELECTION WITH ADMIN DASHBOARD (Includes guest name/mobile)
+        // SYNC SELECTION WITH ADMIN DASHBOARD
         fetch(`${API_BASE}/client-api`, { 
             method: 'POST', 
             body: JSON.stringify({ 
@@ -445,6 +460,18 @@
         const url = encodeURIComponent(window.location.href);
         window.open(`https://wa.me/?text=मेरे इवेंट की फोटोज यहाँ देखें: ${url}`);
     }
+
+    /* Swipe Logic for Mobile */
+    let touchStartX = 0;
+    document.getElementById('lbTouchArea').addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, false);
+    document.getElementById('lbTouchArea').addEventListener('touchend', e => {
+        let touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 50) navLightbox(1);  // Swipe Left -> Next
+        if (touchEndX - touchStartX > 50) navLightbox(-1); // Swipe Right -> Prev
+    }, false);
+
 </script>
 </body>
 </html>

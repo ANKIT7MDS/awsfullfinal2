@@ -47,7 +47,7 @@
     .counter-box { margin-top: 20px; display: none; background: #000; padding: 12px; border-radius: 15px; border: 1px solid var(--border); }
     .counter-val { font-size: 20px; font-weight: 800; color: var(--accent); }
 
-    /* Lead Modal - Professional UI */
+    /* Lead Modal */
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s; }
     .modal-content { background: #1a1a1a; border: 1px solid var(--border); border-radius: 24px; padding: 35px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
     .lead-label { display: block; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
@@ -82,7 +82,7 @@
     .lb-nav-btn:active { background: var(--accent); color: #000; }
     .lb-nav-prev { left: 15px; }
     .lb-nav-next { right: 15px; }
-    @media (max-width: 768px) { .lb-nav-btn { display: none; } } /* Use swipe on mobile */
+    @media (max-width: 768px) { .lb-nav-btn { display: none; } }
 
     .lb-footer { padding: 20px 20px 40px; display: flex; justify-content: center; gap: 40px; background: linear-gradient(to top, #000, transparent); position: relative; z-index: 10; }
     .lb-action { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; font-size: 10px; cursor: pointer; }
@@ -100,7 +100,6 @@
 </head>
 <body>
 
-<!-- Audio for Success -->
 <audio id="successSound" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" preload="auto"></audio>
 <div id="toast">Message</div>
 
@@ -110,7 +109,7 @@
     <div class="header-content">
         <img id="brandLogo" class="brand-logo" onerror="this.style.display='none'">
         <h1 class="brand-title" id="brandTitle">AI Face Search</h1>
-        <p class="welcome-msg" id="welcomeMsg">हजारों फोटोज में से आपको ढूँढ रहे हैं...</p>
+        <p class="welcome-msg" id="welcomeMsg">Checking 15,000+ photos instantly...</p>
     </div>
 </header>
 
@@ -127,7 +126,6 @@
                 <i class="fa-solid fa-camera" id="camIcon" style="font-size: 40px; color: #333;"></i>
                 <span id="triggerLabel" style="font-size: 11px; font-weight: 800; color: #555; margin-top: 10px;">OPEN CAMERA</span>
             </div>
-            <!-- capture="user" triggers camera on mobile -->
             <input type="file" id="fileIn" hidden capture="user" accept="image/*" onchange="handleSelfie(this.files[0])">
             
             <div class="counter-box" id="counterBox">
@@ -147,7 +145,7 @@
         </div>
         
         <div class="grid" id="photoGrid"></div>
-        <button id="btnLoadMore" class="load-more-btn" onclick="fetchNextBatch()">Load More Matched Photos</button>
+        <button id="btnLoadMore" class="load-more-btn" onclick="loadNextBatch()">Load More Matched Photos</button>
     </div>
 </div>
 
@@ -156,15 +154,12 @@
     <button class="action-btn" id="btnSelectMode" onclick="toggleSelectMode()"><i class="fa-solid fa-check-double"></i><span>Select</span></button>
     <button class="action-btn" onclick="downloadSelected()"><i class="fa-solid fa-download"></i><span>Download</span></button>
     <button class="action-btn" onclick="shareGallery()"><i class="fa-brands fa-whatsapp"></i><span>Share</span></button>
-    <button class="action-btn" onclick="showFavorites()"><i class="fa-solid fa-heart"></i><span>My Favs</span></button>
 </div>
 
 <!-- LEAD MODAL -->
 <div class="modal" id="leadModal">
     <div class="modal-content">
-        <div style="width: 60px; height: 60px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
-            <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent); font-size: 24px;"></i>
-        </div>
+        <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent); font-size: 32px; margin-bottom:15px;"></i>
         <h2 style="font-family: var(--font-head); margin-bottom: 5px;">Bingo! We found you.</h2>
         <p style="color: var(--muted); font-size: 14px; margin-bottom: 25px;">Found <span id="foundTotal" style="color: #fff; font-weight: 800;">0</span> matches.</p>
         
@@ -184,9 +179,9 @@
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
     <div class="lb-header">
-        <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:24px;"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
         <span id="lbCounter" style="color: #888; font-weight: 600;">1 / 1</span>
-        <button onclick="downloadSingle()" style="background:none; border:none; color:var(--accent); font-size:20px;"><i class="fa-solid fa-download"></i></button>
+        <button onclick="downloadSingle()" style="background:none; border:none; color:var(--accent); font-size:20px; cursor:pointer;"><i class="fa-solid fa-download"></i></button>
     </div>
     
     <div class="lb-content" id="lbTouchArea">
@@ -209,8 +204,9 @@
 
 <script>
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    const cid = new URLSearchParams(window.location.search).get('cid');
-    const linkId = new URLSearchParams(window.location.search).get('linkId') || new URLSearchParams(window.location.search).get('id');
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkId = urlParams.get('linkId') || urlParams.get('id');
+    let cid = urlParams.get('cid');
     
     let allMatchedIds = [];
     let loadedPhotos = [];
@@ -232,8 +228,7 @@
                 let data = await res.json();
                 if(data.body && typeof data.body === 'string') data = JSON.parse(data.body);
                 applyBranding(data);
-                // If CID wasn't in URL, try to get it from branding response if available
-                // (Depends on backend implementation, but usually safer to rely on URL param)
+                if(!cid) cid = data.collection_id || data.collectionId;
             }
         } catch(e) {}
     };
@@ -253,7 +248,7 @@
         }
     }
 
-    /* --- SEARCH ENGINE --- */
+    /* --- SEARCH --- */
     function handleSelfie(file) {
         if(!file) return;
         const reader = new FileReader();
@@ -265,8 +260,7 @@
             document.getElementById('triggerLabel').classList.add('hidden');
             document.getElementById('scanLine').style.display = 'block';
             document.getElementById('counterBox').style.display = 'block';
-            document.getElementById('statusText').innerText = "AI is scanning...";
-            
+            document.getElementById('statusText').innerText = "Analyzing Your Face...";
             startLiveCounter();
             performSearch();
         };
@@ -286,28 +280,22 @@
         try {
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ collection_id: cid, image: currentSelfieB64.split(',')[1], linkId: linkId })
             });
-            const data = await res.json();
+            const raw = await res.json();
+            const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : raw;
             clearInterval(scanInterval);
             
-            // Handle Lambda Proxy Response Structure
-            let body = data;
-            if (data.body && typeof data.body === 'string') {
-                body = JSON.parse(data.body);
-            }
-
             if(res.ok) {
-                allMatchedIds = body.all_matched_ids || [];
-                loadedPhotos = body.matches || [];
+                // Ensure array existence
+                allMatchedIds = data.all_matched_ids || [];
+                loadedPhotos = data.matches || [];
                 
-                // Audio Effect
-                document.getElementById('successSound').play().catch(e => {});
-                
-                // Lead Modal Logic
                 document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
+                document.getElementById('successSound').play().catch(e => {});
                 document.getElementById('leadModal').style.display = 'flex';
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00e676', '#ffffff'] });
             } else {
                 alert("No photos found. Please try again with a clearer photo.");
                 location.reload();
@@ -315,7 +303,7 @@
         } catch(e) { alert("Search timed out. Please refresh and try again."); }
     }
 
-    /* --- LEAD & GALLERY DISPLAY --- */
+    /* --- LEAD & GALLERY --- */
     function saveLeadAndShow() {
         const name = document.getElementById('gName').value;
         const mobile = document.getElementById('gMobile').value;
@@ -323,7 +311,6 @@
         
         guestInfo = { name, mobile };
 
-        // Save Guest Details (Sending multiple key formats for compatibility)
         fetch(`${API_BASE}/save-details`, {
             method: 'POST',
             body: JSON.stringify({ 
@@ -335,15 +322,12 @@
             })
         });
 
-        // Switch to Gallery View
         document.getElementById('leadModal').style.display = 'none';
-        document.getElementById('screenSearch').classList.remove('active');
+        document.getElementById('screenSearch').classList.add('hidden');
         document.getElementById('screenGallery').classList.remove('hidden');
         document.getElementById('actionBar').classList.add('show');
         
-        let countDisplay = allMatchedIds.length > 100 ? "100+ Photos Found" : `${allMatchedIds.length} Photos Found`;
-        document.getElementById('resCountText').innerText = countDisplay;
-        
+        document.getElementById('resCountText').innerText = `${allMatchedIds.length} Photos Found`;
         renderGrid();
         checkPagination();
     }
@@ -361,6 +345,7 @@
 
     function checkPagination() {
         const btn = document.getElementById('btnLoadMore');
+        // Only show if we have fetched fewer photos than total matches
         if(loadedPhotos.length < allMatchedIds.length) {
             btn.style.display = 'block';
             btn.innerText = `Load More (${allMatchedIds.length - loadedPhotos.length} left)`;
@@ -369,15 +354,20 @@
         }
     }
 
-    async function fetchNextBatch() {
+    async function loadNextBatch() {
         const btn = document.getElementById('btnLoadMore');
-        btn.disabled = true;
-        btn.innerText = "Loading next batch...";
+        btn.disabled = true; 
+        btn.innerText = "Loading...";
 
+        // Logic handled purely frontend side if we already have IDs, 
+        // OR fetch metadata if we only have IDs.
+        // Assuming we need metadata for next batch.
+        
+        // Correct endpoint usage for getting more matches based on IDs
         const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 50);
         
         try {
-            // Updated to use correct action on the main search endpoint
+            // FIX: Using POST /search with action 'get_more_matches'
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -386,7 +376,6 @@
                     ids: nextIds 
                 })
             });
-            
             const raw = await res.json();
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : raw;
             
@@ -395,20 +384,20 @@
                 renderGrid();
                 checkPagination();
             }
-        } catch(e) { console.error("Load more failed", e); }
+        } catch(e) { console.error(e); }
         btn.disabled = false;
     }
+    
+    // Alias for button click
+    function fetchNextBatch() { loadNextBatch(); }
 
     /* --- INTERACTIONS --- */
     function handlePhotoClick(i) {
         if(multiSelectMode) {
             const id = loadedPhotos[i].photo_id;
-            if(selectedSet.has(id)) selectedSet.delete(id);
-            else selectedSet.add(id);
+            if(selectedSet.has(id)) selectedSet.delete(id); else selectedSet.add(id);
             renderGrid();
-        } else {
-            openLightbox(i);
-        }
+        } else { openLightbox(i); }
     }
 
     function toggleSelectMode() {
@@ -416,16 +405,6 @@
         document.getElementById('btnSelectMode').classList.toggle('active');
         if(!multiSelectMode) selectedSet.clear();
         renderGrid();
-    }
-    
-    function showFavorites() {
-        // Filter loaded photos to show only favorites
-        const favIds = Object.keys(selections).filter(id => selections[id].fav);
-        if(favIds.length === 0) return alert("No favorites yet.");
-        
-        const favPhotos = loadedPhotos.filter(p => favIds.includes(p.photo_id));
-        // Simple alert for now, ideally filter the grid
-        alert(`You have ${favPhotos.length} favorites!`);
     }
 
     /* --- LIGHTBOX --- */
@@ -438,6 +417,7 @@
 
     function showLbPhoto() {
         const p = loadedPhotos[currentIdx];
+        if(!p) return;
         document.getElementById('lbImg').src = p.url;
         document.getElementById('lbCounter').innerText = `${currentIdx + 1} / ${loadedPhotos.length}`;
         
@@ -453,58 +433,66 @@
         showLbPhoto();
     }
 
-    function closeLightbox() {
-        document.getElementById('lightbox').style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-
     function toggleChoice(type) {
         const p = loadedPhotos[currentIdx];
         if(!selections[p.photo_id]) selections[p.photo_id] = { fav: false, selected: false };
         selections[p.photo_id][type] = !selections[p.photo_id][type];
-        
         showLbPhoto();
         
-        // Sync with Backend (Updated payload with guest info)
-        fetch(`${API_BASE}/client-api`, {
-            method: 'POST',
+        // SYNC
+        fetch(`${API_BASE}/client-api`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 action: "update_selection", 
                 payload: { 
                     collection_id: cid, 
                     photo_id: p.photo_id, 
-                    status: { ...selections[p.photo_id], guest_name: guestInfo.name, guest_mobile: guestInfo.mobile } 
+                    status: { 
+                        ...selections[p.photo_id], 
+                        guest_name: guestInfo.name, 
+                        guest_mobile: guestInfo.mobile,
+                        timestamp: Date.now()
+                    } 
                 } 
             })
         });
     }
 
-    function downloadSingle() {
-        const url = loadedPhotos[currentIdx].url;
-        saveAs(url, `Photo_${loadedPhotos[currentIdx].photo_id}.jpg`);
-    }
+    function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; document.body.style.overflow = 'auto'; }
+    function downloadSingle() { saveAs(loadedPhotos[currentIdx].url, `Photo_${loadedPhotos[currentIdx].photo_id}.jpg`); }
 
     async function downloadSelected() {
         const list = multiSelectMode ? Array.from(selectedSet) : [loadedPhotos[currentIdx]?.photo_id];
-        if(!list.length || !list[0]) return alert("Select photos first");
+        if(!list.length || !list[0]) return showToast("Select photos first");
         
+        showToast("Zipping files...");
         const zip = new JSZip();
         const photosToZip = loadedPhotos.filter(p => list.includes(p.photo_id));
         
         for(let p of photosToZip) {
-            const res = await fetch(p.url);
-            const blob = await res.blob();
-            zip.file(`Photo_${p.photo_id}.jpg`, blob);
+            try {
+                const res = await fetch(p.url);
+                const blob = await res.blob();
+                zip.file(`Photo_${p.photo_id}.jpg`, blob);
+            } catch(e) {}
         }
         
         zip.generateAsync({type:"blob"}).then(c => {
-            saveAs(c, "My_Photos.zip");
+            saveAs(c, "EventLens_Selected.zip");
+            showToast("Complete!");
         });
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.innerText = msg; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3000);
     }
 
     function shareGallery() {
         const url = encodeURIComponent(window.location.href);
-        window.open(`https://wa.me/?text=Check out my photos: ${url}`);
+        window.open(`https://wa.me/?text=Check out my event photos: ${url}`);
     }
 
     /* Swipe Logic */
@@ -517,6 +505,7 @@
         if (touchStartX - touchEndX > 50) navLightbox(1);
         if (touchEndX - touchStartX > 50) navLightbox(-1);
     }, false);
+
 </script>
 </body>
 </html>

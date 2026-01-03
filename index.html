@@ -47,7 +47,7 @@
     .counter-box { margin-top: 20px; display: none; background: #000; padding: 12px; border-radius: 15px; border: 1px solid var(--border); }
     .counter-val { font-size: 20px; font-weight: 800; color: var(--accent); }
 
-    /* Lead Modal - Updated Window */
+    /* Lead Modal */
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s; }
     .modal-content { background: #1a1a1a; border: 1px solid var(--border); border-radius: 24px; padding: 35px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
     .lead-label { display: block; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
@@ -82,7 +82,7 @@
     .lb-nav-btn:active { background: var(--accent); color: #000; }
     .lb-nav-prev { left: 15px; }
     .lb-nav-next { right: 15px; }
-    @media (max-width: 768px) { .lb-nav-btn { display: none; } } /* Use swipe on mobile */
+    @media (max-width: 768px) { .lb-nav-btn { display: none; } }
 
     .lb-footer { padding: 20px 20px 40px; display: flex; justify-content: center; gap: 40px; background: linear-gradient(to top, #000, transparent); position: relative; z-index: 10; }
     .lb-action { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; font-size: 10px; cursor: pointer; }
@@ -100,7 +100,7 @@
 </head>
 <body>
 
-<!-- Audio for Success -->
+<!-- Success Sound Effect -->
 <audio id="successSound" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" preload="auto"></audio>
 <div id="toast">Message</div>
 
@@ -147,7 +147,7 @@
         </div>
         
         <div class="grid" id="photoGrid"></div>
-        <div id="btnLoadMore" class="load-more-btn" onclick="fetchNextBatch()">और लोड करें...</div>
+        <div id="btnLoadMore" class="load-more-btn" onclick="fetchNextBatch()">और फोटोज लोड करें...</div>
     </div>
 </div>
 
@@ -166,7 +166,7 @@
         <p style="color: var(--muted); font-size: 14px; margin-bottom: 25px;">आपकी <span id="foundTotal" style="color: #fff; font-weight: 800;">0</span> फोटोज मिलीं।</p>
         
         <label class="lead-label">आपका नाम</label>
-        <input id="gName" class="lead-input" placeholder="Rahul Soni">
+        <input id="gName" class="lead-input" placeholder="जैसे: राहुल सोनी">
         
         <label class="lead-label">मोबाइल नंबर</label>
         <input id="gMobile" class="lead-input" type="tel" placeholder="98XXXXXXXX">
@@ -175,7 +175,7 @@
     </div>
 </div>
 
-<!-- LIGHTBOX (Slide View) -->
+<!-- LIGHTBOX (Improved Slide View) -->
 <div class="lightbox" id="lightbox">
     <div class="lb-header">
         <button onclick="closeLightbox()" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
@@ -211,18 +211,17 @@
     let scanInterval = null;
     let guestInfo = { name: '', mobile: '' };
 
-    /* --- BRANDING LOAD --- */
+    /* --- BRANDING --- */
     window.onload = async () => {
         if(!cid && !linkId) return alert("Invalid Link");
         try {
             const url = cid ? `${API_BASE}/get-branding?cid=${cid}` : `${API_BASE}/get-branding?linkId=${linkId}`;
             const res = await fetch(url);
             const raw = await res.json();
-            // JSON parsing handles proxy response strings
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : (raw.branding || raw);
             applyBranding(data);
             if(!cid) cid = data.collection_id || data.collectionId;
-        } catch(e) { console.error("Branding failed to load", e); }
+        } catch(e) { console.error("Branding load failed", e); }
     };
 
     function applyBranding(b) {
@@ -239,7 +238,7 @@
         }
     }
 
-    /* --- SEARCH FLOW --- */
+    /* --- SEARCH --- */
     function handleSelfie(file) {
         if(!file) return;
         const reader = new FileReader();
@@ -269,9 +268,16 @@
 
     async function performSearch() {
         try {
+            // FIX: Using POST to /search and ensuring action is passed in body
             const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
-                body: JSON.stringify({ collection_id: cid, image: currentSelfieB64.split(',')[1], linkId: linkId })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: "search_faces",
+                    collection_id: cid, 
+                    image: currentSelfieB64.split(',')[1], 
+                    linkId: linkId 
+                })
             });
             const raw = await res.json();
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : raw;
@@ -281,12 +287,8 @@
                 allMatchedIds = data.all_matched_ids || [];
                 loadedPhotos = data.matches || [];
                 
-                // Show 100+ logic in modal
                 document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
-                
-                // Audio Effect on success
                 document.getElementById('successSound').play().catch(e => {});
-                
                 document.getElementById('leadModal').style.display = 'flex';
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00e676', '#ffffff'] });
             } else {
@@ -321,7 +323,6 @@
         document.getElementById('screenGallery').classList.remove('hidden');
         document.getElementById('actionBar').classList.add('show');
         
-        // Show accurate match count in gallery
         document.getElementById('resCountText').innerText = `${allMatchedIds.length} Photos Found`;
         renderGrid();
         checkPagination();
@@ -329,6 +330,7 @@
 
     function renderGrid() {
         const grid = document.getElementById('photoGrid');
+        // FIRST 100 photos are already in loadedPhotos
         grid.innerHTML = loadedPhotos.map((p, i) => `
             <div class="ph-card ${selectedSet.has(p.photo_id) ? 'is-selected' : ''}" onclick="handlePhotoClick(${i})">
                 <img src="${p.thumbnail_url || p.url}" onload="this.classList.add('loaded')">
@@ -338,38 +340,31 @@
         `).join('');
     }
 
-    /* --- PAGINATION (FIXED ENDPOINT & ACTION) --- */
+    /* --- PAGINATION FIX --- */
     async function fetchNextBatch() {
         const btn = document.getElementById('btnLoadMore');
         btn.disabled = true; btn.innerText = "लोड हो रहा है...";
         const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 100);
         
         try {
-            // FIX: Using /client-api with the correct action and payload to avoid 403 Forbidden
-            const res = await fetch(`${API_BASE}/client-api`, {
+            // FIX: Using POST to /search with the correct action name in body
+            const res = await fetch(`${API_BASE}/search`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     action: "get_more_matches", 
-                    payload: { ids: nextIds } 
+                    ids: nextIds 
                 })
             });
             const raw = await res.json();
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : raw;
             
-            // Check if matches exist in the root or nested in payload
-            const matches = data.matches || (data.payload && data.payload.matches);
-            if(matches) {
-                loadedPhotos = [...loadedPhotos, ...matches];
+            if(data.matches) {
+                loadedPhotos = [...loadedPhotos, ...data.matches];
                 renderGrid();
                 checkPagination();
-            } else if (data.message && data.message.includes("Unknown Action")) {
-                showToast("Server Configuration Error: Load More not enabled.", "error");
             }
-        } catch(e) { 
-            console.error("Pagination load failed", e);
-            showToast("Network Error: Load more failed.");
-        }
+        } catch(e) { console.error("Load more failed", e); }
         btn.disabled = false;
         btn.innerText = "और लोड करें...";
     }
@@ -394,7 +389,7 @@
         renderGrid();
     }
 
-    /* --- LIGHTBOX (Improved Slide View) --- */
+    /* --- LIGHTBOX & CHOICE SYNC --- */
     function openLightbox(i) {
         currentIdx = i;
         showLbPhoto();
@@ -408,7 +403,6 @@
         img.src = p.url;
         document.getElementById('lbCounter').innerText = `${currentIdx + 1} / ${loadedPhotos.length}`;
         
-        // Sync UI choices
         const s = selections[p.photo_id] || { fav: false, selected: false };
         document.getElementById('lbBtnFav').style.color = s.fav ? '#ff4081' : '#fff';
         document.getElementById('lbBtnSel').style.color = s.selected ? 'var(--accent)' : '#fff';
@@ -489,8 +483,8 @@
     }, false);
     document.getElementById('lbTouchArea').addEventListener('touchend', e => {
         let touchEndX = e.changedTouches[0].screenX;
-        if (touchStartX - touchEndX > 50) navLightbox(1);  // Swipe Left -> Next
-        if (touchEndX - touchStartX > 50) navLightbox(-1); // Swipe Right -> Prev
+        if (touchStartX - touchEndX > 50) navLightbox(1);
+        if (touchEndX - touchStartX > 50) navLightbox(-1);
     }, false);
 
 </script>

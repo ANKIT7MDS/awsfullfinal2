@@ -47,7 +47,7 @@
     .counter-box { margin-top: 20px; display: none; background: #000; padding: 12px; border-radius: 15px; border: 1px solid var(--border); }
     .counter-val { font-size: 20px; font-weight: 800; color: var(--accent); }
 
-    /* Lead Modal - Professional UI */
+    /* Lead Modal - Updated Window */
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s; }
     .modal-content { background: #1a1a1a; border: 1px solid var(--border); border-radius: 24px; padding: 35px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
     .lead-label { display: block; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
@@ -72,7 +72,7 @@
     .action-btn i { font-size: 20px; }
     .action-btn.active { color: var(--accent); opacity: 1; }
 
-    /* --- LIGHTBOX / SLIDE VIEW --- */
+    /* Slide View */
     .lightbox { position: fixed; inset: 0; background: #000; z-index: 4000; display: none; flex-direction: column; }
     .lb-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 10; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
     .lb-content { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; overflow: hidden; }
@@ -218,6 +218,7 @@
             const url = cid ? `${API_BASE}/get-branding?cid=${cid}` : `${API_BASE}/get-branding?linkId=${linkId}`;
             const res = await fetch(url);
             const raw = await res.json();
+            // JSON parsing handles proxy response strings
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : (raw.branding || raw);
             applyBranding(data);
             if(!cid) cid = data.collection_id || data.collectionId;
@@ -279,8 +280,13 @@
             if(res.ok) {
                 allMatchedIds = data.all_matched_ids || [];
                 loadedPhotos = data.matches || [];
+                
+                // Show 100+ logic in modal
                 document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
+                
+                // Audio Effect on success
                 document.getElementById('successSound').play().catch(e => {});
+                
                 document.getElementById('leadModal').style.display = 'flex';
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00e676', '#ffffff'] });
             } else {
@@ -290,7 +296,7 @@
         } catch(e) { alert("Timeout error! पेज रिफ्रेश करके दोबारा कोशिश करें।"); }
     }
 
-    /* --- LEAD & GRID --- */
+    /* --- LEAD & GALLERY --- */
     function saveLeadAndShow() {
         const name = document.getElementById('gName').value;
         const mobile = document.getElementById('gMobile').value;
@@ -298,6 +304,7 @@
         
         guestInfo = { name, mobile };
 
+        // Save Guest Details (Action logic fix: sending both name and guest_name keys)
         fetch(`${API_BASE}/save-details`, {
             method: 'POST',
             body: JSON.stringify({ 
@@ -314,6 +321,7 @@
         document.getElementById('screenGallery').classList.remove('hidden');
         document.getElementById('actionBar').classList.add('show');
         
+        // Show accurate match count in gallery
         document.getElementById('resCountText').innerText = `${allMatchedIds.length} Photos Found`;
         renderGrid();
         checkPagination();
@@ -330,26 +338,38 @@
         `).join('');
     }
 
-    /* --- PAGINATION --- */
+    /* --- PAGINATION (FIXED ENDPOINT & ACTION) --- */
     async function fetchNextBatch() {
         const btn = document.getElementById('btnLoadMore');
         btn.disabled = true; btn.innerText = "लोड हो रहा है...";
         const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 100);
         
         try {
-            const res = await fetch(`${API_BASE}/get_more_matches`, {
+            // FIX: Using /client-api with the correct action and payload to avoid 403 Forbidden
+            const res = await fetch(`${API_BASE}/client-api`, {
                 method: 'POST',
-                body: JSON.stringify({ ids: nextIds })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: "get_more_matches", 
+                    payload: { ids: nextIds } 
+                })
             });
             const raw = await res.json();
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : raw;
             
-            if(data.matches) {
-                loadedPhotos = [...loadedPhotos, ...data.matches];
+            // Check if matches exist in the root or nested in payload
+            const matches = data.matches || (data.payload && data.payload.matches);
+            if(matches) {
+                loadedPhotos = [...loadedPhotos, ...matches];
                 renderGrid();
                 checkPagination();
+            } else if (data.message && data.message.includes("Unknown Action")) {
+                showToast("Server Configuration Error: Load More not enabled.", "error");
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { 
+            console.error("Pagination load failed", e);
+            showToast("Network Error: Load more failed.");
+        }
         btn.disabled = false;
         btn.innerText = "और लोड करें...";
     }
@@ -407,9 +427,10 @@
         selections[p.photo_id][type] = !selections[p.photo_id][type];
         showLbPhoto();
         
-        // SYNC SELECTION WITH ADMIN DASHBOARD
+        // SYNC SELECTION WITH ADMIN DASHBOARD (Includes guest name/mobile)
         fetch(`${API_BASE}/client-api`, { 
             method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 action: "update_selection", 
                 payload: { 

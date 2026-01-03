@@ -47,7 +47,7 @@
     .counter-box { margin-top: 20px; display: none; background: #000; padding: 12px; border-radius: 15px; border: 1px solid var(--border); }
     .counter-val { font-size: 20px; font-weight: 800; color: var(--accent); }
 
-    /* Lead Modal - Updated Window */
+    /* Lead Modal - Professional UI */
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s; }
     .modal-content { background: #1a1a1a; border: 1px solid var(--border); border-radius: 24px; padding: 35px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
     .lead-label { display: block; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 5px; font-weight: 700; }
@@ -55,7 +55,7 @@
     .lead-input:focus { border-color: var(--accent); background: #000; }
     .btn-unlock { background: var(--accent); color: #000; border: none; padding: 18px; width: 100%; border-radius: 50px; font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 10px; }
 
-    /* Gallery - Small Thumbs */
+    /* Gallery - 3 columns for mobile */
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; }
     @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 16px; } }
     .ph-card { position: relative; aspect-ratio: 1; background: #111; overflow: hidden; cursor: pointer; border-radius: 4px; }
@@ -207,10 +207,11 @@
             const url = cid ? `${API_BASE}/get-branding?cid=${cid}` : `${API_BASE}/get-branding?linkId=${linkId}`;
             const res = await fetch(url);
             const raw = await res.json();
+            // JSON parsing handles proxy response strings
             const data = (raw.body && typeof raw.body === 'string') ? JSON.parse(raw.body) : (raw.branding || raw);
             applyBranding(data);
             if(!cid) cid = data.collection_id || data.collectionId;
-        } catch(e) { console.error("Branding load failed", e); }
+        } catch(e) { console.error("Branding failed to load", e); }
     };
 
     function applyBranding(b) {
@@ -269,11 +270,11 @@
                 allMatchedIds = data.all_matched_ids || [];
                 loadedPhotos = data.matches || [];
                 
-                // Show 100+ logic
-                document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
-                
-                // Audio Effect
+                // Audio Effect on success
                 document.getElementById('successSound').play().catch(e => {});
+                
+                // Show 100+ logic in modal
+                document.getElementById('foundTotal').innerText = allMatchedIds.length > 100 ? "100+" : allMatchedIds.length;
                 
                 document.getElementById('leadModal').style.display = 'flex';
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00e676', '#ffffff'] });
@@ -284,7 +285,7 @@
         } catch(e) { alert("Timeout error! पेज रिफ्रेश करके दोबारा कोशिश करें।"); }
     }
 
-    /* --- LEAD & GRID --- */
+    /* --- LEAD & GALLERY --- */
     function saveLeadAndShow() {
         const name = document.getElementById('gName').value;
         const mobile = document.getElementById('gMobile').value;
@@ -292,13 +293,13 @@
         
         guestInfo = { name, mobile };
 
-        // Save Guest Details (Action logic) - Double Mapping to fix "Unknown"
+        // Save Guest Details (Dashing logic fix: sending both name and guest_name keys)
         fetch(`${API_BASE}/save-details`, {
             method: 'POST',
             body: JSON.stringify({ 
                 collection_id: cid, 
-                guest_name: name, name: name,
-                guest_mobile: mobile, mobile: mobile,
+                name: name, guest_name: name,
+                mobile: mobile, guest_mobile: mobile,
                 photo_count: allMatchedIds.length, 
                 selfie_image: currentSelfieB64.split(',')[1] 
             })
@@ -309,6 +310,7 @@
         document.getElementById('screenGallery').classList.remove('hidden');
         document.getElementById('actionBar').classList.add('show');
         
+        // Show accurate match count in gallery
         document.getElementById('resCountText').innerText = `${allMatchedIds.length} Photos Found`;
         renderGrid();
         checkPagination();
@@ -332,7 +334,7 @@
         const nextIds = allMatchedIds.slice(loadedPhotos.length, loadedPhotos.length + 100);
         
         try {
-            // FIX: Calling root endpoint or ensuring correct action
+            // FIX: Using direct root endpoint to avoid action errors
             const res = await fetch(`${API_BASE}/get_more_matches`, {
                 method: 'POST',
                 body: JSON.stringify({ ids: nextIds })
@@ -345,7 +347,7 @@
                 renderGrid();
                 checkPagination();
             }
-        } catch(e) { showToast("लोड करने में त्रुटि आई"); }
+        } catch(e) { console.error(e); }
         btn.disabled = false;
         btn.innerText = "और लोड करें...";
     }
@@ -354,7 +356,7 @@
         document.getElementById('btnLoadMore').style.display = loadedPhotos.length < allMatchedIds.length ? 'block' : 'none';
     }
 
-    /* --- INTERACTION --- */
+    /* --- INTERACTIONS --- */
     function handlePhotoClick(i) {
         if(multiSelectMode) {
             const id = loadedPhotos[i].photo_id;
@@ -376,7 +378,6 @@
         document.getElementById('lbImg').src = p.url;
         document.getElementById('lbCounter').innerText = `${i+1} / ${loadedPhotos.length}`;
         
-        // Sync UI choices
         const s = selections[p.photo_id] || { fav: false, selected: false };
         document.getElementById('lbBtnFav').style.color = s.fav ? '#ff4081' : '#fff';
         document.getElementById('lbBtnSel').style.color = s.selected ? 'var(--accent)' : '#fff';
@@ -391,7 +392,7 @@
         selections[p.photo_id][type] = !selections[p.photo_id][type];
         openLightbox(currentIdx);
         
-        // SYNC WITH ADMIN DASHBOARD (Client Selection API)
+        // SYNC SELECTION WITH ADMIN DASHBOARD (Includes guest name/mobile)
         fetch(`${API_BASE}/client-api`, { 
             method: 'POST', 
             body: JSON.stringify({ 

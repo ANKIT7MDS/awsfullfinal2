@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventLens – Bulk Upload Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #00e676;
+            --bg: #050505;
+            --card: #111111;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .font-heading { font-family: 'Outfit', sans-serif; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #111; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: black;
+            font-weight: 700;
+            padding: 12px 24px;
+            border-radius: 50px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.05);
+            background-color: #00c868;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: #222;
+            color: white;
+            border: 1px solid #333;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 50px;
+            transition: 0.2s;
+        }
+        .btn-secondary:hover { background-color: #333; }
+
+        .pulse-green {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .error-glow { border-color: #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-10">
+
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-zinc-900 border border-zinc-800 p-4 rounded-xl shadow-2xl hidden">
+        <p id="toastMsg"></p>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-10">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-black shadow-lg">
+                    <i class="fa-solid fa-bolt-lightning text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-heading font-extrabold tracking-tight leading-none">Bulk <span class="text-emerald-500">Uploader</span></h1>
+                    <p class="text-zinc-500 text-sm mt-1 flex items-center gap-2 text-hindi">
+                        Smart Resume & Batch Mode
+                        <span id="wakeLockStatus" class="hidden text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20 items-center gap-1">
+                            <i class="fa-solid fa-sun pulse-green"></i> STAY AWAKE ACTIVE
+                        </span>
+                    </p>
+                </div>
+            </div>
+            <div id="userInfo" class="hidden text-right">
+                <p class="text-xs text-zinc-500">Logged in as</p>
+                <p class="text-sm font-bold text-emerald-400">Photographer</p>
+                <button onclick="doLogout()" class="text-[10px] text-red-500 underline uppercase tracking-widest mt-1">Logout</button>
+            </div>
+        </div>
+
+        <div id="viewLogin" class="bg-zinc-950 border border-zinc-900 rounded-3xl p-10 text-center">
+            <i class="fa-solid fa-shield-halved text-5xl text-zinc-800 mb-6"></i>
+            <h2 class="text-3xl font-heading font-bold mb-4 text-hindi">Authentication Required</h2>
+            <button onclick="doLogin()" class="btn-primary w-full max-w-xs">Login via Cognito</button>
+        </div>
+
+        <div id="viewMain" class="hidden space-y-6">
+            
+            <div class="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-500 mb-2 tracking-widest uppercase">Collection</label>
+                        <select id="colSelect" class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white appearance-none focus:border-emerald-500 transition-colors" onchange="loadEvents()"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-500 mb-2 tracking-widest uppercase">Event</label>
+                        <select id="evSelect" class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white appearance-none focus:border-emerald-500 transition-colors"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-zinc-800 hover:border-emerald-500 rounded-2xl p-8 text-center cursor-pointer transition-all bg-zinc-900/30">
+                        <i class="fa-solid fa-images text-3xl text-zinc-600 mb-3"></i>
+                        <h4 class="font-bold text-sm">Select Individual Files</h4>
+                        <input type="file" id="fileInput" multiple accept="image/*" class="hidden" onchange="handleFiles(this.files)">
+                    </div>
+
+                    <div onclick="document.getElementById('folderInput').click()" class="border-2 border-dashed border-zinc-800 hover:border-emerald-500 rounded-2xl p-8 text-center cursor-pointer transition-all bg-emerald-500/5">
+                        <i class="fa-solid fa-folder-tree text-3xl text-emerald-500 mb-3"></i>
+                        <h4 class="font-bold text-sm text-emerald-500">Select Full Folder</h4>
+                        <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden" onchange="handleFiles(this.files)">
+                    </div>
+                </div>
+            </div>
+
+            <div id="progressBox" class="hidden bg-zinc-950 border border-zinc-900 rounded-3xl p-6">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <h3 class="font-bold text-lg" id="uploadTitle">Queue Ready</h3>
+                        <p class="text-zinc-500 text-xs mt-1" id="statsText">0 files ready</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-zinc-500 uppercase mb-1">Batch Progress</p>
+                        <p class="text-3xl font-heading font-black text-emerald-500 leading-none" id="totalPct">0%</p>
+                    </div>
+                </div>
+                
+                <div class="h-3 bg-zinc-900 rounded-full overflow-hidden mb-6">
+                    <div id="progressBar" class="h-full bg-emerald-500 w-0 transition-all duration-300"></div>
+                </div>
+
+                <div class="flex flex-wrap gap-4 items-center justify-between">
+                    <div class="flex gap-4">
+                        <div class="bg-zinc-900 px-4 py-2 rounded-lg text-center min-w-[70px]">
+                            <p class="text-[10px] text-zinc-500 font-bold uppercase">Done</p>
+                            <p class="text-lg font-bold" id="countUploaded">0</p>
+                        </div>
+                        <div class="bg-zinc-900 px-4 py-2 rounded-lg text-center min-w-[70px]">
+                            <p class="text-[10px] text-zinc-500 font-bold uppercase">Skipped</p>
+                            <p class="text-lg font-bold text-blue-400" id="countSkipped">0</p>
+                        </div>
+                        <div class="bg-zinc-900 px-4 py-2 rounded-lg text-center min-w-[70px]">
+                            <p class="text-[10px] text-zinc-500 font-bold uppercase">Failed</p>
+                            <p class="text-lg font-bold text-red-500" id="countFailed">0</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="btnPause" disabled onclick="togglePause()" class="btn-secondary hidden">
+                            <i class="fa-solid fa-pause"></i> Pause
+                        </button>
+                        <button id="btnStart" disabled onclick="startUpload()" class="btn-primary min-w-[200px]">
+                            <i class="fa-solid fa-play"></i> Start Upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest">Activity Monitor</h3>
+                    <button onclick="copyLogs()" class="text-[10px] bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded-md transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-copy"></i> COPY LOGS
+                    </button>
+                </div>
+                <div id="logList" class="space-y-1 h-48 overflow-y-auto custom-scroll text-[10px] font-mono p-2 bg-black/50 rounded-xl">
+                    <div class="text-zinc-600 italic">Select photos to begin monitoring system tasks...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod"; 
+        const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+        const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
+
+        let idToken = localStorage.getItem('idToken');
+        let uploadQueue = [];
+        let isUploading = false;
+        let isPaused = false;
+        let currentBatchIndex = 0;
+        let processedCount = 0;
+        let failedCount = 0;
+        let skippedCount = 0;
+        let BATCH_SIZE = 10; // Optimized for stability
+        let wakeLock = null;
+
+        window.onload = async () => {
+            const params = new URLSearchParams(window.location.search);
+            if(params.has('code')){ await exchangeCode(params.get('code')); return; }
+            if(!idToken) showView('viewLogin'); else { showView('viewMain'); document.getElementById('userInfo').classList.remove('hidden'); loadCollections(); }
+        };
+
+        /* ================= AWAKE LOCK LOGIC ================= */
+        const requestWakeLock = async () => {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    document.getElementById('wakeLockStatus').classList.remove('hidden');
+                    document.getElementById('wakeLockStatus').classList.add('flex');
+                    log("Screen Wake Lock active (Device will not sleep)", "success");
+                    
+                    wakeLock.addEventListener('release', () => {
+                        document.getElementById('wakeLockStatus').classList.add('hidden');
+                        document.getElementById('wakeLockStatus').classList.remove('flex');
+                    });
+                } catch (err) {
+                    console.error(`${err.name}, ${err.message}`);
+                }
+            }
+        };
+
+        const releaseWakeLock = () => {
+            if (wakeLock !== null) {
+                wakeLock.release();
+                wakeLock = null;
+            }
+        };
+
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
+        /* ================= API WRAPPER WITH ENHANCED RETRY ================= */
+        async function api(path, method = 'GET', body = null, retries = 5) {
+            const headers = { 'Authorization': idToken, 'Content-Type': 'application/json' };
+            const opts = { method, headers };
+            if(body) opts.body = JSON.stringify(body);
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const res = await fetch(`${API_BASE}${path}`, opts);
+                    if (res.status === 500) throw new Error("Internal Server Error (Lambda Overload)");
+                    if (!res.ok) throw new Error(await res.text());
+                    return await res.json();
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    const delay = Math.pow(2, i) * 1000;
+                    log(`API Issue: Retrying Lambda [Attempt ${i+1}/5] in ${delay/1000}s...`, "error");
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            }
+        }
+
+        async function loadCollections() {
+            try {
+                const data = await api('/get-collections');
+                const list = data.Items || data;
+                document.getElementById('colSelect').innerHTML = '<option value="">Select Collection</option>' + list.map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
+            } catch(e) { log("Col Load Error: " + e.message, "error"); }
+        }
+
+        async function loadEvents() {
+            const cid = document.getElementById('colSelect').value;
+            if(!cid) return;
+            try {
+                log(`Fetching event configuration for CID: ${cid.substring(0,8)}...`);
+                const data = await api('/get-events', 'POST', { collection_id: cid });
+                const events = data.events || data.Items || [];
+                document.getElementById('evSelect').innerHTML = '<option value="">Select Event</option>' + events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
+            } catch(e) { log("Event Load Error: " + e.message, "error"); }
+        }
+
+        function handleFiles(files) {
+            if(isUploading) return;
+            const validFiles = Array.from(files).filter(f => f.name.match(/\.(jpg|jpeg|png|heic)$/i));
+            if(validFiles.length === 0) {
+                log("RED ALERT: Selected folder contains no valid image files!", "error");
+                return;
+            }
+            
+            uploadQueue = validFiles; 
+            currentBatchIndex = 0;
+            processedCount = 0; 
+            failedCount = 0;
+            skippedCount = 0; // RESET skip count on new selection
+            
+            document.getElementById('statsText').innerText = `${validFiles.length} files selected. Ready.`;
+            document.getElementById('progressBox').classList.remove('hidden');
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnPause').classList.add('hidden');
+            updateUIProgress();
+            log(`Queue initialized with ${validFiles.length} images.`);
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            document.getElementById('btnPause').innerHTML = isPaused ? '<i class="fa-solid fa-play"></i> Resume' : '<i class="fa-solid fa-pause"></i> Pause';
+            if(!isPaused) {
+                log("Action: Resuming bulk process...");
+                requestWakeLock();
+                startUpload();
+            } else {
+                log("Action: Bulk process paused by user.");
+                releaseWakeLock();
+            }
+        }
+
+        async function startUpload() {
+            const cid = document.getElementById('colSelect').value;
+            const eid = document.getElementById('evSelect').value;
+            
+            if(!cid || !eid) {
+                log("RED ALERT: Target Collection or Event not selected!", "error");
+                showToast("Select Collection & Event!", "error");
+                return;
+            }
+
+            isUploading = true;
+            isPaused = false;
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnPause').classList.remove('hidden');
+            document.getElementById('btnPause').disabled = false;
+            document.getElementById('uploadTitle').innerText = "Bulk Upload in Progress...";
+
+            await requestWakeLock();
+
+            log(`TASK INITIALIZED: Processing ${uploadQueue.length} files in high-stability mode (Batch: ${BATCH_SIZE}).`, "success");
+
+            for (let i = currentBatchIndex; i < uploadQueue.length; i += BATCH_SIZE) {
+                if(isPaused || !isUploading) {
+                    currentBatchIndex = i;
+                    log(`Paused at index: ${i}`);
+                    return; 
+                }
+                const batch = uploadQueue.slice(i, i + BATCH_SIZE);
+                log(`Batch [${Math.ceil((i+1)/BATCH_SIZE)}]: Processing ${batch.length} files...`);
+                await processBatch(batch, cid, eid);
+                currentBatchIndex = i + BATCH_SIZE;
+                
+                await new Promise(r => setTimeout(r, 1200)); // Stability breather
+            }
+
+            isUploading = false;
+            releaseWakeLock();
+            document.getElementById('btnPause').classList.add('hidden');
+            document.getElementById('uploadTitle').innerText = "Tasks Complete";
+            showToast("Bulk upload finished successfully.");
+            log("FINAL STATUS: All photos processed. System returning to standby.", "success");
+        }
+
+        async function processBatch(files, cid, eid) {
+            log(`Task: Hashing ${files.length} files...`);
+            const fileMetas = [];
+            
+            for(const file of files) {
+                const hash = await computeHash(file);
+                fileMetas.push({ 
+                    name: file.name.replace(/[^a-zA-Z0-9.]/g, '_'), 
+                    type: 'image/jpeg', 
+                    size: file.size, 
+                    hash, 
+                    fileObj: file 
+                });
+            }
+
+            try {
+                log("Requesting Lambda: Checking for duplicates and generating S3 paths...");
+                const res = await api('/generate-upload-urls', 'POST', { 
+                    collection_id: cid, 
+                    event_id: eid, 
+                    files: fileMetas.map(m => ({ name: m.name, hash: m.hash, size: m.size })) 
+                });
+                
+                const urls = res.urls || [];
+                const skippedBatchCount = fileMetas.length - urls.length;
+                skippedCount += skippedBatchCount; // Accumulate skipped count
+                
+                if(skippedBatchCount > 0) log(`Info: ${skippedBatchCount} photos skipped (Duplicate detected in DB).`, "info");
+                if(urls.length > 0) log(`Ready: Received ${urls.length} upload tokens. Starting parallel transfer...`, "success");
+
+                await Promise.all(urls.map(async u => {
+                    const meta = fileMetas.find(m => m.hash === u.hash);
+                    if(!meta) return;
+                    try {
+                        const up = await fetch(u.uploadURL, { 
+                            method: 'PUT', 
+                            body: meta.fileObj, 
+                            headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': meta.hash } 
+                        });
+                        if(up.ok) {
+                            processedCount++;
+                            log(`Success: ${meta.name} -> S3. Auto-indexing triggered.`, "success");
+                        } else {
+                            failedCount++;
+                            log(`Error: S3 rejected ${meta.name}`, "error");
+                        }
+                    } catch(e) { failedCount++; }
+                    updateUIProgress();
+                }));
+            } catch(e) { 
+                log(`RED ALERT: Batch [${currentBatchIndex}] FAILED - ${e.message}`, "error");
+                log("Action: System will continue to next batch. Check failed count.", "error");
+                failedCount += files.length; 
+                updateUIProgress(); 
+            }
+        }
+
+        async function computeHash(file) {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function updateUIProgress() {
+            const total = uploadQueue.length;
+            const current = processedCount + failedCount + skippedCount;
+            const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+            document.getElementById('totalPct').innerText = `${pct}%`;
+            document.getElementById('progressBar').style.width = `${pct}%`;
+            document.getElementById('countUploaded').innerText = processedCount;
+            document.getElementById('countFailed').innerText = failedCount;
+            document.getElementById('countSkipped').innerText = skippedCount;
+            document.getElementById('statsText').innerText = `${current} of ${total} files processed.`;
+        }
+
+        function log(msg, type = 'info') {
+            const list = document.getElementById('logList');
+            const el = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            el.className = type === 'error' ? 'text-red-500 font-bold' : (type === 'success' ? 'text-emerald-500' : 'text-zinc-500');
+            el.innerHTML = `[${timestamp}] > ${msg}`;
+            list.prepend(el);
+            if(list.children.length > 200) list.removeChild(list.lastChild); 
+        }
+
+        function copyLogs() {
+            const list = document.getElementById('logList');
+            const text = Array.from(list.children).map(el => el.innerText).join('\n');
+            const temp = document.createElement("textarea");
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+            showToast("Full logs copied to clipboard!");
+        }
+
+        function showView(id) {
+            document.getElementById('viewLogin').classList.add('hidden');
+            document.getElementById('viewMain').classList.add('hidden');
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function doLogin() { window.location.href = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
+
+        function showToast(msg, type = "success") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.remove('hidden', 'translate-x-full');
+            if(type === "error") t.style.borderColor = "#ef4444"; else t.style.borderColor = "#27272a";
+            setTimeout(() => t.classList.add('translate-x-full'), 3000);
+        }
+    </script>
+</body>
+</html>

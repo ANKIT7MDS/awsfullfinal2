@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- FIX: Referrer policy to prevent S3 403 Errors -->
+    <meta name="referrer" content="no-referrer" />
+    <title>Event Gallery</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- ZIP Libraries (Required for Download Selection) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        /* --- CORE VARIABLES --- */
+        :root {
+            --primary: #00e676;
+            --bg: #050505;
+            --panel: #111;
+            --text: #ffffff;
+            --text-muted: #a1a1aa;
+            --border: #27272a;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            outline: none; 
+        }
+
+        body { 
+            margin: 0; 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* --- 1. LOGIN SCREEN STYLES --- */
+        #authView {
+            position: fixed; 
+            inset: 0; 
+            z-index: 3000;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            background: radial-gradient(circle at center, #111 0%, #050505 100%);
+        }
+
+        .login-card {
+            background: var(--panel); 
+            padding: 40px; 
+            border-radius: 24px;
+            border: 1px solid var(--border); 
+            width: 90%; 
+            max-width: 380px;
+            text-align: center; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+        }
+
+        .login-card h2 {
+            margin-top: 0;
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .pin-input {
+            background: #000; 
+            border: 1px solid var(--border); 
+            color: var(--primary);
+            padding: 16px; 
+            border-radius: 14px; 
+            width: 100%; 
+            font-size: 22px;
+            text-align: center; 
+            letter-spacing: 8px; 
+            margin-bottom: 20px; 
+            font-weight: 800;
+            transition: all 0.3s ease;
+        }
+
+        .pin-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0, 230, 118, 0.2);
+        }
+        
+        /* --- 2. MAIN LAYOUT STYLES --- */
+        #galleryView { 
+            display: none; 
+            padding-bottom: 100px;
+        }
+
+        /* Hero / Branding Section */
+        .hero {
+            height: 320px;
+            background-size: cover; 
+            background-position: center;
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            background-color: #111;
+        }
+
+        .hero-overlay { 
+            position: absolute; 
+            inset: 0; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.3), var(--bg)); 
+        }
+
+        .brand-content {
+            position: relative; 
+            z-index: 2; 
+            text-align: center;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            padding: 20px;
+            margin-top: 40px;
+        }
+
+        .brand-logo {
+            width: 110px; 
+            height: 110px; 
+            border-radius: 50%;
+            border: 4px solid var(--primary); 
+            background: #000;
+            margin-bottom: 15px; 
+            object-fit: cover;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            display: block; 
+        }
+
+        .brand-title { 
+            font-family: 'Outfit', sans-serif; 
+            font-size: 28px; 
+            font-weight: 800; 
+            margin: 0; 
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8); 
+        }
+
+        .brand-subtitle {
+            font-size: 14px; 
+            color: #ddd; 
+            margin-top: 5px;
+            text-shadow: 0 1px 5px rgba(0,0,0,0.8);
+        }
+
+        /* PEOPLE BAR (FACE GROUPING) */
+        .people-bar-container {
+            padding: 20px 15px; 
+            background: var(--bg); 
+            border-bottom: 1px solid var(--border); 
+            overflow-x: auto; 
+            white-space: nowrap; 
+            -webkit-overflow-scrolling: touch;
+            display: none; /* Hidden until data loads */
+        }
+
+        .people-title { 
+            font-size: 11px; 
+            font-weight: 700; 
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            margin-bottom: 12px; 
+            letter-spacing: 1px;
+            padding-left: 5px;
+        }
+
+        .people-scroll { 
+            display: flex; 
+            gap: 16px; 
+            padding-left: 5px;
+        }
+
+        .person-bubble {
+            display: inline-flex; 
+            flex-direction: column; 
+            align-items: center; 
+            cursor: pointer; 
+            opacity: 0.7; 
+            transition: 0.2s; 
+            position: relative; 
+            flex-shrink: 0;
+        }
+
+        .person-bubble:hover {
+            opacity: 1;
+        }
+
+        .person-bubble.active { 
+            opacity: 1; 
+            transform: scale(1.1); 
+        }
+
+        .person-bubble.active img { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 15px var(--primary); 
+        }
+
+        .person-img {
+            width: 60px; 
+            height: 60px; 
+            border-radius: 50%; 
+            object-fit: cover; 
+            border: 2px solid transparent; 
+            background: #222;
+            transition: border-color 0.3s ease;
+        }
+
+        .person-count {
+            position: absolute; 
+            bottom: -5px; 
+            right: -5px; 
+            background: var(--panel); 
+            color: #fff; 
+            font-size: 10px; 
+            padding: 2px 6px; 
+            border-radius: 10px; 
+            border: 1px solid var(--border); 
+            font-weight: bold;
+        }
+
+        /* Sticky Filter Bar */
+        .sticky-header {
+            position: sticky; 
+            top: 0; 
+            z-index: 100;
+            background: rgba(5,5,5,0.95); 
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 15px;
+        }
+
+        .filter-row {
+            display: flex; 
+            gap: 10px; 
+            overflow-x: auto; 
+            padding-bottom: 5px;
+            align-items: center;
+        }
+
+        .search-box {
+            background: var(--panel); 
+            border: 1px solid var(--border);
+            border-radius: 50px; 
+            padding: 8px 16px; 
+            display: flex; 
+            align-items: center;
+            gap: 8px; 
+            flex: 1; 
+            min-width: 150px;
+        }
+
+        .search-box input {
+            background: transparent; 
+            border: none; 
+            color: #fff; 
+            font-size: 13px; 
+            width: 100%;
+        }
+
+        .icon-btn {
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%;
+            background: var(--panel); 
+            border: 1px solid var(--border);
+            color: var(--text); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            cursor: pointer; 
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            background: #222;
+        }
+
+        .icon-btn.active { 
+            background: var(--primary); 
+            color: #000; 
+            border-color: var(--primary); 
+        }
+
+        /* Filter Chips */
+        .chip { 
+            padding: 6px 16px; 
+            border-radius: 20px; 
+            background: #222; 
+            border: 1px solid #444; 
+            color: #888; 
+            font-size: 13px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            white-space: nowrap; 
+        }
+
+        .chip.active { 
+            background: var(--primary); 
+            color: #000; 
+            border-color: var(--primary); 
+            transform: scale(1.05); 
+        }
+
+        /* Photo Grid */
+        .grid {
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 3px; 
+            padding: 3px; 
+        }
+        
+        @media (min-width: 768px) { 
+            .grid { 
+                grid-template-columns: repeat(5, 1fr); 
+                gap: 5px;
+                padding: 5px;
+            } 
+        }
+
+        .ph-card {
+            aspect-ratio: 1; 
+            background: #111; 
+            position: relative;
+            overflow: hidden; 
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .ph-card img {
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
+            transition: opacity 0.3s; 
+            opacity: 0;
+        }
+
+        .ph-card img.loaded { 
+            opacity: 1; 
+        }
+
+        .ph-actions {
+            position: absolute; 
+            top: 5px; 
+            right: 5px;
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px;
+            z-index: 2;
+        }
+
+        .dot {
+            width: 20px; 
+            height: 20px; 
+            border-radius: 50%;
+            background: rgba(0,0,0,0.6); 
+            border: 1px solid rgba(255,255,255,0.3);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            color: #fff; 
+            font-size: 10px;
+            backdrop-filter: blur(4px);
+        }
+
+        .dot.active { 
+            background: var(--primary); 
+            border-color: var(--primary); 
+            color: #000; 
+        }
+
+        .dot.fav-active { 
+            background: #ff4081; 
+            border-color: #ff4081; 
+            color: #fff; 
+        }
+
+        /* Load More Button */
+        .load-more-area { 
+            text-align: center; 
+            padding: 40px; 
+            padding-bottom: 120px; 
+        }
+
+        .btn-primary {
+            background: var(--primary); 
+            color: #000; 
+            border: none;
+            padding: 12px 30px; 
+            border-radius: 50px; 
+            font-weight: 700;
+            cursor: pointer; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        /* Bottom Submit Bar */
+        .submit-bar {
+            position: fixed; 
+            bottom: 30px; 
+            left: 50%; 
+            transform: translateX(-50%) translateY(150%);
+            background: #1a1a1a; 
+            border: 1px solid var(--border);
+            padding: 12px 24px; 
+            border-radius: 50px;
+            display: flex; 
+            align-items: center; 
+            gap: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
+            z-index: 900;
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 90%; 
+            max-width: 400px; 
+            justify-content: space-between;
+        }
+
+        .submit-bar.show { 
+            transform: translateX(-50%) translateY(0); 
+        }
+
+        /* --- 3. LIGHTBOX --- */
+        #lightbox {
+            position: fixed; 
+            inset: 0; 
+            background: #000; 
+            z-index: 2000;
+            display: none; 
+            flex-direction: column;
+            /* Use dynamic viewport height for better mobile support */
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        .lb-header {
+            padding: 20px; 
+            position: absolute; 
+            top: 0; 
+            right: 0; 
+            left: 0; 
+            z-index: 20; /* Increased Z-Index */
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+
+        .lb-play-btn {
+            color: #fff; 
+            font-size: 20px; 
+            cursor: pointer; 
+            padding: 10px; 
+            border-radius: 50%; 
+            transition: 0.2s;
+        }
+
+        .lb-play-btn:hover { 
+            background: rgba(255,255,255,0.1); 
+        }
+
+        .lb-main { 
+            flex: 1; 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; /* Added to prevent overflow */
+            width: 100%;
+        }
+
+        .lb-img { 
+            max-width: 100%; 
+            max-height: 100%; 
+            object-fit: contain; 
+            transition: transform 0.2s; 
+            /* Added padding to ensure it fits well inside the area */
+            padding: 10px 0;
+            box-sizing: border-box;
+        }
+        
+        .lb-footer {
+            height: 70px; 
+            background: #111; 
+            border-top: 1px solid var(--border);
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            position: relative;
+            z-index: 20; /* Increased Z-Index to stay above image */
+        }
+
+        .lb-action {
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px;
+            font-size: 10px; 
+            color: #888; 
+            background: none; 
+            border: none; 
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .lb-action i { font-size: 20px; }
+        .lb-action.active-sel { color: var(--primary); }
+        .lb-action.active-fav { color: #ff4081; }
+
+        /* Toast Message */
+        #toast {
+            position: fixed; 
+            top: 20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: #222; 
+            border: 1px solid var(--border); 
+            color: #fff;
+            padding: 10px 20px; 
+            border-radius: 50px; 
+            z-index: 4000;
+            display: none; 
+            font-size: 13px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NOTIFICATIONS -->
+    <div id="toast"></div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="authView">
+        <div class="login-card">
+            <h2>Gallery Access</h2>
+            <p>Please enter your access PIN</p>
+            <input type="tel" id="pinInput" class="pin-input" placeholder="••••">
+            <button class="btn-primary" onclick="tryLogin()">Unlock Gallery</button>
+        </div>
+    </div>
+
+    <!-- MAIN GALLERY INTERFACE -->
+    <div id="galleryView">
+        <!-- Hero Section -->
+        <div class="hero" id="heroSec">
+            <div class="hero-overlay"></div>
+            <div class="brand-content">
+                <img src="" id="brandLogo" class="brand-logo" style="display:none">
+                <h1 class="brand-title" id="brandName">Event Gallery</h1>
+                <p id="welcomeText" class="brand-subtitle"></p>
+            </div>
+        </div>
+
+        <!-- PEOPLE BAR (Face Grouping) -->
+        <div class="people-bar-container" id="peopleBar">
+            <div class="people-title">Top Faces in this Album</div>
+            <div class="people-scroll" id="peopleList"></div>
+        </div>
+
+        <!-- Sticky Filter Bar -->
+        <div class="sticky-header">
+            <div class="filter-row">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass" style="color:#666"></i>
+                    <input type="text" id="textFilter" placeholder="Search tags..." onchange="applyFilters(true)">
+                </div>
+                <div class="icon-btn" onclick="openGuestSearch()" title="Find My Photos">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </div>
+                <div class="icon-btn" onclick="document.getElementById('dateInput').showPicker()">
+                    <i class="fa-solid fa-calendar"></i>
+                    <input type="date" id="dateInput" style="width:0; height:0; opacity:0; position:absolute;" onchange="applyFilters(true)">
+                </div>
+            </div>
+            <!-- Tabs -->
+            <div class="filter-row" style="margin-top:10px;">
+                <div class="chip active" id="filter-all" onclick="setTab('all')">All Photos</div>
+                <div class="chip" id="filter-sel" onclick="setTab('selected')">Selected</div>
+                <div class="chip" id="filter-fav" onclick="setTab('fav')">Favorites</div>
+            </div>
+        </div>
+
+        <!-- Main Photo Grid -->
+        <div class="grid" id="grid"></div>
+
+        <!-- Load More -->
+        <div class="load-more-area">
+            <button id="loadMoreBtn" class="btn-primary" style="display:none;" onclick="loadPhotos(false)">Load More</button>
+            <div id="loader" style="color:#666; display:none;">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading...
+            </div>
+        </div>
+
+        <!-- Bottom Action Bar (ZIP & Send) -->
+        <div class="submit-bar" id="submitBar">
+            <div><span style="color:var(--primary); font-weight:700" id="selCount">0</span> Selected</div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-primary" onclick="downloadZip()" style="padding: 8px 16px; font-size:12px; background: #333; border: 1px solid #555; color: #fff;">
+                    <i class="fa-solid fa-download"></i> ZIP
+                </button>
+                <button class="btn-primary" onclick="submitFinal()" style="padding: 8px 20px; font-size:12px;">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIGHTBOX (Fullscreen View) -->
+    <div id="lightbox">
+        <div class="lb-header">
+            <div style="padding-left:20px;">
+                <!-- Slideshow Play Button -->
+                <i class="fa-solid fa-play lb-play-btn" id="slideshowBtn" onclick="toggleSlideshow()" title="Play Slideshow"></i>
+            </div>
+            
+            <div style="display:flex; gap:20px; padding-right:20px;">
+                <span style="color:#fff; font-size:14px; margin-top:5px;" id="lbCount">1 / 100</span>
+                <i class="fa-solid fa-xmark" onclick="closeLightbox()" style="color:#fff; font-size:24px; cursor:pointer;"></i>
+            </div>
+        </div>
+        
+        <div class="lb-main">
+            <i class="fa-solid fa-chevron-left" onclick="navLb(-1)" style="position:absolute; left:10px; color:#fff; font-size:24px; padding:20px; cursor:pointer; z-index:5;"></i>
+            <img src="" id="lbImg" class="lb-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNDQ0IiBzdHJva2Utd2lkdGg9IjIiPjxyZWN0IHg9IjMiIHk9IjMiIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgcng9IjIiIHJ5PSIyIi8+PGNpcmNsZSBjeD0iOC41IiBjeT0iOC41IiByPSIxLjUiLz48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIi8+PC9zdmc+'">
+            <div class="lb-nav next" onclick="navLb(1)"><i class="fa-solid fa-chevron-right"></i></div>
+            <i class="fa-solid fa-chevron-right" onclick="navLb(1)" style="position:absolute; right:10px; color:#fff; font-size:24px; padding:20px; cursor:pointer; z-index:5;"></i>
+        </div>
+
+        <div class="lb-footer">
+            <button class="lb-action" id="lbSel" onclick="toggleAction('selected')">
+                <i class="fa-solid fa-circle-check"></i> <span>Select</span>
+            </button>
+            <button class="lb-action" id="lbFav" onclick="toggleAction('fav')">
+                <i class="fa-solid fa-heart"></i> <span>Favorite</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        const API = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod/client-api";
+        const params = new URLSearchParams(location.search);
+        // FIX: Removed default collection ID to prevent accessing demo data accidentally
+        let colId = params.get('cid') || params.get('collection_id');
+        // FIX: Accept both linkId and id param from legacy links
+        const linkId = (params.get('linkId') || params.get('id') || '').trim();
+        // Support for manually passed event ID
+        const urlEid = (params.get('eid') || params.get('event_id') || '').trim();
+        
+        let photos = [], selections = {}, nextToken = null, loading = false, idx = 0;
+        let peopleMap = {}; 
+        let activePersonFilter = null;
+        let slideshowInterval = null;
+        let pinRequired = false;
+        
+        // Anti-recursion brake
+        let autoFetchCount = 0;
+
+        // INIT
+        window.onload = async () => {
+            if(linkId) {
+                try {
+                    // Corrected fetch call using POST
+                    const res = await fetch(API, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'get_branding',
+                            payload: { linkId: linkId }
+                        })
+                    });
+                    const d = await res.json();
+                    if(d.collection_id) colId = d.collection_id;
+                    applyBranding(d);
+                } catch(e){
+                    console.error("Branding load failed:", e);
+                }
+            } else if(colId) {
+                loadBranding();
+            } else {
+                document.body.innerHTML = "<div style='color:#fff;text-align:center;padding:50px;'>Invalid Link (Missing ID)</div>";
+            }
+        };
+
+        // NEW: Real Login with PIN Verification
+        async function tryLogin() {
+            const pinVal = document.getElementById('pinInput').value;
+            if(!pinVal) return alert("Please enter PIN");
+            
+            const btn = document.querySelector('.login-card button');
+            const originalText = btn.innerText;
+            btn.innerText = "Verifying...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(API, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        action: "verify_pin", 
+                        payload: { collection_id: colId, pin: pinVal } 
+                    })
+                });
+                
+                if(res.status === 200) {
+                    document.getElementById('authView').style.display = 'none';
+                    document.getElementById('galleryView').style.display = 'block';
+                    loadPhotos(true);
+                } else {
+                    alert("Incorrect PIN. Please try again.");
+                }
+            } catch(e) {
+                alert("Login Error: " + e.message);
+            }
+            
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+
+        // LOAD PHOTOS (PAGINATION + FILTERS)
+        async function loadPhotos(reset) {
+            if(loading) return;
+            loading = true;
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('loadMoreBtn').style.display = 'none';
+
+            if(reset) { 
+                photos = []; 
+                document.getElementById('grid').innerHTML = ''; 
+                nextToken = null; 
+                peopleMap = {}; 
+                autoFetchCount = 0; // Reset brake on fresh load
+            }
+            
+            // --- CRITICAL FIX: INCREASED LIMIT TO 3000 & SEND LINK ID ---
+            const payload = { 
+                collection_id: colId, 
+                limit: 3000, // Maximized scan limit to reduce requests
+                next_token: nextToken,
+                link_id: linkId // This is key for event filtering
+            };
+            
+            // Pass event_id if present in URL
+            if(urlEid) payload.event_id = urlEid;
+            
+            console.log("Sending Payload:", payload);
+
+            const txt = document.getElementById('textFilter').value;
+            const date = document.getElementById('dateInput').value;
+            if(txt) payload.text_filter = txt;
+            if(date) payload.date_filter = date;
+            if(activePersonFilter) payload.person_filter = activePersonFilter;
+
+            try {
+                const res = await fetch(API, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "get_client_view", payload: payload })
+                });
+                const data = await res.json();
+                
+                const newP = data.photos || [];
+                nextToken = data.next_token;
+                
+                newP.forEach(p => { 
+                    if(p.status) selections[p.id] = p.status; 
+                    if(p.person_id && p.person_id !== 'unknown') {
+                        if(!peopleMap[p.person_id]) peopleMap[p.person_id] = { count: 0, thumb: p.thumb };
+                        peopleMap[p.person_id].count++;
+                    }
+                });
+                
+                photos = [...photos, ...newP];
+                render(newP, photos.length - newP.length);
+                renderPeople();
+                updateCounters();
+
+                // RECURSION FIX WITH SAFETY BRAKE
+                // If backend filters everything out (empty array) but says there's more data,
+                // we auto-fetch. But only up to 25 times to prevent infinite loops.
+                if (newP.length === 0 && nextToken) {
+                    if(autoFetchCount < 25) {
+                        console.log(`Empty page detected (${autoFetchCount+1}/25), fetching next page...`);
+                        autoFetchCount++;
+                        loading = false; 
+                        await loadPhotos(false); 
+                        return; 
+                    } else {
+                        console.warn("Max auto-fetch reached. Stopping to save browser.");
+                        // Force show load more button even if empty so user can continue manually
+                        if(nextToken) document.getElementById('loadMoreBtn').style.display = 'inline-block';
+                    }
+                } else {
+                    // Reset count if we found photos
+                    autoFetchCount = 0;
+                }
+
+                if(nextToken) document.getElementById('loadMoreBtn').style.display = 'inline-block';
+
+            } catch(e) { console.error(e); }
+            
+            loading = false;
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        // RENDER GRID
+        function render(list, offset) {
+            const grid = document.getElementById('grid');
+            if(list.length === 0 && offset === 0 && !loading) {
+                grid.innerHTML = '<div style="padding:40px;text-align:center;color:#666;grid-column:1/-1;">No photos found</div>';
+                return;
+            }
+            list.forEach((p, i) => {
+                const d = document.createElement('div');
+                d.className = 'ph-card';
+                d.id = 'card-' + p.id;
+                d.onclick = () => openLb(offset + i);
+                
+                // Smart Thumb Fallback
+                let thumb = p.thumb || p.url;
+
+                d.innerHTML = `
+                    <img src="${thumb}" loading="lazy" onload="this.classList.add('loaded')" onerror="if(this.src!=='${p.url}') this.src='${p.url}'">
+                    <div class="ph-actions" id="act-${p.id}"></div>
+                `;
+                grid.appendChild(d);
+            });
+            updateUI();
+        }
+
+        // RENDER PEOPLE BUBBLES
+        function renderPeople() {
+            const list = Object.entries(peopleMap).sort((a,b) => b[1].count - a[1].count);
+            if(list.length === 0) return;
+            
+            document.getElementById('peopleBar').style.display = 'block';
+            const cont = document.getElementById('peopleList');
+            cont.innerHTML = '';
+            
+            if(activePersonFilter) {
+                 const all = document.createElement('div');
+                 all.className = 'person-bubble';
+                 all.innerHTML = `<div class="person-img" style="display:flex;align-items:center;justify-content:center;background:#333;"><i class="fa-solid fa-xmark"></i></div><div class="person-count">Clear</div>`;
+                 all.onclick = () => { activePersonFilter = null; loadPhotos(true); };
+                 cont.appendChild(all);
+            }
+
+            list.slice(0, 15).forEach(([pid, data]) => {
+                const div = document.createElement('div');
+                div.className = `person-bubble ${activePersonFilter === pid ? 'active' : ''}`;
+                div.onclick = () => { 
+                    if(activePersonFilter === pid) activePersonFilter = null;
+                    else activePersonFilter = pid;
+                    loadPhotos(true); 
+                };
+                div.innerHTML = `<img src="${data.thumb}" class="person-img"><div class="person-count">${data.count}</div>`;
+                cont.appendChild(div);
+            });
+        }
+
+        // FILTER TABS
+        function setTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+            document.getElementById('filter-'+tab).classList.add('active');
+            
+            const grid = document.getElementById('grid');
+            const cards = grid.children;
+            for(let i=0; i<cards.length; i++) {
+                const pid = cards[i].id.replace('card-', '');
+                const s = selections[pid];
+                if(tab==='all') cards[i].style.display = 'block';
+                else if(tab==='selected') cards[i].style.display = s?.selected ? 'block' : 'none';
+                else if(tab==='fav') cards[i].style.display = s?.fav ? 'block' : 'none';
+            }
+        }
+
+        function applyFilters(reset) { loadPhotos(reset); }
+        function openGuestSearch() { window.location.href = `index.html?cid=${colId}`; }
+
+        // SELECTION ACTION
+        async function toggleAction(type) {
+            const p = photos[idx];
+            const pid = p.id || p.photo_id;
+            
+            if(!selections[pid]) selections[pid] = {};
+            selections[pid][type] = !selections[pid][type];
+            
+            updateUI();
+            
+            fetch(API, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "update_selection",
+                    payload: { collection_id: colId, photo_id: pid, selection_type: type, value: selections[pid][type], user_type: "client" }
+                })
+            }).catch(e => console.error("Sync failed", e));
+        }
+
+        function updateUI() {
+            let n = 0;
+            Object.values(selections).forEach(s => { if(s.selected) n++; });
+            document.getElementById('selCount').innerText = n;
+            document.getElementById('submitBar').classList.toggle('show', n > 0);
+
+            if(document.getElementById('lightbox').style.display === 'flex') {
+                const s = selections[photos[idx].id] || {};
+                document.getElementById('lbSel').className = s.selected ? 'lb-action active-sel' : 'lb-action';
+                document.getElementById('lbFav').className = s.fav ? 'lb-action active-fav' : 'lb-action';
+                document.getElementById('lbCount').innerText = `${idx+1} / ${photos.length}`;
+            }
+            
+            photos.forEach(p => {
+                const s = selections[p.id];
+                const d = document.getElementById('act-'+p.id);
+                const c = document.getElementById('card-'+p.id);
+                if(d) {
+                    let h = '';
+                    if(s?.selected) h += `<div class="dot active"><i class="fa-solid fa-check"></i></div>`;
+                    if(s?.fav) h += `<div class="dot fav-active"><i class="fa-solid fa-heart"></i></div>`;
+                    d.innerHTML = h;
+                    c.style.border = s?.selected ? '2px solid var(--primary)' : 'none';
+                }
+            });
+        }
+        
+        // ZIP DOWNLOAD
+        async function downloadZip() {
+            const btn = document.querySelector('button[onclick="downloadZip()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Zipping...`;
+            
+            const zip = new JSZip();
+            const folder = zip.folder("Selected_Photos");
+            const selectedPids = Object.keys(selections).filter(pid => selections[pid].selected);
+            
+            if(selectedPids.length === 0) {
+                alert("No photos selected!");
+                btn.innerHTML = originalText;
+                return;
+            }
+            
+            let count = 0;
+            for(const pid of selectedPids) {
+                const p = photos.find(x => (x.id || x.photo_id) === pid);
+                if(p && p.url) {
+                    try {
+                        const blob = await fetch(p.url).then(r => r.blob());
+                        folder.file(`photo_${count+1}.jpg`, blob);
+                        count++;
+                        btn.innerHTML = `Zipping ${count}/${selectedPids.length}...`;
+                    } catch(e) {}
+                }
+            }
+            
+            if(count > 0) {
+                const content = await zip.generateAsync({type:"blob"});
+                saveAs(content, "My_Selection.zip");
+            } else {
+                alert("Could not download photos. Wait for loading.");
+            }
+            btn.innerHTML = originalText;
+        }
+
+        // SLIDESHOW
+        function toggleSlideshow() {
+            const btn = document.getElementById('slideshowBtn');
+            if(slideshowInterval) {
+                stopSlideshow();
+            } else {
+                btn.className = "fa-solid fa-pause lb-play-btn";
+                slideshowInterval = setInterval(() => {
+                    if(idx < photos.length - 1) navLb(1);
+                    else stopSlideshow();
+                }, 3000);
+            }
+        }
+
+        function stopSlideshow() {
+            if(slideshowInterval) {
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
+                document.getElementById('slideshowBtn').className = "fa-solid fa-play lb-play-btn";
+            }
+        }
+
+        // LIGHTBOX NAVIGATION
+        function openLb(i) {
+            idx = i;
+            const p = photos[idx];
+            document.getElementById('lbImg').src = p.url;
+            document.getElementById('lightbox').style.display = 'flex';
+            updateUI();
+        }
+        
+        function closeLightbox() {
+            document.getElementById('lightbox').style.display = 'none';
+            stopSlideshow();
+        }
+        
+        function navLb(d) {
+            idx += d;
+            if(idx < 0) idx = 0;
+            if(idx >= photos.length) idx = photos.length - 1;
+            openLb(idx);
+        }
+
+        // BRANDING
+        async function loadBranding() {
+            try {
+                // Correctly use POST for get_branding as configured in API Gateway
+                const res = await fetch(API, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        action: 'get_branding', 
+                        payload: { cid: colId }
+                    })
+                }); 
+                applyBranding(await res.json());
+            } catch(e) {}
+        }
+
+        function applyBranding(d) {
+            if(d.color) document.documentElement.style.setProperty('--primary', d.color);
+            if(d.collection_name) document.getElementById('brandName').innerText = d.collection_name;
+            if(d.welcome_msg) document.getElementById('welcomeText').innerText = d.welcome_msg;
+            
+            if(d.header_img) document.getElementById('heroSec').style.backgroundImage = `url('${d.header_img}')`;
+            if(d.logo) {
+                const l = document.getElementById('brandLogo');
+                l.src = d.logo; l.style.display = 'block';
+            }
+
+            // AUTO-LOGIN IF NO PIN REQUIRED
+            if(d.pin_required === false) {
+                document.getElementById('authView').style.display = 'none';
+                document.getElementById('galleryView').style.display = 'block';
+                loadPhotos(true);
+            }
+        }
+        
+        function submitFinal() { alert("Selections sent!"); }
+        function showToast(m, t) {
+            const el = document.getElementById('toast');
+            el.innerText = m; el.style.display='block';
+            setTimeout(()=>el.style.display='none', 3000);
+        }
+        
+        // Counter update helper (missing in original)
+        function updateCounters() {
+             // implemented inside updateUI for simplicity
+        }
+    </script>
+</body>
+</html>

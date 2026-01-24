@@ -698,7 +698,6 @@
 
   /* ================= STATE MANAGEMENT ================= */
   let idToken = localStorage.getItem('idToken');
-  let accessToken = localStorage.getItem('accessToken');
   let curCol = null;
   let allCols = [];
   let curEvents = [];
@@ -760,7 +759,7 @@
       return;
     }
 
-    if(!idToken && !accessToken) {
+    if(!idToken) {
       showView('vLogin');
     } else {
       $('#btnLogout').classList.remove('hidden');
@@ -773,11 +772,10 @@
         $('#impName').textContent = localStorage.getItem('impersonateStudioName') || localStorage.getItem('impersonateEmail') || impUserId || '-';
       }
 
-      // Check if Super Admin (groups/email)  // FIX: groups claim is in Access Token
-      const payloadId = parseJwt(idToken || '');
-      const payloadAcc = parseJwt(accessToken || idToken || '');
-      const groups = payloadAcc['cognito:groups'] || payloadAcc['groups'] || payloadId['cognito:groups'] || payloadId['groups'] || [];
-      const email = (payloadId.email || payloadAcc.email || '').toLowerCase();
+      // Check if Super Admin (groups/email)
+      const payload = parseJwt(idToken);
+      const groups = payload['cognito:groups'] || payload['groups'] || [];
+      const email = (payload.email || '').toLowerCase();
 
       // Basic Super Admin Detection
       const gArr = Array.isArray(groups) ? groups : (typeof groups === 'string' ? groups.split(',') : []);
@@ -824,7 +822,6 @@
       const data = await res.json();
       if(data.id_token){
         localStorage.setItem('idToken', data.id_token);
-        if(data.access_token) localStorage.setItem('accessToken', data.access_token);
         // clear impersonation on fresh login
         localStorage.removeItem('impersonateUserId');
         localStorage.removeItem('impersonateStudioName');
@@ -845,7 +842,7 @@
   /* ================= IMPROVED API HELPER ================= */
   async function api(path, body){
     // STANDARD BEHAVIOR: Use Admin ID Token. No fake impersonation tokens.
-    const tokenToUse = accessToken || idToken;
+    const tokenToUse = idToken;
 
     const opts = {
       method: 'POST',
@@ -905,7 +902,7 @@
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${accessToken || idToken}` 
+            'Authorization': `Bearer ${idToken}` 
         },
         body: JSON.stringify(body)
     });

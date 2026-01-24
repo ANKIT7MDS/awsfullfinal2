@@ -920,15 +920,22 @@
     } else if (action === 'global_stats') {
         body.action = 'global_stats';
     }
+    // Try ID token first (best for API Gateway JWT authorizer), then fallback to Access token if needed
+    const primaryToken = idToken || accessToken || "";
+    const fallbackToken = (accessToken && accessToken !== primaryToken) ? accessToken : (idToken && idToken !== primaryToken ? idToken : "");
 
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${accessToken || idToken}` 
-        },
-        body: JSON.stringify(body)
-    });
+    async function _doFetch(tokenStr){
+        const hdrs = { 'Content-Type': 'application/json' };
+        if(tokenStr) hdrs['Authorization'] = `Bearer ${tokenStr}`;
+        return fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(body) });
+    }
+
+    let res = await _doFetch(primaryToken);
+
+    // If authorizer rejects token type/audience, retry once with fallback token
+    if(res.status === 401 && fallbackToken){
+        res = await _doFetch(fallbackToken);
+    }
 
     if(!res.ok) {
         let msg = res.statusText;

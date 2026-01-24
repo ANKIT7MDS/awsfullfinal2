@@ -178,8 +178,12 @@
       
       <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Plan</label>
       <select id="eduPlan" style="margin-bottom:15px;">
-          <option value="basic">Basic (50GB)</option>
-          <option value="pro">Pro (500GB)</option>
+
+          <option value="trial">Trial (2GB / 14 Days)</option>
+          <option value="starter">Starter (50GB)</option>
+          <option value="basic">Basic (200GB)</option>
+          <option value="pro">Pro (1TB)</option>
+          <option value="studio">Studio (5TB)</option>
       </select>
 
       <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Account Status</label>
@@ -315,9 +319,13 @@
             <div style="flex:1">
                 <label class="text-sm text-muted">Plan</label>
                 <select id="nuPlan">
-                  <option value="basic">Basic (50GB)</option>
-                  <option value="pro">Pro (500GB)</option>
-                </select>
+
+          <option value="trial">Trial (2GB / 14 Days)</option>
+          <option value="starter">Starter (50GB)</option>
+          <option value="basic">Basic (200GB)</option>
+          <option value="pro">Pro (1TB)</option>
+          <option value="studio">Studio (5TB)</option>
+      </select>
             </div>
             <!-- Added Temporary Password Field -->
             <div style="flex:1">
@@ -696,8 +704,21 @@
   const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
   const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
 
-  /* ================= STATE MANAGEMENT ================= */
+  
+  /* ================= PLAN LABEL HELPERS ================= */
+  function prettyPlan(p){
+    const x = String(p||"").toLowerCase();
+    if(x==="trial"||x==="free") return "Trial (2GB/14D)";
+    if(x==="starter") return "Starter (50GB)";
+    if(x==="basic") return "Basic (200GB)";
+    if(x==="pro") return "Pro (1TB)";
+    if(x==="studio"||x==="enterprise") return "Studio (5TB)";
+    return p || "-";
+  }
+
+/* ================= STATE MANAGEMENT ================= */
   let idToken = localStorage.getItem('idToken');
+  let accessToken = localStorage.getItem('accessToken');
   let curCol = null;
   let allCols = [];
   let curEvents = [];
@@ -759,7 +780,7 @@
       return;
     }
 
-    if(!idToken) {
+    if(!idToken && !accessToken) {
       showView('vLogin');
     } else {
       $('#btnLogout').classList.remove('hidden');
@@ -772,14 +793,15 @@
         $('#impName').textContent = localStorage.getItem('impersonateStudioName') || localStorage.getItem('impersonateEmail') || impUserId || '-';
       }
 
-      // Check if Super Admin (groups/email)
-      const payload = parseJwt(idToken);
-      const groups = payload['cognito:groups'] || payload['groups'] || [];
-      const email = (payload.email || '').toLowerCase();
+      // Check if Super Admin (groups/email)  // FIX: groups claim is in Access Token
+      const payloadId = parseJwt(idToken || '');
+      const payloadAcc = parseJwt(accessToken || idToken || '');
+      const groups = payloadAcc['cognito:groups'] || payloadAcc['groups'] || payloadId['cognito:groups'] || payloadId['groups'] || [];
+      const email = (payloadId.email || payloadAcc.email || '').toLowerCase();
 
       // Basic Super Admin Detection
       const gArr = Array.isArray(groups) ? groups : (typeof groups === 'string' ? groups.split(',') : []);
-      const ok = gArr.some(g => String(g).toLowerCase().includes('master') || String(g).toLowerCase().includes('admin')) || email === 'admin@eventlens.com';
+      const ok = gArr.some(g => String(g).toLowerCase().includes('master') || String(g).toLowerCase().includes('admin')) || ['admin@eventlens.com','anusonimds@gmail.com'].includes(email);
       if(ok) {
         isSuperAdmin = true;
         $('#saBadge').classList.remove('hidden');
@@ -822,6 +844,7 @@
       const data = await res.json();
       if(data.id_token){
         localStorage.setItem('idToken', data.id_token);
+        if(data.access_token) localStorage.setItem('accessToken', data.access_token);
         // clear impersonation on fresh login
         localStorage.removeItem('impersonateUserId');
         localStorage.removeItem('impersonateStudioName');
@@ -842,7 +865,7 @@
   /* ================= IMPROVED API HELPER ================= */
   async function api(path, body){
     // STANDARD BEHAVIOR: Use Admin ID Token. No fake impersonation tokens.
-    const tokenToUse = idToken;
+    const tokenToUse = accessToken || idToken;
 
     const opts = {
       method: 'POST',
@@ -902,7 +925,7 @@
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${idToken}` 
+            'Authorization': `Bearer ${accessToken || idToken}` 
         },
         body: JSON.stringify(body)
     });

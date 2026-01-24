@@ -291,7 +291,6 @@
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">GUEST SEARCHES</div><div class="kpi-val" id="saTotalGuestSearch">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">SEARCH RESULTS</div><div class="kpi-val" id="saTotalSearchResults">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div></div>
-          <div class="kpi-box"><div class="text-sm" style="font-size:12px; opacity:.85;">APPROX BILL (₹)</div><div class="kpi-val" id="saApproxBill">-</div></div>
         </div>
 
         <!-- Add User Form (Updated with Account Type and Dynamic Placeholder) -->
@@ -1195,7 +1194,8 @@
       
       // Ensure bytes are parsed correctly even if string
       const usedBytes = parseInt(r.used_data_bytes || r.total_storage_used || 0, 10);
-      $('#saTotalUsedData').textContent = formatBytes(usedBytes);
+      const approxBill = computeApproxBillINR(usedBytes, Number(r.total_photos_uploaded||0), Number(r.total_guest_searches||0));
+      $('#saTotalUsedData').textContent = `${formatBytes(usedBytes)} | ₹${approxBill.toFixed(2)}`;
     } catch(e) {
       if(e.message.includes("AccessDenied")) {
           console.warn("Permission Error on Backend:", e);
@@ -1386,12 +1386,14 @@
       const colCount = Array.isArray(u.collections) ? u.collections.length : (Number.isFinite(Number(u.collections)) ? Number(u.collections) : 0);
       const photoCount = Number.isFinite(Number(u.photos_uploaded)) ? Number(u.photos_uploaded) : 0;
 
+      const usedRowBytes = Number(u.used_data_bytes || u.used_storage_bytes || 0);
+      const rowBill = computeApproxBillINR(usedRowBytes, photoCount, Number(u.guest_searches||0));
+
       const counts = `
         <span class="tag-pill"><i class="fa-solid fa-layer-group"></i> ${colCount||0}</span>
         <span class="tag-pill"><i class="fa-solid fa-images"></i> ${photoCount||0}</span>
-      
-        <span class="tag-pill" style="border-color:#00e676; color:#00e676; background:rgba(0,230,118,0.08);"><i class="fa-solid fa-indian-rupee-sign"></i> ${ (function(){ try{ const b=computeApproxBillINR({ usedBytes:(u.used_data_bytes||0), photosUploaded:photoCount, guestSearches:(u.guest_searches||0) }).totalINR; return Math.round(b||0).toLocaleString(\'en-IN\'); }catch(e){ return \'0\'; } })() }</span>
-`;
+        <span class="tag-pill" style="border-color:#00e676; color:#00e676;"><i class="fa-solid fa-indian-rupee-sign"></i> ${ (rowBill||0).toFixed(2) }</span>
+      `;
 
       // Conditional Login Button
       const loginBtn = isPolitical
@@ -2477,83 +2479,37 @@
   /* ================= UTILS ================= */
   function escapeHtml(text) { if (text === undefined || text === null) return ''; return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
-
-
-  /* ================= APPROX BILL (Super Admin) ================= */
-  // NOTE: Internal approximate cost estimator for monitoring only.
-  // Uses rough pricing assumptions (can be tuned later).
-  const USD_TO_INR = 91;
-
-  function formatINR(n){
-    try {
-      return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n||0));
-    } catch(e){
-      return '₹' + Math.round(Number(n||0)).toLocaleString('en-IN');
-    }
-  }
-
-  // Returns { totalINR, breakdown:{...} }
-  function computeApproxBillINR({ usedBytes=0, photosUploaded=0, guestSearches=0 } = {}){
-    // ====== Assumptions (tune anytime) ======
-    // S3 Standard storage ~ $0.023 per GB-month (Mumbai similar range). We estimate current monthly storage.
-    const S3_USD_PER_GB_MONTH = 0.023;
-
-    // Upload requests: assume 1 PUT per photo (main object) + 1 PUT for thumbnail = 2 PUTs.
-    // S3 PUT ~$0.005 per 1000 requests.
-    const S3_PUT_USD_PER_1K = 0.005;
-
-    // GET requests: gallery views / downloads. Hard to know; approximate 5 GET per photo search result page.
-    // S3 GET ~$0.0004 per 1000 requests.
-    const S3_GET_USD_PER_1K = 0.0004;
-
-    // Lambda requests: used for upload-url generation + processing triggers (rough).
-    // $0.20 per 1M requests (request charge). Compute is tiny for your usage.
-    const LAMBDA_USD_PER_1M_REQ = 0.20;
-
-    // Rekognition/Face search: assume 1 search per guestSearch (you use selfie search).
-    // Rekognition SearchFacesByImage pricing varies; take a safe approx $0.001 per search.
-    const REKOG_USD_PER_SEARCH = 0.001;
-
-    // ====== Calculations ======
-    const usedGB = (Number(usedBytes)||0) / (1024*1024*1024);
-
-    const s3StorageUSD = usedGB * S3_USD_PER_GB_MONTH;
-
-    const putReq = (Number(photosUploaded)||0) * 2;
-    const s3PutUSD = (putReq / 1000) * S3_PUT_USD_PER_1K;
-
-    // Rough hint: each guest search causes some GETs
-    const getReq = (Number(guestSearches)||0) * 25;
-    const s3GetUSD = (getReq / 1000) * S3_GET_USD_PER_1K;
-
-    // Lambda rough: 3 calls per upload photo (presign + trigger + index) + 2 per guest search
-    const lambdaReq = (Number(photosUploaded)||0) * 3 + (Number(guestSearches)||0) * 2;
-    const lambdaUSD = (lambdaReq / 1_000_000) * LAMBDA_USD_PER_1M_REQ;
-
-    const rekogUSD = (Number(guestSearches)||0) * REKOG_USD_PER_SEARCH;
-
-    const totalUSD = s3StorageUSD + s3PutUSD + s3GetUSD + lambdaUSD + rekogUSD;
-    const totalINR = totalUSD * USD_TO_INR;
-
-    return {
-      totalINR,
-      breakdown: {
-        usedGB,
-        s3StorageUSD,
-        s3PutUSD,
-        s3GetUSD,
-        lambdaUSD,
-        rekogUSD,
-        totalUSD
-      }
-    };
-  }
   function formatBytes(bytes=0){
     bytes = Number(bytes||0);
     if(!bytes) return '0 B';
     const k=1024, sizes=['Bytes','KB','MB','GB','TB'];
     const i=Math.floor(Math.log(bytes)/Math.log(k));
     return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
+  }
+
+  function computeApproxBillINR(usedBytes=0, uploads=0, searches=0){
+    // Very rough estimate for safety-checking profitability (NOT an AWS invoice)
+    usedBytes = Number(usedBytes||0);
+    uploads = Number(uploads||0);
+    searches = Number(searches||0);
+
+    const gb = usedBytes / (1024*1024*1024);
+
+    // S3 Standard (approx) per GB-month in INR (Mumbai region varies; keep approx)
+    const INR_PER_GB_MONTH = 2.10; // ~ $0.025/GB-month * 84 INR/USD
+
+    // Request estimates (approx)
+    const PUT_1000_INR = 0.42; // ~ $0.005/1000 * 84
+    const GET_1000_INR = 0.03; // ~ $0.0004/1000 * 84
+
+    const storageCost = gb * INR_PER_GB_MONTH;
+
+    // Assume 1 PUT per photo upload, and ~20 GETs per guest search (thumbs, zips etc.)
+    const putCost = (uploads/1000) * PUT_1000_INR;
+    const getCost = ((searches*20)/1000) * GET_1000_INR;
+
+    const total = storageCost + putCost + getCost;
+    return isFinite(total) ? Math.max(0, total) : 0;
   }
   </script>
 

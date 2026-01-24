@@ -1,0 +1,2420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <!-- FIX ADDED: Prevents 403 Forbidden on S3 Images -->
+  <meta name="referrer" content="no-referrer" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>EventLens Pro – Admin Console</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" crossorigin href="https://fonts.gstatic.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    :root { --bg-dark: #050505; --bg-panel: #111111; --primary: #00e676; --primary-dim: rgba(0, 230, 118, 0.15); --text-main: #ffffff; --text-muted: #a1a1aa; --border-color: #27272a; --radius-md: 12px; }
+    /* Political Theme Variables (Saffron) */
+    .theme-political { --primary: #ff6a00 !important; --primary-dim: rgba(255, 106, 0, 0.15) !important; }
+
+    * { box-sizing: border-box; outline: none; }
+    body { margin: 0; background: var(--bg-dark); color: var(--text-main); font-family: "Plus Jakarta Sans", sans-serif; font-size: 14px; min-height: 100vh; overflow-x: hidden; }
+
+    /* UTILS & COMPONENTS */
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .logo { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .logo span { color: var(--primary); }
+    .btn { border: none; padding: 10px 20px; border-radius: 50px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 13px; text-decoration: none; }
+    .btn.primary { background: var(--primary); color: #000; }
+    .btn.secondary { background: #27272a; color: #fff; border: 1px solid var(--border-color); }
+    .btn.danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    input, select, textarea { background: #000; border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 8px; width: 100%; font-family: inherit; font-size: 14px; transition: 0.2s; }
+
+    /* COLLECTIONS LIST */
+    .col-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+    .col-card {
+        background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;
+        transition: 0.2s; position: relative; cursor: pointer;
+    }
+    .col-card:hover { border-color: var(--primary); transform: translateY(-3px); background: rgba(255,255,255,0.05); }
+    .col-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .col-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; margin-bottom: 20px; }
+    .col-actions { display: flex; gap: 10px; margin-top: auto; }
+    .col-actions .btn { flex: 1; justify-content: center; }
+
+    /* TABLES */
+    .styled-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    .styled-table th { text-align: left; padding: 12px 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .styled-table td { background: rgba(255,255,255,0.03); padding: 16px; vertical-align: middle; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+    .styled-table tr td:first-child { border-left: 1px solid var(--border-color); border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
+    .styled-table tr td:last-child { border-right: 1px solid var(--border-color); border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
+    .styled-table tr:hover td { background: rgba(255,255,255,0.06); }
+
+    /* THUMBNAILS FIX */
+    .photo-thumb-cell { 
+      width: 60px !important; 
+      height: 60px !important; 
+      min-width: 60px;
+      border-radius: 8px; 
+      overflow: hidden; 
+      position: relative; 
+      border: 1px solid #444; 
+      cursor: zoom-in; 
+    }
+    .photo-thumb-cell img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+      transition: transform 0.2s; 
+    }
+    .photo-thumb-cell:hover img { transform: scale(1.1); }
+
+    /* LEAD HISTORY */
+    .lead-row { cursor: pointer; transition: background 0.2s; }
+    .lead-row:hover { background: rgba(255,255,255,0.05); }
+    .lead-history { display: none; }
+    .lead-history.open { display: table-row; animation: fadeIn 0.3s; }
+    .hist-item { display: flex; align-items: center; gap: 10px; background: #222; padding: 8px; border-radius: 8px; border: 1px solid #333; margin-bottom: 5px; }
+
+    /* LINK HISTORY */
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .status-active { background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); }
+    .status-disabled { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .status-political { background: rgba(255, 106, 0, 0.15); color: #ff6a00; border: 1px solid rgba(255, 106, 0, 0.3); }
+
+    /* PREVIEW CONTAINER */
+    .preview-frame { border: 4px solid #333; border-radius: 16px; overflow: hidden; background: #000; margin: 0 auto; transition: all 0.3s ease; position: relative; }
+    .preview-frame.mobile { width: 320px; height: 600px; border-width: 8px 4px; }
+    .preview-frame.desktop { width: 100%; height: 500px; border-width: 4px; }
+    .prev-header { position: relative; background-size: cover; background-position: center; transition: height 0.3s; display: flex; align-items: flex-end; justify-content: center; background-color: #222; }
+    .prev-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8)); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 15px; }
+    .prev-logo { border-radius: 50%; border: 2px solid var(--primary); object-fit: cover; margin-bottom: 8px; background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: all 0.3s; }
+    .prev-title { font-size: 18px; font-weight: 800; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+    .prev-welcome { font-size: 10px; text-align: center; color: rgba(255,255,255,0.8); margin-top: 4px; }
+
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px; }
+    .tab { padding: 10px 24px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-weight: 600; border-radius: 20px; white-space: nowrap; transition: 0.2s; }
+    .tab.active { color: #000; background: var(--primary); }
+    .tab-content { display: none; } .tab-content.active { display: block; }
+    .view { display: none; } .view.show { display: block; } .hidden { display: none !important; }
+
+    /* GALLERY & UPLOAD */
+    .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 16px; content-visibility: auto; contain-intrinsic-size: 140px; }
+    .ph-card { aspect-ratio: 1; background: #1a1a1a; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; transform: translateZ(0); }
+    .ph-card img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; background-color: #222; }
+    .ph-card img.loaded { opacity: 1; }
+    .ph-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); opacity: 0; transition: 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
+    .ph-card:hover .ph-overlay { opacity: 1; }
+
+    /* UTILS */
+    .kpi-box { background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
+    .kpi-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); opacity: 0.5; }
+    .kpi-val { font-size: 32px; font-weight: 800; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; }
+    .settings-group { border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); margin-bottom: 20px; }
+    .settings-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .tag-pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:11px; border:1px solid #333; background: rgba(255,255,255,0.05); color:#ddd; }
+    .text-muted { color: var(--text-muted); }
+    .text-sm { font-size: 12px; }
+    .font-bold { font-weight: 800; }
+
+    /* LIGHTBOX */
+    .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+    .lightbox.open { display: flex; opacity: 1; }
+    .lb-img { max-width: 80vw; max-height: 80vh; border-radius: 4px; }
+    .lb-meta {
+        position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 600px;
+        background: rgba(0,0,0,0.7); padding: 15px; border-radius: 12px; color: #fff;
+        backdrop-filter: blur(5px); text-align: left; border: 1px solid #333; font-size: 13px; display: none;
+    }
+    .lb-meta h3 { margin: 0 0 10px 0; font-size: 15px; color: var(--primary); border-bottom: 1px solid #444; padding-bottom: 5px; }
+    .lb-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+    .lb-tag { background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+    .lb-close { position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 32px; cursor: pointer; z-index: 1001; }
+    .lb-controls { position: absolute; bottom: 20px; display: flex; gap: 20px; z-index: 1001; }
+
+    #toast { position: fixed; top: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 16px 24px; border-radius: 12px; z-index: 9999; transform: translateX(150%); transition: 0.4s; border: 1px solid var(--border-color); }
+    #toast.show { transform: translateX(0); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* UNIVERSAL MODAL OVERLAY */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .modal-box { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; width: 90%; max-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+    .modal-head { margin-top: 0; color: var(--primary); margin-bottom: 15px; font-size: 1.25rem; font-weight: 700; }
+  </style>
+</head>
+
+<body>
+  <div id="toast"></div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close" onclick="closeLightbox()">×</button>
+    <img class="lb-img" id="lbImage" src="" />
+    <div class="lb-meta" id="lbMeta"></div>
+    <div class="lb-controls">
+      <button class="btn secondary lb-nav-btn hidden" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+      <button class="btn secondary" onclick="downloadCurrentPhoto()">Download</button>
+      <button class="btn danger" id="lbDeleteBtn" onclick="deleteCurrentPhoto()">Delete</button>
+      <button class="btn secondary lb-nav-btn hidden" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+  </div>
+
+  <!-- EDIT USER MODAL -->
+  <div id="editUserModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h3 class="modal-head"><i class="fa-solid fa-user-pen"></i> Edit Account</h3>
+      <input type="hidden" id="eduId">
+      
+      <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Plan</label>
+      <select id="eduPlan" style="margin-bottom:15px;">
+          <option value="basic">Basic (50GB)</option>
+          <option value="pro">Pro (500GB)</option>
+      </select>
+
+      <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Account Status</label>
+      <select id="eduStatus" style="margin-bottom:15px;">
+          <option value="active">Active</option>
+          <option value="disabled">Disabled</option>
+      </select>
+
+      <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Expiry Date</label>
+      <input type="date" id="eduExpiry" style="margin-bottom:25px;">
+
+      <div class="row" style="justify-content:flex-end; gap:10px;">
+          <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
+          <button class="btn primary" onclick="saveEditUser()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE USER MODAL -->
+  <div id="deleteUserModal" class="modal-overlay hidden">
+    <div class="modal-box" style="border-color: #ef4444;">
+      <h3 class="modal-head" style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> Delete User</h3>
+      <input type="hidden" id="delUserId">
+      <p class="text-muted" style="margin-bottom:20px;">What kind of deletion do you want to perform?</p>
+      
+      <div style="display:flex; flex-direction:column; gap:15px; margin-bottom:25px;">
+          <label style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; display:flex; gap:10px; cursor:pointer;">
+              <input type="radio" name="delType" value="account_only" checked>
+              <div>
+                  <div style="font-weight:700; color:#fff">Delete Account Only</div>
+                  <div class="text-sm text-muted">Removes login access. Data remains in S3/DB.</div>
+              </div>
+          </label>
+          <label style="background:rgba(239,68,68,0.1); padding:10px; border-radius:8px; display:flex; gap:10px; cursor:pointer; border:1px solid rgba(239,68,68,0.3);">
+              <input type="radio" name="delType" value="delete_all">
+              <div>
+                  <div style="font-weight:700; color:#ef4444">Delete Everything</div>
+                  <div class="text-sm text-muted" style="color:#fca5a5">Wipes photos, collections, and account. Irreversible.</div>
+              </div>
+          </label>
+      </div>
+
+      <div class="row" style="justify-content:flex-end; gap:10px;">
+          <button class="btn secondary" onclick="closeDeleteModal()">Cancel</button>
+          <button class="btn danger" onclick="confirmDeleteUser()">Confirm Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="mainWrap">
+    <div class="topbar">
+      <div class="logo"><i class="fa-solid fa-camera-retro"></i> EventLens <span>Pro</span></div>
+      <div class="row">
+        <!-- Impersonation Badge -->
+        <div class="text-sm hidden" id="impBadge" style="background: rgba(59,130,246,0.18); color:#93c5fd; padding: 6px 12px; border-radius: 20px; border:1px solid rgba(59,130,246,0.35);">
+          <i class="fa-solid fa-user-shield"></i> Impersonating: <span id="impName">-</span>
+        </div>
+        <!-- Super Admin Badge -->
+        <div class="text-sm hidden" id="saBadge" style="background: rgba(255, 64, 129, 0.2); color:#ff4081; padding: 6px 12px; border-radius: 20px; border:1px solid rgba(255, 64, 129, 0.4);">
+          <i class="fa-solid fa-shield-halved"></i> Super Admin
+        </div>
+        <div class="text-sm" id="userBadge" style="background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 20px;">Guest</div>
+        <button class="btn secondary hidden" id="btnBackToSuperAdmin" onclick="stopImpersonation()">
+          <i class="fa-solid fa-rotate-left"></i> Back to Super Admin
+        </button>
+        <button class="btn primary" id="btnLogin" onclick="doLogin()">Login</button>
+        <button class="btn danger hidden" id="btnLogout" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="view" id="vLogin">
+      <div class="card" style="max-width: 480px; margin: 80px auto; text-align: center; padding: 40px;">
+        <h2>Welcome Back</h2>
+        <button class="btn primary" onclick="doLogin()">Login via AWS Cognito</button>
+      </div>
+    </div>
+
+    <div class="view" id="vDash">
+      <div class="row" style="margin-bottom: 24px;">
+        <h2 style="margin: 0;">Dashboard Overview</h2>
+      </div>
+
+      <!-- PERSONAL STATS GRID (Hidden for pure admin, Visible for photographer/impersonation) -->
+      <div class="grid" id="phStatsGrid" style="margin-bottom: 32px;">
+        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">COLLECTIONS</div><div class="kpi-val" id="dCols">0</div></div>
+        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">TOTAL PHOTOS</div><div class="kpi-val" id="dPhotos">Loading...</div></div>
+        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div><div class="kpi-val" id="dStorage">Loading...</div></div>
+        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STATUS</div><div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div></div>
+      </div>
+
+      <!-- SUPER ADMIN SECTION -->
+      <div class="card hidden" id="saSection" style="margin-bottom:24px; border-color: rgba(255, 64, 129, 0.4);">
+        <div class="row" style="justify-content: space-between; margin-bottom: 16px;">
+          <div>
+            <h3 style="color:#ff4081; margin:0;"><i class="fa-solid fa-users-gear"></i> Super Admin Control</h3>
+            <div class="text-sm text-muted" style="margin-top:6px;">Manage Photographers & Political Organizations</div>
+          </div>
+          <div class="row" style="gap:10px;">
+            <button class="btn secondary" onclick="loadSuperAdminStats()"><i class="fa-solid fa-chart-line"></i> Refresh KPIs</button>
+            <button class="btn primary" onclick="toggleNewUser(true)"><i class="fa-solid fa-plus"></i> Add Account</button>
+          </div>
+        </div>
+
+        <!-- Global KPIs -->
+        <div class="grid" style="margin-bottom: 18px;">
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">ACCOUNTS</div><div class="kpi-val" id="saTotalPhotographers">-</div></div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">COLLECTIONS</div><div class="kpi-val" id="saTotalCollections">-</div></div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">UPLOADED PHOTOS</div><div class="kpi-val" id="saTotalUploads">-</div></div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">GUEST SEARCHES</div><div class="kpi-val" id="saTotalGuestSearch">-</div></div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">SEARCH RESULTS</div><div class="kpi-val" id="saTotalSearchResults">-</div></div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div></div>
+          <div class="kpi-box"><div class="text-sm" style="font-...BILL (₹)</div><div class="kpi-val" id="saApproxBill">-</div></div>
+        </div>
+
+        <!-- Add User Form (Updated with Account Type and Dynamic Placeholder) -->
+        <div class="hidden" id="newUserBox" style="background: rgba(255,255,255,0.05); padding:16px; border-radius:12px; margin-bottom:20px;">
+          <div class="row">
+            <!-- Order adjusted for better UX -->
+            <div style="flex:1">
+                <label class="text-sm text-muted">Account Type</label>
+                <select id="nuType" style="border:1px solid var(--primary);" onchange="toggleAccountTypeUI()">
+                  <option value="photographer">📸 Photographer</option>
+                  <option value="political">🚩 Political (BJP)</option>
+                </select>
+            </div>
+            <div style="flex:2">
+                <label class="text-sm text-muted">Email</label>
+                <input id="nuEmail" placeholder="e.g. admin@studio.com" />
+            </div>
+            <div style="flex:2">
+                <label class="text-sm text-muted" id="lblName">Studio Name</label>
+                <input id="nuName" placeholder="Organization/Studio Name" />
+            </div>
+            <div style="flex:1">
+                <label class="text-sm text-muted">Plan</label>
+                <select id="nuPlan">
+                  <option value="basic">Basic (50GB)</option>
+                  <option value="pro">Pro (500GB)</option>
+                </select>
+            </div>
+            <!-- Added Temporary Password Field -->
+            <div style="flex:1">
+                <label class="text-sm text-muted">Temp Password</label>
+                <input id="nuPass" type="text" placeholder="Optional" />
+            </div>
+            
+            <button class="btn primary" onclick="createPhotographer()" style="margin-top:20px"><i class="fa-solid fa-check"></i> Create</button>
+            <button class="btn secondary" onclick="toggleNewUser(false)" style="margin-top:20px">Cancel</button>
+          </div>
+        </div>
+
+        <div class="row" style="justify-content: space-between; margin: 10px 0 14px;">
+          <div class="row" style="gap:10px; flex:1;">
+            <input id="saSearch" oninput="renderPhotographersTable()" placeholder="Search by name/email..." style="max-width:420px;" />
+            <select id="saFilterStatus" onchange="renderPhotographersTable()" style="max-width:220px;">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          </div>
+          <button class="btn secondary" onclick="loadPhotographers()"><i class="fa-solid fa-rotate-right"></i> Refresh List</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>Organization / Studio</th>
+                <th>Email / ID</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Usage</th>
+                <th>Counts</th>
+                <th>Approx Bill (₹)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tblPhotographers">
+              <tr><td align="center" class="text-muted" colspan="8">Loading accounts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- COLLECTIONS CARD (Hidden for pure admin) -->
+      <div class="card" id="phCollectionsCard">
+        <div class="row" style="justify-content: space-between; margin-bottom: 24px;">
+          <h3>My Collections</h3>
+          <button class="btn primary" id="btnCreateCol" onclick="toggleNewCol(true)"><i class="fa-solid fa-plus"></i> New Collection</button>
+        </div>
+        <div class="card hidden" id="newColBox">
+          <input id="ncName" placeholder="e.g. Rahul Wedding" />
+          <button class="btn primary" onclick="createCollection()">Create</button>
+        </div>
+        <div class="col-list" id="colList"></div>
+      </div>
+    </div>
+
+    <!-- Collection Detail View -->
+    <div class="view" id="vCol">
+      <div class="row" style="margin-bottom: 24px; justify-content: space-between;">
+        <button class="btn secondary" onclick="route('dashboard')"><i class="fa-solid fa-arrow-left"></i> Back</button>
+        <h2 id="cdTitle">-</h2>
+      </div>
+      <div class="text-sm text-muted" id="cdId" style="margin-bottom: 20px;">ID: -</div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="setTab('tGal')">Gallery</button>
+        <button class="tab" onclick="setTab('tEvents')">Events</button>
+        <button class="tab" onclick="setTab('tUp')">Upload</button>
+        <button class="tab" onclick="setTab('tLink')">Links</button>
+        <button class="tab" onclick="setTab('tClient')">Client Selections</button>
+        <button class="tab" onclick="setTab('tLeads')">Guest Leads</button>
+        <button class="tab" onclick="setTab('tSettings')">Branding & Settings</button>
+      </div>
+
+      <!-- TAB 1: GALLERY -->
+      <div class="tab-content active" id="tGal">
+        <div class="card">
+          <div class="row" style="margin-bottom: 20px; gap: 10px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+            <select id="galEventFilter" onchange="loadPhotos(true)" style="width: 150px;">
+              <option value="">All Events</option>
+            </select>
+            <input id="galDateFilter" onchange="loadPhotos(true)" style="width: 140px;" type="date" />
+            <input id="galTextFilter" onkeypress="if(event.key==='Enter') loadPhotos(true)" placeholder="Search Tag/Text..." style="flex: 1; min-width: 120px;" type="text" />
+            <button class="btn secondary" onclick="loadPhotos(true)"><i class="fa-solid fa-filter"></i> Apply</button>
+            <button class="btn secondary" onclick="clearFilters()"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div class="row" style="margin-bottom: 10px; justify-content: space-between;">
+            <div class="text-sm text-muted" id="galCount">0 Photos</div>
+            <button class="btn secondary" onclick="loadPhotos(true)"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+          </div>
+
+          <div class="gallery-grid" id="galGrid"></div>
+
+          <div style="text-align:center; margin-top: 30px;">
+            <button class="btn primary hidden" id="btnLoadMore" onclick="loadPhotos(false, true)" style="width: 200px;">Load More Photos</button>
+            <div class="hidden" id="galLoading" style="color: #888; font-size: 14px; margin-top: 10px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: EVENTS -->
+      <div class="tab-content" id="tEvents">
+        <div class="card">
+          <div class="row" style="justify-content: space-between; margin-bottom: 20px; align-items: flex-start;">
+            <div>
+              <h3>Manage Sub-Events</h3>
+              <p class="text-sm text-muted">Organize photos into sub-events (Haldi, Reception, etc).</p>
+            </div>
+            <div id="evAddForm" style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; gap: 8px;">
+              <input id="neName" placeholder="Event Name" style="border:none; background:transparent; border-bottom:1px solid #444; border-radius:0; padding:5px; width:150px;" />
+              <input id="neDate" style="border:none; background:transparent; border-bottom:1px solid #444; border-radius:0; padding:5px;" type="date" />
+              <button class="btn primary" onclick="createNewEvent()" style="padding: 6px 16px; font-size:12px;">Add</button>
+            </div>
+          </div>
+
+          <div class="hidden" id="evEditForm" style="background: rgba(0, 230, 118, 0.05); padding: 16px; border-radius: 12px; margin: 10px 0 20px; border: 1px solid var(--primary-dim);">
+            <div class="row" style="margin-bottom: 8px;">
+              <span class="text-sm font-bold" style="color:var(--primary)">EDIT EVENT</span>
+            </div>
+            <input id="eeId" type="hidden" />
+            <div class="row">
+              <input id="eeName" placeholder="New Event Name" style="flex:2" />
+              <input id="eeDate" style="flex:1" type="date" />
+              <button class="btn primary" onclick="updateEvent()">Save Changes</button>
+              <button class="btn secondary" onclick="cancelEditEvent()">Cancel</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="styled-table">
+              <thead><tr><th>Event Name</th><th>Date</th><th>Photos</th><th>Size</th><th>Actions</th></tr></thead>
+              <tbody id="tblEvents"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: UPLOAD -->
+      <div class="tab-content" id="tUp">
+        <div class="card">
+          <div class="row" style="justify-content: space-between; align-items: flex-start;">
+            <div>
+              <h3>Batch Photo Upload</h3>
+              <p class="text-sm text-muted">Photos queue up first. Click 'Start Upload' to process.</p>
+            </div>
+          </div>
+
+          <div class="row" style="margin: 24px 0;">
+            <div style="flex: 1; max-width: 400px;">
+              <label class="text-sm" style="display:block; margin-bottom: 6px;">Select Target Event</label>
+              <select id="upEventSel"></select>
+            </div>
+          </div>
+
+          <div ondragleave="this.style.borderColor='var(--border-color)'" ondragover="this.style.borderColor=var(--primary)" style="border: 2px dashed var(--border-color); padding: 40px; text-align: center; border-radius: 16px; position: relative; transition: 0.2s;">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: var(--text-muted); margin-bottom: 12px;"></i>
+            <h4 style="margin: 0; color: #fff;">Click to Select Photos</h4>
+            <p class="text-sm text-muted">Queue up multiple files (JPG, HEIC)</p>
+            <input accept="image/*" id="upInput" multiple onchange="queueFiles(this.files)" style="position:absolute; inset:0; opacity:0; cursor:pointer" type="file" />
+          </div>
+
+          <div class="hidden" id="uploadQueueBox" style="margin-top: 20px;">
+            <div class="row" style="justify-content:space-between; margin-bottom: 10px;">
+              <h4>Upload Queue (<span id="queueCount">0</span>)</h4>
+              <button class="btn primary" id="btnStartUpload" onclick="startUploadProcess()">Start Upload</button>
+            </div>
+            <div id="queueList" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;"></div>
+          </div>
+
+          <div class="hidden" id="upProgress" style="margin-top: 20px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
+              <span class="text-sm font-bold" id="upStatusText">Uploading...</span>
+              <span class="text-sm" id="upPct">0%</span>
+            </div>
+            <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+              <div id="upBar" style="height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease;"></div>
+            </div>
+            <div class="text-sm text-muted" id="upCountStr" style="margin-top: 10px;">Processing...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: LINKS -->
+      <div class="tab-content" id="tLink">
+        <div class="card">
+          <div class="row" style="margin-bottom: 20px;">
+            <h3>Unified Link Generator</h3>
+          </div>
+
+          <div class="row" style="gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 2; min-width: 250px;">
+              <label class="text-sm" style="display:block; margin-bottom:6px;">Link Type</label>
+              <select id="linkType" onchange="updateLinkUI()">
+                <option value="guest">Guest Search (Face Recognition)</option>
+                <option value="client">Client Selection Gallery</option>
+                <option value="staff">Staff Upload Portal</option>
+              </select>
+            </div>
+
+            <div id="linkScopeWrapper" style="flex: 2; min-width: 200px;">
+              <label class="text-sm" id="scopeLabel" style="display:block; margin-bottom:6px;">Select Scope</label>
+              <select id="linkEventSel"></select>
+            </div>
+
+            <div style="flex: 1; min-width: 120px;">
+              <label class="text-sm" style="display:block; margin-bottom:6px;">Expiry</label>
+              <select id="linkExpiry">
+                <option value="87600">Lifetime</option>
+                <option value="168">7 Days</option>
+                <option value="24">24 Hours</option>
+                <option value="1">1 Hour</option>
+              </select>
+            </div>
+
+            <div style="flex: 1; min-width: 100px;">
+              <label class="text-sm" style="display:block; margin-bottom:6px;">Set PIN</label>
+              <input id="linkPin" placeholder="1234" />
+            </div>
+
+            <button class="btn primary" onclick="generateUnifiedLink()" style="height: 46px; min-width: 140px;">Generate</button>
+          </div>
+
+          <div class="hidden" id="linkRes" style="margin-top: 24px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
+            <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">GENERATED LINK</div>
+            <div class="row" style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <input id="finalLink" readonly style="border:none; background:transparent; font-family:monospace; color:var(--primary); font-size:15px; flex:1;" />
+              <button class="btn secondary" onclick="copyLink()"><i class="fa-regular fa-copy"></i></button>
+              <a class="btn primary" id="finalLinkBtn" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            </div>
+          </div>
+
+          <hr style="border:0; border-top:1px solid #333; margin:30px 0;" />
+
+          <div class="row" style="justify-content: space-between; margin-bottom: 15px;">
+            <h3>Active Links History</h3>
+            <button class="btn secondary" onclick="renderLinkHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="styled-table">
+              <thead><tr><th>Type</th><th>Created At</th><th>Expiry</th><th>PIN</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="tblLinkHistory">
+                <tr><td align="center" class="text-muted" colspan="6">No links generated yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: CLIENT SELECTIONS -->
+      <div class="tab-content" id="tClient">
+        <div class="card">
+          <div class="row" style="justify-content:space-between; margin-bottom:20px;">
+            <div>
+              <h3>Client & Guest Selections</h3>
+              <p class="text-sm text-muted">View all favorites/selections grouped by photo.</p>
+            </div>
+            <button class="btn secondary" onclick="loadClientSelections()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="styled-table">
+              <thead><tr><th>Photo</th><th>Selection Details (Who & What)</th><th>Actions</th></tr></thead>
+              <tbody id="tblSelections"><tr><td align="center" class="text-muted" colspan="3">Loading activity...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: GUEST LEADS -->
+      <div class="tab-content" id="tLeads">
+        <div class="card">
+          <div class="row" style="justify-content: space-between; margin-bottom: 20px;">
+            <h3>Guest Leads & Analytics</h3>
+            <button class="btn secondary" onclick="loadLeads()"><i class="fa-solid fa-rotate-right"></i> Refresh Data</button>
+          </div>
+
+          <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+            <table class="styled-table">
+              <thead><tr><th>Guest Name</th><th>Phone Number</th><th>Activity</th><th>Actions</th></tr></thead>
+              <tbody id="tblLeads"><tr><td align="center" class="text-muted" colspan="4">Loading leads...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 7: SETTINGS -->
+      <div class="tab-content" id="tSettings">
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
+          <div class="card">
+            <h3>Customization Controls</h3>
+
+            <div class="settings-group">
+              <div class="settings-title"><i class="fa-solid fa-image"></i> Visual Assets</div>
+              <label class="text-sm">Header Image (Banner)</label>
+              <div class="row" style="margin-bottom: 12px;">
+                <input id="setHeadImg" oninput="manualUpdate('setHeadImg')" placeholder="Image URL" />
+                <input hidden id="fileHeadImg" onchange="uploadAsset(this, 'setHeadImg')" type="file" />
+                <button class="btn secondary" onclick="document.getElementById('fileHeadImg').click()">Upload</button>
+              </div>
+              <label class="text-sm">Logo</label>
+              <div class="row">
+                <input id="setLogo" oninput="manualUpdate('setLogo')" placeholder="Logo URL" />
+                <input hidden id="fileLogo" onchange="uploadAsset(this, 'setLogo')" type="file" />
+                <button class="btn secondary" onclick="document.getElementById('fileLogo').click()">Upload</button>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-title"><i class="fa-solid fa-pen-nib"></i> Text & Content</div>
+              <label class="text-sm">Collection Title</label>
+              <input id="setColName" oninput="updatePreview()" style="margin-bottom: 12px;" />
+              <label class="text-sm">Welcome Message</label>
+              <textarea id="setWelcome" oninput="updatePreview()" rows="3" style="margin-bottom: 12px;"></textarea>
+              <label class="text-sm">Footer Text</label>
+              <input id="setFooter" placeholder="e.g. Photography by EventLens" />
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-title"><i class="fa-solid fa-palette"></i> Theme</div>
+              <label class="text-sm">Primary Color</label>
+              <div class="row" style="margin-bottom: 12px;">
+                <input id="setColorPicker" onchange="document.getElementById('setColor').value=this.value" style="width: 50px; height: 45px; padding: 0;" type="color" />
+                <input id="setColor" onchange="document.getElementById('setColorPicker').value=this.value" placeholder="#00e676" />
+              </div>
+              <label class="text-sm">Layout Style</label>
+              <select id="setLayout">
+                <option value="grid">Grid (Default)</option>
+                <option value="masonry">Masonry (Pinterest Style)</option>
+              </select>
+              <label class="text-sm" style="margin-top:10px; display:block;">Banner Opacity</label>
+              <div class="row">
+                <input id="setOpacity" max="0.9" min="0" oninput="document.getElementById('opacityVal').innerText=this.value" step="0.1" style="flex:1;" type="range" value="0.3" />
+                <span class="text-sm" id="opacityVal">0.3</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 30px; text-align: right;">
+              <button class="btn primary" onclick="saveSettings()" style="width: 100%;">Save All Settings</button>
+            </div>
+          </div>
+
+          <div class="card" style="position: sticky; top: 20px; height: fit-content; text-align: center;">
+            <div class="row" style="justify-content: center; margin-bottom: 20px;">
+              <h3 style="margin: 0; margin-right: 15px;">Live Preview</h3>
+              <div style="background: #222; border-radius: 20px; padding: 4px; display: inline-flex;">
+                <button class="btn" id="btnPrevMob" onclick="setPreviewMode('mobile')" style="padding: 6px 12px; font-size: 12px; background: var(--primary); color: #000;">Mobile</button>
+                <button class="btn" id="btnPrevDesk" onclick="setPreviewMode('desktop')" style="padding: 6px 12px; font-size: 12px; background: transparent; color: #fff;">Desktop</button>
+              </div>
+            </div>
+
+            <div class="preview-frame mobile" id="previewFrame">
+              <div class="prev-header" id="prevHeader" style="background-image: url('');">
+                <div class="prev-overlay">
+                  <img class="prev-logo" id="prevLogo" src="" />
+                  <h2 class="prev-title" id="prevTitle">Event Title</h2>
+                  <p class="prev-welcome" id="prevWelcome">Welcome Message Here</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- grid -->
+      </div><!-- tSettings -->
+    </div><!-- vCol -->
+  </div><!-- mainWrap -->
+
+  <!-- ====================== SCRIPT ====================== -->
+  <script>
+  /* ================= CONFIGURATION ================= */
+  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+  const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+  const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
+  const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
+
+  /* ================= STATE MANAGEMENT ================= */
+  let idToken = localStorage.getItem('idToken');
+  let curCol = null;
+  let allCols = [];
+  let curEvents = [];
+  let uploadQueue = [];
+  let currentPhotos = [];
+  let currentPhotoIndex = -1;
+  let previewMode = 'mobile';
+
+  // LINK HISTORY PERSISTENCE
+  let linkHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
+  let isSingleView = false;
+
+  // SUPER ADMIN FLAG
+  let isSuperAdmin = false;
+
+  // IMPERSONATION STATE
+  let impersonationInfo = JSON.parse(localStorage.getItem('impersonationInfo') || 'null');
+
+  // SUPER ADMIN DATA CACHE
+  let photographersCache = [];
+
+  /* ================= API HELPERS ================= */
+  const $ = (s) => document.querySelector(s);
+
+  const showToast = (msg, type='success') => {
+    const t = $('#toast');
+    const icon = (type === 'error')
+      ? '<i class="fa-solid fa-triangle-exclamation"></i>'
+      : (type === 'info' ? '<i class="fa-solid fa-circle-info"></i>' : '<i class="fa-solid fa-check-circle"></i>');
+    t.innerHTML = `${icon} ${msg}`;
+    t.className = `show ${type}`;
+    setTimeout(() => t.className = '', 3500);
+  };
+
+  function parseJwt (token) {
+    try {
+      var base64Url = token.split('.')[1];
+      var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch(e) { return {}; }
+  }
+
+  function escJsSingle(str) {
+    return String(str ?? '')
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n');
+  }
+
+  /* ================= AUTHENTICATION ================= */
+  window.addEventListener('load', async () => {
+    const params = new URLSearchParams(location.search);
+    if(params.has('code')){
+      await exchangeCode(params.get('code'));
+      return;
+    }
+
+    if(!idToken) {
+      showView('vLogin');
+    } else {
+      $('#btnLogout').classList.remove('hidden');
+
+      // impersonation UI
+      const impUserId = localStorage.getItem('impersonateUserId');
+      if(impUserId) {
+        $('#btnBackToSuperAdmin').classList.remove('hidden');
+        $('#impBadge').classList.remove('hidden');
+        $('#impName').textContent = localStorage.getItem('impersonateStudioName') || localStorage.getItem('impersonateEmail') || impUserId || '-';
+      }
+
+      // Check if Super Admin (groups/email)
+      const payload = parseJwt(idToken);
+      const groups = payload['cognito:groups'] || payload['groups'] || [];
+      const email = (payload.email || '').toLowerCase();
+
+      // Basic Super Admin Detection
+      const gArr = Array.isArray(groups) ? groups : (typeof groups === 'string' ? groups.split(',') : []);
+      const ok = gArr.some(g => String(g).toLowerCase().includes('master') || String(g).toLowerCase().includes('admin')) || email === 'admin@eventlens.com';
+      if(ok) {
+        isSuperAdmin = true;
+        $('#saBadge').classList.remove('hidden');
+        $('#userBadge').textContent = 'Super Admin';
+      } else {
+        $('#userBadge').textContent = 'Photographer';
+      }
+
+      if (impUserId) {
+        $('#userBadge').textContent = 'Photographer (Read-Only)';
+      }
+
+      $('#btnLogin').classList.add('hidden');
+      route('dashboard');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if(!$('#lightbox').classList.contains('open')) return;
+      if(e.key === 'Escape') closeLightbox();
+      if(!isSingleView) {
+        if(e.key === 'ArrowLeft') navLightbox(-1);
+        if(e.key === 'ArrowRight') navLightbox(1);
+      }
+    });
+  });
+
+  async function exchangeCode(code){
+    showToast('Authenticating...', 'info');
+    try {
+      const res = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: CLIENT_ID,
+          code: code,
+          redirect_uri: window.location.origin + window.location.pathname
+        })
+      });
+      const data = await res.json();
+      if(data.id_token){
+        localStorage.setItem('idToken', data.id_token);
+        // clear impersonation on fresh login
+        localStorage.removeItem('impersonateUserId');
+        localStorage.removeItem('impersonateStudioName');
+        localStorage.removeItem('impersonateEmail');
+        localStorage.removeItem('impersonateDetails');
+        window.location.href = window.location.origin + window.location.pathname;
+      } else {
+        showToast('Login Failed', 'error');
+      }
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  function doLogin(){ location.href = HOSTED_UI; }
+  function doLogout() { localStorage.clear(); location.reload(); }
+
+  /* ================= IMPROVED API HELPER ================= */
+  async function api(path, body){
+    // STANDARD BEHAVIOR: Use Admin ID Token. No fake impersonation tokens.
+    const tokenToUse = idToken;
+
+    const opts = {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${tokenToUse}`, 'Content-Type': 'application/json' }
+    };
+
+    // Known GET endpoints (no body)
+    if(!body && (
+      path.includes('account-status') ||
+      path.includes('get-collections') ||
+      path.includes('get-branding')
+    )) {
+      opts.method = 'GET';
+    } else if (body) {
+      opts.method = 'POST';
+      opts.body = JSON.stringify(body);
+    }
+
+    const r = await fetch(`${API_BASE}${path}`, opts);
+
+    if(!r.ok) {
+      let errorDetail = `API Error ${r.status}`;
+      try {
+        const errData = await r.json();
+        const backendMsg = errData.message || errData.error;
+        if(backendMsg) errorDetail += `: ${backendMsg}`;
+      } catch(e) {
+        try {
+          const txt = await r.text();
+          if(txt && txt.length < 200) errorDetail += `: ${txt}`;
+        } catch(ex){}
+      }
+      throw new Error(errorDetail);
+    }
+    return r.json();
+  }
+
+  /* ================= MASTER ADMIN API (FIXED: POST ONLY) ================= */
+  async function masterApi(action, payload = {}) {
+    // FIX: Always use POST /master/photographer for all admin actions
+    const url = `${API_BASE}/master/photographer`;
+    
+    // Construct the body for the Python Lambda
+    let body = {
+        action: action,
+        payload: payload
+    };
+
+    // Fallback: Map UI actions to Backend Actions
+    if (action === 'get_photographer_details') {
+        // This is supported by backend now
+    } else if (action === 'global_stats') {
+        body.action = 'global_stats';
+    }
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${idToken}` 
+        },
+        body: JSON.stringify(body)
+    });
+
+    if(!res.ok) {
+        let msg = res.statusText;
+        try { const err = await res.json(); msg = err.message || err.error || msg; } catch(e){}
+        throw new Error(`API Error (${res.status}): ${msg}`);
+    }
+
+    const data = await res.json();
+    return data;
+  }
+
+  /* ================= ROUTING ================= */
+  function route(dest){
+    if(dest === 'dashboard'){
+      loadDashboard();
+      showView('vDash');
+    }
+  }
+
+  function showView(id){
+    document.querySelectorAll('.view').forEach(e => e.classList.remove('show'));
+    const target = $(`#${id}`);
+    if(target) target.classList.add('show');
+    window.scrollTo(0,0);
+  }
+
+  function setTab(id){
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    const tabBtn = document.querySelector(`.tab[onclick*="'${id}'"]`);
+    if(tabBtn) tabBtn.classList.add('active');
+
+    const content = $(`#${id}`);
+    if(content) content.classList.add('active');
+
+    if(curCol) {
+      if(id === 'tGal') loadPhotos(true);
+      if(id === 'tLeads') loadLeads();
+      if(id === 'tClient') loadClientSelections();
+      if(id === 'tLink') renderLinkHistory();
+      if(id === 'tSettings') loadSettings();
+      if(id === 'tEvents') loadEvents();
+    }
+  }
+
+  /* ================= DASHBOARD & COLLECTIONS ================= */
+  async function loadDashboard(){
+    const impUserId = localStorage.getItem('impersonateUserId');
+
+    // --- CASE 1: STRICT SUPER ADMIN (Not Impersonating) ---
+    // Added strict check: If Super Admin AND NOT Impersonating, HIDE photographer UI completely.
+    if (isSuperAdmin && !impUserId) {
+      // Show Admin UI
+      $('#saSection').classList.remove('hidden');
+      
+      // Hide Photographer UI (Collections, Personal KPIs)
+      $('#phStatsGrid').classList.add('hidden');
+      $('#phCollectionsCard').classList.add('hidden');
+      
+      // Load Admin Data
+      loadSuperAdminStats(); // No await to parallel load
+      loadPhotographers();
+      return; 
+    }
+
+    // --- CASE 2: PHOTOGRAPHER OR IMPERSONATION ---
+    // Hide Admin UI
+    $('#saSection').classList.add('hidden');
+    
+    // Show Photographer UI
+    $('#phStatsGrid').classList.remove('hidden');
+    $('#phCollectionsCard').classList.remove('hidden');
+
+    // IMPERSONATION MODE: Strictly use Summary (Read-Only) to avoid 401s
+    if (impUserId) {
+       await loadImpersonatedDashboard(impUserId);
+       return;
+    }
+
+    // REGULAR PHOTOGRAPHER MODE
+    $('#btnCreateCol').disabled = false; // Enable create button for owner
+    
+    try {
+      const [cData, sData] = await Promise.all([
+        api('/get-collections'),
+        api('/account-status').catch(()=>({}))
+      ]);
+
+      // AUTO-REDIRECT POLITICAL USERS
+      if (sData.account_type === 'political' || (sData.studio_name && sData.studio_name.toLowerCase().includes('bjp'))) {
+         window.location.href = 'bjp-admin.html';
+         return;
+      }
+
+      allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+      let realTotalPhotos = allCols.reduce((sum, c) => sum + (Number(c.total_photo_count) || 0), 0);
+      let realTotalStorage = allCols.reduce((sum, c) => sum + (Number(c.storage_bytes) || 0), 0);
+
+      $('#dCols').textContent = allCols.length;
+      $('#dPhotos').textContent = realTotalPhotos > 0 ? realTotalPhotos.toLocaleString() : "0";
+      $('#dStorage').textContent = realTotalStorage > 0 ? formatBytes(realTotalStorage) : "0 B";
+      $('#dStatus').textContent = (sData && (sData.status || sData.account_status)) ? (sData.status || sData.account_status) : 'Active';
+
+      // Deep compute per collection from events (non-breaking)
+      if (allCols.length > 0) {
+        (async () => {
+          let updatedP = 0;
+          let updatedS = 0;
+
+          const promises = allCols.map(async (col) => {
+            try {
+              const evData = await api('/get-events', { collection_id: col.collection_id });
+              const evs = evData.events || [];
+              let cP = 0, cS = 0;
+              evs.forEach(e => { cP += (Number(e.photo_count)||0); cS += (Number(e.storage_bytes)||0); });
+              col.total_photo_count = cP;
+              col.storage_bytes = cS;
+              return { p: cP, s: cS };
+            } catch(e) { return { p: 0, s: 0 }; }
+          });
+
+          const results = await Promise.all(promises);
+          results.forEach(r => { updatedP += r.p; updatedS += r.s; });
+
+          $('#dPhotos').textContent = updatedP.toLocaleString();
+          $('#dStorage').textContent = formatBytes(updatedS);
+          renderCollectionList();
+        })();
+      }
+
+      renderCollectionList();
+    } catch(e) {
+      // If API fails (e.g. 403 because Admin tried to call get-collections directly), show error but keep UI clean
+      if(isSuperAdmin) {
+          // Double check safety net
+           $('#phStatsGrid').classList.add('hidden');
+           $('#phCollectionsCard').classList.add('hidden');
+           $('#saSection').classList.remove('hidden');
+      } else {
+        showToast(e.message, 'error');
+      }
+    }
+  }
+
+  async function loadImpersonatedDashboard(userId) {
+    try {
+      let details = null;
+      
+      // Try to load cached data first for instant UI
+      try {
+        const cached = localStorage.getItem('impersonateDetails');
+        if (cached) details = JSON.parse(cached);
+      } catch (e) {}
+
+      // If missing data, fetch from backend
+      if (!details || !details.collections) {
+        details = await masterApi('get_photographer_details', { user_id: userId });
+        localStorage.setItem('impersonateDetails', JSON.stringify(details || {}));
+      }
+
+      // FIX: Force update KPIs immediately from admin data
+      if (details) {
+          const pCount = details.photos_uploaded || 0;
+          const sBytes = details.used_data_bytes || details.used_storage_bytes || 0;
+          const statusStr = (details.status || details.account_status || 'Active');
+
+          $('#dPhotos').textContent = Number(pCount).toLocaleString();
+          $('#dStorage').textContent = formatBytes(sBytes);
+          $('#dStatus').textContent = statusStr;
+      }
+
+      // Render Collection List from the Array returned by 'get_photographer_details'
+      if (details && Array.isArray(details.collections)) {
+          const collections = details.collections;
+          $('#dCols').textContent = collections.length;
+          
+          allCols = collections.map(c => ({
+            collection_id: c.collection_id,
+            name: c.name,
+            created_at: c.created_at,
+            total_photo_count: c.total_photo_count || 0,
+            storage_bytes: c.storage_bytes || c.total_storage_bytes || 0,
+            branding: c.branding || null
+          }));
+
+          renderCollectionList();
+          
+          // Disable creation in Read-Only mode
+          $('#btnCreateCol').disabled = true;
+          showToast('Viewing as Admin (Read-Only)', 'info');
+      } else {
+          // If no collection array, show empty state
+          $('#dCols').textContent = "0";
+          $('#colList').innerHTML = `<div style="text-align:center; padding:20px; color:#666;">No collections found for this user.</div>`;
+      }
+
+    } catch (e) {
+      console.error("Impersonation Load Error:", e);
+      $('#dPhotos').textContent = "0";
+      $('#dStorage').textContent = "0 B";
+      showToast('Failed to load photographer details', 'error');
+    }
+  }
+
+  function renderCollectionList() {
+    const colList = $('#colList');
+    if(!allCols || allCols.length === 0) {
+      colList.innerHTML = `<div style="text-align:center; padding: 40px; color:#555;">No collections found. Create one!</div>`;
+      return;
+    }
+
+    colList.innerHTML = allCols.map((c, i) => `
+      <div class="col-card" onclick="openCol(${i})">
+        <div class="col-title">${escapeHtml(c.name)}</div>
+        <div class="col-meta">
+          <span><i class="fa-regular fa-calendar"></i> ${c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}</span>
+          <span><i class="fa-solid fa-images"></i> ${Number(c.total_photo_count||0)} Photos</span>
+          <span><i class="fa-solid fa-database"></i> ${formatBytes(Number(c.storage_bytes||0))}</span>
+        </div>
+        <div class="col-actions">
+          <button class="btn secondary" style="padding: 8px 16px; font-size: 12px;">Manage</button>
+          <button class="btn danger" onclick="event.stopPropagation(); delCol('${escJsSingle(c.collection_id)}')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleNewCol(show){ show ? $('#newColBox').classList.remove('hidden') : $('#newColBox').classList.add('hidden'); }
+
+  async function createCollection(){
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    const name = $('#ncName').value;
+    if(!name) return;
+    showToast('Creating...', 'info');
+    await api('/upsert-collection', { name });
+    toggleNewCol(false); $('#ncName').value = '';
+    loadDashboard();
+  }
+
+  async function delCol(id){
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    if(confirm("Permanently delete this collection?")){
+      try {
+        await api('/delete-collection', { collection_id: id });
+        loadDashboard();
+        showToast("Collection Deleted Successfully");
+      } catch (e) {
+        console.error("Delete failed:", e);
+        showToast(e.message, 'error');
+      }
+    }
+  }
+
+  async function openCol(index){
+    curCol = allCols[index];
+    if (curCol) {
+      showView('vCol');
+      $('#cdTitle').textContent = curCol.name;
+      $('#cdId').textContent = `ID: ${curCol.collection_id}`;
+      setTab('tGal');
+      
+      // If impersonating, we can try to fetch events via read-only flow if supported, 
+      // otherwise events table will just be empty or fail gracefully
+      await loadEvents();
+    }
+  }
+
+  /* ================= SUPER ADMIN: KPIs ================= */
+  async function loadSuperAdminStats(){
+    try {
+      const r = await masterApi('global_stats', {});
+      // FIX: Improved Stats Parsing & Default Handling
+      $('#saTotalPhotographers').textContent = (r.total_photographers ?? '-');
+      $('#saTotalCollections').textContent = (r.total_collections ?? '-');
+      $('#saTotalUploads').textContent = (r.total_photos_uploaded ?? '-');
+      $('#saTotalGuestSearch').textContent = (r.total_guest_searches ?? '-');
+      $('#saTotalSearchResults').textContent = (r.total_search_results ?? '-');
+      
+      // Ensure bytes are parsed correctly even if string
+      const usedBytes = parseInt(r.used_data_bytes || r.total_storage_used || 0, 10);
+      $('#saTotalUsedData').textContent = formatBytes(usedBytes);
+      // Approx Bill (INR)
+      const est = computeApproxBillINR({ usedBytes: usedBytes, photosUploaded: (r.total_photos_uploaded||0), guestSearches: (r.total_guest_searches||0) });
+      $('#saApproxBill').textContent = formatINR(est.totalINR);
+    } catch(e) {
+      if(e.message.includes("AccessDenied")) {
+          console.warn("Permission Error on Backend:", e);
+      } else {
+          showToast(e.message, 'error');
+      }
+    }
+  }
+
+  /* ================= SUPER ADMIN: PHOTOGRAPHERS ================= */
+  function toggleNewUser(show) { 
+      show ? $('#newUserBox').classList.remove('hidden') : $('#newUserBox').classList.add('hidden');
+      if(show) toggleAccountTypeUI(); // Trigger UI update on open
+  }
+
+  // FIX 1: Dynamic Label Change
+  function toggleAccountTypeUI() {
+      const type = document.getElementById('nuType').value;
+      const label = document.getElementById('lblName');
+      const input = document.getElementById('nuName');
+      
+      if(type === 'political') {
+          label.innerText = 'Organization Name';
+          input.placeholder = 'e.g. BJP Mandsaur';
+      } else {
+          label.innerText = 'Studio Name';
+          input.placeholder = 'e.g. Rahul Photography';
+      }
+  }
+
+  async function loadPhotographers() {
+    if(!isSuperAdmin) return;
+    $('#tblPhotographers').innerHTML = `<tr><td colspan="8" align="center" class="text-muted">Loading accounts...</td></tr>`;
+    try {
+      const data = await masterApi('list_photographers', {});
+      photographersCache = data.photographers || [];
+      renderPhotographersTable();
+    } catch(e) {
+      if(e.message.includes("AccessDenied")) {
+          // Graceful degradation: show partial data if backend permission fails
+          $('#tblPhotographers').innerHTML = `<tr><td colspan="8" align="center" class="text-danger">Backend Permission Error: AdminGetUser access denied. Please fix IAM Role.</td></tr>`;
+      } else {
+          $('#tblPhotographers').innerHTML = `<tr><td colspan="8" align="center" class="text-muted">Error: ${escapeHtml(e.message)}</td></tr>`;
+      }
+    }
+  }
+
+  function renderPhotographersTable(){
+    const q = ($('#saSearch').value || '').toLowerCase().trim();
+    const st = ($('#saFilterStatus').value || '').toLowerCase().trim();
+
+    let rows = (photographersCache || []).slice();
+    if(q) rows = rows.filter(u => (u.studio_name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q) || (u.user_id||'').toLowerCase().includes(q));
+    if(st) rows = rows.filter(u => String(u.account_status||'').toLowerCase() === st);
+
+    const tbody = $('#tblPhotographers');
+    if(rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" align="center" class="text-muted">No accounts found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(u => {
+      const enabledFlag = (u.enabled === undefined) ? true : !!u.enabled;
+      const statusVal = String(u.account_status || 'active').toLowerCase();
+      const isActive = (statusVal === 'active') && enabledFlag;
+      const statusClass = isActive ? 'status-active' : 'status-disabled';
+      const statusTxt = isActive ? 'Active' : 'Disabled';
+      const plan = (u.plan || 'basic').toUpperCase();
+
+      // Check account type
+      // FIXED LOGIC: if account_type isn't explicitly set, default to photographer.
+      const rawType = (u.account_type || '').toLowerCase();
+      const isPolitical = (rawType === 'political' || (u.studio_name && u.studio_name.toLowerCase().includes('bjp')));
+      
+      const typeBadge = isPolitical 
+        ? `<span class="tag-pill" style="border-color:#ff9800; color:#ff9800; background:rgba(255,106,0,0.1);"><i class="fa-solid fa-flag"></i> BJP / Political</span>` 
+        : `<span class="tag-pill"><i class="fa-solid fa-camera"></i> Photo Studio</span>`;
+
+      const usage = `${formatBytes(u.used_data_bytes||0)} / ${formatBytes(u.limit_bytes||0)}`;
+
+      const counts = `
+        <span class="tag-pill"><i class="fa-solid fa-layer-group"></i> ${u.collections||0}</span>
+        <span class="tag-pill"><i class="fa-solid fa-images"></i> ${u.photos_uploaded||0}</span>
+      `;
+
+      // Approx Bill (₹) per photographer (rough)
+      const estBill = computeApproxBillINR({ usedBytes: (u.used_data_bytes||0), photosUploaded: (u.photos_uploaded||0), guestSearches: (u.guest_searches||0) });
+      const approxBill = formatINR(estBill.totalINR);
+
+      // Conditional Login Button
+      const loginBtn = isPolitical
+         ? `<button class="btn secondary" style="padding:6px 12px; font-size:11px; color:#ff9800; border-color:#ff9800;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'political')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Panel</button>`
+         : `<button class="btn primary" style="padding:6px 12px; font-size:11px;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'photographer')"><i class="fa-solid fa-right-to-bracket"></i> Login As</button>`;
+
+
+      return `
+        <tr>
+          <td>
+            <div style="font-weight:800;">${escapeHtml(u.studio_name || '-')}</div>
+            <div class="text-sm text-muted">Expiry: ${escapeHtml(u.expiry_date || '-')}</div>
+          </td>
+          <td style="font-size:12px;">
+            <div>${escapeHtml(u.email || '-')}</div>
+            <div class="text-sm text-muted" style="font-family:monospace;">${escapeHtml(u.user_id || '')}</div>
+          </td>
+          <td>${typeBadge}</td>
+          <td><span class="status-badge ${statusClass}">${statusTxt}</span></td>
+          <td style="font-size:12px;">${usage}</td>
+          <td style="font-size:12px;">${counts}</td>
+          <td style="font-size:12px; font-weight:800;">${approxBill}</td>
+          <td
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              ${loginBtn}
+              <button class="btn secondary" style="padding:6px 12px; font-size:11px;" onclick="openEditModal('${escJsSingle(u.user_id)}', '${escJsSingle(u.plan||'basic')}', '${escJsSingle(u.account_status||'active')}', '${escJsSingle(u.expiry_date||'')}')">
+                <i class="fa-solid fa-pen"></i> Edit
+              </button>
+              ${
+                isActive
+                ? `<button class="btn danger" style="padding:6px 12px; font-size:11px;" onclick="disableUser('${escJsSingle(u.user_id)}')"><i class="fa-solid fa-ban"></i></button>`
+                : `<button class="btn secondary" style="padding:6px 12px; font-size:11px;" onclick="enableUser('${escJsSingle(u.user_id)}')"><i class="fa-solid fa-check"></i></button>`
+              }
+              <!-- NEW Delete Trigger -->
+              <button class="btn danger" style="padding:6px 12px; font-size:11px; background:#ef4444; color:#fff;" onclick="openDeleteModal('${escJsSingle(u.user_id)}')">
+                  <i class="fa-solid fa-trash"></i> Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function createPhotographer() {
+    const email = $('#nuEmail').value.trim();
+    const studio_name = $('#nuName').value.trim();
+    const plan = $('#nuPlan').value;
+    const type = $('#nuType').value; 
+    // Added Temp Password for faster onboarding
+    const tempPass = $('#nuPass').value.trim();
+
+    if(!email || !studio_name) return showToast("Details required", "error");
+
+    try {
+      showToast("Creating Account...", "info");
+      
+      const payload = { 
+          email, 
+          name: studio_name,        
+          studio_name: studio_name, 
+          plan, 
+          account_type: type
+      };
+      
+      // If temp password provided, send it (Backend needs to support it)
+      if(tempPass) payload.password = tempPass;
+
+      await masterApi('create_photographer', payload);
+      
+      showToast("Account Created");
+      toggleNewUser(false);
+      $('#nuEmail').value = '';
+      $('#nuName').value = '';
+      $('#nuPass').value = '';
+      await loadPhotographers();
+      await loadSuperAdminStats();
+    } catch(e) {
+      if(e.message.includes('custom:studio_name') || e.message.includes('custom:plan') || e.message.includes('Attributes did not conform')) {
+          alert("⚠️ AWS COGNITO CONFIGURATION ERROR\n\nYour Backend requires 'studio_name' and 'plan' attributes, but they are missing in Cognito User Pool.\n\nPLEASE FIX THIS IN AWS CONSOLE:\n1. Go to Cognito > User Pools > Select Pool\n2. Click 'Sign-up experience' tab\n3. Add Custom Attribute: 'studio_name' (String, Mutable)\n4. Add Custom Attribute: 'plan' (String, Mutable)\n5. Save.");
+      } else if (e.message.includes("AccessDenied")) {
+          alert("⚠️ AWS PERMISSION ERROR\n\nThe Lambda function 'master-admin-api' does not have permission to fetch user details.\n\nPLEASE ADD THIS POLICY TO LAMBDA ROLE:\n{\n  'Effect': 'Allow',\n  'Action': 'cognito-idp:AdminGetUser',\n  'Resource': '*'\n}");
+      } else {
+          showToast(e.message, 'error');
+      }
+    }
+  }
+
+  // --- NEW EDIT MODAL FUNCTIONS ---
+  function openEditModal(uid, plan, status, expiry) {
+      document.getElementById('eduId').value = uid;
+      document.getElementById('eduPlan').value = plan || 'basic';
+      document.getElementById('eduStatus').value = status || 'active';
+      document.getElementById('eduExpiry').value = expiry || '';
+      document.getElementById('editUserModal').classList.remove('hidden');
+  }
+
+  function closeEditModal() {
+      document.getElementById('editUserModal').classList.add('hidden');
+  }
+
+  async function saveEditUser() {
+      const user_id = document.getElementById('eduId').value;
+      const plan = document.getElementById('eduPlan').value;
+      const account_status = document.getElementById('eduStatus').value;
+      const expiry_date = document.getElementById('eduExpiry').value;
+
+      try {
+          showToast("Updating...", "info");
+          await masterApi('update_photographer', { user_id, plan, account_status, expiry_date });
+          showToast("Updated Successfully");
+          closeEditModal();
+          loadPhotographers();
+          loadSuperAdminStats();
+      } catch (e) {
+          showToast(e.message, 'error');
+      }
+  }
+
+  // --- FIX 2: DELETE MODAL WITH OPTIONS ---
+  function openDeleteModal(uid) {
+      document.getElementById('delUserId').value = uid;
+      document.getElementById('deleteUserModal').classList.remove('hidden');
+  }
+
+  function closeDeleteModal() {
+      document.getElementById('deleteUserModal').classList.add('hidden');
+  }
+
+  async function confirmDeleteUser() {
+      const uid = document.getElementById('delUserId').value;
+      const deleteType = document.querySelector('input[name="delType"]:checked').value;
+      
+      // Safety confirmation if "Delete All" is selected
+      if (deleteType === 'delete_all') {
+          const confirmText = prompt("WARNING: This will delete ALL photos and data for this user. Type 'DELETE' to confirm:");
+          if (confirmText !== 'DELETE') return showToast("Delete cancelled", "error");
+      }
+
+      try {
+          showToast("Processing Delete...", "info");
+          // Sending delete_data flag to backend (backend needs to support 'cascade' delete)
+          await masterApi('delete_photographer', { 
+              user_id: uid,
+              delete_data: (deleteType === 'delete_all') 
+          });
+          
+          showToast("User Deleted");
+          closeDeleteModal();
+          await loadPhotographers();
+          await loadSuperAdminStats();
+      } catch(e){
+          showToast(e.message, 'error');
+      }
+  }
+
+  // Legacy delete kept just in case, but unused
+  async function deleteUser(uid) {
+      openDeleteModal(uid);
+  }
+
+  async function disableUser(uid){
+    if(!confirm("Disable this photographer account?")) return;
+    try {
+      showToast("Disabling...", "info");
+      await masterApi('disable_photographer', { user_id: uid, account_status: 'disabled' });
+      showToast("Disabled");
+      await loadPhotographers();
+      await loadSuperAdminStats();
+    } catch(e){ showToast(e.message,'error'); }
+  }
+
+  async function enableUser(uid){
+    if(!confirm("Enable this photographer account?")) return;
+    try {
+      showToast("Enabling...", "info");
+      await masterApi('enable_photographer', { user_id: uid, account_status: 'active' });
+      showToast("Enabled");
+      await loadPhotographers();
+      await loadSuperAdminStats();
+    } catch(e){ showToast(e.message,'error'); }
+  }
+
+  /* ================= SUPER ADMIN -> IMPERSONATION (READ-ONLY) ================= */
+  async function loginAs(uid, studioName, email, type) {
+    // NEW LOGIC FOR POLITICAL ACCOUNTS
+    if(type === 'political') {
+        // For Political accounts, we redirect to the specialized dashboard
+        // We set the token here so the new page can pick it up
+        localStorage.setItem('bjp_token', idToken); 
+        localStorage.setItem('bjp_org_id', uid);
+        
+        showToast('Redirecting to Political Dashboard...', 'success');
+        setTimeout(() => {
+            window.open('bjp-admin.html', '_blank'); // Open in new tab for safety
+        }, 1000);
+        return;
+    }
+
+    // EXISTING LOGIC FOR PHOTOGRAPHERS
+    try {
+      showToast('Opening photographer view...', 'info');
+      
+      localStorage.setItem('impersonateUserId', uid);
+      localStorage.setItem('impersonateStudioName', studioName || '');
+      localStorage.setItem('impersonateEmail', email || '');
+      
+      const details = await masterApi('get_photographer_details', { user_id: uid });
+      localStorage.setItem('impersonateDetails', JSON.stringify(details || {}));
+
+      $('#btnBackToSuperAdmin').classList.remove('hidden');
+      $('#impBadge').classList.remove('hidden');
+      $('#impName').textContent = studioName || email || uid || '-';
+
+      showToast('View Active (Read-Only)', 'success');
+      route('dashboard');
+      await loadDashboard();
+    } catch (e) {
+      if(e.message.includes("AccessDenied")) {
+          alert("⚠️ AWS PERMISSION ERROR\n\nLambda Role missing 'cognito-idp:AdminGetUser'. Cannot fetch user details for impersonation.");
+      }
+      showToast(e.message || 'Failed to load details', 'error');
+    }
+  }
+
+  function stopImpersonation() {
+    localStorage.removeItem('impersonateUserId');
+    localStorage.removeItem('impersonateStudioName');
+    localStorage.removeItem('impersonateEmail');
+    localStorage.removeItem('impersonateDetails');
+
+    $('#btnBackToSuperAdmin').classList.add('hidden');
+    $('#impBadge').classList.add('hidden');
+
+    showToast('Exited photographer view', 'info');
+    route('dashboard');
+    loadDashboard();
+  }
+
+  /* ================= EVENT MANAGEMENT ================= */
+  async function loadEvents() {
+    // Read-only mode: use cached details if present
+    const impUserId = localStorage.getItem('impersonateUserId');
+    if (impUserId) {
+      try {
+        const details = JSON.parse(localStorage.getItem('impersonateDetails') || '{}');
+        const all = Array.isArray(details.events) ? details.events : [];
+        const cid = curCol ? curCol.collection_id : null;
+        curEvents = cid ? all.filter(e => e.collection_id === cid) : all;
+        renderEventsTableAndSelects();
+        return;
+      } catch (e) {}
+    }
+
+    if(!curCol) return;
+    try {
+      const data = await api('/get-events', { collection_id: curCol.collection_id });
+      curEvents = data.events || [];
+      renderEventsTableAndSelects();
+    } catch(e) {
+      console.error("Error loading events", e);
+    }
+  }
+
+  function renderEventsTableAndSelects() {
+    const tbl = $('#tblEvents');
+    if (!tbl) return;
+
+    tbl.innerHTML = (curEvents || []).map(e => `
+      <tr>
+        <td><b>${escapeHtml(e.name)}</b></td>
+        <td>${e.event_date || '-'}</td>
+        <td>${e.photo_count || 0}</td>
+        <td>${formatBytes(e.storage_bytes || 0)}</td>
+        <td>
+          <button class="btn secondary" style="padding:6px 12px;" onclick="editEvent('${escJsSingle(e.event_id)}', '${escJsSingle(e.name)}', '${escJsSingle(e.event_date||'')}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn danger" style="padding:6px 12px;" onclick="delEvent('${escJsSingle(e.event_id)}')"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('');
+
+    const opts = `<option value="">Select Event</option>` + (curEvents || []).map(e => `<option value="${escapeHtml(e.event_id)}">${escapeHtml(e.name)}</option>`).join('');
+    $('#galEventFilter').innerHTML = opts;
+    $('#upEventSel').innerHTML = opts;
+    $('#linkEventSel').innerHTML = `<option value="">Entire Collection</option>` + (curEvents || []).map(e => `<option value="${escapeHtml(e.event_id)}">${escapeHtml(e.name)}</option>`).join('');
+  }
+
+  async function createNewEvent(){
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    const name = $('#neName').value;
+    const date = $('#neDate').value;
+    if(!name) return showToast('Name required', 'error');
+    await api('/upsert-event', { collection_id: curCol.collection_id, name, event_date: date });
+    $('#neName').value = '';
+    await loadEvents();
+    showToast('Event Added');
+  }
+
+  async function delEvent(eid){
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    if(confirm('Delete event?')) {
+      await api('/delete-event', { collection_id: curCol.collection_id, event_id: eid });
+      await loadEvents();
+    }
+  }
+
+  function editEvent(id, name, date){
+    $('#eeId').value = id;
+    $('#eeName').value = name;
+    $('#eeDate').value = date;
+    $('#evEditForm').classList.remove('hidden');
+    $('#evAddForm').classList.add('hidden');
+  }
+
+  function cancelEditEvent(){
+    $('#evEditForm').classList.add('hidden');
+    $('#evAddForm').classList.remove('hidden');
+  }
+
+  async function updateEvent(){
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    const id = $('#eeId').value;
+    const name = $('#eeName').value;
+    const date = $('#eeDate').value;
+    if(!name) return;
+    await api('/upsert-event', { collection_id: curCol.collection_id, event_id: id, name, event_date: date });
+    cancelEditEvent();
+    await loadEvents();
+    showToast('Event Updated');
+  }
+
+  /* ================= GALLERY ================= */
+  let photosNext = null;
+  let isLoadingPhotos = false;
+
+  function clearFilters() {
+    $('#galEventFilter').value = '';
+    $('#galDateFilter').value = '';
+    $('#galTextFilter').value = '';
+    loadPhotos(true);
+  }
+
+  async function loadPhotos(reset=false, loadMore=false){
+    if(!curCol) return;
+    if(isLoadingPhotos && !reset) return;
+
+    if(reset) {
+      photosNext = null;
+      $('#galGrid').innerHTML = '';
+      currentPhotos = [];
+      $('#galCount').textContent = "Loading...";
+    }
+
+    if(loadMore && !photosNext) return;
+
+    isLoadingPhotos = true;
+    $('#galLoading').classList.remove('hidden');
+    if(loadMore) $('#btnLoadMore').disabled = true;
+
+    const eid = $('#galEventFilter').value;
+    const dateF = $('#galDateFilter').value;
+    const textF = $('#galTextFilter').value;
+
+    const payload = { collection_id: curCol.collection_id };
+    if(eid) payload.event_id = eid;
+    if(dateF) payload.date_filter = dateF;
+    if(textF) payload.text_filter = textF;
+    if(photosNext) payload.next_token = photosNext;
+
+    try {
+      const res = await api('/get-photos', payload);
+      const photos = res.items || res.photos || [];
+      photosNext = res.next_token;
+
+      if(photos.length > 0) {
+        currentPhotos = reset ? photos : currentPhotos.concat(photos);
+        $('#galCount').textContent = `${currentPhotos.length} Photos Shown`;
+
+        const html = photos.map((p, idx) => {
+          const globalIdx = reset ? idx : (currentPhotos.length - photos.length + idx);
+          let thumbUrl = p.thumbnail_url || p.thumb;
+          if (!thumbUrl && p.url && String(p.url).includes('/photos/')) {
+            thumbUrl = String(p.url).replace('/photos/', '/thumbnails/');
+          }
+          if(!thumbUrl) thumbUrl = p.url;
+
+          const safeThumb = escapeHtml(thumbUrl || '');
+          const safeFull = escapeHtml(p.url || '');
+
+          return `
+            <div class="ph-card" onclick="openLightbox(${globalIdx})">
+              <img src="${safeThumb}" loading="lazy" decoding="async"
+                   onload="this.classList.add('loaded')"
+                   onerror="if(this.src !== '${safeFull}') this.src='${safeFull}'; else this.style.display='none';">
+            </div>
+          `;
+        }).join('');
+
+        $('#galGrid').insertAdjacentHTML('beforeend', html);
+      } else if (photosNext) {
+        await loadPhotos(false, true);
+        return;
+      }
+
+      if(photosNext) {
+        $('#btnLoadMore').classList.remove('hidden');
+        $('#btnLoadMore').disabled = false;
+      } else {
+        $('#btnLoadMore').classList.add('hidden');
+      }
+
+      if(currentPhotos.length === 0 && !photosNext) {
+        $('#galGrid').innerHTML = '<div style="text-align:center; padding:20px; color:#666; grid-column: 1/-1;">No photos found.</div>';
+        $('#galCount').textContent = "0 Photos";
+      }
+
+    } catch(e) {
+      console.error(e);
+      showToast("Failed to load photos: " + (e.message || ''), "error");
+    } finally {
+      isLoadingPhotos = false;
+      $('#galLoading').classList.add('hidden');
+    }
+  }
+
+  function openLightbox(index) {
+    currentPhotoIndex = index;
+    isSingleView = false;
+    const p = currentPhotos[index];
+    if(p) {
+      $('#lbImage').src = p.url;
+      document.querySelectorAll('.lb-nav-btn').forEach(btn => btn.classList.remove('hidden'));
+      $('#lbDeleteBtn').classList.remove('hidden');
+      $('#lightbox').classList.add('open');
+    }
+  }
+
+  function openSelectionLightbox(index) {
+    if (!window.allSelections || !window.allSelections[index]) return;
+    const s = window.allSelections[index];
+    const fullUrl = s.url || s.thumbnail_url;
+    if (!fullUrl) return showToast("Image URL invalid", "error");
+
+    isSingleView = true;
+    $('#lbImage').src = fullUrl;
+    document.querySelectorAll('.lb-nav-btn').forEach(btn => btn.classList.add('hidden'));
+    $('#lbDeleteBtn').classList.add('hidden');
+    $('#lbMeta').style.display = 'none';
+    currentPhotos[9999] = { url: fullUrl };
+    currentPhotoIndex = 9999;
+    $('#lightbox').classList.add('open');
+  }
+
+  function closeLightbox() { $('#lightbox').classList.remove('open'); }
+  function navLightbox(dir) {
+    if(isSingleView) return;
+    let newIndex = currentPhotoIndex + dir;
+    if(newIndex < 0) newIndex = currentPhotos.length - 1;
+    if(newIndex >= currentPhotos.length) newIndex = 0;
+    openLightbox(newIndex);
+  }
+
+  async function downloadCurrentPhoto() {
+    let url = $('#lbImage').src;
+    const p = currentPhotos[currentPhotoIndex];
+    if(p && p.url) url = p.url;
+
+    try {
+      const response = await fetch(url);
+      if(!response.ok) throw new Error("Fetch Failed");
+      const blob = await response.blob();
+      saveAs(blob, 'photo.jpg');
+    } catch(e) {
+      console.warn("CORS Download blocked, opening in new tab:", e);
+      window.open(url, '_blank');
+    }
+  }
+
+  async function deleteCurrentPhoto() {
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+    if(isSingleView) return;
+
+    if(!confirm("Delete?")) return;
+    const p = currentPhotos[currentPhotoIndex];
+    try {
+      await api('/delete-photo', { photo_id: p.photo_id, collection_id: curCol.collection_id });
+      currentPhotos.splice(currentPhotoIndex, 1);
+      if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0);
+      loadPhotos(true);
+      showToast('Deleted');
+    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+  }
+
+  /* ================= UPLOAD LOGIC ================= */
+  function queueFiles(fileList){
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    const files = Array.from(fileList);
+    if(!files.length) return;
+    files.forEach(f => { uploadQueue.push(f); });
+    renderQueue();
+  }
+
+  function renderQueue(){
+    $('#uploadQueueBox').classList.remove('hidden');
+    $('#queueCount').textContent = uploadQueue.length;
+    $('#queueList').innerHTML = uploadQueue.map(f => `<div style="font-size:12px; border-bottom:1px solid #333; padding:4px;">${escapeHtml(f.name)} <span class="text-muted">(${formatBytes(f.size)})</span></div>`).join('');
+  }
+
+  async function startUploadProcess(){
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    const eventId = $('#upEventSel').value;
+    if(!eventId) return showToast('Select Event!', 'error');
+    if(uploadQueue.length === 0) return showToast('No files', 'error');
+
+    $('#btnStartUpload').disabled = true;
+    $('#btnStartUpload').textContent = 'Uploading...';
+    $('#upProgress').classList.remove('hidden');
+
+    const BATCH_SIZE = 50;
+    let processedCount = 0;
+    const total = uploadQueue.length;
+
+    for (let i = 0; i < total; i += BATCH_SIZE) {
+      const chunk = uploadQueue.slice(i, i + BATCH_SIZE);
+      $('#upStatusText').textContent = `Uploading Batch ${Math.ceil((i+1)/BATCH_SIZE)}/${Math.ceil(total/BATCH_SIZE)}`;
+      $('#upPct').textContent = `${Math.round((processedCount / total) * 100)}%`;
+      await processBatch(chunk, eventId);
+      processedCount += chunk.length;
+      $('#upBar').style.width = `${Math.round((processedCount / total) * 100)}%`;
+    }
+
+    showToast('Done!');
+    $('#upStatusText').textContent = 'Done!';
+    uploadQueue = [];
+    renderQueue();
+    $('#uploadQueueBox').classList.add('hidden');
+    $('#btnStartUpload').disabled = false;
+    $('#btnStartUpload').textContent = 'Start Upload';
+    loadPhotos(true);
+  }
+
+  async function processBatch(files, eventId){
+    const metaList = await Promise.all(files.map(async f => {
+      let procFile = f;
+      if(String(f.name||'').toLowerCase().endsWith('.heic')){
+        try {
+          const blob = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.8 });
+          procFile = new File([blob], f.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+        } catch(e) {}
+      }
+      const hash = await computeHash(procFile);
+      const cleanName = String(procFile.name||'').replace(/[^a-zA-Z0-9.]/g, '_');
+      return { name: cleanName, type: 'image/jpeg', size: procFile.size, hash: hash, fileObj: procFile };
+    }));
+
+    const payload = { collection_id: curCol.collection_id, event_id: eventId, files: metaList.map(m => ({ name: m.name, type: m.type, size: m.size, hash: m.hash })) };
+
+    try {
+      const res = await api('/generate-upload-urls', payload);
+      const uploadPromises = (res.urls || []).map(u => {
+        const original = metaList.find(m => m.hash === u.hash);
+        if(!original) return null;
+        return fetch(u.uploadURL, {
+          method: 'PUT', body: original.fileObj,
+          headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
+        });
+      }).filter(Boolean);
+
+      await Promise.all(uploadPromises);
+    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+  }
+
+  async function computeHash(file) {
+    const buf = await file.arrayBuffer();
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /* ================= LINKS ================= */
+  function updateLinkUI() {
+    const type = $('#linkType').value;
+    const scopeWrapper = $('#linkScopeWrapper');
+    scopeWrapper.style.opacity = '1';
+    if(type === 'client') {
+      // keep as-is
+    }
+  }
+
+  async function generateUnifiedLink() {
+    const type = $('#linkType').value;
+    const eid = $('#linkEventSel').value;
+    const expiry = $('#linkExpiry').value;
+    const pin = $('#linkPin').value;
+
+    let finalUrl = "";
+
+    if(type === 'staff') {
+      const baseUrl = `${window.location.origin}/staff-upload.html`;
+      finalUrl = `${baseUrl}?cid=${curCol.collection_id}`;
+      if(eid) finalUrl += `&eid=${eid}`;
+      if(pin) finalUrl += `&pin=${pin}`;
+
+      $('#finalLink').value = finalUrl;
+      $('#finalLinkBtn').href = finalUrl;
+      $('#linkRes').classList.remove('hidden');
+      addToLinkHistory('Staff Upload', finalUrl, pin, expiry);
+      showToast('Staff Link Generated!');
+      return;
+    }
+
+    try {
+      const payload = {
+        collection_id: curCol.collection_id,
+        event_ids: eid ? [eid] : [],
+        expiry_hours: parseInt(expiry, 10),
+        password: pin
+      };
+      if(type === 'client') payload.type = 'client';
+
+      const res = await api('/generate-search-link', payload);
+      let linkId = res.link_id || res.id;
+
+      if(!linkId && res.searchUrl) {
+        try {
+          const url = new URL(res.searchUrl);
+          linkId = url.searchParams.get('linkId') || url.searchParams.get('id');
+        } catch(e) {}
+      }
+
+      if(!linkId) throw new Error("No Link ID returned");
+
+      if(type === 'client') {
+        finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
+      } else {
+        finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+        if(eid) finalUrl += `&eid=${eid}`;
+      }
+
+      $('#finalLink').value = finalUrl;
+      $('#finalLinkBtn').href = finalUrl;
+      $('#linkRes').classList.remove('hidden');
+
+      addToLinkHistory(type === 'client' ? 'Client Gallery' : 'Guest Search', finalUrl, pin, expiry);
+      showToast('Link Generated!');
+    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+  }
+
+  function copyLink(){
+    const el = $('#finalLink');
+    el.select();
+    document.execCommand('copy');
+    showToast('Copied');
+  }
+
+  /* ================= LINK HISTORY ================= */
+  function addToLinkHistory(type, url, pin, expiryHours) {
+    let currentHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
+
+    const newEntry = {
+      id: Date.now(),
+      type: type,
+      created: new Date().toISOString(),
+      expiry: new Date(Date.now() + Number(expiryHours) * 3600 * 1000).toISOString(),
+      pin: pin || '-',
+      url: url,
+      active: true,
+      collection_id: curCol ? curCol.collection_id : null,
+      collection_name: curCol ? curCol.name : 'Unknown'
+    };
+
+    currentHistory.unshift(newEntry);
+
+    localStorage.setItem('eventlens_links', JSON.stringify(currentHistory));
+    linkHistory = currentHistory;
+
+    renderLinkHistory();
+  }
+
+  function renderLinkHistory() {
+    linkHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
+
+    const tbody = $('#tblLinkHistory');
+    if(linkHistory.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" align="center" class="text-muted">No links generated yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = linkHistory.map(link => {
+      const isExpired = new Date() > new Date(link.expiry);
+      const statusClass = (!link.active || isExpired) ? 'status-disabled' : 'status-active';
+
+      return `
+        <tr style="opacity: ${!link.active ? 0.6 : 1}">
+          <td>
+            <div style="font-weight:600">${escapeHtml(link.type)}</div>
+            <div style="font-size:10px; color:#666;">${escapeHtml(link.collection_name || '')}</div>
+          </td>
+          <td style="font-size:12px">${new Date(link.created).toLocaleDateString()}</td>
+          <td style="font-size:12px">${Math.round((new Date(link.expiry) - new Date(link.created))/3600000)}h</td>
+          <td style="font-family:monospace">${escapeHtml(link.pin)}</td>
+          <td><span class="status-badge ${statusClass}">${!link.active ? 'Disabled' : (isExpired ? 'Expired' : 'Active')}</span></td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="copyToClip('${escJsSingle(link.url)}')"><i class="fa-regular fa-copy"></i></button>
+              <button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="removeLink(${link.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function removeLink(id) {
+    if(!confirm("Remove this link from history list? (The link itself may still work until expiry)")) return;
+
+    let currentHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
+    currentHistory = currentHistory.filter(l => l.id !== id);
+
+    localStorage.setItem('eventlens_links', JSON.stringify(currentHistory));
+    linkHistory = currentHistory;
+
+    renderLinkHistory();
+    showToast("Removed from list");
+  }
+
+  function copyToClip(text) {
+    const temp = document.createElement("input");
+    temp.value = text;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand("copy");
+    document.body.removeChild(temp);
+    showToast('Copied!');
+  }
+
+  /* ================= CLIENT SELECTIONS ================= */
+  async function loadClientSelections() {
+    if(!curCol) return;
+
+    $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center">Loading selections...</td></tr>`;
+
+    try {
+      const data = await api('/client-api', {
+        action: "get_selections",
+        payload: { collection_id: curCol.collection_id }
+      });
+
+      const selections = data.selections || [];
+      window.allSelections = selections;
+
+      if(selections.length === 0) {
+        $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center" class="text-muted">No photos selected yet.</td></tr>`;
+        return;
+      }
+
+      const rows = selections.map((s, index) => {
+        let thumbUrl = s.thumbnail_url || s.url || '';
+        
+        // Thumbnail generation logic same as gallery
+        if (!s.thumbnail_url && s.url && String(s.url).includes('/photos/')) {
+           thumbUrl = String(s.url).replace('/photos/', '/thumbnails/');
+        }
+
+        const safeThumb = escapeHtml(thumbUrl);
+        const safeFull = escapeHtml(s.url || '');
+
+        const thumbHtml = `
+          <div class="photo-thumb-cell" onclick="openSelectionLightbox(${index})">
+            <img src="${safeThumb}" loading="lazy" 
+                 onerror="if(this.src !== '${safeFull}') this.src='${safeFull}'; else this.parentNode.innerHTML='<span class=\'text-muted text-sm\'>No Img</span>'">
+          </div>`;
+
+        const userBadges = (s.selectors || []).map(u => {
+          const icon = u.type === 'client' ? 'fa-crown' : 'fa-user';
+          const color = u.type === 'client' ? '#fbbf24' : '#fff';
+          let acts = [];
+          if(u.actions && u.actions.selected) acts.push('<span style="color:#00e676">Selected</span>');
+          if(u.actions && u.actions.fav) acts.push('<span style="color:#ff4081">Fav</span>');
+          if(u.actions && u.actions.delete_req) acts.push('<span style="color:red">Delete</span>');
+
+          let delBtn = '';
+          if(u.item_type) {
+            delBtn = `<i class="fa-solid fa-trash" style="color:#ef4444; cursor:pointer; margin-left:8px;" onclick="deleteEntry('${escJsSingle(u.item_type)}')" title="Remove Entry"></i>`;
+          }
+
+          return `
+            <div style="font-size:12px; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid ${icon}" style="color:${color}; width:16px;"></i>
+              <span style="font-weight:600; color:#ddd;">${escapeHtml(u.name)}</span>
+              <span style="color:#666; font-size:10px;">• ${acts.join(', ')}</span>
+              ${delBtn}
+            </div>`;
+        }).join('');
+
+        const btnDownload = `<button class="btn secondary" onclick="directDownload('${escJsSingle(s.url||'')}', 'photo_${index}.jpg', event)" style="padding:6px 12px; font-size:11px;"><i class="fa-solid fa-download"></i> HD</button>`;
+        const btnDone = `<button class="btn primary" onclick="this.closest('tr').style.opacity='0.3'" style="padding:6px 12px; font-size:11px;"><i class="fa-solid fa-check"></i> Done</button>`;
+
+        return `
+          <tr>
+            <td style="width:100px;">${thumbHtml}</td>
+            <td>${userBadges}</td>
+            <td>
+              <div style="display:flex; gap:8px;">
+                ${btnDownload}
+                ${btnDone}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      $('#tblSelections').innerHTML = rows;
+    } catch(e) {
+      console.error("Selection Load Error:", e);
+      $('#tblSelections').innerHTML = `<tr><td colspan="3" align="center" class="text-danger">Error: ${escapeHtml(e.message)}</td></tr>`;
+    }
+  }
+
+  async function deleteEntry(sk) {
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    if(!confirm("Delete this selection entry?")) return;
+    try {
+      await api('/client-api', {
+        action: 'admin_delete_item',
+        payload: { collection_id: curCol.collection_id, item_type: sk }
+      });
+      loadClientSelections();
+      showToast('Entry deleted');
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  async function directDownload(url, filename, event) {
+    const btn = event.currentTarget;
+    const icon = btn.querySelector('i');
+    const oldClass = icon.className;
+    icon.className = "fa-solid fa-spinner fa-spin";
+
+    try {
+      const res = await fetch(url);
+      if(!res.ok) throw new Error("Fetch Failed");
+      const blob = await res.blob();
+      saveAs(blob, filename || "photo.jpg");
+    } catch(e) {
+      console.warn("CORS Download blocked, opening in new tab:", e);
+      window.open(url, '_blank');
+    } finally {
+      icon.className = oldClass;
+    }
+  }
+
+  /* ================= LEADS ================= */
+  async function loadLeads(){
+    $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center">Loading...</td></tr>`;
+    try {
+      const res = await api('/save-details', { action: 'list', collection_id: curCol.collection_id });
+      const leads = Array.isArray(res) ? res : (res.items || res.leads || []);
+      if(leads.length === 0) {
+        $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">No guest searches yet.</td></tr>`;
+        return;
+      }
+
+      const grouped = {};
+      leads.forEach(l => {
+        const key = l.mobile || 'Unknown';
+        if(!grouped[key]) grouped[key] = { ...l, history: [] };
+        grouped[key].history.push(l);
+      });
+
+      const rows = Object.values(grouped).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      $('#tblLeads').innerHTML = rows.map((l, i) => {
+        const sk = `LEAD#${l.mobile}`;
+        return `
+          <tr class="lead-row" onclick="toggleLead(${i})">
+            <td>
+              <div style="font-weight:700">${escapeHtml(l.name || 'Unknown')}</div>
+              <div class="text-sm text-muted">Latest: ${new Date(l.timestamp).toLocaleString()}</div>
+            </td>
+            <td>${escapeHtml(l.mobile || '-')}</td>
+            <td><span class="tag-pill">${l.history.length} Searches</span> <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i></td>
+            <td>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <a href="${escapeHtml(l.selfie_url || '#')}" target="_blank"><img src="${escapeHtml(l.selfie_url || '')}" style="width:36px; height:36px; border-radius:50%; border:1px solid #444; object-fit:cover;"></a>
+                <button class="btn danger" style="padding:4px 8px;" onclick="event.stopPropagation(); deleteLead('${escJsSingle(sk)}')"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          <tr id="hist-${i}" class="lead-history" style="background: rgba(255,255,255,0.02);">
+            <td colspan="4" style="padding: 10px;">
+              <div style="font-size:11px; color:#aaa; margin-bottom:5px;">HISTORY:</div>
+              <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                ${l.history.map(h => `
+                  <div class="hist-item">
+                    <img src="${escapeHtml(h.selfie_url || '')}" style="width:30px; height:30px; border-radius:4px; object-fit:cover;">
+                    <div>
+                      <div style="font-weight:600; color:#fff;">${h.match_count} Matches</div>
+                      <div style="font-size:10px;">${new Date(h.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch(e) {
+      $('#tblLeads').innerHTML = `<tr><td colspan="4" align="center" class="text-muted">Error: ${escapeHtml(e.message || 'Error loading')}</td></tr>`;
+    }
+  }
+
+  function toggleLead(index) {
+    const row = document.getElementById(`hist-${index}`);
+    if (row) row.classList.toggle('open');
+  }
+
+  async function deleteLead(sk) {
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    if(!confirm("Delete this guest record?")) return;
+    try {
+      await api('/client-api', {
+        action: 'admin_delete_item',
+        payload: { collection_id: curCol.collection_id, item_type: sk }
+      });
+      loadLeads();
+      showToast('Guest deleted');
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  /* ================= LIVE PREVIEW & SETTINGS ================= */
+  function setPreviewMode(mode) {
+    previewMode = mode;
+    const frame = $('#previewFrame');
+    if(mode === 'mobile') {
+      frame.className = 'preview-frame mobile';
+      $('#btnPrevMob').style.background = 'var(--primary)'; $('#btnPrevMob').style.color='#000';
+      $('#btnPrevDesk').style.background = 'transparent'; $('#btnPrevDesk').style.color='#fff';
+    } else {
+      frame.className = 'preview-frame desktop';
+      $('#btnPrevDesk').style.background = 'var(--primary)'; $('#btnPrevDesk').style.color='#000';
+      $('#btnPrevMob').style.background = 'transparent'; $('#btnPrevMob').style.color='#fff';
+    }
+    updatePreview();
+  }
+
+  function updatePreview() {
+    $('#prevTitle').textContent = $('#setColName').value || 'Event Title';
+    $('#prevWelcome').textContent = $('#setWelcome').value || '';
+
+    const headImgSrc = $('#setHeadImg').dataset.localPreview || $('#setHeadImg').dataset.signedUrl;
+    const logoImgSrc = $('#setLogo').dataset.localPreview || $('#setLogo').dataset.signedUrl;
+
+    if(headImgSrc) $('#prevHeader').style.backgroundImage = `url('${headImgSrc}')`;
+
+    const prevLogo = $('#prevLogo');
+    if(logoImgSrc) {
+      prevLogo.src = logoImgSrc;
+      prevLogo.style.display = 'block';
+      prevLogo.onerror = function() { this.src = ""; };
+    } else prevLogo.style.display = 'none';
+
+    if(previewMode === 'mobile') {
+      $('#prevLogo').style.width = '80px'; $('#prevLogo').style.height = '80px';
+      $('#prevHeader').style.height = '200px';
+    } else {
+      $('#prevLogo').style.width = '120px'; $('#prevLogo').style.height = '120px';
+      $('#prevHeader').style.height = '350px';
+    }
+  }
+
+  function manualUpdate(targetId) {
+    const input = document.getElementById(targetId);
+    delete input.dataset.localPreview; delete input.dataset.signedUrl;
+    updatePreview();
+  }
+
+  async function loadSettings(){
+    if(!curCol) return;
+
+    $('#setColName').value = curCol.name || '';
+    if(curCol.branding) {
+      const b = curCol.branding;
+      $('#setHeadImg').value = b.header_img || '';
+      $('#setLogo').value = b.logo || '';
+      $('#setFooter').value = b.footer || '';
+      $('#setWelcome').value = b.welcome_msg || '';
+      $('#setColor').value = b.color || '#00e676';
+      $('#setColorPicker').value = b.color || '#00e676';
+      $('#setLayout').value = b.layout || 'grid';
+      $('#setOpacity').value = b.overlay_opacity || 0.3;
+      $('#opacityVal').innerText = b.overlay_opacity || 0.3;
+
+      try {
+        const res = await api(`/get-branding?cid=${curCol.collection_id}`);
+        if(res.header_img) document.getElementById('setHeadImg').dataset.signedUrl = res.header_img;
+        if(res.logo) document.getElementById('setLogo').dataset.signedUrl = res.logo;
+      } catch(e) {}
+      updatePreview();
+    } else {
+      // still update preview for title
+      updatePreview();
+    }
+  }
+
+  async function saveSettings() {
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    const newName = $('#setColName').value;
+    const branding = {
+      header_img: $('#setHeadImg').value, logo: $('#setLogo').value, footer: $('#setFooter').value,
+      welcome_msg: $('#setWelcome').value, color: $('#setColor').value, layout: $('#setLayout').value,
+      overlay_opacity: $('#setOpacity').value
+    };
+
+    showToast('Saving...', 'info');
+    try {
+      await api('/upsert-collection', { collection_id: curCol.collection_id, name: newName, branding: branding });
+      curCol.name = newName; curCol.branding = branding;
+      $('#cdTitle').textContent = newName;
+      showToast('Saved!');
+    } catch(e) { showToast(e.message, 'error'); }
+  }
+
+  async function uploadAsset(input, targetId) {
+    if (localStorage.getItem('impersonateUserId')) { showToast('Read-only in Super Admin view', 'info'); return; }
+
+    const file = input.files[0];
+    if(!file) return;
+
+    const localUrl = URL.createObjectURL(file);
+    const targetInput = document.getElementById(targetId);
+    targetInput.dataset.localPreview = localUrl; delete targetInput.dataset.signedUrl;
+    updatePreview();
+
+    let eventIdToUse = null;
+    if(!curEvents || curEvents.length === 0) {
+      try { const data = await api('/get-events', { collection_id: curCol.collection_id }); curEvents = data.events || []; } catch(e) {}
+    }
+    if(curEvents.length > 0) eventIdToUse = curEvents[0].event_id;
+    else return showToast('Create event first', 'error');
+
+    showToast('Uploading...', 'info');
+    try {
+      const cleanName = String(file.name||'').replace(/[^a-zA-Z0-9.]/g, '_');
+      const hash = 'branding_' + Date.now();
+      const res = await api('/generate-upload-urls', {
+        collection_id: curCol.collection_id, event_id: eventIdToUse,
+        files: [{ name: "branding_"+cleanName, type: file.type, size: file.size, hash: hash }]
+      });
+
+      if(res.urls && res.urls.length > 0) {
+        const u = res.urls[0];
+        await fetch(u.uploadURL, { method: 'PUT', body: file, headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash } });
+        targetInput.value = u.uploadURL.split('?')[0];
+        showToast('Uploaded!');
+      }
+    } catch(e) { console.error(e); showToast('Upload failed: ' + (e.message||''), 'error'); }
+  }
+
+  /* ================= UTILS ================= */
+  function escapeHtml(text) { if (text === undefined || text === null) return ''; return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  
+  /* ================= APPROX BILL (Super Admin) ================= */
+  // NOTE: This is an APPROXIMATE cost estimator for internal monitoring.
+  // Pricing references:
+  // - S3 Standard storage (per GB-month)
+  // - Rekognition image processing (per image)
+  // - Lambda requests (per 1M requests)
+  const USD_TO_INR = 91.84; // Approx USD->INR (Jan 2026)
+  const PRICE_S3_STANDARD_GB_MONTH_USD = 0.023; // S3 Standard (first tier)
+  const PRICE_REKOG_PER_IMAGE_USD = 0.0010; // Rekognition image processing (first tier)
+  const PRICE_LAMBDA_PER_MILLION_REQ_USD = 0.60; // Lambda requests
+
+  function bytesToGB(bytes){
+    const b = Number(bytes||0);
+    if(!isFinite(b) || b<=0) return 0;
+    return b / (1024*1024*1024);
+  }
+
+  function formatINR(n){
+    try {
+      return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n||0));
+    } catch(e){
+      return '₹' + Math.round(Number(n||0)).toLocaleString('en-IN');
+    }
+  }
+
+  // Core estimator: uses existing stats already shown on dashboard.
+  function computeApproxBillINR({ usedBytes=0, photosUploaded=0, guestSearches=0 }){
+    const usedGB = bytesToGB(usedBytes);
+
+    // Storage (S3)
+    const storageINR = usedGB * PRICE_S3_STANDARD_GB_MONTH_USD * USD_TO_INR;
+
+    // Rekognition (very rough):
+    // - Indexing: ~1 image processing call per uploaded photo
+    // - Search: ~1 image processing call per guest selfie search
+    const rekogIndexINR = Number(photosUploaded||0) * PRICE_REKOG_PER_IMAGE_USD * USD_TO_INR;
+    const rekogSearchINR = Number(guestSearches||0) * PRICE_REKOG_PER_IMAGE_USD * USD_TO_INR;
+
+    // Lambda request cost (rough): treat each upload + search as 1 request
+    const approxLambdaReq = Number(photosUploaded||0) + Number(guestSearches||0);
+    const lambdaINR = (approxLambdaReq/1_000_000) * PRICE_LAMBDA_PER_MILLION_REQ_USD * USD_TO_INR;
+
+    const totalINR = storageINR + rekogIndexINR + rekogSearchINR + lambdaINR;
+    return {
+      totalINR,
+      storageINR,
+      rekogIndexINR,
+      rekogSearchINR,
+      lambdaINR
+    };
+  }
+  /* ================= END APPROX BILL ================= */
+
+function formatBytes(bytes=0){
+    bytes = Number(bytes||0);
+    if(!bytes) return '0 B';
+    const k=1024, sizes=['Bytes','KB','MB','GB','TB'];
+    const i=Math.floor(Math.log(bytes)/Math.log(k));
+    return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
+  }
+  </script>
+
+  <!-- Hidden legacy container (kept to avoid layout surprises, but unused) -->
+  <div id="photographer-list" class="hidden" style="display:none"></div>
+
+</body>
+</html>

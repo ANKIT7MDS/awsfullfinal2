@@ -291,7 +291,6 @@
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">GUEST SEARCHES</div><div class="kpi-val" id="saTotalGuestSearch">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">SEARCH RESULTS</div><div class="kpi-val" id="saTotalSearchResults">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div></div>
-          <div class="kpi-box"><div class="text-sm" style="font-...BILL (₹)</div><div class="kpi-val" id="saApproxBill">-</div></div>
         </div>
 
         <!-- Add User Form (Updated with Account Type and Dynamic Placeholder) -->
@@ -353,12 +352,11 @@
                 <th>Status</th>
                 <th>Usage</th>
                 <th>Counts</th>
-                <th>Approx Bill (₹)</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody id="tblPhotographers">
-              <tr><td align="center" class="text-muted" colspan="8">Loading accounts...</td></tr>
+              <tr><td align="center" class="text-muted" colspan="7">Loading accounts...</td></tr>
             </tbody>
           </table>
         </div>
@@ -833,7 +831,9 @@
       } else {
         showToast('Login Failed', 'error');
       }
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   function doLogin(){ location.href = HOSTED_UI; }
@@ -1048,6 +1048,8 @@
            $('#saSection').classList.remove('hidden');
       } else {
         showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1159,6 +1161,8 @@
       } catch (e) {
         console.error("Delete failed:", e);
         showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1191,14 +1195,15 @@
       // Ensure bytes are parsed correctly even if string
       const usedBytes = parseInt(r.used_data_bytes || r.total_storage_used || 0, 10);
       $('#saTotalUsedData').textContent = formatBytes(usedBytes);
-      // Approx Bill (INR)
-      const est = computeApproxBillINR({ usedBytes: usedBytes, photosUploaded: (r.total_photos_uploaded||0), guestSearches: (r.total_guest_searches||0) });
-      $('#saApproxBill').textContent = formatINR(est.totalINR);
     } catch(e) {
       if(e.message.includes("AccessDenied")) {
           console.warn("Permission Error on Backend:", e);
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       } else {
           showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1226,18 +1231,109 @@
 
   async function loadPhotographers() {
     if(!isSuperAdmin) return;
-    $('#tblPhotographers').innerHTML = `<tr><td colspan="8" align="center" class="text-muted">Loading accounts...</td></tr>`;
+    $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-muted">Loading accounts...</td></tr>`;
     try {
       const data = await masterApi('list_photographers', {});
       photographersCache = data.photographers || [];
       renderPhotographersTable();
+      // NEW: Fill Super Admin cards from table data (fallback)
+      updateSuperAdminCardsFromCache();
+      // NEW: Background refresh for accurate counts (sync with Photographer dashboard)
+      enrichPhotographersCacheStats();
     } catch(e) {
       if(e.message.includes("AccessDenied")) {
           // Graceful degradation: show partial data if backend permission fails
-          $('#tblPhotographers').innerHTML = `<tr><td colspan="8" align="center" class="text-danger">Backend Permission Error: AdminGetUser access denied. Please fix IAM Role.</td></tr>`;
+          $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-danger">Backend Permission Error: AdminGetUser access denied. Please fix IAM Role.</td></tr>`;
       } else {
-          $('#tblPhotographers').innerHTML = `<tr><td colspan="8" align="center" class="text-muted">Error: ${escapeHtml(e.message)}</td></tr>`;
+          $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-muted">Error: ${escapeHtml(e.message)}</td></tr>`;
       }
+    }
+  }
+
+  // ================= SUPER ADMIN: STATS FALLBACK + AUTO SYNC =================
+  function updateSuperAdminCardsFromCache(){
+    try{
+      const rows = (photographersCache || []);
+      if(!rows || rows.length === 0) return;
+
+      // Compute totals from loaded list (fallback if global_stats fails)
+      const totalPhotographers = rows.length;
+      let totalCollections = 0;
+      let totalUploads = 0;
+      let totalUsedBytes = 0;
+      let totalGuestSearch = 0;
+      let totalSearchResults = 0;
+
+      for(const u of rows){
+        totalCollections += Number(u.collections || 0);
+        totalUploads += Number(u.photos_uploaded || 0);
+        totalUsedBytes += Number(u.used_data_bytes || 0);
+        totalGuestSearch += Number(u.guest_searches || 0);
+        totalSearchResults += Number(u.search_results || 0);
+      }
+
+      // Update cards (only if elements exist)
+      if($('#saTotalPhotographers')) $('#saTotalPhotographers').textContent = totalPhotographers.toLocaleString();
+      if($('#saTotalCollections')) $('#saTotalCollections').textContent = totalCollections.toLocaleString();
+      if($('#saTotalUploads')) $('#saTotalUploads').textContent = totalUploads.toLocaleString();
+      if($('#saTotalGuestSearch')) $('#saTotalGuestSearch').textContent = totalGuestSearch.toLocaleString();
+      if($('#saTotalSearchResults')) $('#saTotalSearchResults').textContent = totalSearchResults.toLocaleString();
+      if($('#saTotalUsedData')) $('#saTotalUsedData').textContent = formatBytes(totalUsedBytes);
+
+      // If Approx Bill card exists (in extended versions), update it too
+      if($('#saApproxBill') && typeof computeApproxBillINR === 'function'){
+        const est = computeApproxBillINR({ usedBytes: totalUsedBytes, photosUploaded: totalUploads, guestSearches: totalGuestSearch });
+        $('#saApproxBill').textContent = formatINR(est.totalINR);
+      }
+    } catch(err){
+      console.warn("updateSuperAdminCardsFromCache failed:", err);
+    }
+  }
+
+  async function enrichPhotographersCacheStats(){
+    try{
+      // Prevent double-run
+      if(window.__saEnrichRunning) return;
+      window.__saEnrichRunning = true;
+
+      const rows = (photographersCache || []).slice();
+      if(rows.length === 0) { window.__saEnrichRunning = false; return; }
+
+      // Concurrency limit (safe for Lambda/API)
+      const BATCH = 3;
+
+      for(let i=0;i<rows.length;i+=BATCH){
+        const batch = rows.slice(i, i+BATCH);
+
+        await Promise.all(batch.map(async (u) => {
+          try{
+            // Deep stats (same logic as Photographer dashboard, server-side)
+            const det = await masterApi('get_photographer_details', { user_id: u.user_id });
+
+            // Merge ONLY stats fields (do not overwrite UI-critical fields)
+            if(det && typeof det === 'object'){
+              if(det.collections !== undefined) u.collections = det.collections;
+              if(det.photos_uploaded !== undefined) u.photos_uploaded = det.photos_uploaded;
+              if(det.used_data_bytes !== undefined) u.used_data_bytes = det.used_data_bytes;
+              if(det.limit_bytes !== undefined) u.limit_bytes = det.limit_bytes;
+              if(det.guest_searches !== undefined) u.guest_searches = det.guest_searches;
+              if(det.search_results !== undefined) u.search_results = det.search_results;
+            }
+          } catch(e){
+            // Ignore per-user errors to keep dashboard usable
+            console.warn("enrichPhotographersCacheStats user failed:", u.user_id, e.message || e);
+          }
+        }));
+
+        // Re-render to reflect updated stats gradually (keeps UI same)
+        renderPhotographersTable();
+        updateSuperAdminCardsFromCache();
+      }
+
+      window.__saEnrichRunning = false;
+    } catch(err){
+      window.__saEnrichRunning = false;
+      console.warn("enrichPhotographersCacheStats failed:", err);
     }
   }
 
@@ -1251,7 +1347,7 @@
 
     const tbody = $('#tblPhotographers');
     if(rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" align="center" class="text-muted">No accounts found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" align="center" class="text-muted">No accounts found.</td></tr>`;
       return;
     }
 
@@ -1279,10 +1375,6 @@
         <span class="tag-pill"><i class="fa-solid fa-images"></i> ${u.photos_uploaded||0}</span>
       `;
 
-      // Approx Bill (₹) per photographer (rough)
-      const estBill = computeApproxBillINR({ usedBytes: (u.used_data_bytes||0), photosUploaded: (u.photos_uploaded||0), guestSearches: (u.guest_searches||0) });
-      const approxBill = formatINR(estBill.totalINR);
-
       // Conditional Login Button
       const loginBtn = isPolitical
          ? `<button class="btn secondary" style="padding:6px 12px; font-size:11px; color:#ff9800; border-color:#ff9800;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'political')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Panel</button>`
@@ -1303,8 +1395,7 @@
           <td><span class="status-badge ${statusClass}">${statusTxt}</span></td>
           <td style="font-size:12px;">${usage}</td>
           <td style="font-size:12px;">${counts}</td>
-          <td style="font-size:12px; font-weight:800;">${approxBill}</td>
-          <td
+          <td>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               ${loginBtn}
               <button class="btn secondary" style="padding:6px 12px; font-size:11px;" onclick="openEditModal('${escJsSingle(u.user_id)}', '${escJsSingle(u.plan||'basic')}', '${escJsSingle(u.account_status||'active')}', '${escJsSingle(u.expiry_date||'')}')">
@@ -1366,6 +1457,8 @@
           alert("⚠️ AWS PERMISSION ERROR\n\nThe Lambda function 'master-admin-api' does not have permission to fetch user details.\n\nPLEASE ADD THIS POLICY TO LAMBDA ROLE:\n{\n  'Effect': 'Allow',\n  'Action': 'cognito-idp:AdminGetUser',\n  'Resource': '*'\n}");
       } else {
           showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1398,6 +1491,8 @@
           loadSuperAdminStats();
       } catch (e) {
           showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
   }
 
@@ -1435,6 +1530,8 @@
           await loadSuperAdminStats();
       } catch(e){
           showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
   }
 
@@ -1775,7 +1872,9 @@
       if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0);
       loadPhotos(true);
       showToast('Deleted');
-    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+    } catch(e) { console.error(e); showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   /* ================= UPLOAD LOGIC ================= */
@@ -1856,7 +1955,9 @@
       }).filter(Boolean);
 
       await Promise.all(uploadPromises);
-    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+    } catch(e) { console.error(e); showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   async function computeHash(file) {
@@ -1931,7 +2032,9 @@
 
       addToLinkHistory(type === 'client' ? 'Client Gallery' : 'Guest Search', finalUrl, pin, expiry);
       showToast('Link Generated!');
-    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+    } catch(e) { console.error(e); showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   function copyLink(){
@@ -2116,7 +2219,9 @@
       });
       loadClientSelections();
       showToast('Entry deleted');
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   async function directDownload(url, filename, event) {
@@ -2214,7 +2319,9 @@
       });
       loadLeads();
       showToast('Guest deleted');
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   /* ================= LIVE PREVIEW & SETTINGS ================= */
@@ -2308,7 +2415,9 @@
       curCol.name = newName; curCol.branding = branding;
       $('#cdTitle').textContent = newName;
       showToast('Saved!');
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   async function uploadAsset(input, targetId) {
@@ -2350,61 +2459,7 @@
   /* ================= UTILS ================= */
   function escapeHtml(text) { if (text === undefined || text === null) return ''; return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
-  
-  /* ================= APPROX BILL (Super Admin) ================= */
-  // NOTE: This is an APPROXIMATE cost estimator for internal monitoring.
-  // Pricing references:
-  // - S3 Standard storage (per GB-month)
-  // - Rekognition image processing (per image)
-  // - Lambda requests (per 1M requests)
-  const USD_TO_INR = 91.84; // Approx USD->INR (Jan 2026)
-  const PRICE_S3_STANDARD_GB_MONTH_USD = 0.023; // S3 Standard (first tier)
-  const PRICE_REKOG_PER_IMAGE_USD = 0.0010; // Rekognition image processing (first tier)
-  const PRICE_LAMBDA_PER_MILLION_REQ_USD = 0.60; // Lambda requests
-
-  function bytesToGB(bytes){
-    const b = Number(bytes||0);
-    if(!isFinite(b) || b<=0) return 0;
-    return b / (1024*1024*1024);
-  }
-
-  function formatINR(n){
-    try {
-      return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n||0));
-    } catch(e){
-      return '₹' + Math.round(Number(n||0)).toLocaleString('en-IN');
-    }
-  }
-
-  // Core estimator: uses existing stats already shown on dashboard.
-  function computeApproxBillINR({ usedBytes=0, photosUploaded=0, guestSearches=0 }){
-    const usedGB = bytesToGB(usedBytes);
-
-    // Storage (S3)
-    const storageINR = usedGB * PRICE_S3_STANDARD_GB_MONTH_USD * USD_TO_INR;
-
-    // Rekognition (very rough):
-    // - Indexing: ~1 image processing call per uploaded photo
-    // - Search: ~1 image processing call per guest selfie search
-    const rekogIndexINR = Number(photosUploaded||0) * PRICE_REKOG_PER_IMAGE_USD * USD_TO_INR;
-    const rekogSearchINR = Number(guestSearches||0) * PRICE_REKOG_PER_IMAGE_USD * USD_TO_INR;
-
-    // Lambda request cost (rough): treat each upload + search as 1 request
-    const approxLambdaReq = Number(photosUploaded||0) + Number(guestSearches||0);
-    const lambdaINR = (approxLambdaReq/1_000_000) * PRICE_LAMBDA_PER_MILLION_REQ_USD * USD_TO_INR;
-
-    const totalINR = storageINR + rekogIndexINR + rekogSearchINR + lambdaINR;
-    return {
-      totalINR,
-      storageINR,
-      rekogIndexINR,
-      rekogSearchINR,
-      lambdaINR
-    };
-  }
-  /* ================= END APPROX BILL ================= */
-
-function formatBytes(bytes=0){
+  function formatBytes(bytes=0){
     bytes = Number(bytes||0);
     if(!bytes) return '0 B';
     const k=1024, sizes=['Bytes','KB','MB','GB','TB'];

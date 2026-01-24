@@ -1264,12 +1264,15 @@
       let totalGuestSearch = 0;
       let totalSearchResults = 0;
 
+      const safeNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+      const safeCount = (v) => Array.isArray(v) ? v.length : safeNum(v);
+
       for(const u of rows){
-        totalCollections += Number(u.collections || 0);
-        totalUploads += Number(u.photos_uploaded || 0);
-        totalUsedBytes += Number(u.used_data_bytes || 0);
-        totalGuestSearch += Number(u.guest_searches || 0);
-        totalSearchResults += Number(u.search_results || 0);
+        totalCollections += safeCount(u.collections);
+        totalUploads += safeNum(u.photos_uploaded);
+        totalUsedBytes += safeNum(u.used_data_bytes);
+        totalGuestSearch += safeNum(u.guest_searches);
+        totalSearchResults += safeNum(u.search_results);
       }
 
       // Update cards (only if elements exist)
@@ -1312,7 +1315,16 @@
 
             // Merge ONLY stats fields (do not overwrite UI-critical fields)
             if(det && typeof det === 'object'){
-              if(det.collections !== undefined) u.collections = det.collections;
+              if(det.collections !== undefined) {
+                // NOTE: get_photographer_details returns 'collections' as an ARRAY (collection_list_full)
+                // We ONLY need the COUNT for the Super Admin table/cards.
+                if (Array.isArray(det.collections)) u.collections = det.collections.length;
+                else u.collections = det.collections;
+              }
+              // Prefer explicit list field if present
+              if (det.collection_list_full !== undefined && Array.isArray(det.collection_list_full)) {
+                u.collections = det.collection_list_full.length;
+              }
               if(det.photos_uploaded !== undefined) u.photos_uploaded = det.photos_uploaded;
               if(det.used_data_bytes !== undefined) u.used_data_bytes = det.used_data_bytes;
               if(det.limit_bytes !== undefined) u.limit_bytes = det.limit_bytes;
@@ -1370,9 +1382,12 @@
 
       const usage = `${formatBytes(u.used_data_bytes||0)} / ${formatBytes(u.limit_bytes||0)}`;
 
+      const colCount = Array.isArray(u.collections) ? u.collections.length : (Number.isFinite(Number(u.collections)) ? Number(u.collections) : 0);
+      const photoCount = Number.isFinite(Number(u.photos_uploaded)) ? Number(u.photos_uploaded) : 0;
+
       const counts = `
-        <span class="tag-pill"><i class="fa-solid fa-layer-group"></i> ${u.collections||0}</span>
-        <span class="tag-pill"><i class="fa-solid fa-images"></i> ${u.photos_uploaded||0}</span>
+        <span class="tag-pill"><i class="fa-solid fa-layer-group"></i> ${colCount||0}</span>
+        <span class="tag-pill"><i class="fa-solid fa-images"></i> ${photoCount||0}</span>
       `;
 
       // Conditional Login Button

@@ -1001,10 +1001,12 @@
          return;
       }
 
-      allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+            // Robust parse: API may return Items/items/collections
+      const _items = (cData && (cData.Items || cData.items || cData.collections || cData.data)) || [];
+      allCols = (Array.isArray(_items) ? _items : []).sort((a,b) => new Date((b||{}).created_at || 0) - new Date((a||{}).created_at || 0));
 
-      let realTotalPhotos = allCols.reduce((sum, c) => sum + (Number(c.total_photo_count) || 0), 0);
-      let realTotalStorage = allCols.reduce((sum, c) => sum + (Number(c.storage_bytes) || 0), 0);
+      let realTotalPhotos = allCols.reduce((sum, c) => sum + (Number(c.total_photo_count || c.photo_count || c.totalPhotos || c.photos) || 0), 0);
+      let realTotalStorage = allCols.reduce((sum, c) => sum + (Number(c.storage_bytes || c.storageBytes || c.bytes) || 0), 0);
 
       $('#dCols').textContent = allCols.length;
       $('#dPhotos').textContent = realTotalPhotos > 0 ? realTotalPhotos.toLocaleString() : "0";

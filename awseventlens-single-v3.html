@@ -178,12 +178,8 @@
       
       <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Plan</label>
       <select id="eduPlan" style="margin-bottom:15px;">
-
-          <option value="trial">Trial (2GB / 14 Days)</option>
-          <option value="starter">Starter (50GB)</option>
-          <option value="basic">Basic (200GB)</option>
-          <option value="pro">Pro (1TB)</option>
-          <option value="studio">Studio (5TB)</option>
+          <option value="basic">Basic (50GB)</option>
+          <option value="pro">Pro (500GB)</option>
       </select>
 
       <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Account Status</label>
@@ -294,16 +290,7 @@
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">UPLOADED PHOTOS</div><div class="kpi-val" id="saTotalUploads">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">GUEST SEARCHES</div><div class="kpi-val" id="saTotalGuestSearch">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">SEARCH RESULTS</div><div class="kpi-val" id="saTotalSearchResults">-</div></div>
-          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div>
-          <div class="kpi-box">
-            <div class="kpi-label" style="color:var(--text-muted);">POLITICAL ENTRIES</div>
-            <div class="kpi-val" id="saTotalPoliticalEntries">-</div>
-          </div>
-          <div class="kpi-box">
-            <div class="kpi-label" style="color:var(--text-muted);">POLITICAL FACES</div>
-            <div class="kpi-val" id="saTotalPoliticalFaces">-</div>
-          </div>
-</div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div></div>
         </div>
 
         <!-- Add User Form (Updated with Account Type and Dynamic Placeholder) -->
@@ -328,13 +315,9 @@
             <div style="flex:1">
                 <label class="text-sm text-muted">Plan</label>
                 <select id="nuPlan">
-
-          <option value="trial">Trial (2GB / 14 Days)</option>
-          <option value="starter">Starter (50GB)</option>
-          <option value="basic">Basic (200GB)</option>
-          <option value="pro">Pro (1TB)</option>
-          <option value="studio">Studio (5TB)</option>
-      </select>
+                  <option value="basic">Basic (50GB)</option>
+                  <option value="pro">Pro (500GB)</option>
+                </select>
             </div>
             <!-- Added Temporary Password Field -->
             <div style="flex:1">
@@ -713,21 +696,8 @@
   const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
   const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
 
-  
-  /* ================= PLAN LABEL HELPERS ================= */
-  function prettyPlan(p){
-    const x = String(p||"").toLowerCase();
-    if(x==="trial"||x==="free") return "Trial (2GB/14D)";
-    if(x==="starter") return "Starter (50GB)";
-    if(x==="basic") return "Basic (200GB)";
-    if(x==="pro") return "Pro (1TB)";
-    if(x==="studio"||x==="enterprise") return "Studio (5TB)";
-    return p || "-";
-  }
-
-/* ================= STATE MANAGEMENT ================= */
+  /* ================= STATE MANAGEMENT ================= */
   let idToken = localStorage.getItem('idToken');
-  let accessToken = localStorage.getItem('accessToken');
   let curCol = null;
   let allCols = [];
   let curEvents = [];
@@ -789,7 +759,7 @@
       return;
     }
 
-    if(!idToken && !accessToken) {
+    if(!idToken) {
       showView('vLogin');
     } else {
       $('#btnLogout').classList.remove('hidden');
@@ -802,15 +772,14 @@
         $('#impName').textContent = localStorage.getItem('impersonateStudioName') || localStorage.getItem('impersonateEmail') || impUserId || '-';
       }
 
-      // Check if Super Admin (groups/email)  // FIX: groups claim is in Access Token
-      const payloadId = parseJwt(idToken || '');
-      const payloadAcc = parseJwt(accessToken || idToken || '');
-      const groups = payloadAcc['cognito:groups'] || payloadAcc['groups'] || payloadId['cognito:groups'] || payloadId['groups'] || [];
-      const email = (payloadId.email || payloadAcc.email || '').toLowerCase();
+      // Check if Super Admin (groups/email)
+      const payload = parseJwt(idToken);
+      const groups = payload['cognito:groups'] || payload['groups'] || [];
+      const email = (payload.email || '').toLowerCase();
 
       // Basic Super Admin Detection
       const gArr = Array.isArray(groups) ? groups : (typeof groups === 'string' ? groups.split(',') : []);
-      const ok = gArr.some(g => String(g).toLowerCase().includes('master') || String(g).toLowerCase().includes('admin')) || ['admin@eventlens.com','anusonimds@gmail.com'].includes(email);
+      const ok = gArr.some(g => String(g).toLowerCase().includes('master') || String(g).toLowerCase().includes('admin')) || email === 'admin@eventlens.com';
       if(ok) {
         isSuperAdmin = true;
         $('#saBadge').classList.remove('hidden');
@@ -853,7 +822,6 @@
       const data = await res.json();
       if(data.id_token){
         localStorage.setItem('idToken', data.id_token);
-        if(data.access_token) localStorage.setItem('accessToken', data.access_token);
         // clear impersonation on fresh login
         localStorage.removeItem('impersonateUserId');
         localStorage.removeItem('impersonateStudioName');
@@ -863,9 +831,7 @@
       } else {
         showToast('Login Failed', 'error');
       }
-    } catch(e) { showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache(); }
+    } catch(e) { showToast(e.message, 'error'); }
   }
 
   function doLogin(){ location.href = HOSTED_UI; }
@@ -874,7 +840,7 @@
   /* ================= IMPROVED API HELPER ================= */
   async function api(path, body){
     // STANDARD BEHAVIOR: Use Admin ID Token. No fake impersonation tokens.
-    const tokenToUse = accessToken || idToken; // Prefer ID token for API Gateway JWT authorizer
+    const tokenToUse = idToken;
 
     const opts = {
       method: 'POST',
@@ -929,22 +895,15 @@
     } else if (action === 'global_stats') {
         body.action = 'global_stats';
     }
-    // Try ID token first (best for API Gateway JWT authorizer), then fallback to Access token if needed
-    const primaryToken = idToken || accessToken || "";
-    const fallbackToken = (accessToken && accessToken !== primaryToken) ? accessToken : (idToken && idToken !== primaryToken ? idToken : "");
 
-    async function _doFetch(tokenStr){
-        const hdrs = { 'Content-Type': 'application/json' };
-        if(tokenStr) hdrs['Authorization'] = `Bearer ${tokenStr}`;
-        return fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(body) });
-    }
-
-    let res = await _doFetch(primaryToken);
-
-    // If authorizer rejects token type/audience, retry once with fallback token
-    if(res.status === 401 && fallbackToken){
-        res = await _doFetch(fallbackToken);
-    }
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${idToken}` 
+        },
+        body: JSON.stringify(body)
+    });
 
     if(!res.ok) {
         let msg = res.statusText;
@@ -1040,12 +999,10 @@
          return;
       }
 
-            // Robust parse: API may return Items/items/collections
-      const _items = (cData && (cData.Items || cData.items || cData.collections || cData.data)) || [];
-      allCols = (Array.isArray(_items) ? _items : []).sort((a,b) => new Date((b||{}).created_at || 0) - new Date((a||{}).created_at || 0));
+      allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
-      let realTotalPhotos = allCols.reduce((sum, c) => sum + (Number(c.total_photo_count || c.photo_count || c.totalPhotos || c.photos) || 0), 0);
-      let realTotalStorage = allCols.reduce((sum, c) => sum + (Number(c.storage_bytes || c.storageBytes || c.bytes) || 0), 0);
+      let realTotalPhotos = allCols.reduce((sum, c) => sum + (Number(c.total_photo_count) || 0), 0);
+      let realTotalStorage = allCols.reduce((sum, c) => sum + (Number(c.storage_bytes) || 0), 0);
 
       $('#dCols').textContent = allCols.length;
       $('#dPhotos').textContent = realTotalPhotos > 0 ? realTotalPhotos.toLocaleString() : "0";
@@ -1089,8 +1046,6 @@
            $('#saSection').classList.remove('hidden');
       } else {
         showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1202,8 +1157,6 @@
       } catch (e) {
         console.error("Delete failed:", e);
         showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1235,20 +1188,12 @@
       
       // Ensure bytes are parsed correctly even if string
       const usedBytes = parseInt(r.used_data_bytes || r.total_storage_used || 0, 10);
-      const approxBill = computeApproxBillINR(usedBytes, Number(r.total_photos_uploaded||0), Number(r.total_guest_searches||0));
-      $('#saTotalUsedData').textContent = `${formatBytes(usedBytes)} | ₹${approxBill.toFixed(2)}`;
-
-      $('#saTotalPoliticalEntries').textContent = String(r.total_political_entries || 0);
-      $('#saTotalPoliticalFaces').textContent = String(r.total_political_faces || 0);
+      $('#saTotalUsedData').textContent = formatBytes(usedBytes);
     } catch(e) {
       if(e.message.includes("AccessDenied")) {
           console.warn("Permission Error on Backend:", e);
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache();
       } else {
           showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1265,54 +1210,29 @@
       const label = document.getElementById('lblName');
       const input = document.getElementById('nuName');
       
-      // Political भी उसी तरह "Login As" करेगा (same dashboard flow)
-// अलग file open नहीं होगी
-
-
-      // Concurrency limit (safe for Lambda/API)
-      const BATCH = 3;
-
-      for(let i=0;i<rows.length;i+=BATCH){
-        const batch = rows.slice(i, i+BATCH);
-
-        await Promise.all(batch.map(async (u) => {
-          try{
-            // Deep stats (same logic as Photographer dashboard, server-side)
-            const det = await masterApi('get_photographer_details', { user_id: u.user_id });
-
-            // Merge ONLY stats fields (do not overwrite UI-critical fields)
-            if(det && typeof det === 'object'){
-              if(det.collections !== undefined) {
-                // NOTE: get_photographer_details returns 'collections' as an ARRAY (collection_list_full)
-                // We ONLY need the COUNT for the Super Admin table/cards.
-                if (Array.isArray(det.collections)) u.collections = det.collections.length;
-                else u.collections = det.collections;
-              }
-              // Prefer explicit list field if present
-              if (det.collection_list_full !== undefined && Array.isArray(det.collection_list_full)) {
-                u.collections = det.collection_list_full.length;
-              }
-              if(det.photos_uploaded !== undefined) u.photos_uploaded = det.photos_uploaded;
-              if(det.used_data_bytes !== undefined) u.used_data_bytes = det.used_data_bytes;
-              if(det.limit_bytes !== undefined) u.limit_bytes = det.limit_bytes;
-              if(det.guest_searches !== undefined) u.guest_searches = det.guest_searches;
-              if(det.search_results !== undefined) u.search_results = det.search_results;
-            }
-          } catch(e){
-            // Ignore per-user errors to keep dashboard usable
-            console.warn("enrichPhotographersCacheStats user failed:", u.user_id, e.message || e);
-          }
-        }));
-
-        // Re-render to reflect updated stats gradually (keeps UI same)
-        renderPhotographersTable();
-        updateSuperAdminCardsFromCache();
+      if(type === 'political') {
+          label.innerText = 'Organization Name';
+          input.placeholder = 'e.g. BJP Mandsaur';
+      } else {
+          label.innerText = 'Studio Name';
+          input.placeholder = 'e.g. Rahul Photography';
       }
+  }
 
-      window.__saEnrichRunning = false;
-    } catch(err){
-      window.__saEnrichRunning = false;
-      console.warn("enrichPhotographersCacheStats failed:", err);
+  async function loadPhotographers() {
+    if(!isSuperAdmin) return;
+    $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-muted">Loading accounts...</td></tr>`;
+    try {
+      const data = await masterApi('list_photographers', {});
+      photographersCache = data.photographers || [];
+      renderPhotographersTable();
+    } catch(e) {
+      if(e.message.includes("AccessDenied")) {
+          // Graceful degradation: show partial data if backend permission fails
+          $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-danger">Backend Permission Error: AdminGetUser access denied. Please fix IAM Role.</td></tr>`;
+      } else {
+          $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-muted">Error: ${escapeHtml(e.message)}</td></tr>`;
+      }
     }
   }
 
@@ -1349,21 +1269,14 @@
 
       const usage = `${formatBytes(u.used_data_bytes||0)} / ${formatBytes(u.limit_bytes||0)}`;
 
-      const colCount = Array.isArray(u.collections) ? u.collections.length : (Number.isFinite(Number(u.collections)) ? Number(u.collections) : 0);
-      const photoCount = Number.isFinite(Number(u.photos_uploaded)) ? Number(u.photos_uploaded) : 0;
-
-      const usedRowBytes = Number(u.used_data_bytes || u.used_storage_bytes || 0);
-      const rowBill = computeApproxBillINR(usedRowBytes, photoCount, Number(u.guest_searches||0));
-
       const counts = `
-        <span class="tag-pill"><i class="fa-solid fa-layer-group"></i> ${colCount||0}</span>
-        <span class="tag-pill"><i class="fa-solid fa-images"></i> ${photoCount||0}</span>
-        <span class="tag-pill" style="border-color:#00e676; color:#00e676;"><i class="fa-solid fa-indian-rupee-sign"></i> ${ (rowBill||0).toFixed(2) }</span>
+        <span class="tag-pill"><i class="fa-solid fa-layer-group"></i> ${u.collections||0}</span>
+        <span class="tag-pill"><i class="fa-solid fa-images"></i> ${u.photos_uploaded||0}</span>
       `;
 
       // Conditional Login Button
       const loginBtn = isPolitical
-         ? `<button class="btn secondary" style="padding:6px 12px; font-size:11px; color:#ff9800; border-color:#ff9800;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'political')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Login As</button>`
+         ? `<button class="btn secondary" style="padding:6px 12px; font-size:11px; color:#ff9800; border-color:#ff9800;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'political')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Panel</button>`
          : `<button class="btn primary" style="padding:6px 12px; font-size:11px;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'photographer')"><i class="fa-solid fa-right-to-bracket"></i> Login As</button>`;
 
 
@@ -1443,8 +1356,6 @@
           alert("⚠️ AWS PERMISSION ERROR\n\nThe Lambda function 'master-admin-api' does not have permission to fetch user details.\n\nPLEASE ADD THIS POLICY TO LAMBDA ROLE:\n{\n  'Effect': 'Allow',\n  'Action': 'cognito-idp:AdminGetUser',\n  'Resource': '*'\n}");
       } else {
           showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1477,8 +1388,6 @@
           loadSuperAdminStats();
       } catch (e) {
           showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache();
       }
   }
 
@@ -1516,8 +1425,6 @@
           await loadSuperAdminStats();
       } catch(e){
           showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache();
       }
   }
 
@@ -1858,9 +1765,7 @@
       if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0);
       loadPhotos(true);
       showToast('Deleted');
-    } catch(e) { console.error(e); showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache(); }
+    } catch(e) { console.error(e); showToast(e.message, 'error'); }
   }
 
   /* ================= UPLOAD LOGIC ================= */
@@ -1941,9 +1846,7 @@
       }).filter(Boolean);
 
       await Promise.all(uploadPromises);
-    } catch(e) { console.error(e); showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache(); }
+    } catch(e) { console.error(e); showToast(e.message, 'error'); }
   }
 
   async function computeHash(file) {
@@ -2008,7 +1911,7 @@
       if(type === 'client') {
         finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
       } else {
-        finalUrl = `${window.location.origin}/guest-search.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+        finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
         if(eid) finalUrl += `&eid=${eid}`;
       }
 
@@ -2018,9 +1921,7 @@
 
       addToLinkHistory(type === 'client' ? 'Client Gallery' : 'Guest Search', finalUrl, pin, expiry);
       showToast('Link Generated!');
-    } catch(e) { console.error(e); showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache(); }
+    } catch(e) { console.error(e); showToast(e.message, 'error'); }
   }
 
   function copyLink(){
@@ -2205,9 +2106,7 @@
       });
       loadClientSelections();
       showToast('Entry deleted');
-    } catch(e) { showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache(); }
+    } catch(e) { showToast(e.message, 'error'); }
   }
 
   async function directDownload(url, filename, event) {
@@ -2305,9 +2204,7 @@
       });
       loadLeads();
       showToast('Guest deleted');
-    } catch(e) { showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache(); }
+    } catch(e) { showToast(e.message, 'error'); }
   }
 
   /* ================= LIVE PREVIEW & SETTINGS ================= */
@@ -2401,9 +2298,7 @@
       curCol.name = newName; curCol.branding = branding;
       $('#cdTitle').textContent = newName;
       showToast('Saved!');
-    } catch(e) { showToast(e.message, 'error');
-          // Fallback: Try to compute from cached list
-          updateSuperAdminCardsFromCache(); }
+    } catch(e) { showToast(e.message, 'error'); }
   }
 
   async function uploadAsset(input, targetId) {
@@ -2451,31 +2346,6 @@
     const k=1024, sizes=['Bytes','KB','MB','GB','TB'];
     const i=Math.floor(Math.log(bytes)/Math.log(k));
     return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
-  }
-
-  function computeApproxBillINR(usedBytes=0, uploads=0, searches=0){
-    // Very rough estimate for safety-checking profitability (NOT an AWS invoice)
-    usedBytes = Number(usedBytes||0);
-    uploads = Number(uploads||0);
-    searches = Number(searches||0);
-
-    const gb = usedBytes / (1024*1024*1024);
-
-    // S3 Standard (approx) per GB-month in INR (Mumbai region varies; keep approx)
-    const INR_PER_GB_MONTH = 2.10; // ~ $0.025/GB-month * 84 INR/USD
-
-    // Request estimates (approx)
-    const PUT_1000_INR = 0.42; // ~ $0.005/1000 * 84
-    const GET_1000_INR = 0.03; // ~ $0.0004/1000 * 84
-
-    const storageCost = gb * INR_PER_GB_MONTH;
-
-    // Assume 1 PUT per photo upload, and ~20 GETs per guest search (thumbs, zips etc.)
-    const putCost = (uploads/1000) * PUT_1000_INR;
-    const getCost = ((searches*20)/1000) * GET_1000_INR;
-
-    const total = storageCost + putCost + getCost;
-    return isFinite(total) ? Math.max(0, total) : 0;
   }
   </script>
 

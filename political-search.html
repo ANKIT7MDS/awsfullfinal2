@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>कार्यकर्ता सर्च (Political Search) - EventLens</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              900: '#0c4a6e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(circle at top left, rgba(14,165,233,0.12), transparent 40%),
+                  radial-gradient(circle at top right, rgba(168,85,247,0.10), transparent 40%),
+                  #020617;
+    }
+    .glass {
+      background: rgba(30,41,59,0.72);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-200">
+  <div class="max-w-5xl mx-auto px-4 py-10">
+    <div class="glass rounded-3xl p-6 md:p-8 shadow-2xl">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-black text-white">कार्यकर्ता सर्च</h1>
+          <p class="text-slate-300 mt-2 text-sm">
+            अपनी सेल्फी डालो → सिस्टम आपकी फोटो/एंट्री ढूंढकर Timeline दिखाएगा।
+          </p>
+          <p class="text-slate-500 mt-2 text-xs">
+            (यह page public link है। Politician user dashboard से generate होगा।)
+          </p>
+        </div>
+        <div class="text-xs text-slate-400 md:text-right">
+          <div class="font-semibold">Token</div>
+          <div id="tokenText" class="mt-1 break-all max-w-sm">-</div>
+        </div>
+      </div>
+
+      <div class="mt-6 grid md:grid-cols-2 gap-6">
+        <div class="bg-slate-900/60 border border-slate-700 rounded-2xl p-5">
+          <h2 class="font-bold text-white">1) सेल्फी Upload</h2>
+          <p class="text-xs text-slate-400 mt-1">सिर्फ 1 selfie select करें</p>
+
+          <input id="selfieInput" accept="image/*" type="file"
+                 class="mt-4 w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition" />
+
+          <button id="searchBtn" class="mt-4 w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 font-bold text-white transition">
+            Search
+          </button>
+
+          <div id="statusBox" class="hidden mt-4 p-4 rounded-2xl bg-slate-900 border border-slate-700 text-sm">
+            <div class="font-semibold text-white mb-1">Status</div>
+            <div id="statusText" class="text-slate-300">-</div>
+          </div>
+
+          <div id="nameBox" class="hidden mt-4 p-4 rounded-2xl bg-slate-900 border border-slate-700">
+            <div class="font-bold text-white">Name / Mobile Save (Optional)</div>
+            <div class="grid grid-cols-1 gap-3 mt-3">
+              <input id="personName" type="text" placeholder="नाम"
+                     class="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition placeholder-slate-500" />
+              <input id="personMobile" type="tel" placeholder="मोबाइल"
+                     class="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition placeholder-slate-500" />
+              <button id="saveBtn" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-white transition">
+                Save Name/Mobile
+              </button>
+              <div class="text-xs text-slate-400">
+                इससे face को नाम assign हो जाएगा (future search में दिखेगा)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-700 rounded-2xl p-5">
+          <h2 class="font-bold text-white">2) Result Timeline</h2>
+          <div id="resultHeader" class="text-sm text-slate-300 mt-2">
+            अभी कोई result नहीं
+          </div>
+
+          <div id="timeline" class="mt-4 space-y-3">
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <h2 class="font-bold text-white">Photos</h2>
+        <div id="photosGrid" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+      </div>
+    </div>
+
+    <div class="text-center text-xs text-slate-500 mt-6">
+      Powered by EventLens + AWS Rekognition
+    </div>
+  </div>
+
+<script>
+  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+  const SEARCH_ENDPOINT = API_BASE + "/political/search";
+
+  let lastFaceId = null;
+
+  function qs(name) {
+    const u = new URL(window.location.href);
+    return u.searchParams.get(name);
+  }
+
+  function showStatus(msg) {
+    const box = document.getElementById('statusBox');
+    const t = document.getElementById('statusText');
+    box.classList.remove('hidden');
+    t.textContent = msg;
+  }
+
+  async function apiCall(action, payload) {
+    const r = await fetch(SEARCH_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, payload })
+    });
+    const txt = await r.text();
+    let data = {};
+    try { data = JSON.parse(txt); } catch(e) { data = {raw: txt}; }
+    if(!r.ok) {
+      throw new Error((data && data.message) ? data.message : ("API Error " + r.status));
+    }
+    return data;
+  }
+
+  async function uploadToS3(url, file) {
+    const r = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream"
+      },
+      body: file
+    });
+    if(!r.ok) throw new Error("S3 Upload fail (" + r.status + ")");
+  }
+
+  function clearUI() {
+    document.getElementById("timeline").innerHTML = "";
+    document.getElementById("photosGrid").innerHTML = "";
+    document.getElementById("resultHeader").textContent = "Computing...";
+  }
+
+  function renderTimeline(items) {
+    const wrap = document.getElementById("timeline");
+    wrap.innerHTML = "";
+    if(!items || items.length === 0) {
+      wrap.innerHTML = '<div class="text-slate-500 text-sm">कोई timeline entry नहीं मिली</div>';
+      return;
+    }
+    for(const it of items) {
+      const div = document.createElement("div");
+      div.className = "p-4 rounded-2xl bg-slate-950/60 border border-slate-700";
+      const when = it.date_text || it.created_at || "";
+      const t = it.form_type || "";
+      const line1 = '<div class="text-xs text-slate-400">' + when + '</div>';
+      const line2 = '<div class="font-bold text-white mt-1">' + (it.title || t) + '</div>';
+      const line3 = '<div class="text-sm text-slate-300 mt-1">' + (it.summary || "") + '</div>';
+      div.innerHTML = line1 + line2 + line3;
+      wrap.appendChild(div);
+    }
+  }
+
+  function renderPhotos(urls) {
+    const grid = document.getElementById("photosGrid");
+    grid.innerHTML = "";
+    if(!urls || urls.length === 0) {
+      grid.innerHTML = '<div class="text-slate-500 text-sm">कोई photo नहीं</div>';
+      return;
+    }
+    for(const u of urls) {
+      const a = document.createElement("a");
+      a.href = u;
+      a.target = "_blank";
+      a.className = "block";
+      const img = document.createElement("img");
+      img.src = u;
+      img.className = "w-full h-40 object-cover rounded-xl border border-slate-700 hover:border-brand-500 transition";
+      a.appendChild(img);
+      grid.appendChild(a);
+    }
+  }
+
+  async function doSearch() {
+    const token = qs("token") || "";
+    document.getElementById("tokenText").textContent = token || "-";
+    if(!token) {
+      showStatus("❌ Token missing. यह link Political Dashboard से generate होना चाहिए।");
+      return;
+    }
+
+    const input = document.getElementById("selfieInput");
+    if(!input.files || input.files.length === 0) {
+      showStatus("❌ Selfie select नहीं किया।");
+      return;
+    }
+    const file = input.files[0];
+
+    clearUI();
+    document.getElementById("searchBtn").disabled = true;
+    document.getElementById("searchBtn").textContent = "Searching...";
+
+    try {
+      showStatus("⏳ Init search...");
+      const init = await apiCall("init_search", { token, mime_type: file.type || "image/jpeg" });
+      showStatus("⏳ Upload selfie...");
+      await uploadToS3(init.upload_url, file);
+
+      showStatus("⏳ Running search...");
+      const res = await apiCall("run_search", { token, search_id: init.search_id });
+
+      lastFaceId = res.face_id || null;
+
+      const header = [];
+      if(res.profile && (res.profile.name || res.profile.mobile)) {
+        header.push("Name: " + (res.profile.name || "-"));
+        header.push("Mobile: " + (res.profile.mobile || "-"));
+      }
+      if(res.similarity != null) {
+        header.push("Similarity: " + res.similarity + "%");
+      }
+      document.getElementById("resultHeader").textContent = header.length ? header.join(" | ") : "Result मिला";
+
+      renderTimeline(res.timeline || []);
+      renderPhotos(res.photo_urls || []);
+
+      document.getElementById("nameBox").classList.remove("hidden");
+      if(res.profile) {
+        document.getElementById("personName").value = res.profile.name || "";
+        document.getElementById("personMobile").value = res.profile.mobile || "";
+      }
+      showStatus("✅ Done!");
+    } catch(err) {
+      showStatus("❌ Error: " + (err && err.message ? err.message : err));
+      document.getElementById("resultHeader").textContent = "Error";
+    } finally {
+      document.getElementById("searchBtn").disabled = false;
+      document.getElementById("searchBtn").textContent = "Search";
+    }
+  }
+
+  async function saveProfile() {
+    const token = qs("token") || "";
+    if(!token || !lastFaceId) {
+      showStatus("❌ पहले search करो (face_id missing).");
+      return;
+    }
+    const name = (document.getElementById("personName").value || "").trim();
+    const mobile = (document.getElementById("personMobile").value || "").trim();
+    if(!name && !mobile) {
+      showStatus("❌ Name या Mobile कुछ तो डालो।");
+      return;
+    }
+    try {
+      showStatus("⏳ Saving profile...");
+      await apiCall("save_profile", { token, face_id: lastFaceId, name, mobile });
+      showStatus("✅ Saved!");
+    } catch(err) {
+      showStatus("❌ Error: " + (err && err.message ? err.message : err));
+    }
+  }
+
+  document.getElementById("searchBtn").addEventListener("click", (e)=>{
+    e.preventDefault();
+    doSearch();
+  });
+
+  document.getElementById("saveBtn").addEventListener("click", (e)=>{
+    e.preventDefault();
+    saveProfile();
+  });
+
+  document.getElementById("tokenText").textContent = qs("token") || "-";
+</script>
+</body>
+</html>

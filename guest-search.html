@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="referrer" content="no-referrer" />
+  <title>EventLens – Smart AI Gallery</title>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #050505; 
+      --card: #141414; 
+      --surface: #1f1f1f;
+      --accent: #00e676; 
+      --accent-soft: rgba(0, 230, 118, 0.15);
+      --text: #ffffff; 
+      --muted: #a0a0a0; 
+      --border: #333;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --overlay-op: 0.5;
+      --logo-size: 85px; 
+      --banner-height: 240px;
+      --safe-area-bottom: env(safe-area-inset-bottom);
+    }
+
+    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+    
+    body { 
+      margin: 0; font-family: var(--font-main); background: var(--bg); color: var(--text); 
+      min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; 
+      padding-bottom: calc(80px + var(--safe-area-bottom));
+      overscroll-behavior-y: none;
+    }
+
+    /* --- GLASSMORPHISM UTILS --- */
+    .glass {
+      background: rgba(20, 20, 20, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* HEADER */
+    header { 
+        position: relative; height: var(--banner-height); overflow: hidden; 
+        background-color: #222; background-size: cover; background-position: center;
+        transition: height 0.3s ease; border-bottom: 1px solid var(--border);
+    }
+    .header-overlay {
+        position: absolute; inset: 0; 
+        background: linear-gradient(to bottom, rgba(0,0,0,0.2), #050505);
+        display: flex; flex-direction: column; justify-content: flex-end; 
+        padding: 20px; text-align: center; align-items: center;
+    }
+    .brand-logo {
+        width: var(--logo-size); height: var(--logo-size);
+        border-radius: 50%; border: 3px solid var(--accent);
+        object-fit: cover; margin-bottom: 12px; background: #000;
+        display: none; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .brand-logo:active { transform: scale(0.9); }
+    .welcome-text {
+        font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 4px; 
+        letter-spacing: 1px; text-transform: uppercase; display: none;
+    }
+    .brand-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin: 0; }
+
+    /* CONTAINER & SEARCH */
+    .container { max-width: 1000px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
+    
+    .search-card {
+        border-radius: 24px; padding: 35px 20px;
+        text-align: center; margin-top: -45px; 
+        box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+    }
+    .search-icon { 
+        font-size: 42px; color: var(--accent); margin-bottom: 15px; 
+        filter: drop-shadow(0 0 15px var(--accent-soft));
+    }
+    .btn-main {
+        background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px;
+        font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+        transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 20px var(--accent-soft);
+    }
+    .btn-main:active { transform: scale(0.95); box-shadow: 0 2px 10px var(--accent-soft); }
+    .btn-main:disabled { opacity: 0.7; transform: none; cursor: not-allowed; }
+
+    /* --- SMART FILTERS --- */
+    .smart-filters {
+        display: flex; gap: 12px; overflow-x: auto; padding: 10px 4px; margin-bottom: 15px;
+        -ms-overflow-style: none; scrollbar-width: none; align-items: center;
+    }
+    .smart-filters::-webkit-scrollbar { display: none; }
+    
+    .person-bubble {
+        flex: 0 0 auto; width: 55px; height: 55px; border-radius: 50%;
+        border: 2px solid var(--border); overflow: hidden; position: relative;
+        cursor: pointer; transition: all 0.2s; background: #000;
+    }
+    .person-bubble img { 
+        width: 100%; height: 100%; object-fit: cover; 
+        transition: transform 0.2s; 
+    }
+    .person-bubble.active { border-color: var(--accent); transform: scale(1.1); box-shadow: 0 4px 10px var(--accent-soft); }
+    
+    .filter-chip {
+        flex: 0 0 auto; padding: 8px 16px; background: var(--surface); border: 1px solid var(--border);
+        border-radius: 20px; font-size: 13px; color: var(--muted); cursor: pointer; transition: all 0.2s;
+        display: flex; align-items: center; gap: 6px; font-weight: 500;
+    }
+    .filter-chip.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+    .filter-chip.fav-chip i { color: #ff4081; }
+    .filter-chip.fav-chip.active i { color: #000; }
+
+    /* --- TIMELINE HEADERS --- */
+    .timeline-header {
+        font-size: 18px; font-weight: 700; color: #fff; margin: 30px 0 15px; padding-left: 5px;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .timeline-header::after {
+        content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--border), transparent);
+    }
+    .timeline-header i { color: var(--accent); }
+
+    /* --- MASONRY GRID --- */
+    .masonry-grid { 
+        column-gap: 12px; 
+        transition: column-count 0.3s ease; 
+        margin-bottom: 30px; 
+    }
+    
+    .photo-item { 
+        break-inside: avoid; margin-bottom: 12px; border-radius: 12px; 
+        overflow: hidden; position: relative; background: #1a1a1a;
+        transform: translateZ(0); transition: filter 0.2s; cursor: pointer;
+    }
+    .photo-item.selected { filter: brightness(0.6) grayscale(0.2); }
+    .photo-item.selected .select-ring { transform: scale(1); opacity: 1; background: var(--accent); border-color: var(--accent); }
+    .photo-item img { width: 100%; display: block; opacity: 0; transition: opacity 0.4s ease-in; border-radius: 12px; }
+    .photo-item img.loaded { opacity: 1; }
+
+    .select-ring {
+        position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; 
+        border: 2px solid rgba(255,255,255,0.9); border-radius: 50%; pointer-events: none;
+        transition: all 0.2s; background: rgba(0,0,0,0.3); z-index: 10; transform: scale(0.8); opacity: 0;
+    }
+    body.select-mode .select-ring { opacity: 1; transform: scale(1); }
+    body.select-mode .photo-item.selected::after {
+        content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900;
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        color: #fff; font-size: 24px; pointer-events: none;
+    }
+
+    .fav-btn {
+        position: absolute; bottom: 8px; right: 8px; 
+        background: rgba(0,0,0,0.3); backdrop-filter: blur(2px);
+        border: none; border-radius: 50%; width: 32px; height: 32px; 
+        display: flex; align-items: center; justify-content: center;
+        color: rgba(255,255,255,0.85); cursor: pointer; z-index: 5; font-size: 14px;
+        transition: all 0.2s;
+    }
+    .fav-btn.active { color: #ff4081; background: #fff; transform: scale(1.1); }
+    .fav-btn:active { transform: scale(0.9); }
+
+    /* --- ACTION BAR --- */
+    .action-bar {
+        position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%) translateY(200px);
+        width: 90%; max-width: 380px; padding: 12px 20px; border-radius: 60px;
+        display: flex; align-items: center; justify-content: space-around; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 100;
+        transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    .action-bar.visible { transform: translateX(-50%) translateY(0); }
+    .act-btn { 
+        background: none; border: none; color: #ccc; font-size: 11px; font-weight: 500;
+        display: flex; flex-direction: column; align-items: center; gap: 5px; 
+        cursor: pointer; transition: color 0.2s; 
+    }
+    .act-btn i { font-size: 20px; transition: transform 0.2s; }
+    .act-btn:active i { transform: scale(1.2); color: var(--accent); }
+    .act-btn.highlight { color: var(--accent); }
+
+    /* --- TOAST --- */
+    .toast-container {
+        position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+        z-index: 999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+    }
+    .toast {
+        background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(8px);
+        color: #fff; padding: 12px 24px; border-radius: 30px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.5); border: 1px solid #333;
+        font-size: 14px; display: flex; align-items: center; gap: 10px;
+        animation: toastUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .toast i { color: var(--accent); }
+    @keyframes toastUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- MODALS --- */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 400; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+    .modal.open { display: flex; animation: fadeIn 0.3s; }
+    .modal-card { background: #161616; border: 1px solid var(--border); width: 85%; max-width: 380px; padding: 30px; border-radius: 24px; text-align: center; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+    
+    .caption-modal-card {
+        background: #111; border: 1px solid var(--border); width: 90%; max-width: 400px; 
+        border-radius: 24px; text-align: left; position: relative; 
+        box-shadow: 0 20px 60px rgba(0,0,0,0.9); padding: 0; overflow: hidden;
+    }
+    .caption-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px; color: #fff; display: flex; align-items: center; gap: 10px;
+    }
+    .caption-content { padding: 25px; max-height: 50vh; overflow-y: auto; color: #ddd; font-size: 15px; line-height: 1.6; }
+    .caption-actions { padding: 15px 25px 25px; display: flex; gap: 10px; }
+    
+    .lead-input { 
+        width: 100%; padding: 16px; margin-bottom: 12px; background: #0a0a0a; 
+        border: 1px solid #333; border-radius: 12px; color: #fff; font-size: 16px; 
+        transition: border-color 0.2s;
+    }
+    .lead-input:focus { border-color: var(--accent); }
+
+    /* --- VIEWER --- */
+    .viewer { 
+        position: fixed; inset: 0; background: #000; z-index: 300; 
+        display: none; align-items: center; justify-content: center; 
+        touch-action: none; 
+    }
+    .viewer.open { display: flex; animation: fadeIn 0.2s; }
+    .viewer img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.2s; }
+    .v-close { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 24px; background: rgba(255,255,255,0.1); width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); z-index: 310; }
+    
+    .v-fav { 
+        position: absolute; top: 20px; right: 70px; 
+        background: rgba(255,255,255,0.1); backdrop-filter: blur(5px);
+        width: 40px; height: 40px; border-radius: 50%; border: none;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; cursor: pointer; z-index: 310; font-size: 18px;
+    }
+    .v-fav.active { color: #ff4081; background: #fff; }
+
+    /* Viewer Action Bar at Bottom */
+    .v-actions {
+        position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+        display: flex; gap: 15px; z-index: 310;
+    }
+    .v-btn-pill {
+        background: rgba(255,255,255,0.9); color: #000; border: none; 
+        padding: 12px 24px; border-radius: 30px; font-weight: 700; font-size: 14px;
+        cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        display: flex; align-items: center; gap: 8px; transition: transform 0.2s;
+    }
+    .v-btn-pill:active { transform: scale(0.95); }
+    .v-btn-magic {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff; border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .v-nav { position: absolute; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.5); font-size: 40px; padding: 20px; cursor: pointer; z-index: 310; }
+    .v-prev { left: 0; } .v-next { right: 0; }
+    
+    /* --- SCROLL ELEMENTS --- */
+    .scroll-top {
+        position: fixed; bottom: 100px; right: 20px; 
+        width: 45px; height: 45px; background: var(--surface); border: 1px solid var(--border);
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        color: var(--accent); font-size: 18px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        opacity: 0; pointer-events: none; transition: all 0.3s; z-index: 90;
+    }
+    .scroll-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+    .date-indicator {
+        position: fixed; top: 120px; right: 20px;
+        background: rgba(255,255,255,0.9); color: #000;
+        padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 14px;
+        opacity: 0; transform: translateX(20px); transition: all 0.3s;
+        z-index: 95; pointer-events: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .date-indicator.visible { opacity: 1; transform: translateX(0); }
+
+    /* --- CAM OVERLAY --- */
+    .cam-modal {
+        position: fixed; inset: 0; background: #000; z-index: 999;
+        display: none; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .cam-modal.active { display: flex; }
+    .cam-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    .cam-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+    .scan-box { width: 280px; height: 350px; border: 2px solid rgba(255,255,255,0.3); border-radius: 20px; position: relative; overflow: hidden; box-shadow: 0 0 0 100vmax rgba(0,0,0,0.5); }
+    .scan-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); box-shadow: 0 0 20px var(--accent); animation: scanMove 2s infinite ease-in-out; }
+    .scan-corner { position: absolute; width: 40px; height: 40px; border: 4px solid var(--accent); border-radius: 4px; }
+    .tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+    .tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+    .bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+    .br { bottom: 0; right: 0; border-left: none; border-top: none; }
+    @keyframes scanMove { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+    .cam-controls { position: absolute; bottom: 40px; pointer-events: auto; }
+    .cam-btn { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #fff; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .cam-btn-inner { width: 56px; height: 56px; background: #fff; border-radius: 50%; transition: transform 0.1s; }
+    .cam-btn:active .cam-btn-inner { transform: scale(0.9); background: var(--accent); }
+    .cam-close { position: absolute; top: 40px; left: 20px; color: #fff; background: rgba(0,0,0,0.5); border: none; padding: 10px 15px; border-radius: 30px; font-size: 14px; cursor: pointer; pointer-events: auto; }
+
+    .hidden { display: none !important; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .count-badge { background: rgba(255,255,255,0.1); color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-left: 8px; border: 1px solid #333; }
+    #sentinel { height: 50px; margin-bottom: 50px; display: flex; justify-content: center; align-items: center; }
+  </style>
+</head>
+<body>
+
+<audio id="popSound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+
+<div id="toastContainer" class="toast-container"></div>
+<div id="dateIndicator" class="date-indicator">Moments</div>
+<button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})"><i class="fa-solid fa-arrow-up"></i></button>
+
+<!-- Custom Camera Modal -->
+<div class="cam-modal" id="cameraModal">
+    <button class="cam-close" onclick="closeCamera()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+    <video id="camFeed" class="cam-video" autoplay playsinline muted></video>
+    <div class="cam-overlay">
+        <div class="scan-box">
+            <div class="scan-corner tl"></div> <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div> <div class="scan-corner br"></div>
+        </div>
+        <p style="position: absolute; bottom: 130px; color: #fff; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 5px 15px; border-radius: 20px;">Position your face inside the frame</p>
+    </div>
+    <div class="cam-controls">
+        <button class="cam-btn" onclick="capturePhoto()"><div class="cam-btn-inner"></div></button>
+    </div>
+</div>
+
+<header id="pageHeader">
+    <div class="header-overlay">
+        <img id="pageLogo" class="brand-logo" alt="Logo" onerror="this.style.display='none'" referrerpolicy="no-referrer">
+        <div id="welcomeText" class="welcome-text"></div>
+        <h1 class="brand-title" id="pageTitle">Find Your Photos Instantly</h1>
+    </div>
+</header>
+
+<div class="container" id="searchContainer">
+    <div class="search-card glass">
+        <i class="fa-solid fa-wand-magic-sparkles search-icon"></i>
+        <h3>Find Your Photos Instantly</h3>
+        <p style="color:var(--muted); margin-bottom: 25px; line-height: 1.5; font-size: 15px;">
+            Upload a selfie and we’ll find all your photos from this event in seconds.
+        </p>
+        
+        <input type="file" id="selfieInput" accept="image/*" hidden onchange="handleSelfieSelect(this.files[0])">
+        <button class="btn-main" onclick="triggerHaptic(); openCamera()">
+            <i class="fa-solid fa-camera"></i> Take Selfie
+        </button>
+        <div style="margin-top: 15px;">
+            <button onclick="document.getElementById('selfieInput').click()" style="background:none; border:none; color: var(--muted); text-decoration: underline; cursor:pointer; font-size: 13px;">or upload from gallery</button>
+        </div>
+
+        <div id="selfiePreviewContainer" class="hidden" style="margin-top: 20px;">
+            <img id="selfiePreviewImg" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
+        </div>
+
+        <div id="loader" class="hidden" style="margin-top: 25px;">
+            <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p style="color:var(--muted); font-size: 14px; margin-top: 15px; font-weight: 500;" id="loaderText">Looking for your best moments…</p>
+        </div>
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    </div>
+</div>
+
+<div class="container hidden" id="galleryContainer">
+    <div class="gallery-header">
+        <h3 style="margin:0; font-size: 18px; display:flex; align-items:center;">
+            Your Photos <span id="matchCount" class="count-badge">0</span>
+        </h3>
+        <button id="btnToggleSelect" class="tag-pill" onclick="triggerHaptic(); toggleSelectionMode()">
+            <i class="fa-solid fa-check-double"></i> Select Photos
+        </button>
+    </div>
+
+    <!-- SMART FILTERS -->
+    <div class="smart-filters" id="smartFilters"></div>
+    
+    <!-- TIMELINE CONTAINER -->
+    <div id="timelineContainer" style="margin-top: 15px;"></div>
+    
+    <!-- Infinite Scroll Sentinel -->
+    <div id="sentinel">
+        <div class="hidden" id="pageLoader">
+             <i class="fa-solid fa-circle-notch fa-spin" style="color:var(--muted)"></i>
+        </div>
+    </div>
+    
+    <div class="hidden" id="noResultsMsg" style="text-align:center; padding: 40px;">
+        <div style="background: rgba(255,255,255,0.05); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+            <i class="fa-regular fa-face-frown-open" style="font-size: 32px; color: var(--muted);"></i>
+        </div>
+        <h3 style="margin:10px 0 5px;">No photos found yet</h3>
+        <p style="color:var(--muted); font-size:14px; margin-bottom:15px;">Don’t worry — try another selfie with better lighting.</p>
+        
+        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:20px; text-align:left; font-size:13px; color:#ccc;">
+            <strong>Tips for better results:</strong>
+            <ul style="margin:5px 0 0 20px; padding:0;">
+                <li>Face the camera clearly</li>
+                <li>Avoid sunglasses or masks</li>
+                <li>Try good lighting</li>
+            </ul>
+        </div>
+        
+        <button class="tag-pill" onclick="location.reload()">Try Another Selfie</button>
+    </div>
+</div>
+
+<div class="action-bar glass" id="actionBar">
+    <div style="color: var(--accent); font-size: 11px; font-weight: 700; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: var(--surface); padding: 5px 14px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+        <span id="selCount">0</span> SELECTED
+    </div>
+    <button class="act-btn" onclick="triggerHaptic(); toggleSelectAll()"><i class="fa-regular fa-square-check"></i> All</button>
+    <button class="act-btn highlight" onclick="triggerHaptic(); downloadSelectedItems()"><i class="fa-solid fa-download"></i> Save</button>
+    <button class="act-btn" onclick="triggerHaptic(); downloadAsZip()"><i class="fa-solid fa-file-zipper"></i> Zip</button>
+    <button class="act-btn" onclick="triggerHaptic(); shareNative()"><i class="fa-solid fa-share-nodes"></i> Share</button>
+</div>
+
+<div class="modal" id="leadModal">
+    <div class="modal-card">
+        <div style="width: 70px; height: 70px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--accent-soft);">
+            <i class="fa-solid fa-check" style="color: var(--accent); font-size: 30px;"></i>
+        </div>
+        <h2 style="margin: 0 0 10px; font-size: 22px;">We Found Your Photos! 🎉</h2>
+        <p style="color: var(--muted); margin-bottom: 25px; font-size: 14px; line-height: 1.5;">
+            We found <span id="leadMatchCount" style="color: #fff; font-weight: 700;">0</span> photos where you appear.<br>Enter your details to view and save them.
+        </p>
+        <input id="guestName" class="lead-input" placeholder="Your Name" autocomplete="name">
+        <input id="guestMobile" class="lead-input" placeholder="Mobile Number" type="tel" autocomplete="tel">
+        <button class="btn-main" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="triggerHaptic(); unlockGallery()">
+            View My Photos
+        </button>
+        <p style="font-size:12px; color:var(--muted); margin-top:15px;">Your details are safe and used only for this event.</p>
+    </div>
+</div>
+
+<!-- CAPTION MODAL -->
+<div class="modal" id="captionModal">
+    <div class="caption-modal-card">
+        <div class="caption-header">
+            <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 20px;"></i>
+            <h3 style="margin:0; font-size: 18px;">AI Caption ✨</h3>
+            <button onclick="document.getElementById('captionModal').classList.remove('open')" style="margin-left: auto; background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">&times;</button>
+        </div>
+        <div class="caption-content" id="captionResult"></div>
+        <div class="caption-actions">
+            <button class="btn-main" onclick="copyCaption()" style="width:100%; justify-content:center; padding: 12px;">Copy Caption</button>
+        </div>
+    </div>
+</div>
+
+<div class="viewer" id="viewer">
+    <button class="v-close" onclick="closeViewer()"><i class="fa-solid fa-xmark"></i></button>
+    <button class="v-fav" id="viewerFavBtn" onclick="toggleFavFromViewer()"><i class="fa-regular fa-heart"></i></button>
+    
+    <div class="v-nav v-prev" onclick="changeViewerPhoto(-1)"><i class="fa-solid fa-chevron-left"></i></div>
+    <img id="viewerImg" referrerpolicy="no-referrer">
+    <div class="v-nav v-next" onclick="changeViewerPhoto(1)"><i class="fa-solid fa-chevron-right"></i></div>
+    
+    <div class="v-actions">
+        <button class="v-btn-pill v-btn-magic" id="btnMagic" onclick="triggerHaptic(); generateAICaption()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Caption
+        </button>
+        <button class="v-btn-pill" id="viewerDlBtn" onclick="triggerHaptic(); downloadSingle()">
+            <i class="fa-solid fa-download"></i> Save HD Photo
+        </button>
+    </div>
+</div>
+
+<script>
+    /* --- CONFIG & STATE --- */
+    const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+    const GEMINI_API_KEY = "AIzaSyDxtYBRudlxLkQxpGrrc7v5uRuXtL6DMdc";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const linkId = urlParams.get('linkId');
+    const urlCid = urlParams.get('cid'); 
+    let currentCollectionId = urlCid || null; 
+    let currentEventId = urlParams.get('eid');
+
+    let allMatches = []; // Accumulate all loaded matches
+    let filteredMatches = []; // Active list
+    let displayedMatches = []; // Rendered list
+    let selectedIndices = new Set();
+    let favorites = new Set(); 
+    let pendingSelfieBase64 = null;
+    let isSelectMode = false;
+    let currentViewIndex = -1; 
+    let currentGuestName = ""; 
+    let brandingData = null;
+    
+    // Pagination
+    let currentPage = 1;
+    let isLoading = false;
+    let hasMore = true;
+    let totalCount = 0;
+
+    // UI State
+    let gridTouchStartDist = 0;
+    let gridCurrentCols = 1; 
+    let renderedTimeLabels = new Set();
+    let aggregatedTags = {}; 
+    let aggregatedPeople = {}; 
+    
+    let activePersonFilter = null;
+    let activeTagFilter = null;
+    let activeFavFilter = false;
+
+    // Friendly Tags Mapping
+    const TAG_MAP = {
+        'Suit': 'Formal', 'Tuxedo': 'Formal', 'Gown': 'Elegant', 'Dress': 'Outfit',
+        'Smile': 'Happy', 'Laughing': 'Candid', 'Crowd': 'Group', 'Person': 'Solo',
+        'Human': 'Portrait', 'Indoors': 'Inside', 'Outdoors': 'Outside', 'Face': 'Close-up'
+    };
+
+    function triggerHaptic() { if (navigator.vibrate) navigator.vibrate(10); }
+
+    function showToast(msg, icon = 'fa-circle-info') {
+        const container = document.getElementById('toastContainer');
+        const el = document.createElement('div');
+        el.className = 'toast';
+        el.innerHTML = `<i class="fa-solid ${icon}"></i> ${msg}`;
+        container.appendChild(el);
+        triggerHaptic();
+        setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            setTimeout(() => el.remove(), 300);
+        }, 3000);
+    }
+
+    /* --- INIT --- */
+    window.onload = async () => {
+        // Default Grid: 3 cols for desktop, 1 for mobile
+        gridCurrentCols = window.innerWidth > 768 ? 3 : 1;
+        setGridColumns(gridCurrentCols, false);
+        
+        const storedFavs = localStorage.getItem('el_favs_' + (linkId || urlCid));
+        if(storedFavs) favorites = new Set(JSON.parse(storedFavs));
+
+        setupScrollDateIndicator();
+        initGridZoom();
+        setupInfiniteScroll();
+        setupHistoryBack();
+
+        // Branding Logic
+        let brandingUrl = linkId ? `${API_BASE}/get-branding?linkId=${linkId}` : (urlCid ? `${API_BASE}/get-branding?cid=${urlCid}` : null);
+        if(brandingUrl) {
+            try {
+                let res = await fetch(brandingUrl);
+                if(res.ok) {
+                    let d = await res.json();
+                    brandingData = d;
+                    if(d.collection_id) currentCollectionId = d.collection_id;
+                    if(d.color) {
+                        document.documentElement.style.setProperty('--accent', d.color);
+                        document.documentElement.style.setProperty('--accent-soft', d.color + '26');
+                        document.getElementById('pageLogo').style.borderColor = d.color;
+                    }
+                    if(d.overlay_opacity) document.documentElement.style.setProperty('--overlay-op', d.overlay_opacity);
+                    
+                    if(d.header_img) document.getElementById('pageHeader').style.backgroundImage = `url('${d.header_img}')`;
+                    if(d.logo) {
+                        const logo = document.getElementById('pageLogo');
+                        logo.src = d.logo; logo.style.display = 'block';
+                    }
+                    if(d.welcome_msg) {
+                        const el = document.getElementById('welcomeText');
+                        el.innerText = d.welcome_msg; el.style.display = 'block';
+                    }
+                }
+            } catch(e) { }
+        }
+    };
+
+    /* --- HISTORY BACK SUPPORT --- */
+    function setupHistoryBack() {
+        window.onpopstate = function(event) {
+            if(document.getElementById('viewer').classList.contains('open')) {
+                document.getElementById('viewer').classList.remove('open');
+            }
+        };
+    }
+
+    /* --- ROTATING LOADER --- */
+    const loaderTexts = ["Looking for your best moments…", "Matching faces, please wait…", "Almost there…", "Magic in progress ✨"];
+    let loaderInterval;
+    function startLoader() {
+        let i = 0;
+        document.getElementById('loaderText').innerText = loaderTexts[0];
+        loaderInterval = setInterval(() => {
+            i = (i + 1) % loaderTexts.length;
+            document.getElementById('loaderText').innerText = loaderTexts[i];
+        }, 1500);
+    }
+    function stopLoader() { clearInterval(loaderInterval); }
+
+    /* --- HELPERS FOR IDS --- */
+    function extractEventIdFromStr(pid) {
+        // pid format: collections___CID___events___EID___photos___FILE
+        if (!pid) return null;
+        try {
+            const parts = pid.split('___');
+            const evtIdx = parts.indexOf('events');
+            if (evtIdx !== -1 && evtIdx + 1 < parts.length) {
+                return parts[evtIdx + 1];
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    /* --- DATA FETCHING --- */
+    async function fetchSearchResults(page) {
+        if(isLoading || !hasMore) return;
+        isLoading = true;
+        document.getElementById('pageLoader').classList.remove('hidden');
+
+        try {
+            const base64Clean = pendingSelfieBase64.split(',')[1];
+            const res = await fetch(`${API_BASE}/search`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    linkId: linkId, 
+                    collection_id: currentCollectionId, 
+                    event_id: currentEventId,
+                    selfie_image: base64Clean,
+                    page: page,
+                    page_size: 20
+                })
+            });
+            const data = await res.json();
+            
+            isLoading = false;
+            document.getElementById('pageLoader').classList.add('hidden');
+
+            if (data.matches && data.matches.length > 0) {
+                allMatches = [...allMatches, ...data.matches];
+                totalCount = data.total;
+                document.getElementById('matchCount').innerText = totalCount;
+                document.getElementById('leadMatchCount').innerText = totalCount;
+                
+                // Re-apply filters if active
+                if(activeFavFilter || activePersonFilter || activeTagFilter) {
+                    refilterPhotos();
+                } else {
+                    filteredMatches = allMatches;
+                    updateSmartFilters(data.matches); // Accumulate filters
+                    renderTimeline(data.matches);
+                }
+                
+                hasMore = data.has_more;
+            } else {
+                hasMore = false;
+                if(page === 1) document.getElementById('noResultsMsg').classList.remove('hidden');
+            }
+        } catch(e) {
+            console.error(e);
+            isLoading = false;
+            document.getElementById('pageLoader').classList.add('hidden');
+            showToast("Error loading photos");
+        }
+    }
+
+    async function handleSelfieSelect(file) {
+        if(!file) return;
+        
+        // Reset State
+        allMatches = []; filteredMatches = []; displayedMatches = [];
+        renderedTimeLabels.clear();
+        document.getElementById('timelineContainer').innerHTML = '';
+        aggregatedTags = {}; aggregatedPeople = {};
+        document.getElementById('smartFilters').innerHTML = '';
+        currentPage = 1; hasMore = true; totalCount = 0;
+        document.getElementById('noResultsMsg').classList.add('hidden');
+
+        document.getElementById('loader').classList.remove('hidden');
+        startLoader();
+        
+        try {
+            pendingSelfieBase64 = await resizeImage(file, 800);
+            document.getElementById('selfiePreviewImg').src = pendingSelfieBase64;
+            document.getElementById('selfiePreviewContainer').classList.remove('hidden');
+            document.getElementById('loader').classList.add('hidden');
+            stopLoader();
+            
+            await fetchSearchResults(1);
+            
+            if(totalCount > 0) {
+                document.getElementById('leadModal').classList.add('open');
+                document.getElementById('popSound').play().catch(()=>{});
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+        } catch(e) { 
+            console.error(e);
+            stopLoader();
+            document.getElementById('loader').classList.add('hidden');
+        }
+    }
+
+    /* --- SMART FILTERS --- */
+    function updateSmartFilters(newMatches) {
+        newMatches.forEach(p => {
+            if(p.ai_tags) p.ai_tags.forEach(t => { aggregatedTags[t] = (aggregatedTags[t] || 0) + 1; });
+            if(p.person_ids) p.person_ids.forEach(pid => {
+                if(!aggregatedPeople[pid]) aggregatedPeople[pid] = { count: 0, url: p.thumbnail_url || p.url, box: p.face_box };
+                aggregatedPeople[pid].count++;
+            });
+        });
+        
+        const container = document.getElementById('smartFilters');
+        container.innerHTML = '';
+        
+        // 0. Favorites Filter (If favs exist)
+        if(favorites.size > 0) {
+            const favPill = document.createElement('div');
+            favPill.className = `filter-chip fav-chip ${activeFavFilter ? 'active' : ''}`;
+            favPill.innerHTML = `<i class="fa-solid fa-heart"></i> Favorites`;
+            favPill.onclick = () => toggleFavFilter(favPill);
+            container.appendChild(favPill);
+        }
+
+        // 1. Person Bubbles
+        const people = Object.entries(aggregatedPeople).sort((a,b) => b[1].count - a[1].count).slice(0, 5);
+        people.forEach(([pid, data]) => {
+            if(data.count > 0) {
+                const bubble = document.createElement('div');
+                bubble.className = `person-bubble ${activePersonFilter === pid ? 'active' : ''}`;
+                let imgStyle = "";
+                if(data.box) {
+                    const cx = (data.box.Left + data.box.Width/2) * 100;
+                    const cy = (data.box.Top + data.box.Height/2) * 100;
+                    imgStyle = `object-position: ${cx}% ${cy}%; transform: scale(2.0);`; 
+                }
+                bubble.innerHTML = `<img src="${data.url}" style="${imgStyle}" loading="lazy">`;
+                bubble.onclick = () => togglePersonFilter(pid, bubble);
+                container.appendChild(bubble);
+            }
+        });
+
+        // 2. Tag Chips
+        const sortedTags = Object.entries(aggregatedTags).sort((a,b) => b[1]-a[1]).slice(0, 8);
+        sortedTags.forEach(([tag, count]) => {
+            // Friendly Name Mapping
+            const displayTag = TAG_MAP[tag] || tag;
+            const pill = document.createElement('div');
+            pill.className = `filter-chip ${activeTagFilter === tag ? 'active' : ''}`;
+            pill.innerHTML = `${displayTag} (${count})`;
+            pill.onclick = () => toggleTagFilter(tag, pill);
+            container.appendChild(pill);
+        });
+    }
+
+    function toggleFavFilter(el) {
+        activeFavFilter = !activeFavFilter;
+        activePersonFilter = null; activeTagFilter = null; // Reset others
+        el.classList.toggle('active');
+        refilterPhotos();
+    }
+    function togglePersonFilter(pid, el) {
+        activePersonFilter = activePersonFilter === pid ? null : pid;
+        activeFavFilter = false; activeTagFilter = null;
+        refilterPhotos();
+    }
+    function toggleTagFilter(tag, el) {
+        activeTagFilter = activeTagFilter === tag ? null : tag;
+        activeFavFilter = false; activePersonFilter = null;
+        refilterPhotos();
+    }
+
+    function refilterPhotos() {
+        let result = allMatches;
+        
+        if (activeFavFilter) {
+            result = result.filter(p => favorites.has(p.photo_id));
+        } else if (activePersonFilter) {
+            result = result.filter(p => p.person_ids && p.person_ids.includes(activePersonFilter));
+        } else if (activeTagFilter) {
+            result = result.filter(p => p.ai_tags && p.ai_tags.includes(activeTagFilter));
+        }
+        
+        filteredMatches = result;
+        displayedMatches = []; 
+        document.getElementById('timelineContainer').innerHTML = '';
+        renderedTimeLabels.clear();
+        renderTimeline(filteredMatches);
+        updateSmartFilters([]); 
+    }
+
+    /* --- TIMELINE RENDERING --- */
+    function renderTimeline(batch) {
+        const container = document.getElementById('timelineContainer');
+        if(batch.length === 0 && allMatches.length > 0) {
+            container.innerHTML = `<div style="text-align:center; padding:40px; color:#aaa;">No photos match this filter</div>`;
+            return;
+        }
+
+        batch.forEach(p => {
+            const timeLabel = p.time_label || "Moments";
+            
+            if (!renderedTimeLabels.has(timeLabel)) {
+                renderedTimeLabels.add(timeLabel);
+                const header = document.createElement('div');
+                header.className = 'timeline-header';
+                header.innerHTML = `<i class="fa-regular fa-clock"></i> ${timeLabel}`;
+                container.appendChild(header);
+                
+                const grid = document.createElement('div');
+                grid.className = 'masonry-grid';
+                grid.id = `grid-${timeLabel.replace(/\s+/g,'-')}`;
+                grid.style.columnCount = gridCurrentCols;
+                container.appendChild(grid);
+            }
+            
+            const grid = document.getElementById(`grid-${timeLabel.replace(/\s+/g,'-')}`);
+            const idx = displayedMatches.length;
+            displayedMatches.push(p);
+            
+            const isFav = favorites.has(p.photo_id) ? 'active' : '';
+            
+            const html = `
+            <div class="photo-item" id="pitem-${idx}" onclick="openViewer(${idx})" data-time="${timeLabel}">
+                <img src="${p.thumbnail_url || p.url}" loading="lazy" onload="this.classList.add('loaded')">
+                <div class="select-ring"></div>
+                <button class="fav-btn ${isFav}" onclick="toggleFav(event, '${p.photo_id}', ${idx})">
+                    <i class="${isFav?'fa-solid':'fa-regular'} fa-heart"></i>
+                </button>
+            </div>`;
+            grid.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    function setupInfiniteScroll() {
+        const sentinel = document.getElementById('sentinel');
+        const observer = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting && !isLoading && hasMore && !document.getElementById('galleryContainer').classList.contains('hidden')) {
+                // Only infinite scroll if no filters active
+                if (!activeFavFilter && !activePersonFilter && !activeTagFilter) {
+                    currentPage++;
+                    fetchSearchResults(currentPage);
+                }
+            }
+        }, { rootMargin: '400px' });
+        observer.observe(sentinel);
+    }
+
+    /* --- VIEWER --- */
+    function openViewer(idx) {
+        currentViewIndex = idx;
+        const p = displayedMatches[idx];
+        const img = document.getElementById('viewerImg');
+        img.style.opacity = '0.5';
+        img.src = p.thumbnail_url || p.url;
+        document.getElementById('viewer').classList.add('open');
+        history.pushState({viewerOpen: true}, "Photo Viewer", "#viewer");
+        
+        const hd = new Image();
+        hd.onload = () => { img.src = hd.src; img.style.opacity='1'; };
+        hd.src = p.url;
+        updateViewerFavState(p.photo_id);
+    }
+    
+    function closeViewer() {
+        if(document.getElementById('viewer').classList.contains('open')) {
+            document.getElementById('viewer').classList.remove('open');
+            if (history.state && history.state.viewerOpen) history.back();
+        }
+    }
+
+    function updateViewerFavState(pid) {
+        const isFav = favorites.has(pid);
+        const btn = document.getElementById('viewerFavBtn');
+        btn.innerHTML = `<i class="${isFav?'fa-solid':'fa-regular'} fa-heart"></i>`;
+        if(isFav) btn.classList.add('active'); else btn.classList.remove('active');
+    }
+
+    async function toggleFav(e, pid, idx) {
+        e.stopPropagation(); triggerHaptic();
+        if(favorites.has(pid)) {
+            favorites.delete(pid);
+            showToast("Removed from favorites");
+        } else {
+            favorites.add(pid);
+            showToast("Added to favorites");
+        }
+        localStorage.setItem('el_favs_' + (linkId || currentCollectionId), JSON.stringify([...favorites]));
+        
+        const btn = document.querySelector(`#pitem-${idx} .fav-btn`);
+        if(btn) {
+            const isFav = favorites.has(pid);
+            btn.innerHTML = `<i class="${isFav?'fa-solid':'fa-regular'} fa-heart"></i>`;
+            if(isFav) btn.classList.add('active'); else btn.classList.remove('active');
+        }
+        if(currentViewIndex === idx) updateViewerFavState(pid);
+        
+        // Update smart filter availability
+        if(!activeFavFilter && !activePersonFilter && !activeTagFilter) updateSmartFilters([]);
+        
+        // --- FIX: DERIVE EVENT ID ---
+        const photo = displayedMatches[idx] || allMatches.find(p => p.photo_id === pid);
+        const derivedEventId = (photo && photo.event_id) ? photo.event_id : (extractEventIdFromStr(pid) || currentEventId);
+
+        try {
+            await fetch(`${API_BASE}/client-api`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: "update_selection",
+                    payload: {
+                        collection_id: currentCollectionId,
+                        photo_id: pid,
+                        fav: favorites.has(pid), 
+                        guest_name: currentGuestName,
+                        link_id: linkId,
+                        event_id: derivedEventId // FIXED
+                    }
+                })
+            });
+        } catch (err) { console.error(err); }
+    }
+
+    function toggleFavFromViewer() {
+        if(currentViewIndex >= 0) {
+            const p = displayedMatches[currentViewIndex];
+            toggleFav({stopPropagation:()=>{}}, p.photo_id, currentViewIndex);
+        }
+    }
+
+    /* --- GEMINI --- */
+    async function generateAICaption() {
+        if(currentViewIndex < 0) return;
+        const p = displayedMatches[currentViewIndex];
+        const btn = document.getElementById('btnMagic');
+        
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Writing...`;
+        btn.disabled = true;
+        
+        try {
+            // FIX: Use fetch with cache: no-store instead of query params to avoid 403 on S3
+            const imgUrl = p.thumbnail_url || p.url;
+            
+            const response = await fetch(imgUrl, { cache: 'no-store', mode: 'cors' });
+            if (!response.ok) throw new Error('Failed to fetch image');
+            const blob = await response.blob();
+            
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+
+            const prompt = "Write a fun, short Instagram caption for this wedding photo with hashtags.";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            
+            const res = await fetch(apiUrl, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ "contents": [{ "parts": [{ "text": prompt }, { "inline_data": { "mime_type": "image/jpeg", "data": base64 } }] }] })
+            });
+            const d = await res.json();
+            const text = d.candidates?.[0]?.content?.parts?.[0]?.text || "Couldn't generate caption.";
+            
+            document.getElementById('captionResult').innerHTML = marked.parse(text);
+            document.getElementById('captionModal').classList.add('open');
+        } catch(e) {
+            showToast("Failed to generate caption. " + e);
+        } finally {
+            btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Caption`;
+            btn.disabled = false;
+        }
+    }
+
+    function copyCaption() {
+        navigator.clipboard.writeText(document.getElementById('captionResult').innerText);
+        showToast("Caption copied!", "fa-copy");
+        document.getElementById('captionModal').classList.remove('open');
+    }
+
+    /* --- HELPERS --- */
+    function resizeImage(file, max) {
+        return new Promise(r => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const c = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if(w>max) { h=Math.round(h*max/w); w=max; }
+                    c.width=w; c.height=h;
+                    c.getContext('2d').drawImage(img,0,0,w,h);
+                    r(c.toDataURL('image/jpeg', 0.9));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function unlockGallery() {
+        const name = document.getElementById('guestName').value;
+        const mobile = document.getElementById('guestMobile').value;
+        if(!name) return showToast("Name required", "fa-triangle-exclamation");
+        
+        currentGuestName = name;
+        document.getElementById('leadModal').classList.remove('open');
+        document.getElementById('searchContainer').classList.add('hidden');
+        document.getElementById('galleryContainer').classList.remove('hidden');
+        
+        // Save Details Call
+        try {
+            // FIX: DERIVE EVENT ID FOR LEAD
+            let payloadEventId = currentEventId;
+            if (!payloadEventId && allMatches.length > 0) {
+                // Try from object
+                const matchWithEvent = allMatches.find(m => m.event_id);
+                if (matchWithEvent) payloadEventId = matchWithEvent.event_id;
+                // Fallback to string parse
+                if (!payloadEventId) payloadEventId = extractEventIdFromStr(allMatches[0].photo_id);
+            }
+
+            const base64Clean = pendingSelfieBase64.split(',')[1];
+            fetch(`${API_BASE}/save-details`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    mobile: mobile,
+                    linkId: linkId, 
+                    name: name, 
+                    selfie_image: base64Clean, 
+                    photo_count: totalCount, 
+                    collection_id: currentCollectionId || linkId,
+                    event_id: payloadEventId // FIXED
+                })
+            });
+        } catch(e) { console.error(e); }
+    }
+
+    function toggleSelectionMode() {
+        isSelectMode = !isSelectMode;
+        document.body.classList.toggle('select-mode', isSelectMode);
+        const btn = document.getElementById('btnToggleSelect');
+        if(isSelectMode) { btn.classList.add('active'); btn.innerHTML = `<i class="fa-solid fa-xmark"></i> Cancel Selection`; showToast("Tap photos to select"); }
+        else { btn.classList.remove('active'); btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Select Photos`; selectedIndices.clear(); updateActionBar(); document.querySelectorAll('.photo-item.selected').forEach(el => el.classList.remove('selected')); }
+    }
+
+    function updateActionBar() {
+        const bar = document.getElementById('actionBar');
+        document.getElementById('selCount').innerText = selectedIndices.size;
+        if(selectedIndices.size > 0) bar.classList.add('visible'); else bar.classList.remove('visible');
+    }
+
+    function toggleSelectAll() {
+        const isAllSelected = selectedIndices.size === displayedMatches.length;
+        if(isAllSelected) {
+            selectedIndices.clear();
+            document.querySelectorAll('.photo-item.selected').forEach(el => el.classList.remove('selected'));
+        } else {
+            displayedMatches.forEach((_, i) => {
+                selectedIndices.add(i);
+                const el = document.getElementById(`pitem-${i}`);
+                if(el) el.classList.add('selected');
+            });
+        }
+        updateActionBar();
+    }
+
+    function downloadSingle() {
+        const p = displayedMatches[currentViewIndex];
+        const btn = document.getElementById('viewerDlBtn');
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading…`;
+        btn.disabled = true;
+        fetch(p.url).then(r=>r.blob()).then(b=>{ 
+            saveAs(b, "photo.jpg"); 
+            btn.innerHTML=`<i class="fa-solid fa-check"></i> Saved successfully`; 
+            setTimeout(()=> { btn.innerHTML=`<i class="fa-solid fa-download"></i> Save HD Photo`; btn.disabled = false; }, 2000); 
+        });
+    }
+
+    async function downloadSelectedItems() {
+        if(selectedIndices.size === 0) return;
+        const indices = Array.from(selectedIndices);
+        const btn = document.querySelector('.act-btn.highlight');
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving…`;
+        btn.disabled = true;
+        showToast("Saving your photos…");
+        for(let i of indices) {
+            try {
+                const p = displayedMatches[i];
+                const r = await fetch(p.url);
+                saveAs(await r.blob(), `photo_${i}.jpg`);
+            } catch(e) { saveAs(displayedMatches[i].url, `photo_${i}.jpg`); }
+            await new Promise(r => setTimeout(r, 300));
+        }
+        btn.innerHTML = `<i class="fa-solid fa-download"></i> Save`;
+        btn.disabled = false;
+        showToast("Saved to your gallery!", "fa-circle-check");
+    }
+
+    async function downloadAsZip() {
+        if(selectedIndices.size === 0) return;
+        const zip = new JSZip();
+        const folder = zip.folder("Photos");
+        const btn = document.querySelectorAll('.act-btn')[2];
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing…`;
+        btn.disabled = true;
+        showToast("Preparing your zip…");
+        const indices = Array.from(selectedIndices);
+        await Promise.all(indices.map(async idx => {
+            try {
+                const p = displayedMatches[idx];
+                const b = await fetch(p.url).then(r=>r.blob());
+                folder.file(`photo_${idx}.jpg`, b);
+            } catch(e){}
+        }));
+        const c = await zip.generateAsync({type:"blob"});
+        saveAs(c, "EventLens_Photos.zip");
+        btn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> Download Zip`;
+        btn.disabled = false;
+        showToast("Zip downloaded successfully", "fa-circle-check");
+    }
+
+    async function shareNative() {
+        if(navigator.share) { try { await navigator.share({title:'My Photos', url:window.location.href}); } catch(e){} }
+        else { window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(window.location.href)}`, '_blank'); }
+    }
+
+    // Grid Zoom
+    function initGridZoom() {
+        const c = document.getElementById('timelineContainer');
+        let start=0;
+        c.addEventListener('touchstart', e => { if(e.touches.length==2) start = Math.hypot(e.touches[0].pageX-e.touches[1].pageX, e.touches[0].pageY-e.touches[1].pageY); }, {passive: true});
+        c.addEventListener('touchmove', e => {
+            if(e.touches.length==2) {
+                const dist = Math.hypot(e.touches[0].pageX-e.touches[1].pageX, e.touches[0].pageY-e.touches[1].pageY);
+                if(Math.abs(dist-start)>50) {
+                    gridCurrentCols = dist>start ? 1 : 3;
+                    setGridColumns(gridCurrentCols);
+                    start=dist;
+                }
+            }
+        }, {passive: true});
+    }
+    function setGridColumns(cols, animate = true) {
+        if (gridCurrentCols !== cols || !animate) {
+            gridCurrentCols = cols;
+            document.querySelectorAll('.masonry-grid').forEach(grid => grid.style.columnCount = gridCurrentCols);
+            if(animate) triggerHaptic();
+        }
+    }
+    
+    // Viewer Touch
+    let touchStartX = 0, touchEndX = 0, lastTap = 0;
+    const viewerEl = document.getElementById('viewer');
+    viewerEl.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+    viewerEl.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        if (touchEndX < touchStartX - 50) changeViewerPhoto(1);
+        if (touchEndX > touchStartX + 50) changeViewerPhoto(-1);
+        const currentTime = new Date().getTime();
+        if (currentTime - lastTap < 300) { e.preventDefault(); const img = document.getElementById('viewerImg'); img.style.transform = img.style.transform === "scale(1)" ? "scale(2.5)" : "scale(1)"; }
+        lastTap = currentTime;
+    }, {passive: false});
+
+    function changeViewerPhoto(dir) {
+        const newIndex = currentViewIndex + dir;
+        if(newIndex >= 0 && newIndex < displayedMatches.length) openViewer(newIndex);
+    }
+
+    function setupScrollDateIndicator() {
+        const ind = document.getElementById('dateIndicator');
+        let t;
+        window.addEventListener('scroll', () => {
+            ind.classList.add('visible');
+            const el = document.elementFromPoint(window.innerWidth/2, 200);
+            const item = el?.closest('.photo-item');
+            if(item) ind.innerText = item.getAttribute('data-time');
+            clearTimeout(t); t = setTimeout(()=>ind.classList.remove('visible'), 1000);
+        });
+    }
+
+    // Cam / Image Fix
+    let mediaStream = null;
+    async function openCamera() {
+        const modal = document.getElementById('cameraModal');
+        const video = document.getElementById('camFeed');
+        modal.classList.add('active');
+        try { mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }); video.srcObject = mediaStream; } 
+        catch(e) { closeCamera(); document.getElementById('selfieInput').click(); }
+    }
+    function closeCamera() {
+        const modal = document.getElementById('cameraModal');
+        modal.classList.remove('active');
+        if(mediaStream) { mediaStream.getTracks().forEach(track => track.stop()); mediaStream = null; }
+        document.getElementById('camFeed').srcObject = null;
+    }
+    function capturePhoto() {
+        const video = document.getElementById('camFeed');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => { handleSelfieSelect(blob); closeCamera(); }, 'image/jpeg', 0.9);
+    }
+
+    (function(){ setInterval(()=>{ document.querySelectorAll('img').forEach(i=>{ if(!i.hasAttribute('referrerpolicy')) i.setAttribute('referrerpolicy','no-referrer'); }); },1000); })();
+</script>
+</body>
+</html>

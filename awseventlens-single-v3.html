@@ -294,16 +294,7 @@
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">UPLOADED PHOTOS</div><div class="kpi-val" id="saTotalUploads">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">GUEST SEARCHES</div><div class="kpi-val" id="saTotalGuestSearch">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">SEARCH RESULTS</div><div class="kpi-val" id="saTotalSearchResults">-</div></div>
-          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div>
-          <div class="kpi-box">
-            <div class="kpi-label" style="color:var(--text-muted);">POLITICAL ENTRIES</div>
-            <div class="kpi-val" id="saTotalPoliticalEntries">-</div>
-          </div>
-          <div class="kpi-box">
-            <div class="kpi-label" style="color:var(--text-muted);">POLITICAL FACES</div>
-            <div class="kpi-val" id="saTotalPoliticalFaces">-</div>
-          </div>
-</div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div></div>
         </div>
 
         <!-- Add User Form (Updated with Account Type and Dynamic Placeholder) -->
@@ -873,8 +864,8 @@
 
   /* ================= IMPROVED API HELPER ================= */
   async function api(path, body){
-    // STANDARD BEHAVIOR: Use Admin ID Token. No fake impersonation tokens.
-    const tokenToUse = accessToken || idToken; // Prefer ID token for API Gateway JWT authorizer
+    // STANDARD BEHAVIOR: Use ID Token first (API Gateway JWT authorizer works best with ID token)
+    const tokenToUse = idToken || accessToken;
 
     const opts = {
       method: 'POST',
@@ -1237,9 +1228,6 @@
       const usedBytes = parseInt(r.used_data_bytes || r.total_storage_used || 0, 10);
       const approxBill = computeApproxBillINR(usedBytes, Number(r.total_photos_uploaded||0), Number(r.total_guest_searches||0));
       $('#saTotalUsedData').textContent = `${formatBytes(usedBytes)} | ₹${approxBill.toFixed(2)}`;
-
-      $('#saTotalPoliticalEntries').textContent = String(r.total_political_entries || 0);
-      $('#saTotalPoliticalFaces').textContent = String(r.total_political_faces || 0);
     } catch(e) {
       if(e.message.includes("AccessDenied")) {
           console.warn("Permission Error on Backend:", e);
@@ -2086,7 +2074,7 @@
       if(type === 'client') {
         finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
       } else {
-        finalUrl = `${window.location.origin}/guest-search.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+        finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
         if(eid) finalUrl += `&eid=${eid}`;
       }
 

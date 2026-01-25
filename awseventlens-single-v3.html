@@ -294,7 +294,16 @@
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">UPLOADED PHOTOS</div><div class="kpi-val" id="saTotalUploads">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">GUEST SEARCHES</div><div class="kpi-val" id="saTotalGuestSearch">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">SEARCH RESULTS</div><div class="kpi-val" id="saTotalSearchResults">-</div></div>
-          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div></div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div>
+          <div class="kpi-box">
+            <div class="kpi-label" style="color:var(--text-muted);">POLITICAL ENTRIES</div>
+            <div class="kpi-val" id="saTotalPoliticalEntries">-</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label" style="color:var(--text-muted);">POLITICAL FACES</div>
+            <div class="kpi-val" id="saTotalPoliticalFaces">-</div>
+          </div>
+</div>
         </div>
 
         <!-- Add User Form (Updated with Account Type and Dynamic Placeholder) -->
@@ -864,8 +873,8 @@
 
   /* ================= IMPROVED API HELPER ================= */
   async function api(path, body){
-    // STANDARD BEHAVIOR: Use ID Token first (API Gateway JWT authorizer works best with ID token)
-    const tokenToUse = idToken || accessToken;
+    // STANDARD BEHAVIOR: Use Admin ID Token. No fake impersonation tokens.
+    const tokenToUse = accessToken || idToken; // Prefer ID token for API Gateway JWT authorizer
 
     const opts = {
       method: 'POST',
@@ -1228,6 +1237,9 @@
       const usedBytes = parseInt(r.used_data_bytes || r.total_storage_used || 0, 10);
       const approxBill = computeApproxBillINR(usedBytes, Number(r.total_photos_uploaded||0), Number(r.total_guest_searches||0));
       $('#saTotalUsedData').textContent = `${formatBytes(usedBytes)} | ₹${approxBill.toFixed(2)}`;
+
+      $('#saTotalPoliticalEntries').textContent = String(r.total_political_entries || 0);
+      $('#saTotalPoliticalFaces').textContent = String(r.total_political_faces || 0);
     } catch(e) {
       if(e.message.includes("AccessDenied")) {
           console.warn("Permission Error on Backend:", e);
@@ -1253,87 +1265,9 @@
       const label = document.getElementById('lblName');
       const input = document.getElementById('nuName');
       
-      if(type === 'political') {
-          label.innerText = 'Organization Name';
-          input.placeholder = 'e.g. BJP Mandsaur';
-      } else {
-          label.innerText = 'Studio Name';
-          input.placeholder = 'e.g. Rahul Photography';
-      }
-  }
+      // Political भी उसी तरह "Login As" करेगा (same dashboard flow)
+// अलग file open नहीं होगी
 
-  async function loadPhotographers() {
-    if(!isSuperAdmin) return;
-    $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-muted">Loading accounts...</td></tr>`;
-    try {
-      const data = await masterApi('list_photographers', {});
-      photographersCache = data.photographers || [];
-      renderPhotographersTable();
-      // NEW: Fill Super Admin cards from table data (fallback)
-      updateSuperAdminCardsFromCache();
-      // NEW: Background refresh for accurate counts (sync with Photographer dashboard)
-      enrichPhotographersCacheStats();
-    } catch(e) {
-      if(e.message.includes("AccessDenied")) {
-          // Graceful degradation: show partial data if backend permission fails
-          $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-danger">Backend Permission Error: AdminGetUser access denied. Please fix IAM Role.</td></tr>`;
-      } else {
-          $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-muted">Error: ${escapeHtml(e.message)}</td></tr>`;
-      }
-    }
-  }
-
-  // ================= SUPER ADMIN: STATS FALLBACK + AUTO SYNC =================
-  function updateSuperAdminCardsFromCache(){
-    try{
-      const rows = (photographersCache || []);
-      if(!rows || rows.length === 0) return;
-
-      // Compute totals from loaded list (fallback if global_stats fails)
-      const totalPhotographers = rows.length;
-      let totalCollections = 0;
-      let totalUploads = 0;
-      let totalUsedBytes = 0;
-      let totalGuestSearch = 0;
-      let totalSearchResults = 0;
-
-      const safeNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
-      const safeCount = (v) => Array.isArray(v) ? v.length : safeNum(v);
-
-      for(const u of rows){
-        totalCollections += safeCount(u.collections);
-        totalUploads += safeNum(u.photos_uploaded);
-        totalUsedBytes += safeNum(u.used_data_bytes);
-        totalGuestSearch += safeNum(u.guest_searches);
-        totalSearchResults += safeNum(u.search_results);
-      }
-
-      // Update cards (only if elements exist)
-      if($('#saTotalPhotographers')) $('#saTotalPhotographers').textContent = totalPhotographers.toLocaleString();
-      if($('#saTotalCollections')) $('#saTotalCollections').textContent = totalCollections.toLocaleString();
-      if($('#saTotalUploads')) $('#saTotalUploads').textContent = totalUploads.toLocaleString();
-      if($('#saTotalGuestSearch')) $('#saTotalGuestSearch').textContent = totalGuestSearch.toLocaleString();
-      if($('#saTotalSearchResults')) $('#saTotalSearchResults').textContent = totalSearchResults.toLocaleString();
-      if($('#saTotalUsedData')) $('#saTotalUsedData').textContent = formatBytes(totalUsedBytes);
-
-      // If Approx Bill card exists (in extended versions), update it too
-      if($('#saApproxBill') && typeof computeApproxBillINR === 'function'){
-        const est = computeApproxBillINR({ usedBytes: totalUsedBytes, photosUploaded: totalUploads, guestSearches: totalGuestSearch });
-        $('#saApproxBill').textContent = formatINR(est.totalINR);
-      }
-    } catch(err){
-      console.warn("updateSuperAdminCardsFromCache failed:", err);
-    }
-  }
-
-  async function enrichPhotographersCacheStats(){
-    try{
-      // Prevent double-run
-      if(window.__saEnrichRunning) return;
-      window.__saEnrichRunning = true;
-
-      const rows = (photographersCache || []).slice();
-      if(rows.length === 0) { window.__saEnrichRunning = false; return; }
 
       // Concurrency limit (safe for Lambda/API)
       const BATCH = 3;
@@ -1429,7 +1363,7 @@
 
       // Conditional Login Button
       const loginBtn = isPolitical
-         ? `<button class="btn secondary" style="padding:6px 12px; font-size:11px; color:#ff9800; border-color:#ff9800;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'political')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Panel</button>`
+         ? `<button class="btn secondary" style="padding:6px 12px; font-size:11px; color:#ff9800; border-color:#ff9800;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'political')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Login As</button>`
          : `<button class="btn primary" style="padding:6px 12px; font-size:11px;" onclick="loginAs('${escJsSingle(u.user_id)}', '${escJsSingle(u.studio_name||'')}', '${escJsSingle(u.email||'')}', 'photographer')"><i class="fa-solid fa-right-to-bracket"></i> Login As</button>`;
 
 
@@ -2074,7 +2008,7 @@
       if(type === 'client') {
         finalUrl = `${window.location.origin}/client-gallery.html?id=${linkId}&cid=${curCol.collection_id}`;
       } else {
-        finalUrl = `${window.location.origin}/index.html?linkId=${linkId}&cid=${curCol.collection_id}`;
+        finalUrl = `${window.location.origin}/guest-search.html?linkId=${linkId}&cid=${curCol.collection_id}`;
         if(eid) finalUrl += `&eid=${eid}`;
       }
 

@@ -995,8 +995,7 @@
 
       // AUTO-REDIRECT POLITICAL USERS
       if (sData.account_type === 'political' || (sData.studio_name && sData.studio_name.toLowerCase().includes('bjp'))) {
-         window.location.href = 'bjp-admin.html';
-         return;
+         // removed: separate political dashboard redirect
       }
 
       allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
@@ -1316,7 +1315,17 @@
     }).join('');
   }
 
-  async function createPhotographer() {
+  
+  function validatePassword(pwd) {
+    if (!pwd || pwd.length < 8) return 'Password कम से कम 8 अक्षर का होना चाहिए';
+    const hasUpper = /[A-Z]/.test(pwd);
+    const hasLower = /[a-z]/.test(pwd);
+    const hasNum = /[0-9]/.test(pwd);
+    if (!hasUpper || !hasLower || !hasNum) return 'Password में Upper, Lower और Number होना चाहिए';
+    return null;
+  }
+
+async function createPhotographer() {
     const email = $('#nuEmail').value.trim();
     const studio_name = $('#nuName').value.trim();
     const plan = $('#nuPlan').value;
@@ -1464,12 +1473,9 @@
         localStorage.setItem('bjp_token', idToken); 
         localStorage.setItem('bjp_org_id', uid);
         
-        showToast('Redirecting to Political Dashboard...', 'success');
-        setTimeout(() => {
-            window.open('bjp-admin.html', '_blank'); // Open in new tab for safety
-        }, 1000);
-        return;
-    }
+        showToast('Logging in as political...', 'success');
+    // same dashboard
+  }
 
     // EXISTING LOGIC FOR PHOTOGRAPHERS
     try {
@@ -1489,6 +1495,7 @@
       showToast('View Active (Read-Only)', 'success');
       route('dashboard');
       await loadDashboard();
+      applyPoliticalUI();
     } catch (e) {
       if(e.message.includes("AccessDenied")) {
           alert("⚠️ AWS PERMISSION ERROR\n\nLambda Role missing 'cognito-idp:AdminGetUser'. Cannot fetch user details for impersonation.");
@@ -2347,10 +2354,81 @@
     const i=Math.floor(Math.log(bytes)/Math.log(k));
     return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
   }
-  </script>
+  
+  // -------------------------------
+  // Political Module UI helpers
+  // -------------------------------
+  function isPoliticalAccount() {
+    const t = (accountType || '').toLowerCase();
+    return t === 'political';
+  }
+
+  function openFormLink(fileName) {
+    try {
+      window.open(fileName, '_blank');
+    } catch (e) {
+      alert('Popup blocked. Please allow popups and try again.');
+    }
+  }
+
+  function openPoliticalForms() {
+    // Open Visitor form as default
+    openFormLink('political_visitor_form.html');
+  }
+
+  function applyPoliticalUI() {
+    const card = document.getElementById('politicalModuleCard');
+    if (!card) return;
+    if (isPoliticalAccount()) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  }
+
+</script>
 
   <!-- Hidden legacy container (kept to avoid layout surprises, but unused) -->
   <div id="photographer-list" class="hidden" style="display:none"></div>
+
+
+          <!-- Political Module Card (only visible for political accounts) -->
+          <div id="politicalModuleCard" class="card" style="display:none; margin-top:14px;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Political Forms</div>
+                <div class="card-subtitle">Fill entries with selfie/photo & auto-timeline</div>
+              </div>
+              <button class="btn btn-secondary" onclick="openPoliticalForms()">Open Forms</button>
+            </div>
+
+            <div class="grid-2" style="margin-top:12px;">
+              <div class="mini-card">
+                <div class="mini-title">Quick Links</div>
+                <div class="mini-desc">Open any form in new tab</div>
+                <div class="btn-row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+                  <button class="chip" onclick="openFormLink('political_visitor_form.html')">Visitor</button>
+                  <button class="chip" onclick="openFormLink('political_party_attendance_form.html')">Attendance</button>
+                  <button class="chip" onclick="openFormLink('political_president_tour_form.html')">President Tour</button>
+                  <button class="chip" onclick="openFormLink('political_mandal_reporting_form.html')">Mandal Report</button>
+                  <button class="chip" onclick="openFormLink('political_coordinator_entry_form.html')">Coordinator</button>
+                  <button class="chip" onclick="openFormLink('political_program_info_form.html')">Program Info</button>
+                </div>
+              </div>
+
+              <div class="mini-card">
+                <div class="mini-title">Timeline</div>
+                <div class="mini-desc">Search by selfie and see all entries timeline</div>
+                <div style="margin-top:10px;">
+                  <button class="btn btn-primary" onclick="openFormLink('worker-search.html')">Open Political Search</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:10px; opacity:0.85; font-size:12px;">
+              Note: Payment module & confirmation will be added later.
+            </div>
+          </div>
 
 </body>
 </html>

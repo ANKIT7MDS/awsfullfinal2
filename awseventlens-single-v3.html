@@ -1363,9 +1363,24 @@ async function createPhotographer() {
       await loadPhotographers();
       await loadSuperAdminStats();
     } catch(e) {
-      if(e.message.includes('custom:studio_name') || e.message.includes('custom:plan') || e.message.includes('Attributes did not conform')) {
-          alert("⚠️ AWS COGNITO CONFIGURATION ERROR\n\nYour Backend requires 'studio_name' and 'plan' attributes, but they are missing in Cognito User Pool.\n\nPLEASE FIX THIS IN AWS CONSOLE:\n1. Go to Cognito > User Pools > Select Pool: ap-south-1_MvA8s6f3W (domain ap-south-1mva8s6f3w)\n2. Click 'Sign-up experience' tab\n3. Add Custom Attribute: 'studio_name' (String, Mutable)\n4. Add Custom Attribute: 'plan' (String, Mutable)\n5. Save.");
-      } else if (e.message.includes("AccessDenied")) {
+      const em = (e && e.message) ? String(e.message) : "";
+      const schemaMissing =
+        em.includes("User pool does not have attribute custom:studio_name") ||
+        em.includes("User pool does not have attribute custom:plan") ||
+        em.includes("Invalid user attributes: custom:studio_name") ||
+        em.includes("Invalid user attributes: custom:plan");
+
+      if(schemaMissing){
+        alert(`Your Cognito User Pool is missing required custom attributes.
+
+Fix in AWS Console:
+1. Cognito > User pools > Select your pool
+2. Sign-up experience tab
+3. Add custom attribute: studio_name (String, Mutable)
+4. Add custom attribute: plan (String, Mutable)
+5. Save.
+`);
+      }} else if (e.message.includes("AccessDenied")) {
           alert("⚠️ AWS PERMISSION ERROR\n\nThe Lambda function 'master-admin-api' does not have permission to fetch user details.\n\nPLEASE ADD THIS POLICY TO LAMBDA ROLE:\n{\n  'Effect': 'Allow',\n  'Action': 'cognito-idp:AdminGetUser',\n  'Resource': '*'\n}");
       } else {
           showToast(e.message, 'error');

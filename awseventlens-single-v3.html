@@ -2394,70 +2394,68 @@ Fix in AWS Console:
   }
 
   function openFormLink(fileName) {
-  try {
-    // Map file name -> form_type
-    const map = {
-      'political_visitor_form': 'visitor',
-      'political_party_attendance_form': 'attendance',
-      'political_president_tour_form': 'president_tour',
-      'political_mandal_reporting_form': 'mandal_reporting',
-      'political_coordinator_entry_form': 'coordinator',
-      'political_program_info_form': 'program_info'
-    };
+    try {
+      // Map file name -> form_type
+      const map = {
+        'political_visitor_form': 'visitor',
+        'political_party_attendance_form': 'attendance',
+        'political_president_tour_form': 'president_tour',
+        'political_mandal_reporting_form': 'mandal_reporting',
+        'political_coordinator_entry_form': 'coordinator',
+        'political_program_info_form': 'program_info'
+      };
 
-    let formType = '';
-    Object.keys(map).forEach(k => { if (fileName.includes(k)) formType = map[k]; });
+      let formType = '';
+      Object.keys(map).forEach(k => { if (fileName.includes(k)) formType = map[k]; });
 
-    // If not mapped, open directly (safe fallback)
-    if (!formType) {
-      window.open(fileName, '_blank');
-      return;
-    }
-
-    const token = (localStorage.getItem('accessToken') || localStorage.getItem('idToken') || '').trim();
-    if (!token) {
-      alert('Login token missing. Please logout/login again.');
-      return;
-    }
-
-    // Generate safe public link from backend (share to anyone)
-    fetch(POLITICAL_FORMS_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify({ action: 'generate_form_link', payload: { form_type: formType, days_valid: 14 } })
-    })
-    .then(r => r.json())
-    .then(data => {
-      const link = data && data.url ? data.url : '';
-      if (!link) {
-        alert('Link generate failed. Backend/API not connected.');
+      // If not mapped, open directly (safe fallback)
+      if (!formType) {
+        const w0 = window.open(fileName, '_blank');
+        if (!w0) alert('Popup blocked. Please allow popups and try again.');
         return;
       }
 
-      // Copy to clipboard + open
-      try {
-        navigator.clipboard.writeText(link);
-      } catch(e) {}
+      const token = (localStorage.getItem('accessToken') || localStorage.getItem('idToken') || '').trim();
+      if (!token) {
+        alert('Login token missing. Please logout/login again.');
+        return;
+      }
 
-      // Show link to user
-      prompt('Form Link (Copied ✅). Share this link:', link);
+      // Generate safe public link from backend (share to anyone)
+      fetch(POLITICAL_FORMS_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ action: 'generate_form_link', payload: { form_type: formType, days_valid: 14 } })
+      })
+      .then(r => r.json())
+      .then(data => {
+        const link = data && data.url ? data.url : '';
+        if (!link) {
+          alert('Link generate failed. Backend/API not connected.');
+          return;
+        }
 
-      window.open(link, '_blank');
-    })
-    .catch(err => {
-      console.error(err);
-      alert('Link generate error. Check POLITICAL_FORMS_API endpoint.');
-    });
+        // Copy to clipboard
+        try { navigator.clipboard.writeText(link); } catch(e) {}
 
-  } catch (e) {
-    console.error(e);
-    window.open(fileName, '_blank');
-  }
-} catch (e) {
-      alert('Popup blocked. Please allow popups and try again.');
+        // Show link to user
+        prompt('Form Link (Copied ✅). Share this link:', link);
+
+        const w = window.open(link, '_blank');
+        if (!w) alert('Popup blocked. Please allow popups and try again.');
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Link generate error. Check POLITICAL_FORMS_API endpoint.');
+      });
+
+    } catch (e) {
+      console.error(e);
+      const w = window.open(fileName, '_blank');
+      if (!w) alert('Popup blocked. Please allow popups and try again.');
     }
   }
 

@@ -695,7 +695,10 @@
   <!-- ====================== SCRIPT ====================== -->
   <script>
   /* ================= CONFIGURATION ================= */
-  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+    // Global Account Type (photographer/political)
+  let accountType = '';
+
+const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
   const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
   const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
   const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
@@ -996,6 +999,11 @@
         api('/get-collections'),
         api('/account-status').catch(()=>({}))
       ]);
+
+      // Store account type globally for UI switches
+      accountType = (sData.account_type || sData.accountType || sData.user_type || 'photographer');
+      try { localStorage.setItem('accountType', accountType); } catch(e) {}
+      applyPoliticalUI();
 
       // AUTO-REDIRECT POLITICAL USERS
       if (sData.account_type === 'political' || (sData.studio_name && sData.studio_name.toLowerCase().includes('bjp'))) {

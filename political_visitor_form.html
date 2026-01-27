@@ -113,6 +113,10 @@
     return u.searchParams.get(name);
   }
 
+  function getUrlToken() {
+    return qs("token");
+  }
+
   function showStatus(msg) {
     const box = document.getElementById('statusBox');
     const t = document.getElementById('statusText');
@@ -132,14 +136,21 @@
   }
 
   async function apiCall(action, payload) {
-    const token = getAccessToken();
-    if(!token) throw new Error("Login token नहीं मिला। पहले Political Dashboard से login करो।");
+    const publicToken = getUrlToken();
+    let headers = { "Content-Type": "application/json" };
+    
+    // Logic: If public token exists in URL, use it in payload. Else use Bearer token.
+    if (publicToken) {
+        payload.token = publicToken;
+    } else {
+        const token = getAccessToken();
+        if(!token) throw new Error("Login token नहीं मिला। पहले Political Dashboard से login करो।");
+        headers["Authorization"] = "Bearer " + token;
+    }
+
     const r = await fetch(FORMS_ENDPOINT, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: headers,
       body: JSON.stringify({ action, payload })
     });
     const txt = await r.text();
@@ -152,6 +163,7 @@
   }
 
   function getCollectionId() {
+    // If public token is used, CID is not needed in UI directly, but we show if available
     const cid = qs("cid") || localStorage.getItem("political_cid") || "";
     if(cid) localStorage.setItem("political_cid", cid);
     return cid;
@@ -170,11 +182,18 @@
   }
 
   async function handleSubmit() {
+    const publicToken = getUrlToken();
     const cid = getCollectionId();
-    document.getElementById("cidText").textContent = cid || "-";
-    if(!cid) {
-      showStatus("❌ Collection ID missing. इस page को Dashboard से खोलो (link में ?cid= होगा).");
-      return;
+    
+    // UI Update logic
+    if (publicToken) {
+        document.getElementById("cidText").textContent = "Public Link Mode";
+    } else {
+        document.getElementById("cidText").textContent = cid || "-";
+        if(!cid) {
+          showStatus("❌ Collection ID missing. इस page को Dashboard से खोलो (link में ?cid= होगा).");
+          return;
+        }
     }
 
     const data = {};
@@ -210,8 +229,9 @@
       // If no files (optional), create a metadata-only entry
       if(files.length === 0) {
         showStatus("⏳ Creating entry...");
+        // API Call ab smart hai, wo khud decide karega token bhejna hai ya auth
         const createResp = await apiCall("create_entry", {
-          collection_id: cid,
+          collection_id: cid, // Will be ignored if token is present
           form_type: "visitor_form",
           payload: data,
           file_kind: "none",
@@ -298,7 +318,12 @@
     handleSubmit();
   });
 
-  document.getElementById("cidText").textContent = getCollectionId() || "-";
+  // Init text
+  if(getUrlToken()){
+      document.getElementById("cidText").textContent = "Public Link Mode";
+  } else {
+      document.getElementById("cidText").textContent = getCollectionId() || "-";
+  }
 </script>
 
 </body>

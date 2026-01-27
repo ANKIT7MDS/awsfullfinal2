@@ -2439,7 +2439,7 @@ Fix in AWS Console:
     return t === 'political';
   }
 
-  function openFormLink(fileName) {
+  async function openFormLink(fileName) {
     try {
       // Map file name -> form_type
       const map = {
@@ -2467,41 +2467,45 @@ Fix in AWS Console:
         return;
       }
 
+      showToast('Generating secure link...', 'info');
+
       // Generate safe public link from backend (share to anyone)
-      fetch(POLITICAL_FORMS_API, {
+      const res = await fetch(POLITICAL_FORMS_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + token
         },
         body: JSON.stringify({ action: 'generate_form_link', payload: { form_type: formType, days_valid: 14 } })
-      })
-      .then(r => r.json())
-      .then(data => {
-        const link = data && data.url ? data.url : '';
-        if (!link) {
-          alert('Link generate failed. Backend/API not connected.');
-          return;
-        }
-
-        // Copy to clipboard
-        try { navigator.clipboard.writeText(link); } catch(e) {}
-
-        // Show link to user
-        prompt('Form Link (Copied ✅). Share this link:', link);
-
-        const w = window.open(link, '_blank');
-        if (!w) alert('Popup blocked. Please allow popups and try again.');
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Link generate error. Check POLITICAL_FORMS_API endpoint.');
       });
 
-    } catch (e) {
-      console.error(e);
-      const w = window.open(fileName, '_blank');
+      if (!res.ok) {
+        const errTxt = await res.text();
+        throw new Error(`API Error (${res.status}): ${errTxt}`);
+      }
+
+      const data = await res.json();
+      const link = data && data.url ? data.url : '';
+      
+      if (!link) {
+        throw new Error('No URL returned from backend');
+      }
+
+      // Copy to clipboard
+      try { navigator.clipboard.writeText(link); } catch(e) {}
+
+      // Show link to user
+      prompt('Form Link (Copied ✅). Share this link:', link);
+
+      const w = window.open(link, '_blank');
       if (!w) alert('Popup blocked. Please allow popups and try again.');
+
+    } catch (e) {
+      console.error("Form Link Error:", e);
+      // Fallback: Try opening the file directly if API fails, but warn user
+      if(confirm(`API Error: ${e.message}\n\nDo you want to open the local file template instead? (Data might not save to timeline)`)) {
+          window.open(fileName, '_blank');
+      }
     }
   }
 

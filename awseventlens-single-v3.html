@@ -151,18 +151,6 @@
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
     .modal-box { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; width: 90%; max-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     .modal-head { margin-top: 0; color: var(--primary); margin-bottom: 15px; font-size: 1.25rem; font-weight: 700; }
-
-    /* --- FIXED: POLITICAL MODULE CSS --- */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .mini-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
-    .mini-title { font-weight: 700; color: #fff; font-size: 14px; margin-bottom: 4px; }
-    .mini-desc { color: var(--text-muted); font-size: 12px; margin-bottom: 10px; }
-    .chip { background: rgba(255,255,255,0.1); border: none; color: #ddd; padding: 6px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; transition: 0.2s; }
-    .chip:hover { background: var(--primary); color: #000; }
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .card-title { font-size: 18px; font-weight: 700; color: #fff; }
-    .card-subtitle { font-size: 12px; color: var(--text-muted); }
-    @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
   </style>
 </head>
 
@@ -390,45 +378,6 @@
         </div>
         <div class="col-list" id="colList"></div>
       </div>
-
-      <!-- POLITICAL MODULE CARD (Moved Inside Dashboard) -->
-      <div id="politicalModuleCard" class="card" style="display:none; margin-top:14px;">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Political Forms</div>
-            <div class="card-subtitle">Fill entries with selfie/photo & auto-timeline</div>
-          </div>
-          <button class="btn btn-secondary" onclick="openPoliticalForms()">Open Forms</button>
-        </div>
-
-        <div class="grid-2" style="margin-top:12px;">
-          <div class="mini-card">
-            <div class="mini-title">Quick Links</div>
-            <div class="mini-desc">Open any form in new tab</div>
-            <div class="btn-row" style="display:flex; margin-top:10px; gap:8px; flex-wrap:wrap;">
-              <button class="chip" onclick="openFormLink('political_visitor_form.html')">Visitor</button>
-              <button class="chip" onclick="openFormLink('political_party_attendance_form.html')">Attendance</button>
-              <button class="chip" onclick="openFormLink('political_president_tour_form.html')">President Tour</button>
-              <button class="chip" onclick="openFormLink('political_mandal_reporting_form.html')">Mandal Report</button>
-              <button class="chip" onclick="openFormLink('political_coordinator_entry_form.html')">Coordinator</button>
-              <button class="chip" onclick="openFormLink('political_program_info_form.html')">Program Info</button>
-            </div>
-          </div>
-
-          <div class="mini-card">
-            <div class="mini-title">Timeline</div>
-            <div class="mini-desc">Search by selfie and see all entries timeline</div>
-            <div style="margin-top:10px;">
-              <button class="btn btn-primary" onclick="openFormLink('worker-search.html')">Open Political Search</button>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top:10px; opacity:0.85; font-size:12px;">
-          Note: Payment module & confirmation will be added later.
-        </div>
-      </div>
-      
     </div>
 
     <!-- Collection Detail View -->
@@ -750,6 +699,9 @@
   let accountType = '';
 
 const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
+// Political Forms API (new) – set this after creating API (Lambda Function URL OR API Gateway route)
+const POLITICAL_FORMS_API = (window.POLITICAL_FORMS_API || '').trim() || (API_BASE + '/political/forms');
+
   const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
   const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
   const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
@@ -1021,7 +973,6 @@ const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
       // Hide Photographer UI (Collections, Personal KPIs)
       $('#phStatsGrid').classList.add('hidden');
       $('#phCollectionsCard').classList.add('hidden');
-      $('#politicalModuleCard').style.display = 'none';
       
       // Load Admin Data
       loadSuperAdminStats(); // No await to parallel load
@@ -2444,9 +2395,67 @@ Fix in AWS Console:
 
   function openFormLink(fileName) {
     try {
-      window.open(fileName, '_blank');
+      // Map file name -> form_type
+      const map = {
+        'political_visitor_form': 'visitor',
+        'political_party_attendance_form': 'attendance',
+        'political_president_tour_form': 'president_tour',
+        'political_mandal_reporting_form': 'mandal_reporting',
+        'political_coordinator_entry_form': 'coordinator',
+        'political_program_info_form': 'program_info'
+      };
+
+      let formType = '';
+      Object.keys(map).forEach(k => { if (fileName.includes(k)) formType = map[k]; });
+
+      // If not mapped, open directly (safe fallback)
+      if (!formType) {
+        const w0 = window.open(fileName, '_blank');
+        if (!w0) alert('Popup blocked. Please allow popups and try again.');
+        return;
+      }
+
+      const token = (localStorage.getItem('accessToken') || localStorage.getItem('idToken') || '').trim();
+      if (!token) {
+        alert('Login token missing. Please logout/login again.');
+        return;
+      }
+
+      // Generate safe public link from backend (share to anyone)
+      fetch(POLITICAL_FORMS_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ action: 'generate_form_link', payload: { form_type: formType, days_valid: 14 } })
+      })
+      .then(r => r.json())
+      .then(data => {
+        const link = data && data.url ? data.url : '';
+        if (!link) {
+          alert('Link generate failed. Backend/API not connected.');
+          return;
+        }
+
+        // Copy to clipboard
+        try { navigator.clipboard.writeText(link); } catch(e) {}
+
+        // Show link to user
+        prompt('Form Link (Copied ✅). Share this link:', link);
+
+        const w = window.open(link, '_blank');
+        if (!w) alert('Popup blocked. Please allow popups and try again.');
+      })
+      .catch(err => {
+        console.error(err);
+        alert('Link generate error. Check POLITICAL_FORMS_API endpoint.');
+      });
+
     } catch (e) {
-      alert('Popup blocked. Please allow popups and try again.');
+      console.error(e);
+      const w = window.open(fileName, '_blank');
+      if (!w) alert('Popup blocked. Please allow popups and try again.');
     }
   }
 
@@ -2466,6 +2475,48 @@ Fix in AWS Console:
   }
 
 </script>
+
+  <!-- Hidden legacy container (kept to avoid layout surprises, but unused) -->
+  <div id="photographer-list" class="hidden" style="display:none"></div>
+
+
+          <!-- Political Module Card (only visible for political accounts) -->
+          <div id="politicalModuleCard" class="card" style="display:none; margin-top:14px;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Political Forms</div>
+                <div class="card-subtitle">Fill entries with selfie/photo & auto-timeline</div>
+              </div>
+              <button class="btn btn-secondary" onclick="openPoliticalForms()">Open Forms</button>
+            </div>
+
+            <div class="grid-2" style="margin-top:12px;">
+              <div class="mini-card">
+                <div class="mini-title">Quick Links</div>
+                <div class="mini-desc">Open any form in new tab</div>
+                <div class="btn-row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+                  <button class="chip" onclick="openFormLink('political_visitor_form.html')">Visitor</button>
+                  <button class="chip" onclick="openFormLink('political_party_attendance_form.html')">Attendance</button>
+                  <button class="chip" onclick="openFormLink('political_president_tour_form.html')">President Tour</button>
+                  <button class="chip" onclick="openFormLink('political_mandal_reporting_form.html')">Mandal Report</button>
+                  <button class="chip" onclick="openFormLink('political_coordinator_entry_form.html')">Coordinator</button>
+                  <button class="chip" onclick="openFormLink('political_program_info_form.html')">Program Info</button>
+                </div>
+              </div>
+
+              <div class="mini-card">
+                <div class="mini-title">Timeline</div>
+                <div class="mini-desc">Search by selfie and see all entries timeline</div>
+                <div style="margin-top:10px;">
+                  <button class="btn btn-primary" onclick="openFormLink('worker-search.html')">Open Political Search</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:10px; opacity:0.85; font-size:12px;">
+              Note: Payment module & confirmation will be added later.
+            </div>
+          </div>
 
 </body>
 </html>

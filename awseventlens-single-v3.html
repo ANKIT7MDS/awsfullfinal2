@@ -386,7 +386,7 @@
             <div class="settings-title"><i class="fa-solid fa-link"></i> Public Form Links</div>
             <p class="text-sm text-muted" style="margin-bottom: 15px;">Share these links with field workers for real-time reporting.</p>
             <div class="row" style="gap: 8px;">
-              <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_visitor_form_v3_PUBLICLINK.html')">Visitor</button>
+              <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_visitor_form.html')">Visitor</button>
               <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_party_attendance_form.html')">Attendance</button>
               <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_president_tour_form.html')">President Tour</button>
               <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_mandal_reporting_form.html')">Mandal Report</button>
@@ -763,7 +763,7 @@ const POLITICAL_FORMS_API = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws
   let previewMode = 'mobile';
 
   // LINK HISTORY PERSISTENCE
-  let linkHistory = JSON.parse(localStorage.getItem(getLinkHistoryStorageKey())) || [];
+  let linkHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
   let isSingleView = false;
 
   // SUPER ADMIN FLAG
@@ -883,9 +883,6 @@ const POLITICAL_FORMS_API = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws
         localStorage.removeItem('impersonateStudioName');
         localStorage.removeItem('impersonateEmail');
         localStorage.removeItem('impersonateDetails');
-    localStorage.removeItem('impersonateAccountType');
-    localStorage.removeItem('bjp_token');
-    localStorage.removeItem('bjp_org_id');
         window.location.href = window.location.origin + window.location.pathname;
       } else {
         showToast('Login Failed', 'error');
@@ -1039,21 +1036,7 @@ const POLITICAL_FORMS_API = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws
 
     // IMPERSONATION MODE: Strictly use Summary (Read-Only) to avoid 401s
     if (impUserId) {
-       const impType = (localStorage.getItem('impersonateAccountType') || 'photographer');
-       accountType = impType;
-       try { localStorage.setItem('accountType', accountType); } catch(e) {}
-
-       // If Political account in impersonation, show only Political card (no collections)
-       if (String(impType || '').toLowerCase() === 'political') {
-          $('#phStatsGrid').classList.add('hidden');
-          $('#phCollectionsCard').classList.add('hidden');
-          applyPoliticalUI();
-          showToast('Political view (Read-Only)', 'info');
-          return;
-       }
-
        await loadImpersonatedDashboard(impUserId);
-       applyPoliticalUI();
        return;
     }
 
@@ -1061,22 +1044,15 @@ const POLITICAL_FORMS_API = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws
     $('#btnCreateCol').disabled = false; // Enable create button for owner
     
     try {
-      const sData = await api('/account-status').catch(()=>({}));
+      const [cData, sData] = await Promise.all([
+        api('/get-collections'),
+        api('/account-status').catch(()=>({}))
+      ]);
 
       // Store account type globally for UI switches
       accountType = (sData.account_type || sData.accountType || sData.user_type || 'photographer');
       try { localStorage.setItem('accountType', accountType); } catch(e) {}
       applyPoliticalUI();
-
-      // If Political account: hide photographer UI and stop (no collections)
-      if (isPoliticalAccount()) {
-        $('#phStatsGrid').classList.add('hidden');
-        $('#phCollectionsCard').classList.add('hidden');
-        showToast('Political account loaded', 'info');
-        return;
-      }
-
-      const cData = await api('/get-collections');
 
       // AUTO-REDIRECT POLITICAL USERS
       if (sData.account_type === 'political' || (sData.studio_name && sData.studio_name.toLowerCase().includes('bjp'))) {
@@ -1581,8 +1557,6 @@ Fix in AWS Console:
     try {
       showToast('Opening photographer view...', 'info');
       
-      localStorage.setItem('impersonateAccountType', (type || 'photographer'));
-
       localStorage.setItem('impersonateUserId', uid);
       localStorage.setItem('impersonateStudioName', studioName || '');
       localStorage.setItem('impersonateEmail', email || '');
@@ -1612,9 +1586,6 @@ Fix in AWS Console:
     localStorage.removeItem('impersonateEmail');
     localStorage.removeItem('impersonateDetails');
 
-    localStorage.removeItem('impersonateAccountType');
-    localStorage.removeItem('bjp_token');
-    localStorage.removeItem('bjp_org_id');
     $('#btnBackToSuperAdmin').classList.add('hidden');
     $('#impBadge').classList.add('hidden');
 
@@ -2044,36 +2015,8 @@ Fix in AWS Console:
   }
 
   /* ================= LINK HISTORY ================= */
-
-  // User-wise link history storage key (separate per logged-in / impersonated user)
-  function getJwtSubSafe(token) {
-    try {
-      if (!token) return '';
-      const parts = String(token).split('.');
-      if (parts.length < 2) return '';
-      let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      // pad base64
-      while (b64.length % 4) b64 += '=';
-      const json = decodeURIComponent(atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-      const obj = JSON.parse(json);
-      return obj.sub || obj['cognito:username'] || obj.username || '';
-    } catch (e) { return ''; }
-  }
-
-  function getActiveUserKey() {
-    const imp = localStorage.getItem('impersonateUserId');
-    if (imp) return 'imp_' + imp;
-    const token = (localStorage.getItem('idToken') || localStorage.getItem('accessToken') || '').trim();
-    const sub = getJwtSubSafe(token);
-    return sub ? ('u_' + sub) : 'u_unknown';
-  }
-
-  function getLinkHistoryStorageKey() {
-    return 'eventlens_links__' + getActiveUserKey();
-  }
-
   function addToLinkHistory(type, url, pin, expiryHours) {
-    let currentHistory = JSON.parse(localStorage.getItem(getLinkHistoryStorageKey())) || [];
+    let currentHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
 
     const newEntry = {
       id: Date.now(),
@@ -2089,14 +2032,14 @@ Fix in AWS Console:
 
     currentHistory.unshift(newEntry);
 
-    localStorage.setItem(getLinkHistoryStorageKey(), JSON.stringify(currentHistory));
+    localStorage.setItem('eventlens_links', JSON.stringify(currentHistory));
     linkHistory = currentHistory;
 
     renderLinkHistory();
   }
 
   function renderLinkHistory() {
-    linkHistory = JSON.parse(localStorage.getItem(getLinkHistoryStorageKey())) || [];
+    linkHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
 
     const tbody = $('#tblLinkHistory');
     if(linkHistory.length === 0) {
@@ -2132,10 +2075,10 @@ Fix in AWS Console:
   function removeLink(id) {
     if(!confirm("Remove this link from history list? (The link itself may still work until expiry)")) return;
 
-    let currentHistory = JSON.parse(localStorage.getItem(getLinkHistoryStorageKey())) || [];
+    let currentHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
     currentHistory = currentHistory.filter(l => l.id !== id);
 
-    localStorage.setItem(getLinkHistoryStorageKey(), JSON.stringify(currentHistory));
+    localStorage.setItem('eventlens_links', JSON.stringify(currentHistory));
     linkHistory = currentHistory;
 
     renderLinkHistory();
@@ -2518,7 +2461,7 @@ Fix in AWS Console:
         return;
       }
 
-      const token = (localStorage.getItem('bjp_token') || localStorage.getItem('accessToken') || localStorage.getItem('idToken') || '').trim();
+      const token = (localStorage.getItem('accessToken') || localStorage.getItem('idToken') || '').trim();
       if (!token) {
         alert('Login token missing. Please logout/login again.');
         return;
@@ -2533,12 +2476,7 @@ Fix in AWS Console:
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + token
         },
-        body: JSON.stringify((() => {
-          const orgId = (localStorage.getItem('bjp_org_id') || '').trim();
-          const p = { form_type: formType, days_valid: 14 };
-          if (orgId) p.org_id = orgId;
-          return { action: 'generate_form_link', payload: p };
-        })())
+        body: JSON.stringify({ action: 'generate_form_link', payload: { form_type: formType, days_valid: 14 } })
       });
 
       if (!res.ok) {
@@ -2573,21 +2511,13 @@ Fix in AWS Console:
 
   function openPoliticalForms() {
     // Open Visitor form as default
-    openFormLink('political_visitor_form_v3_PUBLICLINK.html');
+    openFormLink('political_visitor_form.html');
   }
 
   function applyPoliticalUI() {
     const card = document.getElementById('politicalModuleCard');
     if (!card) return;
-
-    const isPol = isPoliticalAccount();
-    // Apply theme on whole page
-    try {
-      if (isPol) document.body.classList.add('theme-political');
-      else document.body.classList.remove('theme-political');
-    } catch(e) {}
-
-    if (isPol) {
+    if (isPoliticalAccount()) {
       card.style.display = 'block';
     } else {
       card.style.display = 'none';

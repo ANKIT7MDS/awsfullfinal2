@@ -779,7 +779,9 @@
   const POLITICAL_API_BASE = 'https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com';
 const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
   const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
-  const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
+  // Keep this URL STABLE and whitelisted in Cognito App Client Callback URLs
+  const REDIRECT_URI = window.location.origin + "/awseventlens-single.html";
+  const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
   
   /* ================= PLAN LABEL HELPERS ================= */
@@ -916,7 +918,7 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
           grant_type: 'authorization_code',
           client_id: CLIENT_ID,
           code: code,
-          redirect_uri: window.location.origin + window.location.pathname
+          redirect_uri: REDIRECT_URI
         })
       });
       const data = await res.json();
@@ -928,7 +930,7 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
         localStorage.removeItem('impersonateStudioName');
         localStorage.removeItem('impersonateEmail');
         localStorage.removeItem('impersonateDetails');
-        window.location.href = window.location.origin + window.location.pathname;
+        window.location.href = REDIRECT_URI;
       } else {
         showToast('Login Failed', 'error');
       }
@@ -937,7 +939,10 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
           updateSuperAdminCardsFromCache(); }
   }
 
-  function doLogin(){ location.href = HOSTED_UI; }
+  function doLogin(){
+    // If you're not hosting this file as /awseventlens-single.html, Cognito callback must be updated accordingly.
+    location.href = HOSTED_UI;
+  }
   function doLogout() { localStorage.clear(); location.reload(); }
 
   /* ================= IMPROVED API HELPER ================= */

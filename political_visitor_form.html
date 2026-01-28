@@ -94,27 +94,28 @@
         </div>
 
         <div class="mt-4 text-xs text-slate-400">
-          ✅ Note: यह Form Political Dashboard के लिए है। अगर login token missing है तो submit नहीं होगा।
+          ✅ <span id="noteText">Note: यह Form Political Dashboard के लिए है। अगर login token missing है तो submit नहीं होगा।</span>
         </div>
       </div>
     </div>
 
     <div class="text-center text-xs text-slate-500 mt-6">
       EventLens Political Module
-    </div>
-  </div>
+  
+// ===== EventLens Political Visitor Form (Dual Mode)
+  // Public Mode: URL has ?token=...  (NO login needed)
+  // Admin Mode: URL has ?cid=... and logged-in token in localStorage (idToken/accessToken)
+  const API_ID = "vxid0yoovj";
+  const REGION = "ap-south-1";
 
-<script>
-  const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-  const FORMS_ENDPOINT = API_BASE + "/political/forms";
+  const API_BASE_CANDIDATES = [
+    `https://${API_ID}.execute-api.${REGION}.amazonaws.com`,         // $default stage
+    `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`     // prod stage fallback
+  ];
 
   function qs(name) {
     const u = new URL(window.location.href);
     return u.searchParams.get(name);
-  }
-
-  function getUrlToken() {
-    return qs("token");
   }
 
   function showStatus(msg) {
@@ -124,8 +125,19 @@
     t.textContent = msg;
   }
 
-  function getAccessToken() {
-    return localStorage.getItem('accessToken') || localStorage.getItem('idToken') || '';
+  function isPublicMode() {
+    return !!qs("token");
+  }
+
+  function getIdTokenPrefer() {
+    // Prefer ID token (Cognito group claim usually in idToken)
+    return (
+      localStorage.getItem('idToken') ||
+      localStorage.getItem('cognito_id_token') ||
+      localStorage.getItem('accessToken') ||
+      localStorage.getItem('cognito_access_token') ||
+      ''
+    );
   }
 
   async function sha256Hex(file) {
@@ -135,66 +147,75 @@
     return bytes.map(b => b.toString(16).padStart(2,'0')).join('');
   }
 
-  async function apiCall(action, payload) {
-    const publicToken = getUrlToken();
-    let headers = { "Content-Type": "application/json" };
-    
-    // Logic: If public token exists in URL, use it in payload. Else use Bearer token.
-    if (publicToken) {
-        payload.token = publicToken;
-    } else {
-        const token = getAccessToken();
-        if(!token) throw new Error("Login token नहीं मिला। पहले Political Dashboard से login करो।");
-        headers["Authorization"] = "Bearer " + token;
-    }
+  async function apiCall(action, payload, opts = {}) {
+    const { useAuth = true } = opts;
 
-    const r = await fetch(FORMS_ENDPOINT, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify({ action, payload })
-    });
-    const txt = await r.text();
-    let data = {};
-    try { data = JSON.parse(txt); } catch(e) { data = {raw: txt}; }
-    if(!r.ok) {
-      throw new Error((data && data.message) ? data.message : ("API Error " + r.status));
+    let lastErr = null;
+    for (const base of API_BASE_CANDIDATES) {
+      const url = base + "/political/forms";
+      try {
+        const headers = { "Content-Type": "application/json" };
+
+        if (useAuth) {
+          const t = getIdTokenPrefer();
+          if (!t) throw new Error("Login token नहीं मिला। पहले dashboard से login करो।");
+          headers["Authorization"] = "Bearer " + t;
+        }
+
+        const r = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ action, payload })
+        });
+
+        const txt = await r.text();
+        let data = {};
+        try { data = JSON.parse(txt); } catch(e) { data = { raw: txt }; }
+
+        // If stage mismatch, API Gateway commonly returns 403 + "Missing Authentication Token"
+        if (!r.ok) {
+          const msg = (data && data.message) ? data.message : (data && data.raw) ? data.raw : ("API Error " + r.status);
+          // retry on stage mismatch / not found
+          if (r.status === 403 && typeof msg === "string" && msg.toLowerCase().includes("missing authentication token")) {
+            lastErr = new Error(msg);
+            continue;
+          }
+          if (r.status === 404) {
+            lastErr = new Error(msg);
+            continue;
+          }
+          throw new Error(msg);
+        }
+        return data;
+      } catch (e) {
+        lastErr = e;
+        // if fetch itself fails (CORS/Network), try next base
+        continue;
+      }
     }
-    return data;
+    throw (lastErr || new Error("API call failed"));
   }
 
   function getCollectionId() {
-    // If public token is used, CID is not needed in UI directly, but we show if available
     const cid = qs("cid") || localStorage.getItem("political_cid") || "";
-    if(cid) localStorage.setItem("political_cid", cid);
+    if (cid) localStorage.setItem("political_cid", cid);
     return cid;
   }
 
   async function uploadToS3(url, file) {
     const r = await fetch(url, {
       method: "PUT",
-      headers: {
-        "Content-Type": file.type || "application/octet-stream"
-      },
+      headers: { "Content-Type": file.type || "application/octet-stream" },
       body: file
     });
-    if(!r.ok) throw new Error("S3 Upload fail (" + r.status + ")");
+    if (!r.ok) throw new Error("S3 Upload fail (" + r.status + ")");
     return true;
   }
 
   async function handleSubmit() {
-    const publicToken = getUrlToken();
+    const publicToken = qs("token") || "";
     const cid = getCollectionId();
-    
-    // UI Update logic
-    if (publicToken) {
-        document.getElementById("cidText").textContent = "Public Link Mode";
-    } else {
-        document.getElementById("cidText").textContent = cid || "-";
-        if(!cid) {
-          showStatus("❌ Collection ID missing. इस page को Dashboard से खोलो (link में ?cid= होगा).");
-          return;
-        }
-    }
+    document.getElementById("cidText").textContent = (cid || "-");
 
     const data = {};
     data['mobile'] = (document.getElementById('mobile').value || '').trim();
@@ -206,124 +227,140 @@
     data['reason'] = (document.getElementById('reason').value || '').trim();
 
     const required = ["mobile", "name", "district", "vidhansabha", "mandal", "address", "reason"];
-    for(const k of required) {
-      if(!data[k]) {
+    for (const k of required) {
+      if (!data[k]) {
         showStatus("❌ " + k + " खाली है। भर दो।");
         return;
       }
     }
 
     const input = document.getElementById("fileInput");
-    
-    if(!input.files || input.files.length === 0) {
+    if (!input.files || input.files.length === 0) {
       showStatus("❌ फोटो select नहीं किया।");
       return;
     }
+    const files = Array.from(input.files || []);
+    const f = files[0]; // visitor form: single selfie
 
-    const files = (input.files && input.files.length>0) ? Array.from(input.files) : [];
-
-    document.getElementById('submitBtn').disabled = true;
-    document.getElementById('submitBtn').textContent = "Saving...";
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = "Saving...";
 
     try {
-      // If no files (optional), create a metadata-only entry
-      if(files.length === 0) {
-        showStatus("⏳ Creating entry...");
-        // API Call ab smart hai, wo khud decide karega token bhejna hai ya auth
-        const createResp = await apiCall("create_entry", {
-          collection_id: cid, // Will be ignored if token is present
-          form_type: "visitor_form",
-          payload: data,
-          file_kind: "none",
-          file_name: "",
-          mime_type: "",
-          sha256: ""
-        });
+      // Decide mode
+      const publicMode = !!publicToken;
 
-        showStatus("⏳ Finalizing entry...");
-        await apiCall("finalize_entry", {
+      // In admin mode, cid is required
+      if (!publicMode && !cid) {
+        showStatus("❌ Collection ID missing. Dashboard से link खोलो (URL में ?cid= होगा).");
+        return;
+      }
+
+      showStatus("⏳ Hashing file ...");
+      const hex = await sha256Hex(f);
+
+      const commonPayload = {
+        collection_id: publicMode ? "" : cid,
+        form_type: "visitor_form",
+        payload: data,
+        file_kind: "selfie",
+        file_name: f.name,
+        mime_type: f.type || "image/jpeg",
+        sha256: hex
+      };
+
+      let createResp;
+
+      if (publicMode) {
+        showStatus("⏳ Creating (Public) ...");
+        createResp = await apiCall("public_create_entry", {
+          ...commonPayload,
+          token: publicToken
+        }, { useAuth: false });
+      } else {
+        showStatus("⏳ Creating (Admin) ...");
+        createResp = await apiCall("create_entry", commonPayload, { useAuth: true });
+      }
+
+      // Duplicate case
+      if (createResp.duplicate === true) {
+        showStatus("✅ Duplicate मिला: upload skip, entry linked.");
+        const finalizePayload = {
           entry_id: createResp.entry_id,
           pk: createResp.pk,
           sk: createResp.sk,
           s3_key: createResp.s3_key || "",
-          file_kind: "none",
-          sha256: ""
-        });
+          file_kind: "selfie",
+          sha256: hex,
+          duplicate: true
+        };
 
-        showStatus("✅ Saved (no photo).");
+        if (publicMode) {
+          finalizePayload.token = publicToken;
+          finalizePayload.finalize_token = createResp.finalize_token || "";
+          await apiCall("public_finalize_entry", finalizePayload, { useAuth: false });
+        } else {
+          await apiCall("finalize_entry", finalizePayload, { useAuth: true });
+        }
+        showStatus("✅ Saved (duplicate).");
         return;
       }
 
-      // For each file create entry (1 file = 1 entry)
-      for(let i=0;i<files.length;i++) {
-        const f = files[i];
-        showStatus("⏳ Hashing file " + (i+1) + "/" + files.length + " ...");
-        const hex = await sha256Hex(f);
-
-        showStatus("⏳ Creating entry " + (i+1) + "/" + files.length + " ...");
-        const createResp = await apiCall("create_entry", {
-          collection_id: cid,
-          form_type: "visitor_form",
-          payload: data,
-          file_kind: "selfie",
-          file_name: f.name,
-          mime_type: f.type || "image/jpeg",
-          sha256: hex
-        });
-
-        if(createResp.duplicate === true) {
-          showStatus("✅ Duplicate मिला: photo दुबारा upload नहीं हुआ, entry link हो गई। (" + (i+1) + ")");
-          await apiCall("finalize_entry", {
-            entry_id: createResp.entry_id,
-            pk: createResp.pk,
-            sk: createResp.sk,
-            s3_key: createResp.s3_key,
-            file_kind: "selfie",
-            sha256: hex,
-            duplicate: true
-          });
-          continue;
-        }
-
-        if(createResp.upload_url) {
-          showStatus("⏳ Uploading S3 " + (i+1) + "/" + files.length + " ...");
-          await uploadToS3(createResp.upload_url, f);
-        }
-
-        showStatus("⏳ Finalizing entry " + (i+1) + "/" + files.length + " ...");
-        await apiCall("finalize_entry", {
-          entry_id: createResp.entry_id,
-          pk: createResp.pk,
-          sk: createResp.sk,
-          s3_key: createResp.s3_key,
-          file_kind: "selfie",
-          sha256: hex
-        });
-
-        showStatus("✅ Saved " + (i+1) + "/" + files.length);
+      if (createResp.upload_url) {
+        showStatus("⏳ Uploading photo ...");
+        await uploadToS3(createResp.upload_url, f);
       }
 
-      showStatus("✅ Done! सभी entry save हो गई। Indexing थोड़ी देर में Rekognition में हो जाएगी।");
-      input.value = "";
-    } catch(err) {
-      showStatus("❌ Error: " + (err && err.message ? err.message : err));
+      showStatus("⏳ Finalizing ...");
+      const finalizePayload = {
+        entry_id: createResp.entry_id,
+        pk: createResp.pk,
+        sk: createResp.sk,
+        s3_key: createResp.s3_key || "",
+        file_kind: "selfie",
+        sha256: hex
+      };
+
+      if (publicMode) {
+        finalizePayload.token = publicToken;
+        finalizePayload.finalize_token = createResp.finalize_token || "";
+        await apiCall("public_finalize_entry", finalizePayload, { useAuth: false });
+      } else {
+        await apiCall("finalize_entry", finalizePayload, { useAuth: true });
+      }
+
+      showStatus("✅ Submit हो गया!");
+      // optional reset
+      // document.getElementById("form").reset();
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      // Hint for common API Gateway auth setup issue
+      if (msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("missing authentication token")) {
+        showStatus("❌ API Authorization issue. API Gateway में POST /political/forms का Authorization NONE करो (public submit के लिए).");
+      } else if (msg.toLowerCase().includes("failed to fetch")) {
+        showStatus("❌ Network/CORS issue. (1) सही file upload हुई है? (2) API Gateway CORS enabled? (3) Route Authorization NONE? ");
+      } else {
+        showStatus("❌ " + msg);
+      }
     } finally {
-      document.getElementById('submitBtn').disabled = false;
-      document.getElementById('submitBtn').textContent = "Submit / Save";
+      btn.disabled = false;
+      btn.textContent = "Submit / Save";
     }
   }
 
-  document.getElementById("submitBtn").addEventListener("click", (e)=>{
-    e.preventDefault();
-    handleSubmit();
-  });
+  document.getElementById("submitBtn").addEventListener("click", handleSubmit);
 
-  // Init text
-  if(getUrlToken()){
-      document.getElementById("cidText").textContent = "Public Link Mode";
-  } else {
-      document.getElementById("cidText").textContent = getCollectionId() || "-";
-  }
+  // Show mode hint
+  (function initHint(){
+    const publicMode = isPublicMode();
+    const note = document.getElementById("noteText");
+    if (publicMode) {
+      note.textContent = "Public Link Mode: token detect हुआ है, login की जरूरत नहीं है।";
+    } else {
+      note.textContent = "Admin Mode: dashboard login token और ?cid= जरूरी है।";
+    }
+  })();
+ getCollectionId() || "-";
 </script>
 
 </body>

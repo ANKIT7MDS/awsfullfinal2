@@ -779,9 +779,7 @@
   const POLITICAL_API_BASE = 'https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com';
 const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
   const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
-  // Keep this URL STABLE and whitelisted in Cognito App Client Callback URLs
-  const REDIRECT_URI = window.location.origin + "/awseventlens-single-v3.html";
-  const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+  const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
 
   
   /* ================= PLAN LABEL HELPERS ================= */
@@ -795,9 +793,27 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
     return p || "-";
   }
 
+/* ================= AUTH TOKEN PICKER ================= */
+  function parseJwtPayload(jwt){
+    try{
+      const part = jwt.split('.')[1];
+      const base = part.replace(/-/g,'+').replace(/_/g,'/');
+      const json = decodeURIComponent(atob(base).split('').map(c => '%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(json);
+    }catch(e){ return null; }
+  }
+  function pickJwtForApi(){
+    const idT = localStorage.getItem('idToken');
+    const accT = localStorage.getItem('accessToken');
+    // Prefer ID token for API Gateway JWT authorizers (aud = client_id)
+    if(idT) return idT;
+    return accT || null;
+  }
+
 /* ================= STATE MANAGEMENT ================= */
   let idToken = localStorage.getItem('idToken');
   let accessToken = localStorage.getItem('accessToken');
+  let jwtToken = pickJwtForApi();
   let curCol = null;
   let allCols = [];
   let curEvents = [];
@@ -918,19 +934,20 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
           grant_type: 'authorization_code',
           client_id: CLIENT_ID,
           code: code,
-          redirect_uri: REDIRECT_URI
+          redirect_uri: window.location.origin + window.location.pathname
         })
       });
       const data = await res.json();
       if(data.id_token){
         localStorage.setItem('idToken', data.id_token);
         if(data.access_token) localStorage.setItem('accessToken', data.access_token);
+        jwtToken = pickJwtForApi();
         // clear impersonation on fresh login
         localStorage.removeItem('impersonateUserId');
         localStorage.removeItem('impersonateStudioName');
         localStorage.removeItem('impersonateEmail');
         localStorage.removeItem('impersonateDetails');
-        window.location.href = REDIRECT_URI;
+        window.location.href = window.location.origin + window.location.pathname;
       } else {
         showToast('Login Failed', 'error');
       }
@@ -939,20 +956,18 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
           updateSuperAdminCardsFromCache(); }
   }
 
-  function doLogin(){
-    // If you're not hosting this file as /awseventlens-single.html, Cognito callback must be updated accordingly.
-    location.href = HOSTED_UI;
-  }
+  function doLogin(){ location.href = HOSTED_UI; }
   function doLogout() { localStorage.clear(); location.reload(); }
 
   /* ================= IMPROVED API HELPER ================= */
   async function api(path, body){
-    // STANDARD BEHAVIOR: Use Admin ID Token. No fake impersonation tokens.
-    const tokenToUse = accessToken || idToken; // Prefer ID token for API Gateway JWT authorizer
+    // STANDARD BEHAVIOR: Use ID token for JWT authorizers
+    jwtToken = pickJwtForApi();
+    const tokenToUse = jwtToken;
 
     const opts = {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${tokenToUse}`, 'Content-Type': 'application/json' }
+      headers: (() => { const h = { 'Content-Type': 'application/json' }; if(tokenToUse) h['Authorization'] = `Bearer ${tokenToUse}`; return h; })()
     };
 
     // Known GET endpoints (no body)
@@ -988,7 +1003,8 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
 
   /* ================= POLITICAL API HELPER (HTTP API STAGE SAFE) ================= */
   async function politicalApi(path, body){
-    const tokenToUse = accessToken || idToken;
+    jwtToken = pickJwtForApi();
+    const tokenToUse = jwtToken;
     const opts = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }

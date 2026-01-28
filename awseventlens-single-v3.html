@@ -121,7 +121,7 @@
     .kpi-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); opacity: 0.5; }
     .kpi-val { font-size: 32px; font-weight: 800; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; }
     .settings-group { border: 1px solid var(--border-color); padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); margin-bottom: 20px; }
-    .settings-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+    .settings-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
 
     .tag-pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:11px; border:1px solid #333; background: rgba(255,255,255,0.05); color:#ddd; }
     .text-muted { color: var(--text-muted); }
@@ -178,8 +178,12 @@
       
       <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Plan</label>
       <select id="eduPlan" style="margin-bottom:15px;">
-          <option value="basic">Basic (50GB)</option>
-          <option value="pro">Pro (500GB)</option>
+
+          <option value="trial">Trial (2GB / 14 Days)</option>
+          <option value="starter">Starter (50GB)</option>
+          <option value="basic">Basic (200GB)</option>
+          <option value="pro">Pro (1TB)</option>
+          <option value="studio">Studio (5TB)</option>
       </select>
 
       <label class="text-sm" style="display:block; margin-bottom:6px; color:#aaa;">Account Status</label>
@@ -290,7 +294,16 @@
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">UPLOADED PHOTOS</div><div class="kpi-val" id="saTotalUploads">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">GUEST SEARCHES</div><div class="kpi-val" id="saTotalGuestSearch">-</div></div>
           <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">SEARCH RESULTS</div><div class="kpi-val" id="saTotalSearchResults">-</div></div>
-          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div></div>
+          <div class="kpi-box"><div class="text-sm" style="font-weight:700; color:var(--text-muted);">USED DATA</div><div class="kpi-val" id="saTotalUsedData">-</div>
+          <div class="kpi-box">
+            <div class="kpi-label" style="color:var(--text-muted);">POLITICAL ENTRIES</div>
+            <div class="kpi-val" id="saTotalPoliticalEntries">-</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-label" style="color:var(--text-muted);">POLITICAL FACES</div>
+            <div class="kpi-val" id="saTotalPoliticalFaces">-</div>
+          </div>
+</div>
         </div>
 
         <!-- Add User Form (Updated with Account Type and Dynamic Placeholder) -->
@@ -315,13 +328,13 @@
             <div style="flex:1">
                 <label class="text-sm text-muted">Plan</label>
                 <select id="nuPlan">
-      <option value="trial">Free Trial (2GB • 14 Days)</option>
-      <option value="starter">Starter (10GB)</option>
-      <option value="basic">Basic (50GB)</option>
-      <option value="pro">Pro (200GB)</option>
-      <option value="studio">Studio (1TB)</option>
-      
-    </select>
+
+          <option value="trial">Trial (2GB / 14 Days)</option>
+          <option value="starter">Starter (50GB)</option>
+          <option value="basic">Basic (200GB)</option>
+          <option value="pro">Pro (1TB)</option>
+          <option value="studio">Studio (5TB)</option>
+      </select>
             </div>
             <!-- Added Temporary Password Field -->
             <div style="flex:1">
@@ -363,49 +376,6 @@
               <tr><td align="center" class="text-muted" colspan="7">Loading accounts...</td></tr>
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <!-- POLITICAL MODULE CARD (FIXED UI) -->
-      <div id="politicalModuleCard" class="card theme-political" style="display:none; margin-top:24px; border-color: var(--primary-dim);">
-        <div class="row" style="justify-content: space-between; margin-bottom: 24px; align-items: flex-start;">
-          <div>
-            <h3 style="color: var(--primary); margin:0; display: flex; align-items: center; gap: 10px;">
-                <i class="fa-solid fa-flag"></i> Political Management Console
-            </h3>
-            <p class="text-sm text-muted" style="margin-top: 5px;">Field worker entries, selfie verification & automated timelines</p>
-          </div>
-        </div>
-
-        <div class="grid">
-          <!-- Quick Links Section -->
-          <div class="settings-group" style="margin-bottom:0; display: flex; flex-direction: column;">
-            <div class="settings-title"><i class="fa-solid fa-link"></i> Public Form Links</div>
-            <p class="text-sm text-muted" style="margin-bottom: 15px;">Share these links with field workers for real-time reporting.</p>
-            <div class="row" style="gap: 8px;">
-              <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_visitor_form.html')">Visitor</button>
-              <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_party_attendance_form.html')">Attendance</button>
-              <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_president_tour_form.html')">President Tour</button>
-              <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_mandal_reporting_form.html')">Mandal Report</button>
-              <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_coordinator_entry_form.html')">Coordinator</button>
-              <button class="btn secondary" style="font-size: 11px; padding: 8px 14px;" onclick="openFormLink('political_program_info_form.html')">Program Info</button>
-            </div>
-          </div>
-
-          <!-- Timeline Search Section -->
-          <div class="settings-group" style="margin-bottom:0; display: flex; flex-direction: column;">
-            <div class="settings-title"><i class="fa-solid fa-clock-rotate-left"></i> Timeline Analytics</div>
-            <p class="text-sm text-muted" style="margin-bottom: 15px;">Search by worker selfie to see their entire activity history.</p>
-            <div style="margin-top: auto;">
-              <button class="btn primary" style="width: 100%; justify-content: center;" onclick="openFormLink('political-search.html')">
-                <i class="fa-solid fa-magnifying-glass"></i> Open Political Search
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top:20px; padding: 12px; background: rgba(255, 106, 0, 0.05); border-radius: 8px; border: 1px solid rgba(255, 106, 0, 0.1); text-align: center;">
-          <span class="text-sm text-muted"><i class="fa-solid fa-info-circle"></i> Entries are automatically tagged with GPS and Timestamp data.</span>
         </div>
       </div>
 
@@ -599,7 +569,65 @@
             </div>
           </div>
 
-          <hr style="border:0; border-top:1px solid #333; margin:30px 0;" />
+          
+<hr style="border:0; border-top:1px dashed #333; margin:26px 0;" />
+
+<div class="row" style="justify-content: space-between; margin-bottom: 14px; align-items:center;">
+  <h3>Political Public Link Generator</h3>
+  <div class="text-sm text-muted">Search + 6 Forms (Token Based)</div>
+</div>
+
+<div class="row" style="gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+  <div style="flex: 2; min-width: 240px;">
+    <label class="text-sm" style="display:block; margin-bottom:6px;">Collection ID</label>
+    <input id="polCid" placeholder="e.g. COL123" />
+  </div>
+
+  <div style="flex: 2; min-width: 210px;">
+    <label class="text-sm" style="display:block; margin-bottom:6px;">Link Category</label>
+    <select id="polLinkKind" onchange="updatePoliticalLinkUI()">
+      <option value="political_search">Worker Search (Face Search)</option>
+      <option value="political_form">Public Form Link</option>
+    </select>
+  </div>
+
+  <div id="polFormWrap" style="flex: 2; min-width: 240px;">
+    <label class="text-sm" style="display:block; margin-bottom:6px;">Form Type</label>
+    <select id="polFormType">
+      <option value="visitor_form">Visitor Form</option>
+      <option value="party_attendance">Party Attendance</option>
+      <option value="president_tour">President Tour</option>
+      <option value="mandal_reporting">Mandal Reporting</option>
+      <option value="coordinator_entry">Coordinator Entry</option>
+      <option value="program_info">Program Info</option>
+    </select>
+  </div>
+
+  <div style="flex: 1; min-width: 140px;">
+    <label class="text-sm" style="display:block; margin-bottom:6px;">Valid Days</label>
+    <select id="polDays">
+      <option value="30">30</option>
+      <option value="14">14</option>
+      <option value="7">7</option>
+      <option value="1">1</option>
+      <option value="365">365</option>
+    </select>
+  </div>
+
+  <button class="btn primary" onclick="generatePoliticalPublicLink()" style="height: 46px; min-width: 170px;">Generate</button>
+</div>
+
+<div class="hidden" id="polLinkRes" style="margin-top: 18px; background: rgba(0, 230, 118, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary-dim);">
+  <div class="text-sm" style="color: var(--primary); font-weight: 700; margin-bottom: 8px;">POLITICAL LINK</div>
+  <div class="row" style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+    <input id="polFinalLink" readonly style="border:none; background:transparent; font-family:monospace; color:var(--primary); font-size:15px; flex:1;" />
+    <button class="btn secondary" onclick="copyPoliticalLink()" style="margin-left: 8px;"><i class="fa-regular fa-copy"></i> Copy</button>
+  </div>
+  <div class="text-sm text-muted" id="polLinkMeta" style="margin-top:10px;"></div>
+  <div class="text-sm text-muted" style="margin-top:6px;">Note: Public forms need API route without Cognito Authorizer (recommended: POST /political/public/forms).</div>
+</div>
+
+<hr style="border:0; border-top:1px solid #333; margin:30px 0;" />
 
           <div class="row" style="justify-content: space-between; margin-bottom: 15px;">
             <h3>Active Links History</h3>
@@ -738,22 +766,26 @@
   <!-- ====================== SCRIPT ====================== -->
   <script>
   /* ================= CONFIGURATION ================= */
-    // Global Account Type (photographer/political)
-  let accountType = '';
-
   const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-  
-  // FIX: Using the correct dedicated API Gateway for political forms with correct path
-  const POLITICAL_FORMS_API = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com/political/forms";
-  
-  const BASE_SITE_URL = window.location.origin;
-
   const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
   const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
   const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
 
-  /* ================= STATE MANAGEMENT ================= */
+  
+  /* ================= PLAN LABEL HELPERS ================= */
+  function prettyPlan(p){
+    const x = String(p||"").toLowerCase();
+    if(x==="trial"||x==="free") return "Trial (2GB/14D)";
+    if(x==="starter") return "Starter (50GB)";
+    if(x==="basic") return "Basic (200GB)";
+    if(x==="pro") return "Pro (1TB)";
+    if(x==="studio"||x==="enterprise") return "Studio (5TB)";
+    return p || "-";
+  }
+
+/* ================= STATE MANAGEMENT ================= */
   let idToken = localStorage.getItem('idToken');
+  let accessToken = localStorage.getItem('accessToken');
   let curCol = null;
   let allCols = [];
   let curEvents = [];
@@ -763,7 +795,7 @@
   let previewMode = 'mobile';
 
   // LINK HISTORY PERSISTENCE
-  let linkHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
+  let linkHistory = JSON.parse(localStorage.getItem(getLinksStorageKey())) || [];
   let isSingleView = false;
 
   // SUPER ADMIN FLAG
@@ -815,7 +847,7 @@
       return;
     }
 
-    if(!idToken) {
+    if(!idToken && !accessToken) {
       showView('vLogin');
     } else {
       $('#btnLogout').classList.remove('hidden');
@@ -828,14 +860,16 @@
         $('#impName').textContent = localStorage.getItem('impersonateStudioName') || localStorage.getItem('impersonateEmail') || impUserId || '-';
       }
 
-      // Check if Super Admin (groups/email)
-      const payload = parseJwt(idToken);
-      const groups = payload['cognito:groups'] || payload['groups'] || [];
-      const email = (payload.email || '').toLowerCase();
+      // Check if Super Admin (groups/email)  // FIX: groups claim is in Access Token
+      const payloadId = parseJwt(idToken || '');
+      const payloadAcc = parseJwt(accessToken || idToken || '');
+      const groups = payloadAcc['cognito:groups'] || payloadAcc['groups'] || payloadId['cognito:groups'] || payloadId['groups'] || [];
+      const email = (payloadId.email || payloadAcc.email || '').toLowerCase();
+      try{ if(email) localStorage.setItem('meEmail', email); }catch(e){}
 
       // Basic Super Admin Detection
       const gArr = Array.isArray(groups) ? groups : (typeof groups === 'string' ? groups.split(',') : []);
-      const ok = gArr.some(g => String(g).toLowerCase().includes('master') || String(g).toLowerCase().includes('admin')) || email === 'admin@eventlens.com';
+      const ok = gArr.some(g => String(g).toLowerCase().includes('master') || String(g).toLowerCase().includes('admin')) || ['admin@eventlens.com','anusonimds@gmail.com'].includes(email);
       if(ok) {
         isSuperAdmin = true;
         $('#saBadge').classList.remove('hidden');
@@ -878,6 +912,7 @@
       const data = await res.json();
       if(data.id_token){
         localStorage.setItem('idToken', data.id_token);
+        if(data.access_token) localStorage.setItem('accessToken', data.access_token);
         // clear impersonation on fresh login
         localStorage.removeItem('impersonateUserId');
         localStorage.removeItem('impersonateStudioName');
@@ -887,7 +922,9 @@
       } else {
         showToast('Login Failed', 'error');
       }
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   function doLogin(){ location.href = HOSTED_UI; }
@@ -896,7 +933,7 @@
   /* ================= IMPROVED API HELPER ================= */
   async function api(path, body){
     // STANDARD BEHAVIOR: Use Admin ID Token. No fake impersonation tokens.
-    const tokenToUse = idToken;
+    const tokenToUse = accessToken || idToken; // Prefer ID token for API Gateway JWT authorizer
 
     const opts = {
       method: 'POST',
@@ -951,15 +988,22 @@
     } else if (action === 'global_stats') {
         body.action = 'global_stats';
     }
+    // Try ID token first (best for API Gateway JWT authorizer), then fallback to Access token if needed
+    const primaryToken = idToken || accessToken || "";
+    const fallbackToken = (accessToken && accessToken !== primaryToken) ? accessToken : (idToken && idToken !== primaryToken ? idToken : "");
 
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${idToken}` 
-        },
-        body: JSON.stringify(body)
-    });
+    async function _doFetch(tokenStr){
+        const hdrs = { 'Content-Type': 'application/json' };
+        if(tokenStr) hdrs['Authorization'] = `Bearer ${tokenStr}`;
+        return fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(body) });
+    }
+
+    let res = await _doFetch(primaryToken);
+
+    // If authorizer rejects token type/audience, retry once with fallback token
+    if(res.status === 401 && fallbackToken){
+        res = await _doFetch(fallbackToken);
+    }
 
     if(!res.ok) {
         let msg = res.statusText;
@@ -1001,6 +1045,7 @@
       if(id === 'tLeads') loadLeads();
       if(id === 'tClient') loadClientSelections();
       if(id === 'tLink') renderLinkHistory();
+      try{ updatePoliticalLinkUI(); }catch(e){}
       if(id === 'tSettings') loadSettings();
       if(id === 'tEvents') loadEvents();
     }
@@ -1049,25 +1094,18 @@
         api('/account-status').catch(()=>({}))
       ]);
 
-      // Store account type globally for UI switches
-      accountType = (sData.account_type || sData.accountType || sData.user_type || 'photographer');
-      try { localStorage.setItem('accountType', accountType); } catch(e) {}
-      applyPoliticalUI();
-
       // AUTO-REDIRECT POLITICAL USERS
       if (sData.account_type === 'political' || (sData.studio_name && sData.studio_name.toLowerCase().includes('bjp'))) {
-         // removed: separate political dashboard redirect
+         window.location.href = 'bjp-admin.html';
+         return;
       }
 
-      allCols = (cData.Items || []).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-      
-      // NEW: Set default Collection ID for Political Links
-      if(allCols.length > 0) {
-          localStorage.setItem('political_cid', allCols[0].collection_id);
-      }
+            // Robust parse: API may return Items/items/collections
+      const _items = (cData && (cData.Items || cData.items || cData.collections || cData.data)) || [];
+      allCols = (Array.isArray(_items) ? _items : []).sort((a,b) => new Date((b||{}).created_at || 0) - new Date((a||{}).created_at || 0));
 
-      let realTotalPhotos = allCols.reduce((sum, c) => sum + (Number(c.total_photo_count) || 0), 0);
-      let realTotalStorage = allCols.reduce((sum, c) => sum + (Number(c.storage_bytes) || 0), 0);
+      let realTotalPhotos = allCols.reduce((sum, c) => sum + (Number(c.total_photo_count || c.photo_count || c.totalPhotos || c.photos) || 0), 0);
+      let realTotalStorage = allCols.reduce((sum, c) => sum + (Number(c.storage_bytes || c.storageBytes || c.bytes) || 0), 0);
 
       $('#dCols').textContent = allCols.length;
       $('#dPhotos').textContent = realTotalPhotos > 0 ? realTotalPhotos.toLocaleString() : "0";
@@ -1111,6 +1149,8 @@
            $('#saSection').classList.remove('hidden');
       } else {
         showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1222,6 +1262,8 @@
       } catch (e) {
         console.error("Delete failed:", e);
         showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1253,12 +1295,20 @@
       
       // Ensure bytes are parsed correctly even if string
       const usedBytes = parseInt(r.used_data_bytes || r.total_storage_used || 0, 10);
-      $('#saTotalUsedData').textContent = formatBytes(usedBytes);
+      const approxBill = computeApproxBillINR(usedBytes, Number(r.total_photos_uploaded||0), Number(r.total_guest_searches||0));
+      $('#saTotalUsedData').textContent = `${formatBytes(usedBytes)} | ₹${approxBill.toFixed(2)}`;
+
+      $('#saTotalPoliticalEntries').textContent = String(r.total_political_entries || 0);
+      $('#saTotalPoliticalFaces').textContent = String(r.total_political_faces || 0);
     } catch(e) {
       if(e.message.includes("AccessDenied")) {
           console.warn("Permission Error on Backend:", e);
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       } else {
           showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1291,6 +1341,10 @@
       const data = await masterApi('list_photographers', {});
       photographersCache = data.photographers || [];
       renderPhotographersTable();
+      // NEW: Fill Super Admin cards from table data (fallback)
+      updateSuperAdminCardsFromCache();
+      // NEW: Background refresh for accurate counts (sync with Photographer dashboard)
+      enrichPhotographersCacheStats();
     } catch(e) {
       if(e.message.includes("AccessDenied")) {
           // Graceful degradation: show partial data if backend permission fails
@@ -1298,6 +1352,105 @@
       } else {
           $('#tblPhotographers').innerHTML = `<tr><td colspan="7" align="center" class="text-muted">Error: ${escapeHtml(e.message)}</td></tr>`;
       }
+    }
+  }
+
+  // ================= SUPER ADMIN: STATS FALLBACK + AUTO SYNC =================
+  function updateSuperAdminCardsFromCache(){
+    try{
+      const rows = (photographersCache || []);
+      if(!rows || rows.length === 0) return;
+
+      // Compute totals from loaded list (fallback if global_stats fails)
+      const totalPhotographers = rows.length;
+      let totalCollections = 0;
+      let totalUploads = 0;
+      let totalUsedBytes = 0;
+      let totalGuestSearch = 0;
+      let totalSearchResults = 0;
+
+      const safeNum = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+      const safeCount = (v) => Array.isArray(v) ? v.length : safeNum(v);
+
+      for(const u of rows){
+        totalCollections += safeCount(u.collections);
+        totalUploads += safeNum(u.photos_uploaded);
+        totalUsedBytes += safeNum(u.used_data_bytes);
+        totalGuestSearch += safeNum(u.guest_searches);
+        totalSearchResults += safeNum(u.search_results);
+      }
+
+      // Update cards (only if elements exist)
+      if($('#saTotalPhotographers')) $('#saTotalPhotographers').textContent = totalPhotographers.toLocaleString();
+      if($('#saTotalCollections')) $('#saTotalCollections').textContent = totalCollections.toLocaleString();
+      if($('#saTotalUploads')) $('#saTotalUploads').textContent = totalUploads.toLocaleString();
+      if($('#saTotalGuestSearch')) $('#saTotalGuestSearch').textContent = totalGuestSearch.toLocaleString();
+      if($('#saTotalSearchResults')) $('#saTotalSearchResults').textContent = totalSearchResults.toLocaleString();
+      if($('#saTotalUsedData')) $('#saTotalUsedData').textContent = formatBytes(totalUsedBytes);
+
+      // If Approx Bill card exists (in extended versions), update it too
+      if($('#saApproxBill') && typeof computeApproxBillINR === 'function'){
+        const est = computeApproxBillINR({ usedBytes: totalUsedBytes, photosUploaded: totalUploads, guestSearches: totalGuestSearch });
+        $('#saApproxBill').textContent = formatINR(est.totalINR);
+      }
+    } catch(err){
+      console.warn("updateSuperAdminCardsFromCache failed:", err);
+    }
+  }
+
+  async function enrichPhotographersCacheStats(){
+    try{
+      // Prevent double-run
+      if(window.__saEnrichRunning) return;
+      window.__saEnrichRunning = true;
+
+      const rows = (photographersCache || []).slice();
+      if(rows.length === 0) { window.__saEnrichRunning = false; return; }
+
+      // Concurrency limit (safe for Lambda/API)
+      const BATCH = 3;
+
+      for(let i=0;i<rows.length;i+=BATCH){
+        const batch = rows.slice(i, i+BATCH);
+
+        await Promise.all(batch.map(async (u) => {
+          try{
+            // Deep stats (same logic as Photographer dashboard, server-side)
+            const det = await masterApi('get_photographer_details', { user_id: u.user_id });
+
+            // Merge ONLY stats fields (do not overwrite UI-critical fields)
+            if(det && typeof det === 'object'){
+              if(det.collections !== undefined) {
+                // NOTE: get_photographer_details returns 'collections' as an ARRAY (collection_list_full)
+                // We ONLY need the COUNT for the Super Admin table/cards.
+                if (Array.isArray(det.collections)) u.collections = det.collections.length;
+                else u.collections = det.collections;
+              }
+              // Prefer explicit list field if present
+              if (det.collection_list_full !== undefined && Array.isArray(det.collection_list_full)) {
+                u.collections = det.collection_list_full.length;
+              }
+              if(det.photos_uploaded !== undefined) u.photos_uploaded = det.photos_uploaded;
+              if(det.used_data_bytes !== undefined) u.used_data_bytes = det.used_data_bytes;
+              if(det.limit_bytes !== undefined) u.limit_bytes = det.limit_bytes;
+              if(det.guest_searches !== undefined) u.guest_searches = det.guest_searches;
+              if(det.search_results !== undefined) u.search_results = det.search_results;
+            }
+          } catch(e){
+            // Ignore per-user errors to keep dashboard usable
+            console.warn("enrichPhotographersCacheStats user failed:", u.user_id, e.message || e);
+          }
+        }));
+
+        // Re-render to reflect updated stats gradually (keeps UI same)
+        renderPhotographersTable();
+        updateSuperAdminCardsFromCache();
+      }
+
+      window.__saEnrichRunning = false;
+    } catch(err){
+      window.__saEnrichRunning = false;
+      console.warn("enrichPhotographersCacheStats failed:", err);
     }
   }
 
@@ -1334,9 +1487,16 @@
 
       const usage = `${formatBytes(u.used_data_bytes||0)} / ${formatBytes(u.limit_bytes||0)}`;
 
+      const colCount = Array.isArray(u.collections) ? u.collections.length : (Number.isFinite(Number(u.collections)) ? Number(u.collections) : 0);
+      const photoCount = Number.isFinite(Number(u.photos_uploaded)) ? Number(u.photos_uploaded) : 0;
+
+      const usedRowBytes = Number(u.used_data_bytes || u.used_storage_bytes || 0);
+      const rowBill = computeApproxBillINR(usedRowBytes, photoCount, Number(u.guest_searches||0));
+
       const counts = `
-        <span class="tag-pill"><i class="fa-solid fa-layer-group"></i> ${u.collections||0}</span>
-        <span class="tag-pill"><i class="fa-solid fa-images"></i> ${u.photos_uploaded||0}</span>
+        <span class="tag-pill"><i class="fa-solid fa-layer-group"></i> ${colCount||0}</span>
+        <span class="tag-pill"><i class="fa-solid fa-images"></i> ${photoCount||0}</span>
+        <span class="tag-pill" style="border-color:#00e676; color:#00e676;"><i class="fa-solid fa-indian-rupee-sign"></i> ${ (rowBill||0).toFixed(2) }</span>
       `;
 
       // Conditional Login Button
@@ -1381,17 +1541,7 @@
     }).join('');
   }
 
-  
-  function validatePassword(pwd) {
-    if (!pwd || pwd.length < 8) return 'Password कम से कम 8 अक्षर का होना चाहिए';
-    const hasUpper = /[A-Z]/.test(pwd);
-    const hasLower = /[a-z]/.test(pwd);
-    const hasNum = /[0-9]/.test(pwd);
-    if (!hasUpper || !hasLower || !hasNum) return 'Password में Upper, Lower और Number होना चाहिए';
-    return null;
-  }
-
-async function createPhotographer() {
+  async function createPhotographer() {
     const email = $('#nuEmail').value.trim();
     const studio_name = $('#nuName').value.trim();
     const plan = $('#nuPlan').value;
@@ -1425,27 +1575,14 @@ async function createPhotographer() {
       await loadPhotographers();
       await loadSuperAdminStats();
     } catch(e) {
-      const em = (e && e.message) ? String(e.message) : "";
-      const schemaMissing =
-        em.includes("User pool does not have attribute custom:studio_name") ||
-        em.includes("User pool does not have attribute custom:plan") ||
-        em.includes("Invalid user attributes: custom:studio_name") ||
-        em.includes("Invalid user attributes: custom:plan");
-
-      if(schemaMissing){
-        alert(`Your Cognito User Pool is missing required custom attributes.
-
-Fix in AWS Console:
-1. Cognito > User pools > Select your pool
-2. Sign-up experience tab
-3. Add custom attribute: studio_name (String, Mutable)
-4. Add custom attribute: plan (String, Mutable)
-5. Save.
-`);
+      if(e.message.includes('custom:studio_name') || e.message.includes('custom:plan') || e.message.includes('Attributes did not conform')) {
+          alert("⚠️ AWS COGNITO CONFIGURATION ERROR\n\nYour Backend requires 'studio_name' and 'plan' attributes, but they are missing in Cognito User Pool.\n\nPLEASE FIX THIS IN AWS CONSOLE:\n1. Go to Cognito > User Pools > Select Pool\n2. Click 'Sign-up experience' tab\n3. Add Custom Attribute: 'studio_name' (String, Mutable)\n4. Add Custom Attribute: 'plan' (String, Mutable)\n5. Save.");
       } else if (e.message.includes("AccessDenied")) {
           alert("⚠️ AWS PERMISSION ERROR\n\nThe Lambda function 'master-admin-api' does not have permission to fetch user details.\n\nPLEASE ADD THIS POLICY TO LAMBDA ROLE:\n{\n  'Effect': 'Allow',\n  'Action': 'cognito-idp:AdminGetUser',\n  'Resource': '*'\n}");
       } else {
           showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
     }
   }
@@ -1478,6 +1615,8 @@ Fix in AWS Console:
           loadSuperAdminStats();
       } catch (e) {
           showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
   }
 
@@ -1515,6 +1654,8 @@ Fix in AWS Console:
           await loadSuperAdminStats();
       } catch(e){
           showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache();
       }
   }
 
@@ -1554,9 +1695,12 @@ Fix in AWS Console:
         localStorage.setItem('bjp_token', idToken); 
         localStorage.setItem('bjp_org_id', uid);
         
-        showToast('Logging in as political...', 'success');
-    // same dashboard
-  }
+        showToast('Redirecting to Political Dashboard...', 'success');
+        setTimeout(() => {
+            window.open('bjp-admin.html', '_blank'); // Open in new tab for safety
+        }, 1000);
+        return;
+    }
 
     // EXISTING LOGIC FOR PHOTOGRAPHERS
     try {
@@ -1576,7 +1720,6 @@ Fix in AWS Console:
       showToast('View Active (Read-Only)', 'success');
       route('dashboard');
       await loadDashboard();
-      applyPoliticalUI();
     } catch (e) {
       if(e.message.includes("AccessDenied")) {
           alert("⚠️ AWS PERMISSION ERROR\n\nLambda Role missing 'cognito-idp:AdminGetUser'. Cannot fetch user details for impersonation.");
@@ -1853,7 +1996,9 @@ Fix in AWS Console:
       if(currentPhotos.length === 0) closeLightbox(); else navLightbox(0);
       loadPhotos(true);
       showToast('Deleted');
-    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+    } catch(e) { console.error(e); showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   /* ================= UPLOAD LOGIC ================= */
@@ -1934,7 +2079,9 @@ Fix in AWS Console:
       }).filter(Boolean);
 
       await Promise.all(uploadPromises);
-    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+    } catch(e) { console.error(e); showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   async function computeHash(file) {
@@ -2009,7 +2156,9 @@ Fix in AWS Console:
 
       addToLinkHistory(type === 'client' ? 'Client Gallery' : 'Guest Search', finalUrl, pin, expiry);
       showToast('Link Generated!');
-    } catch(e) { console.error(e); showToast(e.message, 'error'); }
+    } catch(e) { console.error(e); showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   function copyLink(){
@@ -2019,9 +2168,90 @@ Fix in AWS Console:
     showToast('Copied');
   }
 
+function updatePoliticalLinkUI(){
+  const kind = ($('#polLinkKind')?.value) || 'political_search';
+  const wrap = $('#polFormWrap');
+  if(!wrap) return;
+  if(kind === 'political_form') wrap.style.display = '';
+  else wrap.style.display = 'none';
+}
+
+function copyPoliticalLink(){
+  const el = $('#polFinalLink');
+  if(!el) return;
+  el.select();
+  document.execCommand('copy');
+  showToast('Copied');
+}
+
+async function generatePoliticalPublicLink(){
+  try{
+    let cid = ($('#polCid')?.value || '').trim();
+    if(!cid && curCol && curCol.collection_id) cid = curCol.collection_id;
+    if(!cid) return showToast('Collection ID required', 'error');
+
+    const kind = ($('#polLinkKind')?.value) || 'political_search';
+    const days = parseInt(($('#polDays')?.value || '30'), 10) || 30;
+
+    let token = '';
+    let finalUrl = '';
+    let label = '';
+
+    if(kind === 'political_search'){
+      const r = await api('/political/forms', { action: 'generate_search_link', payload: { collection_id: cid, days_valid: days } });
+      token = r.token;
+      finalUrl = `${window.location.origin}/political-search.html?token=${encodeURIComponent(token)}`;
+      label = `Search link • CID: ${cid} • ${days} days`;
+      addToLinkHistory('POLITICAL_SEARCH', finalUrl, '-', days * 24);
+    } else {
+      const formType = ($('#polFormType')?.value) || 'visitor_form';
+      const r = await api('/political/forms', { action: 'generate_form_link', payload: { collection_id: cid, form_type: formType, days_valid: days } });
+      token = r.token;
+
+      const fileMap = {
+        visitor_form: 'political_visitor_form.html',
+        party_attendance: 'political_party_attendance_form.html',
+        president_tour: 'political_president_tour_form.html',
+        mandal_reporting: 'political_mandal_reporting_form.html',
+        coordinator_entry: 'political_coordinator_entry_form.html',
+        program_info: 'political_program_info_form.html'
+      };
+      const file = fileMap[formType] || 'political_visitor_form.html';
+      finalUrl = `${window.location.origin}/${file}?token=${encodeURIComponent(token)}`;
+      label = `Form: ${formType} • CID: ${cid} • ${days} days`;
+      addToLinkHistory(`POLITICAL_FORM:${formType}`, finalUrl, '-', days * 24);
+    }
+
+    $('#polFinalLink').value = finalUrl;
+    $('#polLinkMeta').textContent = label;
+    $('#polLinkRes').classList.remove('hidden');
+    showToast('Political link generated');
+  } catch(e){
+    showToast(e.message || 'Failed', 'error');
+  }
+}
+
+
+
   /* ================= LINK HISTORY ================= */
+
+function getCurrentUserEmailKey(){
+  try{
+    const imp = (localStorage.getItem('impersonateEmail') || '').trim().toLowerCase();
+    if(imp) return imp.replace(/[^a-z0-9@._-]/g,'_');
+    const payloadId = parseJwt(idToken || '');
+    const payloadAcc = parseJwt(accessToken || idToken || '');
+    const em = (payloadId.email || payloadAcc.email || localStorage.getItem('meEmail') || '').toLowerCase();
+    return (em || 'unknown').replace(/[^a-z0-9@._-]/g,'_');
+  } catch(e){ return 'unknown'; }
+}
+function getLinksStorageKey(){
+  return `eventlens_links_${getCurrentUserEmailKey()}`;
+}
+
+
   function addToLinkHistory(type, url, pin, expiryHours) {
-    let currentHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
+    let currentHistory = JSON.parse(localStorage.getItem(getLinksStorageKey())) || [];
 
     const newEntry = {
       id: Date.now(),
@@ -2037,14 +2267,14 @@ Fix in AWS Console:
 
     currentHistory.unshift(newEntry);
 
-    localStorage.setItem('eventlens_links', JSON.stringify(currentHistory));
+    localStorage.setItem(getLinksStorageKey(), JSON.stringify(currentHistory));
     linkHistory = currentHistory;
 
     renderLinkHistory();
   }
 
   function renderLinkHistory() {
-    linkHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
+    linkHistory = JSON.parse(localStorage.getItem(getLinksStorageKey())) || [];
 
     const tbody = $('#tblLinkHistory');
     if(linkHistory.length === 0) {
@@ -2080,10 +2310,10 @@ Fix in AWS Console:
   function removeLink(id) {
     if(!confirm("Remove this link from history list? (The link itself may still work until expiry)")) return;
 
-    let currentHistory = JSON.parse(localStorage.getItem('eventlens_links')) || [];
+    let currentHistory = JSON.parse(localStorage.getItem(getLinksStorageKey())) || [];
     currentHistory = currentHistory.filter(l => l.id !== id);
 
-    localStorage.setItem('eventlens_links', JSON.stringify(currentHistory));
+    localStorage.setItem(getLinksStorageKey(), JSON.stringify(currentHistory));
     linkHistory = currentHistory;
 
     renderLinkHistory();
@@ -2194,7 +2424,9 @@ Fix in AWS Console:
       });
       loadClientSelections();
       showToast('Entry deleted');
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   async function directDownload(url, filename, event) {
@@ -2292,7 +2524,9 @@ Fix in AWS Console:
       });
       loadLeads();
       showToast('Guest deleted');
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   /* ================= LIVE PREVIEW & SETTINGS ================= */
@@ -2386,7 +2620,9 @@ Fix in AWS Console:
       curCol.name = newName; curCol.branding = branding;
       $('#cdTitle').textContent = newName;
       showToast('Saved!');
-    } catch(e) { showToast(e.message, 'error'); }
+    } catch(e) { showToast(e.message, 'error');
+          // Fallback: Try to compute from cached list
+          updateSuperAdminCardsFromCache(); }
   }
 
   async function uploadAsset(input, targetId) {
@@ -2435,116 +2671,32 @@ Fix in AWS Console:
     const i=Math.floor(Math.log(bytes)/Math.log(k));
     return `${parseFloat((bytes/Math.pow(k,i)).toFixed(2))} ${sizes[i]}`;
   }
-  
-  // -------------------------------
-  // Political Module UI helpers
-  // -------------------------------
-  function isPoliticalAccount() {
-    const t = (accountType || '').toLowerCase();
-    return t === 'political';
+
+  function computeApproxBillINR(usedBytes=0, uploads=0, searches=0){
+    // Very rough estimate for safety-checking profitability (NOT an AWS invoice)
+    usedBytes = Number(usedBytes||0);
+    uploads = Number(uploads||0);
+    searches = Number(searches||0);
+
+    const gb = usedBytes / (1024*1024*1024);
+
+    // S3 Standard (approx) per GB-month in INR (Mumbai region varies; keep approx)
+    const INR_PER_GB_MONTH = 2.10; // ~ $0.025/GB-month * 84 INR/USD
+
+    // Request estimates (approx)
+    const PUT_1000_INR = 0.42; // ~ $0.005/1000 * 84
+    const GET_1000_INR = 0.03; // ~ $0.0004/1000 * 84
+
+    const storageCost = gb * INR_PER_GB_MONTH;
+
+    // Assume 1 PUT per photo upload, and ~20 GETs per guest search (thumbs, zips etc.)
+    const putCost = (uploads/1000) * PUT_1000_INR;
+    const getCost = ((searches*20)/1000) * GET_1000_INR;
+
+    const total = storageCost + putCost + getCost;
+    return isFinite(total) ? Math.max(0, total) : 0;
   }
-
-  async function openFormLink(fileName) {
-    try {
-      // Map file name -> form_type (matching backend expected keys)
-      const map = {
-        'political_visitor_form.html': 'visitor',
-        'political_party_attendance_form.html': 'attendance',
-        'political_president_tour_form.html': 'president_tour',
-        'political_mandal_reporting_form.html': 'mandal_reporting',
-        'political_coordinator_entry_form.html': 'coordinator',
-        'political_program_info_form.html': 'program_info',
-        'political-search.html': 'search'
-      };
-
-      let formType = map[fileName] || 'visitor';
-
-      const token = (localStorage.getItem('accessToken') || localStorage.getItem('idToken') || '').trim();
-      if (!token) {
-        alert('Login token missing. Please logout/login again.');
-        return;
-      }
-
-      showToast('Generating secure link...', 'info');
-
-      // Attempt to get a collection ID (defaulting to first collection if in photographer mode)
-      // For pure political accounts, the backend might extract CID from token claims, 
-      // but sending one is safer if we have it cached.
-      let cid = "";
-      if(curCol) cid = curCol.collection_id;
-      if(!cid && allCols.length > 0) cid = allCols[0].collection_id;
-      
-      // Determine action based on file type (Search page needs different token type)
-      const isSearch = (fileName === 'political-search.html');
-      const actionName = isSearch ? 'generate_search_link' : 'generate_form_link';
-
-      // Call the NEW backend (v4)
-      const res = await fetch(POLITICAL_FORMS_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ 
-            action: actionName, 
-            payload: { 
-                collection_id: cid, 
-                form_type: formType, 
-                days_valid: 30 
-            } 
-        })
-      });
-
-      if (!res.ok) {
-        const errTxt = await res.text();
-        throw new Error(`API Error (${res.status}): ${errTxt}`);
-      }
-
-      const data = await res.json();
-      
-      // Check for token
-      if (!data.token) {
-        throw new Error('No token returned from backend. Check API logs.');
-      }
-
-      // Construct the full URL
-      // Logic: Current Domain + File Name + ?token=...
-      // We strip any leading slash from fileName just in case
-      const safeFileName = fileName.replace(/^\//, '');
-      const finalLink = `${window.location.origin}/${safeFileName}?token=${data.token}`;
-
-      // Copy to clipboard
-      try { navigator.clipboard.writeText(finalLink); } catch(e) {}
-
-      // Prompt user to copy/share
-      prompt('✅ Link Generated! Copy & Share:', finalLink);
-
-      // Open in new tab
-      const w = window.open(finalLink, '_blank');
-      if (!w) alert('Popup blocked. Please allow popups and try again.');
-
-    } catch (e) {
-      console.error("Form Link Error:", e);
-      alert(`Error: ${e.message}`);
-    }
-  }
-
-  function openPoliticalForms() {
-    // Open Visitor form as default
-    openFormLink('political_visitor_form.html');
-  }
-
-  function applyPoliticalUI() {
-    const card = document.getElementById('politicalModuleCard');
-    if (!card) return;
-    if (isPoliticalAccount()) {
-      card.style.display = 'block';
-    } else {
-      card.style.display = 'none';
-    }
-  }
-
-</script>
+  </script>
 
   <!-- Hidden legacy container (kept to avoid layout surprises, but unused) -->
   <div id="photographer-list" class="hidden" style="display:none"></div>

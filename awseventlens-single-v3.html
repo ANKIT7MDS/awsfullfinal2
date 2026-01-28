@@ -774,7 +774,10 @@
   <script>
   /* ================= CONFIGURATION ================= */
   const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-  const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
+  
+  // Political HTTP API (stage-less uses $default; fallback tries /prod)
+  const POLITICAL_API_BASE = 'https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com';
+const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
   const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
   const HOSTED_UI = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}`;
 
@@ -977,6 +980,43 @@
     }
     return r.json();
   }
+
+  /* ================= POLITICAL API HELPER (HTTP API STAGE SAFE) ================= */
+  async function politicalApi(path, body){
+    const tokenToUse = accessToken || idToken;
+    const opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if(tokenToUse) opts.headers['Authorization'] = `Bearer ${tokenToUse}`;
+    if(body) opts.body = JSON.stringify(body);
+
+    const bases = [POLITICAL_API_BASE, POLITICAL_API_BASE + '/prod'];
+    let lastErr = null;
+
+    for(const base of bases){
+      try{
+        const r = await fetch(`${base}${path}`, opts);
+        if(!r.ok){
+          let errorDetail = `API Error ${r.status}`;
+          try {
+            const errData = await r.json();
+            const backendMsg = errData.message || errData.error;
+            if(backendMsg) errorDetail += `: ${backendMsg}`;
+          } catch(e) {
+            try { const txt = await r.text(); if(txt && txt.length < 200) errorDetail += `: ${txt}`; } catch(ex){}
+          }
+          throw new Error(errorDetail);
+        }
+        return r.json();
+      } catch(e){
+        lastErr = e;
+      }
+    }
+
+    throw lastErr || new Error('Political API failed');
+  }
+
 
   /* ================= MASTER ADMIN API (FIXED: POST ONLY) ================= */
   async function masterApi(action, payload = {}) {
@@ -2225,14 +2265,14 @@ async function generatePoliticalPublicLink(){
     let label = '';
 
     if(kind === 'political_search'){
-      const r = await api('/political/forms', { action: 'generate_search_link', payload: { collection_id: cid, days_valid: days } });
+      const r = await politicalApi('/political/forms', { action: 'generate_search_link', payload: { collection_id: cid, days_valid: days } });
       token = r.token;
       finalUrl = `${window.location.origin}/political-search.html?token=${encodeURIComponent(token)}`;
       label = `Search link • CID: ${cid} • ${days} days`;
       addToLinkHistory('POLITICAL_SEARCH', finalUrl, '-', days * 24);
     } else {
       const formType = ($('#polFormType')?.value) || 'visitor_form';
-      const r = await api('/political/forms', { action: 'generate_form_link', payload: { collection_id: cid, form_type: formType, days_valid: days } });
+      const r = await politicalApi('/political/forms', { action: 'generate_form_link', payload: { collection_id: cid, form_type: formType, days_valid: days } });
       token = r.token;
 
       const fileMap = {

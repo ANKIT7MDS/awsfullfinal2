@@ -1093,13 +1093,14 @@
         api('/get-collections'),
         api('/account-status').catch(()=>({}))
       ]);
-
-      // AUTO-REDIRECT POLITICAL USERS
+      // POLITICAL ACCOUNTS: stay on the SAME common dashboard (no redirect)
       if (sData.account_type === 'political' || (sData.studio_name && sData.studio_name.toLowerCase().includes('bjp'))) {
-         window.location.href = 'bjp-admin.html';
-         return;
+        try { showToast('Political account detected — staying in common dashboard.', 'info'); } catch(e) {}
+        try {
+          // Open Unified Link Generator tab (includes Political Public Link Generator)
+          setTimeout(() => { try { setTab('tLink'); document.getElementById('polCid')?.focus(); } catch(e) {} }, 50);
+        } catch(e) {}
       }
-
             // Robust parse: API may return Items/items/collections
       const _items = (cData && (cData.Items || cData.items || cData.collections || cData.data)) || [];
       allCols = (Array.isArray(_items) ? _items : []).sort((a,b) => new Date((b||{}).created_at || 0) - new Date((a||{}).created_at || 0));
@@ -1688,21 +1689,38 @@
 
   /* ================= SUPER ADMIN -> IMPERSONATION (READ-ONLY) ================= */
   async function loginAs(uid, studioName, email, type) {
-    // NEW LOGIC FOR POLITICAL ACCOUNTS
+    // POLITICAL ACCOUNTS: open inside SAME dashboard (no bjp-admin redirect)
     if(type === 'political') {
-        // For Political accounts, we redirect to the specialized dashboard
-        // We set the token here so the new page can pick it up
-        localStorage.setItem('bjp_token', idToken); 
-        localStorage.setItem('bjp_org_id', uid);
-        
-        showToast('Redirecting to Political Dashboard...', 'success');
+      try {
+        showToast('Opening political view...', 'info');
+
+        localStorage.setItem('impersonateUserId', uid);
+        localStorage.setItem('impersonateStudioName', studioName || '');
+        localStorage.setItem('impersonateEmail', email || '');
+        localStorage.setItem('impersonateAccountType', 'political');
+
+        $('#btnBackToSuperAdmin').classList.remove('hidden');
+        $('#impBadge').classList.remove('hidden');
+        $('#impName').textContent = (studioName || email || uid || '-');
+
+        route('dashboard');
+        await loadDashboard();
+
+        // Open Political Public Link Generator (inside Unified Link Generator tab)
         setTimeout(() => {
-            window.open('bjp-admin.html', '_blank'); // Open in new tab for safety
-        }, 1000);
-        return;
+          try { setTab('tLink'); } catch(e) {}
+          try { document.getElementById('polCid')?.focus(); } catch(e) {}
+        }, 80);
+
+        showToast('Political tools ready', 'success');
+      } catch (e) {
+        showToast(e.message || 'Failed to open political view', 'error');
+      }
+      return;
     }
 
     // EXISTING LOGIC FOR PHOTOGRAPHERS
+
     try {
       showToast('Opening photographer view...', 'info');
       

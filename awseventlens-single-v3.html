@@ -406,6 +406,7 @@
         <button class="tab" onclick="setTab('tEvents')">Events</button>
         <button class="tab" onclick="setTab('tUp')">Upload</button>
         <button class="tab" onclick="setTab('tLink')">Links</button>
+        <button class="tab" onclick="setTab('tPol')">Political</button>
         <button class="tab" onclick="setTab('tClient')">Client Selections</button>
         <button class="tab" onclick="setTab('tLeads')">Guest Leads</button>
         <button class="tab" onclick="setTab('tSettings')">Branding & Settings</button>
@@ -570,8 +571,28 @@
           </div>
 
           
-<hr style="border:0; border-top:1px dashed #333; margin:26px 0;" />
+<hr style="border:0; border-top:1px solid #333; margin:30px 0;" />
 
+          <div class="row" style="justify-content: space-between; margin-bottom: 15px;">
+            <h3>Active Links History</h3>
+            <button class="btn secondary" onclick="renderLinkHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="styled-table">
+              <thead><tr><th>Type</th><th>Created At</th><th>Expiry</th><th>PIN</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="tblLinkHistory">
+                <tr><td align="center" class="text-muted" colspan="6">No links generated yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- TAB 4B: POLITICAL -->
+      <div class="tab-content" id="tPol">
+        <div class="card">
 <div class="row" style="justify-content: space-between; margin-bottom: 14px; align-items:center;">
   <h3>Political Public Link Generator</h3>
   <div class="text-sm text-muted">Search + 6 Forms (Token Based)</div>
@@ -627,25 +648,11 @@
   <div class="text-sm text-muted" style="margin-top:6px;">Note: Public forms need API route without Cognito Authorizer (recommended: POST /political/public/forms).</div>
 </div>
 
-<hr style="border:0; border-top:1px solid #333; margin:30px 0;" />
 
-          <div class="row" style="justify-content: space-between; margin-bottom: 15px;">
-            <h3>Active Links History</h3>
-            <button class="btn secondary" onclick="renderLinkHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
-          </div>
-
-          <div class="table-responsive">
-            <table class="styled-table">
-              <thead><tr><th>Type</th><th>Created At</th><th>Expiry</th><th>PIN</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody id="tblLinkHistory">
-                <tr><td align="center" class="text-muted" colspan="6">No links generated yet.</td></tr>
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
 
-      <!-- TAB 5: CLIENT SELECTIONS -->
+<!-- TAB 5: CLIENT SELECTIONS -->
       <div class="tab-content" id="tClient">
         <div class="card">
           <div class="row" style="justify-content:space-between; margin-bottom:20px;">
@@ -1043,7 +1050,9 @@
     if(curCol) {
       if(id === 'tGal') loadPhotos(true);
       if(id === 'tLeads') loadLeads();
-      if(id === 'tClient') loadClientSelections();
+      
+      if(id === 'tPol') { try{ updatePoliticalLinkUI(); }catch(e){} }
+if(id === 'tClient') loadClientSelections();
       if(id === 'tLink') renderLinkHistory();
       try{ updatePoliticalLinkUI(); }catch(e){}
       if(id === 'tSettings') loadSettings();

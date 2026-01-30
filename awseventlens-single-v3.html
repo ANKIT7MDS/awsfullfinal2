@@ -803,27 +803,16 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
     }catch(e){ return null; }
   }
   function pickJwtForApi(){
-    const get = (k)=> (localStorage.getItem(k) || sessionStorage.getItem(k) || null);
-
+    const idT = localStorage.getItem('idToken');
+    const accT = localStorage.getItem('accessToken');
     // Prefer ID token for API Gateway JWT authorizers (aud = client_id)
-    const idKeys = ['idToken','id_token','cognito_id_token','cognitoIdToken','CognitoIdToken'];
-    for(const k of idKeys){
-      const v = get(k);
-      if(v) return v;
-    }
-
-    // Fallback to access token (may fail JWT authorizer if aud is required)
-    const accKeys = ['accessToken','access_token','cognito_access_token','cognitoAccessToken','CognitoAccessToken'];
-    for(const k of accKeys){
-      const v = get(k);
-      if(v) return v;
-    }
-    return null;
+    if(idT) return idT;
+    return accT || null;
   }
 
 /* ================= STATE MANAGEMENT ================= */
-  let idToken = (localStorage.getItem('idToken') || localStorage.getItem('id_token') || localStorage.getItem('cognito_id_token') || sessionStorage.getItem('idToken') || sessionStorage.getItem('id_token') || sessionStorage.getItem('cognito_id_token'));
-  let accessToken = (localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('cognito_access_token') || sessionStorage.getItem('accessToken') || sessionStorage.getItem('access_token') || sessionStorage.getItem('cognito_access_token'));
+  let idToken = localStorage.getItem('idToken');
+  let accessToken = localStorage.getItem('accessToken');
   let jwtToken = pickJwtForApi();
   let curCol = null;
   let allCols = [];

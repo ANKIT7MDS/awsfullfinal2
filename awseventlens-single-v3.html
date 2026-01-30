@@ -803,30 +803,29 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
     }catch(e){ return null; }
   }
   function pickJwtForApi(){
-    const idT = localStorage.getItem('idToken');
-    const accT = localStorage.getItem('accessToken');
+    const get = (k)=> (localStorage.getItem(k) || sessionStorage.getItem(k) || null);
+
     // Prefer ID token for API Gateway JWT authorizers (aud = client_id)
-    if(idT) return idT;
-    return accT || null;
+    const idKeys = ['idToken','id_token','cognito_id_token','cognitoIdToken','CognitoIdToken'];
+    for(const k of idKeys){
+      const v = get(k);
+      if(v) return v;
+    }
+
+    // Fallback to access token (may fail JWT authorizer if aud is required)
+    const accKeys = ['accessToken','access_token','cognito_access_token','cognitoAccessToken','CognitoAccessToken'];
+    for(const k of accKeys){
+      const v = get(k);
+      if(v) return v;
+    }
+    return null;
   }
 
 /* ================= STATE MANAGEMENT ================= */
-  let idToken = localStorage.getItem('idToken');
-  let accessToken = localStorage.getItem('accessToken');
+  let idToken = (localStorage.getItem('idToken') || localStorage.getItem('id_token') || localStorage.getItem('cognito_id_token') || sessionStorage.getItem('idToken') || sessionStorage.getItem('id_token') || sessionStorage.getItem('cognito_id_token'));
+  let accessToken = (localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('cognito_access_token') || sessionStorage.getItem('accessToken') || sessionStorage.getItem('access_token') || sessionStorage.getItem('cognito_access_token'));
   let jwtToken = pickJwtForApi();
   let curCol = null;
-
-  // Auto-fill Political Link Generator Collection ID when a collection is opened
-  function syncPoliticalCidFromCurrent() {
-    try {
-      const el = document.getElementById('polCid');
-      if (!el) return;
-      if (curCol && curCol.collection_id) {
-        el.value = curCol.collection_id;
-      }
-    } catch(e) {}
-  }
-
   let allCols = [];
   let curEvents = [];
   let uploadQueue = [];
@@ -2269,11 +2268,30 @@ if(id === 'tClient') loadClientSelections();
   }
 
 function updatePoliticalLinkUI(){
+  // show/hide "Form Type" field based on Link Category
   const kind = ($('#polLinkKind')?.value) || 'political_search';
   const wrap = $('#polFormWrap');
-  if(!wrap) return;
-  if(kind === 'political_form') wrap.style.display = '';
-  else wrap.style.display = 'none';
+  if(wrap){
+    if(kind === 'political_form') wrap.style.display = '';
+    else wrap.style.display = 'none';
+  }
+
+  // Prefill Collection ID automatically from current Collection view (so user doesn't type it)
+  try{
+    const cdIdEl = document.getElementById('cdId');
+    let cid = '';
+    if(cdIdEl && cdIdEl.textContent){
+      cid = cdIdEl.textContent.replace('ID:','').trim();
+      if(cid === '-' || cid.toLowerCase() === 'id:') cid = '';
+    }
+    // fallback: URL params
+    if(!cid){
+      const u = new URL(window.location.href);
+      cid = (u.searchParams.get('collection_id') || u.searchParams.get('cid') || u.searchParams.get('id') || '').trim();
+    }
+    const inp = document.getElementById('polCid');
+    if(inp && cid) inp.value = cid;
+  }catch(e){}
 }
 
 function copyPoliticalLink(){

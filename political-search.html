@@ -111,8 +111,10 @@
   </div>
 
 <script>
-  const API_BASE = "https://vxi0dyoovj.execute-api.ap-south-1.amazonaws.com/prod";
-  const SEARCH_ENDPOINT = API_BASE + "/political/search";
+	  // UPDATED API (Mumbai)
+	  const API_BASE = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com/prod";
+	  const SEARCH_ENDPOINT_AUTH = API_BASE + "/political/search";
+	  const SEARCH_ENDPOINT_PUBLIC = API_BASE + "/political/public/search";
 
   let lastFaceId = null;
 
@@ -128,12 +130,38 @@
     t.textContent = msg;
   }
 
-  async function apiCall(action, payload) {
-    const r = await fetch(SEARCH_ENDPOINT, {
+	  function getSearchEndpoint() {
+	    // token-based public link mode
+	    const tok = qs('token');
+	    return tok ? SEARCH_ENDPOINT_PUBLIC : SEARCH_ENDPOINT_AUTH;
+	  }
+
+	  function getAuthHeaderValue() {
+	    // optional: if you open without token, it will try dashboard token
+	    return localStorage.getItem('idToken') || localStorage.getItem('accessToken') || localStorage.getItem('cognito_id_token') || localStorage.getItem('cognito_access_token') || "";
+	  }
+
+	  async function apiCall(action, payload) {
+	    const headers = { "Content-Type": "application/json" };
+	    const tok = qs('token');
+	    if(!tok) {
+	      const t = getAuthHeaderValue();
+	      if(t) headers["Authorization"] = "Bearer " + t;
+	    }
+		    let endpoint = getSearchEndpoint();
+		    let r = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, payload })
+	      headers,
+	      body: JSON.stringify({ action, payload })
     });
+		    if(r && r.status === 404 && endpoint === SEARCH_ENDPOINT_PUBLIC) {
+		      endpoint = SEARCH_ENDPOINT_AUTH;
+		      r = await fetch(endpoint, {
+		        method: "POST",
+		        headers,
+		        body: JSON.stringify({ action, payload })
+		      });
+		    }
     const txt = await r.text();
     let data = {};
     try { data = JSON.parse(txt); } catch(e) { data = {raw: txt}; }

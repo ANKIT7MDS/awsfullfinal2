@@ -112,103 +112,66 @@
 
 <script>
 	  // UPDATED API (Mumbai)
-const API_ID = "vxid0yoovj";
-const REGION = "ap-south-1";
-const API_BASE_CANDIDATES = [
-  `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`,
-  `https://${API_ID}.execute-api.${REGION}.amazonaws.com`
-];
-const endpointAuth = (base) => base + "/political/search";
-const endpointPublic = (base) => base + "/political/public/search";
+	  const API_BASE = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com/prod";
+	  const SEARCH_ENDPOINT_AUTH = API_BASE + "/political/search";
+	  const SEARCH_ENDPOINT_PUBLIC = API_BASE + "/political/public/search";
 
-let lastFaceId = null;
-let lastSearchRef = null;
+  let lastFaceId = null;
 
-function qs(k){
-  const u = new URL(window.location.href);
-  return u.searchParams.get(k);
-}
-
-function getAuthHeaderValue(){
-  // For dashboard (logged in)
-  const candidates = [
-    'POLITICAL_IDTOKEN',
-    'political_id_token',
-    'idToken',
-    'cognito_id_token',
-    'jwt',
-  ];
-  for (const key of candidates){
-    const v = localStorage.getItem(key);
-    if (v && v.length > 20) return v.startsWith('Bearer ') ? v : ('Bearer ' + v);
-  }
-  return null;
-}
-
-async function apiCall(action, payload){
-  const token = qs('token');
-  const isPublic = !!token;
-
-  // For public routes, backend expects public_* actions
-  if (isPublic && !String(action).startsWith('public_')){
-    action = 'public_' + action;
+  function qs(name) {
+    const u = new URL(window.location.href);
+    return u.searchParams.get(name);
   }
 
-  if (!payload || typeof payload !== 'object') payload = {};
-  if (isPublic && !payload.token) payload.token = token;
+  function showStatus(msg) {
+    const box = document.getElementById('statusBox');
+    const t = document.getElementById('statusText');
+    box.classList.remove('hidden');
+    t.textContent = msg;
+  }
 
-  let lastErr = null;
+	  function getSearchEndpoint() {
+	    // token-based public link mode
+	    const tok = qs('token');
+	    return tok ? SEARCH_ENDPOINT_PUBLIC : SEARCH_ENDPOINT_AUTH;
+	  }
 
-  for (const base of API_BASE_CANDIDATES){
-    const headers = { "Content-Type": "application/json" };
-    if (!isPublic){
-      const auth = getAuthHeaderValue();
-      if (auth) headers["Authorization"] = auth;
+	  function getAuthHeaderValue() {
+	    // optional: if you open without token, it will try dashboard token
+	    return localStorage.getItem('idToken') || localStorage.getItem('accessToken') || localStorage.getItem('cognito_id_token') || localStorage.getItem('cognito_access_token') || "";
+	  }
+
+	  async function apiCall(action, payload) {
+	    const headers = { "Content-Type": "application/json" };
+	    const tok = qs('token');
+	    if(!tok) {
+	      const t = getAuthHeaderValue();
+	      if(t) headers["Authorization"] = "Bearer " + t;
+	    }
+		    let endpoint = getSearchEndpoint();
+		    let r = await fetch(endpoint, {
+      method: "POST",
+	      headers,
+	      body: JSON.stringify({ action, payload })
+    });
+		    if(r && r.status === 404 && endpoint === SEARCH_ENDPOINT_PUBLIC) {
+		      endpoint = SEARCH_ENDPOINT_AUTH;
+		      r = await fetch(endpoint, {
+		        method: "POST",
+		        headers,
+		        body: JSON.stringify({ action, payload })
+		      });
+		    }
+    const txt = await r.text();
+    let data = {};
+    try { data = JSON.parse(txt); } catch(e) { data = {raw: txt}; }
+    if(!r.ok) {
+      throw new Error((data && data.message) ? data.message : ("API Error " + r.status));
     }
-
-    const endpoint = isPublic ? endpointPublic(base) : endpointAuth(base);
-
-    try {
-      let r = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ action, payload })
-      });
-
-      // Backward compatibility: if public route not found, try non-public
-      if (isPublic && r.status === 404){
-        r = await fetch(endpointAuth(base), {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ action, payload })
-        });
-      }
-
-      // If stage mismatch (404/403), try next base
-      if (r.status === 404 || r.status === 403){
-        lastErr = new Error(`HTTP ${r.status} on ${endpoint}`);
-        continue;
-      }
-
-      const data = await r.json().catch(() => ({}));
-
-      if (!r.ok){
-        const msg = data.message || data.error || `HTTP ${r.status}`;
-        throw new Error(msg);
-      }
-
-      return data;
-
-    } catch (e){
-      lastErr = e;
-      // try next base
-    }
+    return data;
   }
 
-  throw lastErr || new Error('Failed');
-}
-
-async function uploadToS3(url, file) {
+  async function uploadToS3(url, file) {
     const r = await fetch(url, {
       method: "PUT",
       headers: {

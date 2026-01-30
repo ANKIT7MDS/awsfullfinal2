@@ -1,554 +1,323 @@
-import os, json, time, uuid, base64, hmac, hashlib
-import boto3
-from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key, Attr
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>कार्यकर्ता सर्च (Political Search) - EventLens</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              900: '#0c4a6e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(circle at top left, rgba(14,165,233,0.12), transparent 40%),
+                  radial-gradient(circle at top right, rgba(168,85,247,0.10), transparent 40%),
+                  #020617;
+    }
+    .glass {
+      background: rgba(30,41,59,0.72);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-200">
+  <div class="max-w-5xl mx-auto px-4 py-10">
+    <div class="glass rounded-3xl p-6 md:p-8 shadow-2xl">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-black text-white">कार्यकर्ता सर्च</h1>
+          <p class="text-slate-300 mt-2 text-sm">
+            अपनी सेल्फी डालो → सिस्टम आपकी फोटो/एंट्री ढूंढकर Timeline दिखाएगा।
+          </p>
+          <p class="text-slate-500 mt-2 text-xs">
+            (यह page public link है। Politician user dashboard से generate होगा।)
+          </p>
+        </div>
+        <div class="text-xs text-slate-400 md:text-right">
+          <div class="font-semibold">Token</div>
+          <div id="tokenText" class="mt-1 break-all max-w-sm">-</div>
+        </div>
+      </div>
 
-# --- Clients ---
-dynamodb = boto3.resource("dynamodb")
-s3 = boto3.client("s3")
-rek = boto3.client("rekognition")
+      <div class="mt-6 grid md:grid-cols-2 gap-6">
+        <div class="bg-slate-900/60 border border-slate-700 rounded-2xl p-5">
+          <h2 class="font-bold text-white">1) सेल्फी Upload</h2>
+          <p class="text-xs text-slate-400 mt-1">सिर्फ 1 selfie select करें</p>
 
-# --- ENV ---
-AWS_REGION = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "ap-south-1"
+          <input id="selfieInput" accept="image/*" type="file"
+                 class="mt-4 w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition" />
 
-S3_BUCKET = os.environ.get("S3_BUCKET") or os.environ.get("POLITICAL_S3_BUCKET") or ""
-S3_PREFIX = (os.environ.get("S3_PREFIX") or os.environ.get("POLITICAL_S3_PREFIX") or "political/")
-if S3_PREFIX and not S3_PREFIX.endswith("/"):
-    S3_PREFIX += "/"
+          <button id="searchBtn" class="mt-4 w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 font-bold text-white transition">
+            Search
+          </button>
 
-REK_COLLECTION = os.environ.get("REK_COLLECTION") or os.environ.get("POLITICAL_REK_COLLECTION") or ""
+          <div id="statusBox" class="hidden mt-4 p-4 rounded-2xl bg-slate-900 border border-slate-700 text-sm">
+            <div class="font-semibold text-white mb-1">Status</div>
+            <div id="statusText" class="text-slate-300">-</div>
+          </div>
 
-TABLE_FACES = os.environ.get("TABLE_FACES") or os.environ.get("DDB_POLITICAL_FACES_TABLE") or "political-faces"
-TABLE_FORMS = os.environ.get("TABLE_FORMS") or os.environ.get("DDB_POLITICAL_FORMS_TABLE") or "political-forms"
-TABLE_PHOTOS = os.environ.get("TABLE_PHOTOS") or os.environ.get("DDB_POLITICAL_HASH_TABLE") or "political-photos"
+          <div id="nameBox" class="hidden mt-4 p-4 rounded-2xl bg-slate-900 border border-slate-700">
+            <div class="font-bold text-white">Name / Mobile Save (Optional)</div>
+            <div class="grid grid-cols-1 gap-3 mt-3">
+              <input id="personName" type="text" placeholder="नाम"
+                     class="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition placeholder-slate-500" />
+              <input id="personMobile" type="tel" placeholder="मोबाइल"
+                     class="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition placeholder-slate-500" />
+              <button id="saveBtn" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-white transition">
+                Save Name/Mobile
+              </button>
+              <div class="text-xs text-slate-400">
+                इससे face को नाम assign हो जाएगा (future search में दिखेगा)
+              </div>
+            </div>
+          </div>
+        </div>
 
-POLITICAL_LINK_SECRET = os.environ.get("POLITICAL_LINK_SECRET") or os.environ.get("LINK_SECRET") or os.environ.get("POLITICAL_API_SECRET") or os.environ.get("API_SECRET") or ""
+        <div class="bg-slate-900/60 border border-slate-700 rounded-2xl p-5">
+          <h2 class="font-bold text-white">2) Result Timeline</h2>
+          <div id="resultHeader" class="text-sm text-slate-300 mt-2">
+            अभी कोई result नहीं
+          </div>
 
-CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "*")
+          <div id="timeline" class="mt-4 space-y-3">
+          </div>
+        </div>
+      </div>
 
-faces_table = dynamodb.Table(TABLE_FACES)
-forms_table = dynamodb.Table(TABLE_FORMS)
-photos_table = dynamodb.Table(TABLE_PHOTOS)
+      <div class="mt-8">
+        <h2 class="font-bold text-white">Photos</h2>
+        <div id="photosGrid" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+      </div>
+    </div>
 
+    <div class="text-center text-xs text-slate-500 mt-6">
+      Powered by EventLens + AWS Rekognition
+    </div>
+  </div>
 
-# -----------------------------
-# Helpers
-# -----------------------------
+<script>
+	  // UPDATED API (Mumbai)
+	  const API_BASE = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com/prod";
+	  const SEARCH_ENDPOINT_AUTH = API_BASE + "/political/search";
+	  const SEARCH_ENDPOINT_PUBLIC = API_BASE + "/political/public/search";
 
-def _now_ms() -> int:
-    return int(time.time() * 1000)
+  let lastFaceId = null;
 
+  function qs(name) {
+    const u = new URL(window.location.href);
+    return u.searchParams.get(name);
+  }
 
-def _b64url_encode(raw: bytes) -> str:
-    return base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
+  function showStatus(msg) {
+    const box = document.getElementById('statusBox');
+    const t = document.getElementById('statusText');
+    box.classList.remove('hidden');
+    t.textContent = msg;
+  }
 
+	  function getSearchEndpoint() {
+	    // token-based public link mode
+	    const tok = qs('token');
+	    return tok ? SEARCH_ENDPOINT_PUBLIC : SEARCH_ENDPOINT_AUTH;
+	  }
 
-def _b64url_decode(s: str) -> bytes:
-    pad = "=" * (-len(s) % 4)
-    return base64.urlsafe_b64decode((s + pad).encode("utf-8"))
+	  function getAuthHeaderValue() {
+	    // optional: if you open without token, it will try dashboard token
+	    return localStorage.getItem('idToken') || localStorage.getItem('accessToken') || localStorage.getItem('cognito_id_token') || localStorage.getItem('cognito_access_token') || "";
+	  }
 
+	  async function apiCall(action, payload) {
+	    const headers = { "Content-Type": "application/json" };
+	    const tok = qs('token');
+	    if(!tok) {
+	      const t = getAuthHeaderValue();
+	      if(t) headers["Authorization"] = "Bearer " + t;
+	    }
+		    let endpoint = getSearchEndpoint();
+		    let r = await fetch(endpoint, {
+      method: "POST",
+	      headers,
+	      body: JSON.stringify({ action, payload })
+    });
+		    if(r && r.status === 404 && endpoint === SEARCH_ENDPOINT_PUBLIC) {
+		      endpoint = SEARCH_ENDPOINT_AUTH;
+		      r = await fetch(endpoint, {
+		        method: "POST",
+		        headers,
+		        body: JSON.stringify({ action, payload })
+		      });
+		    }
+    const txt = await r.text();
+    let data = {};
+    try { data = JSON.parse(txt); } catch(e) { data = {raw: txt}; }
+    if(!r.ok) {
+      throw new Error((data && data.message) ? data.message : ("API Error " + r.status));
+    }
+    return data;
+  }
 
-def _hmac_sign(msg: bytes, secret: str) -> str:
-    return _b64url_encode(hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).digest())
+  async function uploadToS3(url, file) {
+    const r = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream"
+      },
+      body: file
+    });
+    if(!r.ok) throw new Error("S3 Upload fail (" + r.status + ")");
+  }
 
+  function clearUI() {
+    document.getElementById("timeline").innerHTML = "";
+    document.getElementById("photosGrid").innerHTML = "";
+    document.getElementById("resultHeader").textContent = "Computing...";
+  }
 
-def _verify_public_token(token: str) -> dict:
-    if not POLITICAL_LINK_SECRET:
-        raise ValueError("POLITICAL_LINK_SECRET missing in lambda env")
-    if not token or "." not in token:
-        raise ValueError("Token missing/invalid")
-    p, sig = token.split(".", 1)
-    blob = _b64url_decode(p)
-    expected = _hmac_sign(blob, POLITICAL_LINK_SECRET)
-    if not hmac.compare_digest(expected, sig):
-        raise ValueError("Token invalid")
-    data = json.loads(blob.decode("utf-8"))
-    if int(data.get("exp", 0)) < int(time.time()):
-        raise ValueError("Token expired")
-    return data
+  function renderTimeline(items) {
+    const wrap = document.getElementById("timeline");
+    wrap.innerHTML = "";
+    if(!items || items.length === 0) {
+      wrap.innerHTML = '<div class="text-slate-500 text-sm">कोई timeline entry नहीं मिली</div>';
+      return;
+    }
+    for(const it of items) {
+      const div = document.createElement("div");
+      div.className = "p-4 rounded-2xl bg-slate-950/60 border border-slate-700";
+      const when = it.date_text || it.created_at || "";
+      const t = it.form_type || "";
+      const line1 = '<div class="text-xs text-slate-400">' + when + '</div>';
+      const line2 = '<div class="font-bold text-white mt-1">' + (it.title || t) + '</div>';
+      const line3 = '<div class="text-sm text-slate-300 mt-1">' + (it.summary || "") + '</div>';
+      div.innerHTML = line1 + line2 + line3;
+      wrap.appendChild(div);
+    }
+  }
 
+  function renderPhotos(urls) {
+    const grid = document.getElementById("photosGrid");
+    grid.innerHTML = "";
+    if(!urls || urls.length === 0) {
+      grid.innerHTML = '<div class="text-slate-500 text-sm">कोई photo नहीं</div>';
+      return;
+    }
+    for(const u of urls) {
+      const a = document.createElement("a");
+      a.href = u;
+      a.target = "_blank";
+      a.className = "block";
+      const img = document.createElement("img");
+      img.src = u;
+      img.className = "w-full h-40 object-cover rounded-xl border border-slate-700 hover:border-brand-500 transition";
+      a.appendChild(img);
+      grid.appendChild(a);
+    }
+  }
 
-def _resp(code: int, body: dict):
-    return {
-        "statusCode": code,
-        "headers": {
-            "content-type": "application/json",
-            "access-control-allow-origin": CORS_ORIGIN,
-            "access-control-allow-headers": "content-type,authorization",
-            "access-control-allow-methods": "OPTIONS,POST",
-        },
-        "body": json.dumps(body, ensure_ascii=False),
+  async function doSearch() {
+    const token = qs("token") || "";
+    document.getElementById("tokenText").textContent = token || "-";
+    if(!token) {
+      showStatus("❌ Token missing. यह link Political Dashboard से generate होना चाहिए।");
+      return;
     }
 
-
-def _parse_body(event) -> dict:
-    body = event.get("body") or "{}"
-    if event.get("isBase64Encoded"):
-        body = base64.b64decode(body).decode("utf-8", "ignore")
-    try:
-        return json.loads(body) if body else {}
-    except Exception:
-        return {}
-
-
-def _mime_to_ext(mime: str) -> str:
-    mime = (mime or "").lower().strip()
-    if "png" in mime:
-        return "png"
-    if "webp" in mime:
-        return "webp"
-    if "jpeg" in mime or "jpg" in mime:
-        return "jpg"
-    return "jpg"
-
-
-def _make_put_presigned(key: str, mime: str, expires: int = 900) -> str:
-    params = {"Bucket": S3_BUCKET, "Key": key}
-    if mime:
-        params["ContentType"] = mime
-    return s3.generate_presigned_url(
-        ClientMethod="put_object",
-        Params=params,
-        ExpiresIn=expires,
-    )
-
-
-def _make_get_presigned(key: str, expires: int = 900) -> str:
-    return s3.generate_presigned_url(
-        ClientMethod="get_object",
-        Params={"Bucket": S3_BUCKET, "Key": key},
-        ExpiresIn=expires,
-    )
-
-
-def _safe_item_created_at(item):
-    v = item.get("created_at")
-    if v is None:
-        return 0
-    # accept str ms / int ms / iso
-    if isinstance(v, (int, float)):
-        return int(v)
-    if isinstance(v, str):
-        s = v.strip()
-        if s.isdigit():
-            return int(s)
-        # ISO fallback (rough)
-        try:
-            # YYYY-MM-DD... -> epoch ms
-            import datetime
-            dt = datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
-            return int(dt.timestamp() * 1000)
-        except Exception:
-            return 0
-    return 0
-
-
-def _format_timeline_item(item: dict) -> dict:
-    ts = _safe_item_created_at(item)
-    try:
-        import datetime
-        date_text = datetime.datetime.fromtimestamp(ts / 1000).strftime("%d-%b-%Y %I:%M %p") if ts else ""
-    except Exception:
-        date_text = ""
-
-    form_type = (item.get("form_type") or item.get("type") or "").replace("_", " ").title()
-    name = item.get("name") or item.get("full_name") or item.get("visitor_name") or ""
-    mobile = item.get("mobile") or item.get("phone") or ""
-    district = item.get("district") or ""
-    mandal = item.get("mandal") or ""
-    address = item.get("address") or item.get("ward") or ""
-
-    title = f"{form_type}".strip() or "Entry"
-    summary_parts = []
-    if name:
-        summary_parts.append(name)
-    if mobile:
-        summary_parts.append(mobile)
-    if district:
-        summary_parts.append(district)
-    if mandal:
-        summary_parts.append(mandal)
-    if address:
-        summary_parts.append(address)
-
-    return {
-        "date_text": date_text,
-        "title": title,
-        "summary": " | ".join(summary_parts) if summary_parts else "",
-        "raw": item,
+    const input = document.getElementById("selfieInput");
+    if(!input.files || input.files.length === 0) {
+      showStatus("❌ Selfie select नहीं किया।");
+      return;
     }
+    const file = input.files[0];
 
+    clearUI();
+    document.getElementById("searchBtn").disabled = true;
+    document.getElementById("searchBtn").textContent = "Searching...";
 
-def _search_faces_by_image(s3_key: str, threshold: float = 75.0, max_faces: int = 5):
-    if not REK_COLLECTION:
-        raise ValueError("REK_COLLECTION missing in env")
-    resp = rek.search_faces_by_image(
-        CollectionId=REK_COLLECTION,
-        Image={"S3Object": {"Bucket": S3_BUCKET, "Name": s3_key}},
-        FaceMatchThreshold=float(threshold),
-        MaxFaces=int(max_faces),
-    )
-    matches = resp.get("FaceMatches") or []
-    if not matches:
-        return None
-    best = matches[0]
-    face = (best.get("Face") or {})
-    return {
-        "face_id": face.get("FaceId"),
-        "similarity": float(best.get("Similarity") or 0),
-        "confidence": float(face.get("Confidence") or 0),
+    try {
+      showStatus("⏳ Init search...");
+      const init = await apiCall("init_search", { token, mime_type: file.type || "image/jpeg" });
+      showStatus("⏳ Upload selfie...");
+      await uploadToS3(init.upload_url, file);
+
+      showStatus("⏳ Running search...");
+      const res = await apiCall("run_search", { token, search_id: init.search_id });
+
+      lastFaceId = res.face_id || null;
+
+      const header = [];
+      if(res.profile && (res.profile.name || res.profile.mobile)) {
+        header.push("Name: " + (res.profile.name || "-"));
+        header.push("Mobile: " + (res.profile.mobile || "-"));
+      }
+      if(res.similarity != null) {
+        header.push("Similarity: " + res.similarity + "%");
+      }
+      document.getElementById("resultHeader").textContent = header.length ? header.join(" | ") : "Result मिला";
+
+      renderTimeline(res.timeline || []);
+      renderPhotos(res.photo_urls || []);
+
+      document.getElementById("nameBox").classList.remove("hidden");
+      if(res.profile) {
+        document.getElementById("personName").value = res.profile.name || "";
+        document.getElementById("personMobile").value = res.profile.mobile || "";
+      }
+      showStatus("✅ Done!");
+    } catch(err) {
+      showStatus("❌ Error: " + (err && err.message ? err.message : err));
+      document.getElementById("resultHeader").textContent = "Error";
+    } finally {
+      document.getElementById("searchBtn").disabled = false;
+      document.getElementById("searchBtn").textContent = "Search";
     }
+  }
 
-
-def _get_face_profile(face_id: str) -> dict:
-    if not face_id:
-        return {}
-    try:
-        item = faces_table.get_item(Key={"face_id": face_id}).get("Item") or {}
-    except Exception:
-        item = {}
-
-    # common fields
-    name = item.get("name") or item.get("person_name") or item.get("full_name") or ""
-    mobile = item.get("mobile") or item.get("phone") or ""
-
-    return {"name": name or "", "mobile": mobile or "", "raw": item}
-
-
-def _extract_photo_keys_from_face_item(face_item: dict):
-    if not face_item:
-        return []
-    for k in ("photo_keys", "photo_s3_keys", "s3_keys", "photos", "photo_list"):
-        v = face_item.get(k)
-        if isinstance(v, list) and v:
-            return [str(x) for x in v if x]
-    # photo hashes mapping
-    hashes = face_item.get("photo_hashes") or face_item.get("hashes")
-    if isinstance(hashes, list) and hashes:
-        return [str(x) for x in hashes if x]
-    return []
-
-
-def _photo_item_to_s3_key(it: dict) -> str:
-    return (
-        it.get("s3_key")
-        or it.get("s3Key")
-        or it.get("key")
-        or it.get("s3_object_key")
-        or it.get("photo_key")
-        or ""
-    )
-
-
-def _fetch_photo_keys_for_face(face_id: str, collection_id: str = "", limit: int = 40):
-    # 1) From faces table list/hash
-    face_item = {}
-    try:
-        face_item = faces_table.get_item(Key={"face_id": face_id}).get("Item") or {}
-    except Exception:
-        face_item = {}
-
-    keys_or_hashes = _extract_photo_keys_from_face_item(face_item)
-
-    # If they look like actual s3 keys (contain '/') use as-is
-    if any("/" in x for x in keys_or_hashes):
-        out = [x for x in keys_or_hashes if isinstance(x, str) and x]
-        return out[:limit]
-
-    # If they look like hashes, try batch-get from photos table
-    if keys_or_hashes:
-        s3_keys = []
-        for h in keys_or_hashes[:200]:
-            try:
-                resp = photos_table.get_item(Key={"photo_hash": h}).get("Item") or {}
-                k = _photo_item_to_s3_key(resp)
-                if k:
-                    s3_keys.append(k)
-            except Exception:
-                pass
-        if s3_keys:
-            return s3_keys[:limit]
-
-    # 2) Try query by GSI on photos table
-    gsi_candidates = [
-        "face_id-index",
-        "face_id-idx",
-        "gsi_face_id",
-        "faceid-index",
-        "faceId-index",
-    ]
-
-    for gsi in gsi_candidates:
-        try:
-            resp = photos_table.query(
-                IndexName=gsi,
-                KeyConditionExpression=Key("face_id").eq(face_id),
-                Limit=limit,
-            )
-            items = resp.get("Items") or []
-            out = []
-            for it in items:
-                if collection_id and it.get("collection_id") and it.get("collection_id") != collection_id:
-                    continue
-                k = _photo_item_to_s3_key(it)
-                if k:
-                    out.append(k)
-            if out:
-                return out[:limit]
-        except Exception:
-            continue
-
-    # 3) Scan fallback (limited)
-    out = []
-    scan_kwargs = {
-        "FilterExpression": Attr("face_id").eq(face_id),
-        "ProjectionExpression": "photo_hash, s3_key, s3Key, #k, collection_id",
-        "ExpressionAttributeNames": {"#k": "key"},
-        "Limit": 200,
+  async function saveProfile() {
+    const token = qs("token") || "";
+    if(!token || !lastFaceId) {
+      showStatus("❌ पहले search करो (face_id missing).");
+      return;
     }
-    try:
-        resp = photos_table.scan(**scan_kwargs)
-        for it in (resp.get("Items") or []):
-            if collection_id and it.get("collection_id") and it.get("collection_id") != collection_id:
-                continue
-            k = _photo_item_to_s3_key(it)
-            if k:
-                out.append(k)
-            if len(out) >= limit:
-                break
-    except Exception:
-        pass
+    const name = (document.getElementById("personName").value || "").trim();
+    const mobile = (document.getElementById("personMobile").value || "").trim();
+    if(!name && !mobile) {
+      showStatus("❌ Name या Mobile कुछ तो डालो।");
+      return;
+    }
+    try {
+      showStatus("⏳ Saving profile...");
+      await apiCall("save_profile", { token, face_id: lastFaceId, name, mobile });
+      showStatus("✅ Saved!");
+    } catch(err) {
+      showStatus("❌ Error: " + (err && err.message ? err.message : err));
+    }
+  }
 
-    return out[:limit]
+  document.getElementById("searchBtn").addEventListener("click", (e)=>{
+    e.preventDefault();
+    doSearch();
+  });
 
+  document.getElementById("saveBtn").addEventListener("click", (e)=>{
+    e.preventDefault();
+    saveProfile();
+  });
 
-def _fetch_timeline(face_id: str, collection_id: str = "", limit: int = 50):
-    # Prefer query by face_id GSI if exists
-    gsi_candidates = [
-        "face_id-created_at-index",
-        "face_id-index",
-        "gsi_face_id",
-        "faceId-created_at-index",
-    ]
-
-    # Query (best effort)
-    for gsi in gsi_candidates:
-        try:
-            resp = forms_table.query(
-                IndexName=gsi,
-                KeyConditionExpression=Key("face_id").eq(face_id),
-                Limit=limit,
-                ScanIndexForward=False,
-            )
-            items = resp.get("Items") or []
-            if items:
-                return [_format_timeline_item(it) for it in items[:limit]]
-        except Exception:
-            continue
-
-    # Fallback: query by collection_id if index exists
-    coll_gsi_candidates = [
-        "collection_id-created_at-index",
-        "collection_id-index",
-        "gsi_collection_id",
-    ]
-
-    for gsi in coll_gsi_candidates:
-        try:
-            now = _now_ms()
-            start = now - 30 * 86400 * 1000
-            resp = forms_table.query(
-                IndexName=gsi,
-                KeyConditionExpression=Key("collection_id").eq(collection_id) & Key("created_at").between(str(start), str(now)),
-                Limit=limit,
-                ScanIndexForward=False,
-            )
-            items = resp.get("Items") or []
-            if items:
-                # filter face_id if present
-                filtered = [it for it in items if (not it.get("face_id") or it.get("face_id") == face_id)]
-                return [_format_timeline_item(it) for it in filtered[:limit]]
-        except Exception:
-            continue
-
-    # Last fallback: scan by face_id
-    out = []
-    try:
-        resp = forms_table.scan(
-            FilterExpression=Attr("face_id").eq(face_id),
-            Limit=limit,
-        )
-        for it in (resp.get("Items") or []):
-            out.append(_format_timeline_item(it))
-        out.sort(key=lambda x: x.get("raw", {}).get("created_at") or "", reverse=True)
-        return out[:limit]
-    except Exception:
-        return []
-
-
-# -----------------------------
-# Actions
-# -----------------------------
-
-def _require_token(payload: dict) -> dict:
-    token = payload.get("token") or payload.get("public_token") or ""
-    base = _verify_public_token(token)
-    collection_id = base.get("collection_id") or base.get("collectionId")
-    if not collection_id:
-        raise ValueError("collection_id missing in token")
-    return {"token": token, "base": base, "collection_id": collection_id}
-
-
-def _action_init_search(payload: dict):
-    data = _require_token(payload)
-    mime = payload.get("mime_type") or payload.get("mime") or "image/jpeg"
-    ext = _mime_to_ext(mime)
-
-    search_id = uuid.uuid4().hex
-    # keep in political/search/<collection_id>/
-    s3_key = f"{S3_PREFIX}search/{data['collection_id']}/{search_id}.{ext}"
-
-    upload_url = _make_put_presigned(s3_key, mime, expires=900)
-
-    return _resp(200, {
-        "search_id": search_id,
-        "upload_url": upload_url,
-        "expires_in": 900,
-        "s3_key": s3_key,  # helpful for debug
-    })
-
-
-def _action_run_search(payload: dict):
-    data = _require_token(payload)
-    search_id = payload.get("search_id") or payload.get("photo_key") or payload.get("key")
-    if not search_id:
-        return _resp(400, {"message": "search_id missing"})
-
-    # reconstruct key (jpg default, but try jpg/png/webp)
-    candidates = [
-        f"{S3_PREFIX}search/{data['collection_id']}/{search_id}.jpg",
-        f"{S3_PREFIX}search/{data['collection_id']}/{search_id}.jpeg",
-        f"{S3_PREFIX}search/{data['collection_id']}/{search_id}.png",
-        f"{S3_PREFIX}search/{data['collection_id']}/{search_id}.webp",
-    ]
-
-    threshold = float(payload.get("threshold") or 75)
-
-    match = None
-    last_err = None
-    for key in candidates:
-        try:
-            match = _search_faces_by_image(key, threshold=threshold, max_faces=5)
-            if match is not None:
-                used_key = key
-                break
-            else:
-                used_key = key
-                # no match is not error; still break because image exists
-                break
-        except ClientError as e:
-            last_err = str(e)
-            continue
-        except Exception as e:
-            last_err = str(e)
-            continue
-
-    if match is None:
-        # either no match or image missing/rek error
-        if last_err:
-            return _resp(500, {"message": "Search failed", "error": last_err})
-        return _resp(200, {
-            "message": "No match",
-            "face_id": None,
-            "similarity": 0,
-            "profile": {},
-            "timeline": [],
-            "photo_urls": [],
-        })
-
-    # If match exists but face_id missing
-    face_id = match.get("face_id")
-    if not face_id:
-        return _resp(200, {
-            "message": "No match",
-            "face_id": None,
-            "similarity": 0,
-            "profile": {},
-            "timeline": [],
-            "photo_urls": [],
-        })
-
-    profile = _get_face_profile(face_id)
-
-    s3_keys = _fetch_photo_keys_for_face(face_id, collection_id=data['collection_id'], limit=50)
-    photo_urls = []
-    for k in s3_keys:
-        try:
-            photo_urls.append(_make_get_presigned(k, expires=900))
-        except Exception:
-            continue
-
-    timeline = _fetch_timeline(face_id, collection_id=data['collection_id'], limit=80)
-
-    return _resp(200, {
-        "message": "OK",
-        "face_id": face_id,
-        "similarity": match.get("similarity", 0),
-        "profile": {"name": profile.get("name", ""), "mobile": profile.get("mobile", "")},
-        "timeline": timeline,
-        "photo_urls": photo_urls,
-        "debug": {"used_s3_key": used_key},
-    })
-
-
-def _action_save_profile(payload: dict):
-    data = _require_token(payload)
-    face_id = payload.get("face_id")
-    name = (payload.get("name") or "").strip()
-    mobile = (payload.get("mobile") or "").strip()
-    if not face_id:
-        return _resp(400, {"message": "face_id missing"})
-
-    # Update or create item
-    try:
-        update_expr = "SET #n=:n, #m=:m, #cid=:cid, #u=:u"
-        faces_table.update_item(
-            Key={"face_id": face_id},
-            UpdateExpression=update_expr,
-            ExpressionAttributeNames={"#n": "name", "#m": "mobile", "#cid": "collection_id", "#u": "updated_at"},
-            ExpressionAttributeValues={":n": name, ":m": mobile, ":cid": data["collection_id"], ":u": str(_now_ms())},
-        )
-    except Exception as e:
-        return _resp(500, {"message": "Save failed", "error": str(e)})
-
-    return _resp(200, {"message": "Saved"})
-
-
-# -----------------------------
-# Main handler
-# -----------------------------
-
-def search_handler(event, context):
-    # OPTIONS preflight
-    if (event.get("requestContext", {}).get("http", {}).get("method") == "OPTIONS") or (event.get("httpMethod") == "OPTIONS"):
-        return _resp(200, {"ok": True})
-
-    body = _parse_body(event)
-    action = body.get("action")
-    payload = body.get("payload") or {}
-
-    # Action aliases (so old/new frontend both work)
-    if action == "public_init_search" or action == "init_search":
-        return _action_init_search(payload)
-    if action == "public_run_search" or action == "run_search":
-        return _action_run_search(payload)
-    if action == "public_save_profile" or action == "save_profile":
-        return _action_save_profile(payload)
-
-    return _resp(400, {"message": f"Unknown action: {action}"})
-
-
-# (optional) keep lambda handler name 'handler'
-
-def handler(event, context):
-    return search_handler(event, context)
+  document.getElementById("tokenText").textContent = qs("token") || "-";
+</script>
+</body>
+</html>

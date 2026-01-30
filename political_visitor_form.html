@@ -229,9 +229,15 @@
           payload: data
         }, { useAuth:false });
 
-        if(!createRes?.upload_url || !createRes?.finalize_token || !createRes?.entry_id) throw new Error('Create entry response invalid');
+        if(!createRes?.finalize_token || !createRes?.entry_id) throw new Error('Create entry response invalid');
 
+        if(createRes.upload_url){
         await uploadToS3(createRes.upload_url, file);
+      } else if(createRes.duplicate){
+        // Duplicate selfie detected - reuse existing photo (no upload required)
+      } else {
+        throw new Error('Upload URL missing');
+      }
 
         await apiCall('public_finalize_entry', {
           token,
@@ -256,9 +262,15 @@
         payload: data
       }, { useAuth:true });
 
-      if(!createRes?.upload_url || !createRes?.finalize_token || !createRes?.entry_id) throw new Error('Create entry response invalid');
+      if(!createRes?.finalize_token || !createRes?.entry_id) throw new Error('Create entry response invalid');
 
-      await uploadToS3(createRes.upload_url, file);
+      if(createRes.upload_url){
+        await uploadToS3(createRes.upload_url, file);
+      } else if(createRes.duplicate){
+        // Duplicate selfie detected - reuse existing photo (no upload required)
+      } else {
+        throw new Error('Upload URL missing');
+      }
 
       await apiCall('finalize_entry', {
         entry_id: createRes.entry_id,

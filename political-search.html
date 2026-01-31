@@ -3,332 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>कार्यकर्ता सर्च (Political Search) - EventLens</title>
+  <title>Karyakarta Search - EventLens</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              400: '#38bdf8',
-              500: '#0ea5e9',
-              600: '#0284c7',
-              700: '#0369a1',
-              900: '#0c4a6e'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' } } } } }</script>
   <style>
-    body {
-      background: radial-gradient(circle at top left, rgba(14,165,233,0.12), transparent 40%),
-                  radial-gradient(circle at top right, rgba(168,85,247,0.10), transparent 40%),
-                  #020617;
-    }
-    .glass {
-      background: rgba(30,41,59,0.72);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.08);
-    }
+    body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 40%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 40%), #020617; color: #e2e8f0; }
+    .glass { background: rgba(30,41,59,0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
+    .animate-spin-slow { animation: spin 2s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="min-h-screen text-slate-200">
-  <div class="max-w-5xl mx-auto px-4 py-10">
-    <div class="glass rounded-3xl p-6 md:p-8 shadow-2xl">
-      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div>
-          <h1 class="text-2xl md:text-3xl font-black text-white">कार्यकर्ता सर्च</h1>
-          <p class="text-slate-300 mt-2 text-sm">
-            अपनी सेल्फी डालो → सिस्टम आपकी फोटो/एंट्री ढूंढकर Timeline दिखाएगा।
-          </p>
-          <p class="text-slate-500 mt-2 text-xs">
-            (यह page public link है। Politician user dashboard से generate होगा।)
-          </p>
-        </div>
-        <div class="text-xs text-slate-400 md:text-right">
-          <div class="font-semibold">Token</div>
-          <div id="tokenText" class="mt-1 break-all max-w-sm">-</div>
-        </div>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="glass rounded-2xl p-6 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl border-t-2 border-orange-500/50">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-400"><i class="fa-solid fa-magnifying-glass-chart text-xl"></i></div>
+        <div><h1 class="text-2xl font-extrabold text-white">Karyakarta Search</h1><p class="text-slate-400 text-sm">EventLens Political Module</p></div>
       </div>
-
-      <div class="mt-6 grid md:grid-cols-2 gap-6">
-        <div class="bg-slate-900/60 border border-slate-700 rounded-2xl p-5">
-          <h2 class="font-bold text-white">1) सेल्फी Upload</h2>
-          <p class="text-xs text-slate-400 mt-1">सिर्फ 1 selfie select करें</p>
-
-          <input id="selfieInput" accept="image/*" type="file"
-                 class="mt-4 w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition" />
-
-          <button id="searchBtn" class="mt-4 w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-500 font-bold text-white transition">
-            Search
-          </button>
-
-          <div id="statusBox" class="hidden mt-4 p-4 rounded-2xl bg-slate-900 border border-slate-700 text-sm">
-            <div class="font-semibold text-white mb-1">Status</div>
-            <div id="statusText" class="text-slate-300">-</div>
-          </div>
-
-          <div id="nameBox" class="hidden mt-4 p-4 rounded-2xl bg-slate-900 border border-slate-700">
-            <div class="font-bold text-white">Name / Mobile Save (Optional)</div>
-            <div class="grid grid-cols-1 gap-3 mt-3">
-              <input id="personName" type="text" placeholder="नाम"
-                     class="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition placeholder-slate-500" />
-              <input id="personMobile" type="tel" placeholder="मोबाइल"
-                     class="w-full px-4 py-3 bg-slate-900 rounded-xl border border-slate-700 text-white focus:border-brand-500 outline-none transition placeholder-slate-500" />
-              <button id="saveBtn" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-white transition">
-                Save Name/Mobile
-              </button>
-              <div class="text-xs text-slate-400">
-                इससे face को नाम assign हो जाएगा (future search में दिखेगा)
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-slate-900/60 border border-slate-700 rounded-2xl p-5">
-          <h2 class="font-bold text-white">2) Result Timeline</h2>
-          <div id="resultHeader" class="text-sm text-slate-300 mt-2">
-            अभी कोई result नहीं
-          </div>
-
-          <div id="timeline" class="mt-4 space-y-3">
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-8">
-        <h2 class="font-bold text-white">Photos</h2>
-        <div id="photosGrid" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"></div>
-      </div>
+      <div class="text-right hidden md:block"><div class="text-xs font-mono text-slate-500" id="tokenDisplay">Token: Checking...</div></div>
     </div>
 
-    <div class="text-center text-xs text-slate-500 mt-6">
-      Powered by EventLens + AWS Rekognition
+    <div class="grid md:grid-cols-12 gap-6">
+      <!-- Sidebar -->
+      <div class="md:col-span-4 space-y-6">
+        <div class="glass rounded-2xl p-6 shadow-lg border-l-4 border-orange-500">
+          <h2 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-camera"></i> 1. Search by Selfie</h2>
+          <div class="relative group cursor-pointer mb-4">
+            <input id="selfieInput" accept="image/*" type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this)" />
+            <div id="uploadBox" class="h-48 border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center bg-slate-800/50 group-hover:border-orange-500 transition-colors">
+              <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i><span class="text-sm text-slate-400">Tap to upload image</span>
+            </div>
+            <img id="preview" class="hidden h-48 w-full object-cover rounded-xl border border-slate-600" />
+          </div>
+          <button id="searchBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold shadow-lg shadow-orange-500/25 transition-all active:scale-95 flex items-center justify-center gap-2">
+            <span>Search Database</span> <i class="fa-solid fa-search"></i>
+          </button>
+          <div id="statusBox" class="hidden mt-4 p-3 rounded-lg text-sm text-center"></div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="md:col-span-8">
+        <div class="glass rounded-2xl p-6 shadow-lg min-h-[400px]">
+          <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+             <h2 class="font-bold text-xl text-white flex items-center gap-2"><i class="fa-solid fa-timeline"></i> Result Timeline</h2>
+             <span id="matchScore" class="text-sm font-mono text-slate-400"></span>
+          </div>
+          <div id="timeline" class="space-y-4">
+             <div class="text-center py-10 text-slate-500"><i class="fa-regular fa-image text-4xl mb-3 opacity-50"></i><p>Upload a selfie to view history.</p></div>
+          </div>
+          <div id="photosSection" class="hidden mt-8 pt-6 border-t border-slate-700">
+             <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fa-regular fa-images"></i> Related Photos</h3>
+             <div id="photosGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
 <script>
-	  // UPDATED API (Mumbai)
-	  const API_BASE = "https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com/prod";
-	  const SEARCH_ENDPOINT_AUTH = API_BASE + "/political/search";
-	  const SEARCH_ENDPOINT_PUBLIC = API_BASE + "/political/public/search";
+  const API_ID = 'vxid0yoovj'; const REGION = 'ap-south-1'; const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+  let lastFaceId = null; const qs = (n) => new URL(window.location.href).searchParams.get(n); const token = qs('token');
+  document.getElementById('tokenDisplay').innerText = token ? `Token: ${token.substring(0,8)}...` : 'Admin Mode';
 
-  let lastFaceId = null;
-
-  function qs(name) {
-    const u = new URL(window.location.href);
-    return u.searchParams.get(name);
+  function previewImage(input) {
+    const f = input.files[0]; if(f){ const r = new FileReader(); r.onload = (e) => { document.getElementById('preview').src = e.target.result; document.getElementById('preview').classList.remove('hidden'); document.getElementById('uploadBox').classList.add('hidden'); }; r.readAsDataURL(f); }
   }
 
-  function showStatus(msg) {
-    const box = document.getElementById('statusBox');
-    const t = document.getElementById('statusText');
-    box.classList.remove('hidden');
-    t.textContent = msg;
+  const showStatus = (msg, err=false) => {
+    const b=document.getElementById('statusBox'); b.classList.remove('hidden', 'bg-emerald-500/10', 'text-emerald-400', 'bg-red-500/10', 'text-red-400');
+    b.classList.add(err ? 'bg-red-500/10' : 'bg-emerald-500/10'); b.classList.add(err ? 'text-red-400' : 'text-emerald-400'); b.innerHTML = msg;
+  };
+
+  async function apiCall(action, payload) {
+    const url = `${BASE_URL}/political${token ? '/public/search' : '/search'}`; const headers = { 'Content-Type': 'application/json' };
+    if(!token) { const jwt = localStorage.getItem('idToken') || localStorage.getItem('accessToken'); if(jwt) headers['Authorization'] = 'Bearer ' + jwt; }
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ action, payload }) });
+    const data = await res.json(); if(!res.ok) throw new Error(data.message || data.error || 'API Error'); return data;
   }
+  async function uploadToS3(url, file) { const r = await fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file }); if(!r.ok) throw new Error("Upload Failed"); }
 
-	  function getSearchEndpoint() {
-	    // token-based public link mode
-	    const tok = qs('token');
-	    return tok ? SEARCH_ENDPOINT_PUBLIC : SEARCH_ENDPOINT_AUTH;
-	  }
-
-	  function getAuthHeaderValue() {
-	    // optional: if you open without token, it will try dashboard token
-	    return localStorage.getItem('idToken') || localStorage.getItem('accessToken') || localStorage.getItem('cognito_id_token') || localStorage.getItem('cognito_access_token') || "";
-	  }
-
-	  async function apiCall(action, payload) {
-	    const headers = { "Content-Type": "application/json" };
-	    const tok = qs('token');
-	    if(!tok) {
-	      const t = getAuthHeaderValue();
-	      if(t) headers["Authorization"] = "Bearer " + t;
-	    }
-		    let endpoint = getSearchEndpoint();
-		    let r = await fetch(endpoint, {
-      method: "POST",
-	      headers,
-	      body: JSON.stringify({ action, payload })
-    });
-		    if(r && r.status === 404 && endpoint === SEARCH_ENDPOINT_PUBLIC) {
-		      endpoint = SEARCH_ENDPOINT_AUTH;
-		      r = await fetch(endpoint, {
-		        method: "POST",
-		        headers,
-		        body: JSON.stringify({ action, payload })
-		      });
-		    }
-    const txt = await r.text();
-    let data = {};
-    try { data = JSON.parse(txt); } catch(e) { data = {raw: txt}; }
-    if(!r.ok) {
-      throw new Error((data && data.message) ? data.message : ("API Error " + r.status));
-    }
-    return data;
-  }
-
-  async function uploadToS3(url, file) {
-    const r = await fetch(url, {
-      method: "PUT",
-      headers: {
-        "Content-Type": file.type || "application/octet-stream"
-      },
-      body: file
-    });
-    if(!r.ok) throw new Error("S3 Upload fail (" + r.status + ")");
-  }
-
-  function clearUI() {
-    document.getElementById("timeline").innerHTML = "";
-    document.getElementById("photosGrid").innerHTML = "";
-    document.getElementById("resultHeader").textContent = "Computing...";
-  }
-
-  function renderTimeline(items) {
-    const wrap = document.getElementById("timeline");
-    wrap.innerHTML = "";
-    if(!items || items.length === 0) {
-      wrap.innerHTML = '<div class="text-slate-500 text-sm">कोई timeline entry नहीं मिली</div>';
-      return;
-    }
-    for(const it of items) {
-      const div = document.createElement("div");
-      div.className = "p-4 rounded-2xl bg-slate-950/60 border border-slate-700";
-      const when = it.date_text || it.created_at || "";
-      const t = it.form_type || "";
-      const line1 = '<div class="text-xs text-slate-400">' + when + '</div>';
-      const line2 = '<div class="font-bold text-white mt-1">' + (it.title || t) + '</div>';
-      const line3 = '<div class="text-sm text-slate-300 mt-1">' + (it.summary || "") + '</div>';
-      div.innerHTML = line1 + line2 + line3;
-      wrap.appendChild(div);
-    }
-  }
-
-  function renderPhotos(urls) {
-    const grid = document.getElementById("photosGrid");
-    grid.innerHTML = "";
-    if(!urls || urls.length === 0) {
-      grid.innerHTML = '<div class="text-slate-500 text-sm">कोई photo नहीं</div>';
-      return;
-    }
-    for(const u of urls) {
-      const a = document.createElement("a");
-      a.href = u;
-      a.target = "_blank";
-      a.className = "block";
-      const img = document.createElement("img");
-      img.src = u;
-      img.className = "w-full h-40 object-cover rounded-xl border border-slate-700 hover:border-brand-500 transition";
-      a.appendChild(img);
-      grid.appendChild(a);
-    }
-  }
-
-  function showStatus(msg, isError=false){
-    const el = document.getElementById('statusText');
-    const box = document.getElementById('statusBox');
-    if(el) el.textContent = msg || '';
-    if(box){
-      box.style.display = msg ? 'block' : 'none';
-      box.style.borderColor = isError ? '#ff4d4f' : 'rgba(255,255,255,0.12)';
-    }
-  }
-
-
-  async function doSearch() {
-    const token = qs("token") || "";
-    document.getElementById("tokenText").textContent = token || "-";
-    if(!token) {
-      showStatus("❌ Token missing. यह link Political Dashboard से generate होना चाहिए।");
-      return;
-    }
-
-    const input = document.getElementById("selfieInput");
-    if(!input.files || input.files.length === 0) {
-      showStatus("❌ Selfie select नहीं किया।");
-      return;
-    }
-    const file = input.files[0];
-
-    clearUI();
-    document.getElementById("searchBtn").disabled = true;
-    document.getElementById("searchBtn").textContent = "Searching...";
+  document.getElementById("searchBtn").onclick = async () => {
+    const file = document.getElementById("selfieInput").files[0];
+    if(!token && !localStorage.getItem('idToken')) return showStatus("Authentication Missing", true);
+    if(!file) return showStatus("Select a selfie first", true);
+    const btn = document.getElementById("searchBtn"); const oldText = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Searching...'; showStatus('');
+    document.getElementById("timeline").innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-orange-500"></i></div>';
 
     try {
-      showStatus("⏳ Init search...");
-      const init = await apiCall("init_search", { token, mime_type: file.type || "image/jpeg" });
-      showStatus("⏳ Upload selfie...");
-      await uploadToS3(init.upload_url, file);
+      const init = await apiCall("init_search", { token, mime_type: file.type }); await uploadToS3(init.upload_url, file);
+      const res = await apiCall("run_search", { token, search_id: init.search_id }); lastFaceId = res.face_id;
+      
+      document.getElementById("matchScore").innerHTML = res.similarity > 0 ? `<span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">Match: ${Math.round(res.similarity)}%</span>` : `<span class="bg-red-500/20 text-red-400 px-2 py-1 rounded">No Match Found</span>`;
+      
+      const tl = document.getElementById("timeline");
+      if(res.timeline && res.timeline.length > 0) {
+          tl.innerHTML = res.timeline.map((t) => `
+            <div class="relative pl-8 pb-6 border-l border-slate-700 last:border-0 last:pb-0">
+                <div class="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-orange-500 ring-4 ring-slate-900"></div>
+                <div class="glass p-4 rounded-xl border border-slate-700 hover:border-orange-500/50 transition-colors">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-xs font-mono text-orange-400">${t.created_at_iso ? new Date(t.created_at_iso).toLocaleDateString() : 'Date Unknown'}</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300 capitalize">${t.form_type?.replace('_', ' ') || 'Entry'}</span>
+                    </div>
+                    <div class="font-bold text-white text-lg">${t.name || 'Unknown'}</div>
+                    <div class="text-slate-400 text-sm mt-1">${t.reason || t.program_title || 'No details'}</div>
+                </div>
+            </div>`).join('');
+      } else { tl.innerHTML = `<div class="p-4 bg-yellow-500/10 text-yellow-500 rounded-xl text-center">No history found for this face.</div>`; }
 
-      showStatus("⏳ Running search...");
-      const res = await apiCall("run_search", { token, search_id: init.search_id });
+      const pg = document.getElementById("photosGrid");
+      if(res.photo_urls && res.photo_urls.length > 0) {
+        document.getElementById("photosSection").classList.remove('hidden');
+        pg.innerHTML = res.photo_urls.map(u => `<a href="${u}" target="_blank" class="block aspect-square overflow-hidden rounded-lg border border-slate-700 hover:border-orange-500 transition"><img src="${u}" class="w-full h-full object-cover transition hover:scale-110"></a>`).join('');
+      } else { document.getElementById("photosSection").classList.add('hidden'); }
 
-      lastFaceId = res.face_id || null;
-
-      const header = [];
-      if(res.profile && (res.profile.name || res.profile.mobile)) {
-        header.push("Name: " + (res.profile.name || "-"));
-        header.push("Mobile: " + (res.profile.mobile || "-"));
-      }
-      if(res.similarity != null) {
-        header.push("Similarity: " + res.similarity + "%");
-      }
-      document.getElementById("resultHeader").textContent = header.length ? header.join(" | ") : "Result मिला";
-
-      renderTimeline(res.timeline || []);
-      renderPhotos(res.photo_urls || []);
-
-      document.getElementById("nameBox").classList.remove("hidden");
-      if(res.profile) {
-        document.getElementById("personName").value = res.profile.name || "";
-        document.getElementById("personMobile").value = res.profile.mobile || "";
-      }
-      showStatus("✅ Done!");
-    } catch(err) {
-      showStatus("❌ Error: " + (err && err.message ? err.message : err));
-      document.getElementById("resultHeader").textContent = "Error";
-    } finally {
-      document.getElementById("searchBtn").disabled = false;
-      document.getElementById("searchBtn").textContent = "Search";
-    }
-  }
-
-  async function saveProfile() {
-    const token = qs("token") || "";
-    if(!token || !lastFaceId) {
-      showStatus("❌ पहले search करो (face_id missing).");
-      return;
-    }
-    const name = (document.getElementById("personName").value || "").trim();
-    const mobile = (document.getElementById("personMobile").value || "").trim();
-    if(!name && !mobile) {
-      showStatus("❌ Name या Mobile कुछ तो डालो।");
-      return;
-    }
-    try {
-      showStatus("⏳ Saving profile...");
-      await apiCall("save_profile", { token, face_id: lastFaceId, name, mobile });
-      showStatus("✅ Saved!");
-    } catch(err) {
-      showStatus("❌ Error: " + (err && err.message ? err.message : err));
-    }
-  }
-
-  document.getElementById("searchBtn").addEventListener("click", (e)=>{
-    e.preventDefault();
-    doSearch();
-  });
-
-  document.getElementById("saveBtn").addEventListener("click", (e)=>{
-    e.preventDefault();
-    saveProfile();
-  });
-
-  document.getElementById("tokenText").textContent = qs("token") || "-";
+      showStatus("✅ Search Complete", false);
+    } catch(e) { showStatus(e.message, true); document.getElementById("timeline").innerHTML = `<div class="text-center text-red-400">Error loading data.</div>`; } finally { btn.disabled = false; btn.innerHTML = oldText; }
+  };
 </script>
 </body>
 </html>

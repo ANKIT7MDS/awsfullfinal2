@@ -231,20 +231,14 @@
 
         if(!createRes?.finalize_token || !createRes?.entry_id) throw new Error('Create entry response invalid');
 
-            if(createRes?.upload_url){
+            if (createRes.upload_url) {
               await uploadToS3(createRes.upload_url, file);
-            } else if(!createRes?.duplicate){
+            } else if (!createRes.duplicate) {
+
               throw new Error('Upload URL missing');
             }
 
-            await uploadToS3(createRes.upload_url, file);
-
-        await apiCall('public_finalize_entry', {
-              finalize_token: createRes.finalize_token,
-              token,
-              entry_id: createRes.entry_id,
-          finalize_token: createRes.finalize_token
-        }, { useAuth:false });
+        await apiCall('public_finalize_entry', { finalize_token: createRes.finalize_token, entry_id: createRes.entry_id }, { useAuth:false });
 
         showStatus('✅ Saved successfully', false);
         btn.disabled = false;
@@ -265,18 +259,14 @@
 
       if(!createRes?.finalize_token || !createRes?.entry_id) throw new Error('Create entry response invalid');
 
-            if(createRes?.upload_url){
+            if (createRes.upload_url) {
               await uploadToS3(createRes.upload_url, file);
-            } else if(!createRes?.duplicate){
+            } else if (!createRes.duplicate) {
+
               throw new Error('Upload URL missing');
             }
 
-            await uploadToS3(createRes.upload_url, file);
-
-      await apiCall('finalize_entry', {
-        entry_id: createRes.entry_id,
-        finalize_token: createRes.finalize_token
-      }, { useAuth:true });
+      await apiCall('finalize_entry', { finalize_token: createRes.finalize_token, entry_id: createRes.entry_id }, { useAuth:true });
 
       showStatus('✅ Saved successfully (Admin Mode)', false);
       btn.disabled = false;

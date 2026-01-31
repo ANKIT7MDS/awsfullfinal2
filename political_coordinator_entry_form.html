@@ -1,286 +1,117 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="hi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Coordinator Entry Form • EventLens Political</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coordinator Entry - EventLens</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] } } } }</script>
   <style>
-    :root {
-      --bg:#071126; --card:#0b1b33; --text:#eaf2ff; --muted:#9cb2d8;
-      --border:rgba(255,255,255,.10); --btn:#0a84ff; --danger:#ff4d4d;
-      --radius:18px;
-    }
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,#050a16,#08122a 50%,#050a16); color:var(--text);}
-    .wrap{max-width:560px;margin:0 auto;padding:18px 14px 36px;}
-    .card{background:rgba(11,27,51,.92); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow:0 14px 40px rgba(0,0,0,.35);}
-    h1{font-size:22px;margin:0 0 6px;}
-    .sub{color:var(--muted);font-size:13px;margin:0 0 14px;line-height:1.45;}
-    label{display:block;margin:12px 0 6px;font-size:13px;color:#d7e6ff;}
-    input{width:100%;padding:12px 12px;border-radius:14px;border:1px solid var(--border);background:rgba(7,17,38,.75);color:var(--text);outline:none;}
-    input:focus{border-color:rgba(10,132,255,.55);}
-    .btn{width:100%;margin-top:14px;padding:14px 14px;border:none;border-radius:16px;font-weight:700;font-size:16px;color:white;background:var(--btn);cursor:pointer;}
-    .btn:disabled{opacity:.6;cursor:not-allowed;}
-    .note{margin-top:10px;font-size:12px;color:var(--muted);}
-    .status{margin-top:14px;padding:12px;border-radius:16px;border:1px solid var(--border);background:rgba(7,17,38,.6);}
-    .ok{color:#8cffd1;}
-    .err{color:#ff9a9a;}
-    .small{font-size:12px;color:var(--muted);}
-    .footer{text-align:center;margin-top:18px;color:var(--muted);font-size:12px;opacity:.85;}
+    body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 50%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.1), transparent 50%), #0f172a; color: #fff; }
+    .glass { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .input-group { position: relative; transition: transform 0.2s; }
+    .input-group:focus-within { transform: translateY(-2px); }
+    .input-field { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 0.85rem; padding: 0.85rem 1rem 0.85rem 2.75rem; color: white; transition: all 0.3s; outline: none; }
+    .input-field:focus { border-color: #f97316; box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15); background: rgba(15, 23, 42, 0.8); }
+    .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; transition: color 0.3s; pointer-events: none; }
+    .input-field:focus ~ .input-icon { color: #f97316; }
+    .btn-gradient { background: linear-gradient(135deg, #f97316, #ea580c); transition: all 0.3s; }
+    .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.4); }
   </style>
 </head>
-<body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Coordinator Entry Form</h1>
-      <p class="sub">यह फॉर्म EventLens Political Module के लिए है। Public Link में login की जरूरत नहीं है। Admin Mode में dashboard login token चाहिए।</p>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="glass w-full max-w-lg rounded-3xl p-6 md:p-8 relative overflow-hidden">
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-orange-500 rounded-b-full shadow-[0_0_20px_rgba(249,115,22,0.6)]"></div>
+    
+    <div class="text-center mb-8 mt-2">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-500 mb-4 ring-1 ring-orange-500/20">
+        <i class="fa-solid fa-id-card-clip text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold">Coordinator Entry</h1>
+      <p class="text-slate-400 text-sm mt-1">EventLens Political Module</p>
+    </div>
 
-      <form id="f">
+    <form id="f" class="space-y-4">
+      <div class="input-group"><input id="name" type="text" placeholder="Coordinator Name *" required class="input-field" /><i class="fa-solid fa-user input-icon"></i></div>
+      <div class="input-group"><input id="mobile" type="tel" placeholder="Mobile Number (10 Digits) *" maxlength="10" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required class="input-field" /><i class="fa-solid fa-phone input-icon"></i></div>
 
-      <label for="name">नाम *</label>
-      <input id="name" name="name" type="text" placeholder="" required />
-
-
-      <label for="mobile">मोबाइल नंबर *</label>
-      <input id="mobile" name="mobile" type="tel" placeholder="10 digit" required />
-
-
-      <label for="district">जिला *</label>
-      <input id="district" name="district" type="text" placeholder="" required />
-
-
-      <label for="vidhansabha">विधानसभा</label>
-      <input id="vidhansabha" name="vidhansabha" type="text" placeholder=""  />
-
-
-      <label for="mandal">मंडल *</label>
-      <input id="mandal" name="mandal" type="text" placeholder="" required />
-
-
-      <label for="address">वार्ड/बूथ/पता *</label>
-      <input id="address" name="address" type="text" placeholder="" required />
-
-
-      <label for="reason">आने का कारण / विवरण *</label>
-      <input id="reason" name="reason" type="text" placeholder="" required />
-
-
-      <label for="coordinator_role">कोऑर्डिनेटर रोल *</label>
-      <input id="coordinator_role" name="coordinator_role" type="text" placeholder="" required />
-
-
-      <label for="area">क्षेत्र</label>
-      <input id="area" name="area" type="text" placeholder=""  />
-
-        <label for="selfie">सेल्फी (Photo) *</label>
-        <input id="selfie" name="selfie" type="file" accept="image/*" required />
-
-        <button id="submitBtn" class="btn" type="submit">Submit / Save</button>
-      </form>
-
-      <div class="note">Note: Public Link में URL में <b>?token=</b> होना जरूरी है।</div>
-
-      <div id="statusBox" class="status" style="display:none;">
-        <div id="statusText" class="small"></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="input-group"><input id="district" type="text" placeholder="District *" required class="input-field" /><i class="fa-solid fa-map-location-dot input-icon"></i></div>
+        <div class="input-group"><input id="vidhansabha" type="text" placeholder="Vidhansabha" class="input-field" /><i class="fa-solid fa-landmark input-icon"></i></div>
       </div>
 
-      <div class="footer">EventLens Political Module • 2026-01-30 05:02</div>
-    </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="input-group"><input id="mandal" type="text" placeholder="Mandal *" required class="input-field" /><i class="fa-solid fa-sitemap input-icon"></i></div>
+        <div class="input-group"><input id="address" type="text" placeholder="Address *" required class="input-field" /><i class="fa-solid fa-location-dot input-icon"></i></div>
+      </div>
+
+      <!-- Specific Fields -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="input-group"><input id="coordinator_role" type="text" placeholder="Role (e.g. Adhyaksh) *" required class="input-field" /><i class="fa-solid fa-briefcase input-icon"></i></div>
+        <div class="input-group"><input id="area" type="text" placeholder="Area" class="input-field" /><i class="fa-solid fa-map-pin input-icon"></i></div>
+      </div>
+
+      <div class="input-group">
+        <textarea id="reason" rows="2" placeholder="Description *" required class="input-field !pl-11 !pt-3"></textarea>
+        <i class="fa-solid fa-comment-dots input-icon !top-6 !transform-none"></i>
+      </div>
+
+      <div class="pt-3">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">Upload Photo *</label>
+        <div class="relative group cursor-pointer overflow-hidden rounded-2xl">
+          <input id="selfie" type="file" accept="image/*" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onchange="previewImage(this)" />
+          <div id="uploadBox" class="border-2 border-dashed border-slate-600 rounded-2xl p-6 flex flex-col items-center justify-center bg-slate-800/40 group-hover:border-orange-500 transition-all h-36">
+            <div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center mb-2"><i class="fa-solid fa-camera text-xl text-slate-300"></i></div>
+            <span class="text-sm font-medium text-slate-300">Tap to upload photo</span>
+          </div>
+          <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover rounded-2xl z-10" />
+          <button type="button" id="removePreview" class="hidden absolute top-2 right-2 z-30 bg-black/60 text-white rounded-full p-1.5 hover:bg-red-500 transition" onclick="clearImage(event)"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+
+      <button id="submitBtn" type="submit" class="w-full btn-gradient text-white font-bold py-4 rounded-xl shadow-lg mt-4 flex items-center justify-center gap-2 text-lg">
+        <span>Save Entry</span> <i class="fa-solid fa-check"></i>
+      </button>
+    </form>
+    <div id="statusBox" class="hidden mt-4 p-4 rounded-xl text-sm text-center font-medium border border-transparent"></div>
   </div>
 
 <script>
-(() => {
-  const API_ID = 'vxid0yoovj';
-  const REGION = 'ap-south-1';
-  const FORM_TYPE = 'coordinator_entry';
+    function previewImage(i){const f=i.files[0];if(f){const r=new FileReader();r.onload=(e)=>{document.getElementById('preview').src=e.target.result;document.getElementById('preview').classList.remove('hidden');document.getElementById('removePreview').classList.remove('hidden');document.getElementById('uploadBox').classList.add('hidden');};r.readAsDataURL(f);}}
+    function clearImage(e){e.preventDefault();e.stopPropagation();document.getElementById('selfie').value='';document.getElementById('preview').classList.add('hidden');document.getElementById('removePreview').classList.add('hidden');document.getElementById('uploadBox').classList.remove('hidden');}
 
-  const FIELD_IDS = ['name','mobile','district','vidhansabha','mandal','address','reason','coordinator_role','area'];
-  const REQUIRED_IDS = ['name','mobile','district','mandal','address','reason','coordinator_role'];
+    (() => {
+        const API_ID = 'vxid0yoovj'; const REGION = 'ap-south-1'; const FORM_TYPE = 'coordinator_entry';
+        const FIELD_IDS = ['name','mobile','district','vidhansabha','mandal','address','reason','coordinator_role','area'];
+        const $ = (id) => document.getElementById(id);
+        const qs = (n) => { try{ return (new URL(window.location.href)).searchParams.get(n)||''; }catch(e){ return ''; } };
+        const token = qs('token'); const cidParam = (qs('cid') || qs('collection_id') || qs('id')).trim(); const isPublicMode = () => !!token;
+        function showStatus(msg, isErr=false){ const b=$('statusBox'); b.classList.remove('hidden','bg-emerald-500/10','text-emerald-400','border-emerald-500/20','bg-red-500/10','text-red-400','border-red-500/20'); b.classList.add(isErr?'bg-red-500/10':'bg-emerald-500/10'); b.classList.add(isErr?'text-red-400':'text-emerald-400'); b.classList.add(isErr?'border-red-500/20':'border-emerald-500/20'); b.innerHTML=msg; }
+        function getJwt(){ return localStorage.getItem('idToken') || localStorage.getItem('accessToken') || ''; }
+        async function sha256Hex(file){ const buf = await file.arrayBuffer(); const hash = await crypto.subtle.digest('SHA-256', buf); return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+        async function apiCall(action, payload, auth=false){ const base = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod${isPublicMode()?'/political/public/forms':'/political/forms'}`; const headers = {'Content-Type':'application/json'}; if(auth){ const jwt = getJwt(); if(!jwt) throw new Error('Admin Login Token Missing'); headers['Authorization'] = 'Bearer '+jwt; } const res = await fetch(base, { method:'POST', headers, body:JSON.stringify({action, payload}) }); const data = await res.json(); if(!res.ok) throw new Error(data.message || data.error || 'API Error'); return data; }
+        async function uploadToS3(url, file){ const res = await fetch(url, { method:'PUT', headers:{'Content-Type':file.type}, body:file }); if(!res.ok) throw new Error('Photo Upload Failed'); }
 
-  const $ = (id) => document.getElementById(id);
-  const qs = (name) => {
-    try{ return (new URL(window.location.href)).searchParams.get(name) || ''; }catch(e){ return ''; }
-  };
-
-  const token = qs('token');
-  const cidParam = (qs('cid') || qs('collection_id') || qs('id')).trim();
-
-  const isPublicMode = () => !!token;
-
-  function showStatus(msg, isErr=false){
-    const box = $('statusBox'); const t = $('statusText');
-    box.style.display = '';
-    t.textContent = msg || '';
-    t.className = isErr ? 'err' : 'ok';
-  }
-
-  function scanJwtFromLocalStorage(){
-    let best = '';
-    try {
-      for(let i=0;i<localStorage.length;i++) {
-        const k = localStorage.key(i);
-        const v = (localStorage.getItem(k)||'').trim();
-        if(v.startsWith('eyJ') && v.split('.').length===3 && v.length > best.length) best = v;
-      }
-    } catch(e) {}
-    return best;
-  }
-
-  function getJwt(){
-    return localStorage.getItem('idToken')
-      || localStorage.getItem('accessToken')
-      || localStorage.getItem('cognito_id_token')
-      || localStorage.getItem('cognito_access_token')
-      || scanJwtFromLocalStorage()
-      || '';
-  }
-
-  async function sha256Hex(file){
-    const buf = await file.arrayBuffer();
-    const hash = await crypto.subtle.digest('SHA-256', buf);
-    return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-  }
-
-  function apiCandidates(){
-    const path = isPublicMode() ? '/political/public/forms' : '/political/forms';
-    return [
-      `https://${API_ID}.execute-api.${REGION}.amazonaws.com${path}`,
-      `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod${path}`
-    ];
-  }
-
-  async function apiCall(action, payload, opts={}){
-    const useAuth = !!opts.useAuth;
-    const bases = apiCandidates();
-    let lastErr = null;
-
-    for(const base of bases){
-      try {
-        const headers = {'Content-Type':'application/json'};
-        if(useAuth){
-          const jwt = getJwt();
-          if(!jwt) throw new Error('Login token नहीं मिला। Dashboard में login करके फिर try करो।');
-          headers['Authorization'] = 'Bearer ' + jwt;
-        }
-        const res = await fetch(base, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ action, payload })
+        $('f').addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            if($('mobile').value.length!==10){showStatus('❌ कृपया 10 अंकों का सही मोबाइल नंबर डालें।',true);return;}
+            const btn = $('submitBtn'); const ot = btn.innerHTML; btn.disabled=true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; showStatus('');
+            try {
+                const file = $('selfie').files[0]; if(!file) throw new Error('Selfie required');
+                const data = {}; for(const id of FIELD_IDS) data[id] = $(id).value.trim();
+                const sha = await sha256Hex(file); const fileName = `${crypto.randomUUID()}.jpg`;
+                let res;
+                if(isPublicMode()){ res = await apiCall('public_create_entry', { token, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }); }
+                else { if(!cidParam) throw new Error('Missing Collection ID'); res = await apiCall('create_entry', { collection_id: cidParam, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }, true); }
+                if(res.upload_url) await uploadToS3(res.upload_url, file);
+                const af = isPublicMode() ? 'public_finalize_entry' : 'finalize_entry';
+                await apiCall(af, { finalize_token: res.finalize_token, entry_id: res.entry_id }, !isPublicMode());
+                showStatus('✅ Saved Successfully!', false); $('f').reset(); clearImage(e);
+            } catch(err) { showStatus('❌ ' + err.message, true); } finally { btn.disabled=false; btn.innerHTML = ot; }
         });
-        const text = await res.text();
-        let data = null;
-        try{ data = JSON.parse(text); }catch(e){ data = { raw:text }; }
-
-        if(!res.ok){
-          const msg = (data && (data.message || data.error || data.raw)) ? (data.message || data.error || data.raw) : ('API error ' + res.status);
-          if(res.status === 404){ lastErr = new Error(msg); continue; }
-          throw new Error(msg);
-        }
-        return data;
-      } catch(e) {
-        lastErr = e;
-      }
-    }
-    throw (lastErr || new Error('API call failed'));
-  }
-
-  async function uploadToS3(url, file){
-    const res = await fetch(url, {
-      method:'PUT',
-      headers: {'Content-Type': file.type || 'application/octet-stream'},
-      body: file
-    });
-    if(!res.ok) throw new Error('Photo upload failed: ' + res.status);
-  }
-
-  function collectFormData(){
-    const out = {};
-    for(const id of FIELD_IDS){
-      const el = $(id);
-      if(el) out[id] = (el.value || '').trim();
-    }
-    return out;
-  }
-
-  function validate(data, file){
-    for(const id of REQUIRED_IDS){
-      if(!data[id]) return 'कृपया "' + id + '" भरें';
-    }
-    if(!file) return 'कृपया selfie select करें';
-    if(data.mobile && data.mobile.replace(/\D/g,'').length < 10) return 'मोबाइल नंबर सही नहीं लग रहा';
-    return '';
-  }
-
-  $('f').addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const btn = $('submitBtn');
-    btn.disabled = true;
-
-    try {
-      showStatus('Saving...', false);
-
-      const file = ($('selfie').files || [])[0];
-      const data = collectFormData();
-      const v = validate(data, file);
-      if(v) throw new Error(v);
-
-      const fileName = (crypto.randomUUID ? crypto.randomUUID() : ('file_' + Date.now())) + '.jpg';
-      const sha = await sha256Hex(file);
-
-      if(isPublicMode()) {
-        const createRes = await apiCall('public_create_entry', {
-          token,
-          form_type: FORM_TYPE,
-          file_kind: 'selfie',
-          file_name: fileName,
-          mime_type: file.type || 'image/jpeg',
-          sha256: sha,
-          payload: data
-        }, { useAuth:false });
-
-        if(!createRes?.upload_url || !createRes?.finalize_token || !createRes?.entry_id) throw new Error('Create entry response invalid');
-
-        await uploadToS3(createRes.upload_url, file);
-
-        await apiCall('public_finalize_entry', {
-          token,
-          entry_id: createRes.entry_id,
-          finalize_token: createRes.finalize_token
-        }, { useAuth:false });
-
-        showStatus('✅ Saved successfully', false);
-        btn.disabled = false;
-        return;
-      }
-
-      if(!cidParam) throw new Error('Admin Mode में URL में cid/collection_id missing है');
-
-      const createRes = await apiCall('create_entry', {
-        collection_id: cidParam,
-        form_type: FORM_TYPE,
-        file_kind: 'selfie',
-        file_name: fileName,
-        mime_type: file.type || 'image/jpeg',
-        sha256: sha,
-        payload: data
-      }, { useAuth:true });
-
-      if(!createRes?.upload_url || !createRes?.finalize_token || !createRes?.entry_id) throw new Error('Create entry response invalid');
-
-      await uploadToS3(createRes.upload_url, file);
-
-      await apiCall('finalize_entry', {
-        entry_id: createRes.entry_id,
-        finalize_token: createRes.finalize_token
-      }, { useAuth:true });
-
-      showStatus('✅ Saved successfully (Admin Mode)', false);
-      btn.disabled = false;
-    } catch(err) {
-      showStatus('❌ ' + (err?.message || String(err)), true);
-      btn.disabled = false;
-    }
-  });
-})();
+    })();
 </script>
 </body>
 </html>

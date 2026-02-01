@@ -126,22 +126,27 @@
             <textarea id="guests" rows="2" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Names of VIPs present..."></textarea>
         </div>
 
-        <!-- Photo Upload (REQUIRED) -->
+        <!-- Photo Upload (MULTIPLE) -->
         <div class="space-y-2">
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">Event Photo (Required)</label>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">Event Photos (Required)</label>
             <div class="relative group">
-                <input type="file" id="selfie" accept="image/*" class="hidden" onchange="previewImage(event)">
+                <!-- Added 'multiple' attribute -->
+                <input type="file" id="selfie" accept="image/*" multiple class="hidden" onchange="previewImage(event)">
                 <label for="selfie" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-orange-500 hover:bg-slate-800/50 transition-all group-hover:shadow-lg group-hover:shadow-orange-500/10 overflow-hidden" id="dropzone">
-                    <div id="preview-container" class="hidden w-full h-full relative">
-                        <img id="preview" class="w-full h-full object-cover">
-                        <button type="button" onclick="clearImage(event)" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center shadow-lg hover:scale-110 transition"><i class="fa-solid fa-times text-xs"></i></button>
+                    
+                    <!-- Modified Preview Container for Grid -->
+                    <div id="preview-container" class="hidden w-full h-full relative p-2 overflow-auto">
+                        <div id="preview-grid" class="grid grid-cols-3 gap-2"></div>
+                        <button type="button" onclick="clearImage(event)" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center shadow-lg hover:scale-110 transition z-10"><i class="fa-solid fa-times text-xs"></i></button>
                     </div>
+
                     <div id="upload-placeholder" class="text-center p-4">
                         <i class="fa-solid fa-camera text-2xl text-slate-400 mb-2 group-hover:text-orange-400 transition"></i>
-                        <p class="text-xs text-slate-400">Upload Photo (Required)</p>
+                        <p class="text-xs text-slate-400">Upload Photos (Max 5)</p>
                     </div>
                 </label>
             </div>
+            <p class="text-[10px] text-slate-500 text-right">* You can select multiple images</p>
         </div>
 
         <!-- Submit Button -->
@@ -412,21 +417,44 @@
     document.addEventListener('DOMContentLoaded', initLocations);
 
     // ==========================================
-    // IMAGE HANDLING
+    // IMAGE HANDLING (MULTIPLE)
     // ==========================================
     function previewImage(event) {
-        const file = event.target.files[0];
-        if(file){
-            const src = URL.createObjectURL(file);
-            $('preview').src = src; $('preview-container').classList.remove('hidden');
-            $('dropzone').classList.add('border-orange-500'); $('upload-placeholder').classList.add('hidden');
+        const files = event.target.files;
+        const grid = $('preview-grid');
+        
+        // Clear previous previews if needed (or append)
+        // For simplicity, we are clearing and showing new selection
+        grid.innerHTML = ''; 
+        
+        if(files.length > 0) {
+            $('preview-container').classList.remove('hidden');
+            $('upload-placeholder').classList.add('hidden');
+            $('dropzone').classList.add('border-orange-500');
+
+            Array.from(files).forEach((file, index) => {
+                // Limit to 5 images for display
+                if(index > 4) return; 
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = "relative aspect-square rounded-lg overflow-hidden border border-slate-600";
+                    div.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+                    grid.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
         }
     }
+
     function clearImage(e) {
         if(e) e.stopPropagation();
-        $('selfie').value = ''; $('preview').src = '';
+        $('selfie').value = ''; 
+        $('preview-grid').innerHTML = '';
         $('preview-container').classList.add('hidden');
-        $('dropzone').classList.remove('border-orange-500'); $('upload-placeholder').classList.remove('hidden');
+        $('dropzone').classList.remove('border-orange-500'); 
+        $('upload-placeholder').classList.remove('hidden');
     }
 
     async function sha256Hex(file) {
@@ -478,8 +506,10 @@
         showStatus('');
 
         try {
-            const file = $('selfie').files[0]; 
-            if(!file) throw new Error('Photo required'); // Photo is now MANDATORY
+            const fileInput = $('selfie');
+            const files = fileInput.files;
+            
+            if(!files || files.length === 0) throw new Error('At least one photo required'); 
 
             // Manual Level Validation
             const level = $('level').value;
@@ -499,18 +529,22 @@
                 }
             }
 
-            const sha = await sha256Hex(file); 
+            // NOTE: Current backend supports single file flow per entry.
+            // We will upload the FIRST selected file as the main entry image.
+            // (To support true multiple files, backend loop is needed)
+            const mainFile = files[0];
+            const sha = await sha256Hex(mainFile); 
             const fileName = `${crypto.randomUUID()}.jpg`;
 
             let res;
             if(isPublicMode()){ 
-                res = await apiCall('public_create_entry', { token, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }); 
+                res = await apiCall('public_create_entry', { token, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: mainFile.type, payload: data }); 
             } else { 
                 if(!cidParam) throw new Error('Missing Collection ID'); 
-                res = await apiCall('create_entry', { collection_id: cidParam, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }, true); 
+                res = await apiCall('create_entry', { collection_id: cidParam, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: mainFile.type, payload: data }, true); 
             }
 
-            if(res.upload_url) await uploadToS3(res.upload_url, file);
+            if(res.upload_url) await uploadToS3(res.upload_url, mainFile);
 
             const af = isPublicMode() ? 'public_finalize_entry' : 'finalize_entry';
             await apiCall(af, { finalize_token: res.finalize_token, entry_id: res.entry_id }, !isPublicMode());

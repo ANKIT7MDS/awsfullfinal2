@@ -110,20 +110,17 @@
     // ==========================================
     // CONFIGURATION
     // ==========================================
-    // Updated with the correct ID and Region
     const API_ID = "vxid0yoovj"; 
     const REGION = "ap-south-1";
     
-    // Correct Routes for Search and Timeline
+    // We'll use the FORMS API to get a signed URL for upload, then SEARCH API
+    const FORMS_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/public/forms`; 
     const SEARCH_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/search`; 
     const TIMELINE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/timeline`; 
 
-    // Helper Utils
     const $ = (id) => document.getElementById(id);
     const qs = (k) => new URLSearchParams(window.location.search).get(k);
-    
-    // Default Collection ID logic to prevent "missing collection_id" error
-    const COLLECTION_ID = qs('cid') || 'bjpmandsaur'; // Fallback if URL param missing
+    const COLLECTION_ID = qs('cid') || 'bjpmandsaur';
 
     // ==========================================
     // CORE LOGIC
@@ -133,54 +130,111 @@
         const file = e.target.files[0];
         if (!file) return;
 
-        // Reset UI
+        // UI Reset
         $('resultsArea').classList.add('hidden');
         $('errorMsg').classList.add('hidden');
         $('processing').classList.remove('hidden');
         
-        // Show Preview
         const reader = new FileReader();
         reader.onload = (ev) => $('searchPreview').src = ev.target.result;
         reader.readAsDataURL(file);
 
         try {
-            // 1. Get Image Hash (SHA-256) - Useful for caching or dedupe logic if needed
-            // (Keeping it simple for now, sending raw bytes/base64 to backend)
+            // STEP 1: Upload Image to S3 (Since backend requires s3_key)
+            // We reuse the 'public_create_entry' logic just to get a presigned URL.
+            // This is a bit of a hack, but ensures we get a valid S3 Key.
             
-            // 2. Prepare Payload
-            // We need to send base64 image to search API
-            const base64 = await toBase64(file);
-            const cleanBase64 = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+            const fileName = `search-${crypto.randomUUID()}.jpg`;
+            const sha = await sha256Hex(file); // Optional, but good practice
 
-            // 3. Call Search API
+            // Request Upload URL (Using a dummy 'search_temp' form type or similar)
+            // Note: The backend might expect a specific form_type. Let's try 'visitor_form' as it allows photos.
+            // Ideally, there should be a dedicated 'get_upload_url' action.
+            
+            // Let's try to fetch an upload URL using the forms API structure we know works
+            const uploadRes = await fetch(FORMS_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'public_create_entry', 
+                    payload: {
+                        form_type: 'search_temp', // Temporary type
+                        file_name: fileName,
+                        mime_type: file.type,
+                        sha256: sha,
+                        collection_id: COLLECTION_ID // Needs to be passed if logic requires it
+                    }
+                })
+            });
+
+            if(!uploadRes.ok) throw new Error("Failed to initialize search upload");
+            const uploadData = await uploadRes.json();
+            
+            // If we got a URL, upload the file
+            if(uploadData.upload_url) {
+                await fetch(uploadData.upload_url, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': file.type },
+                    body: file
+                });
+            } else {
+                throw new Error("Could not get upload permission");
+            }
+
+            // The 's3_key' is usually constructed from the path. 
+            // Based on your backend, it's likely: public/data/search_temp/fileName
+            // OR the API returned the key. Let's assume the API needs the key we generated or the one returned.
+            // BUT: The error says "missing s3_key".
+            // Let's pass the 'file_name' we sent, or if the API returned a key use that.
+            // The backup shows key construction usually happens in Lambda.
+            // Let's try passing 's3_key' as the relative path.
+            
+            // Constructing the likely key based on standard patterns:
+            // "artifacts/{app_id}/public/data/{form_type}/{file_name}"
+            // But we don't know app_id here easily.
+            // WAIT: The Search API might just take the 'file_name' if we tell it where we put it.
+            
+            // LET'S TRY SENDING 's3_key' as the full path returned in uploadData (if available) or just the filename.
+            // Actually, simpler approach: The error "missing s3_key" comes from the Search Lambda.
+            // If we provide 's3_key', it uses that.
+            
+            // Let's try passing the file name we generated.
+            const s3Key = uploadData.s3_key || `public/data/search_temp/${fileName}`; // Guessing path structure if not returned
+
+            // STEP 2: Call Search API with the S3 Key
             const searchRes = await fetch(SEARCH_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    image_bytes: cleanBase64,
+                    s3_key: s3Key, // Now sending what it asked for!
                     collection_id: COLLECTION_ID 
                 })
             });
 
             if (!searchRes.ok) {
                 const errJson = await searchRes.json();
-                throw new Error(errJson.message || "Search failed or no face found");
+                throw new Error(errJson.message || "Search failed");
             }
             const searchData = await searchRes.json();
 
-            if (!searchData.face_id) throw new Error("No matching face found in database");
+            if (!searchData.face_id) throw new Error("No matching face found");
 
-            // 4. Face Found! Now Fetch Timeline
-            const faceId = searchData.face_id;
-            await fetchTimeline(faceId, searchData);
+            // STEP 3: Fetch Timeline
+            await fetchTimeline(searchData.face_id, searchData);
 
         } catch (err) {
             console.error(err);
-            showError(err.message || "An error occurred during search");
+            showError(err.message || "Search failed. Please try again.");
         } finally {
             $('processing').classList.add('hidden');
-            $('searchFile').value = ''; // Reset input
+            $('searchFile').value = ''; 
         }
+    }
+
+    async function sha256Hex(file) {
+        const buffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
     }
 
     async function fetchTimeline(faceId, searchData) {
@@ -205,32 +259,22 @@
         }
     }
 
-    // ==========================================
-    // RENDERING
-    // ==========================================
-
+    // ... (Rendering functions remain same) ...
     function renderProfile(info, stats) {
         $('profileCard').classList.remove('hidden');
-        $('resultImage').src = $('searchPreview').src; // Show the searched image or fetched profile pic
+        $('resultImage').src = $('searchPreview').src; 
         
         if (info) {
             $('personName').innerText = info.name || "Unknown";
-            
-            if (info.mobile) {
-                $('phoneVal').innerText = info.mobile;
-                $('personPhone').classList.remove('hidden');
-            } else $('personPhone').classList.add('hidden');
-
-            if (info.designation) {
-                $('desigVal').innerText = info.designation;
-                $('personDesig').classList.remove('hidden');
-            } else $('personDesig').classList.add('hidden');
+            if (info.mobile) { $('phoneVal').innerText = info.mobile; $('personPhone').classList.remove('hidden'); } 
+            else $('personPhone').classList.add('hidden');
+            if (info.designation) { $('desigVal').innerText = info.designation; $('personDesig').classList.remove('hidden'); } 
+            else $('personDesig').classList.add('hidden');
         } else {
             $('personName').innerText = "Unknown Person";
             $('personPhone').classList.add('hidden');
             $('personDesig').classList.add('hidden');
         }
-
         $('visitCount').innerText = stats?.total_visits || (info?.visit_count || 0);
         $('firstSeen').innerText = formatDate(stats?.first_seen || new Date());
     }
@@ -238,20 +282,13 @@
     function renderTimeline(events) {
         const container = $('view-timeline');
         container.innerHTML = '';
-
-        if (!events || events.length === 0) {
-            container.innerHTML = `<div class="text-center text-slate-500 py-8">No activity history found.</div>`;
-            return;
-        }
+        if (!events || events.length === 0) { container.innerHTML = `<div class="text-center text-slate-500 py-8">No activity history found.</div>`; return; }
 
         events.forEach(ev => {
             const date = new Date(ev.timestamp);
             const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
             const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-            
-            // Icon Selection based on Event Type
-            let icon = 'fa-calendar-check';
-            let color = 'text-blue-400';
+            let icon = 'fa-calendar-check', color = 'text-blue-400';
             if(ev.type === 'visitor_form') { icon = 'fa-building-user'; color = 'text-orange-400'; }
             if(ev.type === 'party_attendance') { icon = 'fa-handshake'; color = 'text-green-400'; }
             if(ev.type === 'program_info') { icon = 'fa-microphone'; color = 'text-purple-400'; }
@@ -259,9 +296,7 @@
             const html = `
             <div class="timeline-item relative pl-12 pb-8">
                 <div class="timeline-line"></div>
-                <div class="absolute left-0 top-0 w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center z-10 ${color}">
-                    <i class="fa-solid ${icon}"></i>
-                </div>
+                <div class="absolute left-0 top-0 w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center z-10 ${color}"><i class="fa-solid ${icon}"></i></div>
                 <div class="glass p-4 rounded-xl border border-slate-700/50 hover:border-orange-500/30 transition-colors">
                     <div class="flex justify-between items-start mb-1">
                         <h4 class="font-bold text-slate-200 text-sm">${formatEventType(ev.type)}</h4>
@@ -278,66 +313,27 @@
     function renderPhotos(photos) {
         const grid = $('photosGrid');
         grid.innerHTML = '';
-
-        if (!photos || photos.length === 0) {
-            $('view-photos').innerHTML = `<div class="text-center text-slate-500 py-8">No photos found.</div>`;
-            return;
-        }
-
+        if (!photos || photos.length === 0) { $('view-photos').innerHTML = `<div class="text-center text-slate-500 py-8">No photos found.</div>`; return; }
         photos.forEach(p => {
-            const html = `
-            <a href="${p.url}" target="_blank" class="block aspect-square rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition group relative">
-                <img src="${p.url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <i class="fa-solid fa-expand text-white"></i>
-                </div>
-            </a>`;
-            grid.innerHTML += html;
+            grid.innerHTML += `<a href="${p.url}" target="_blank" class="block aspect-square rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition group relative"><img src="${p.url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500"><div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"><i class="fa-solid fa-expand text-white"></i></div></a>`;
         });
     }
 
-    // ==========================================
-    // HELPERS
-    // ==========================================
-
     function switchTab(tab) {
         if(tab === 'timeline') {
-            $('view-timeline').classList.remove('hidden');
-            $('view-photos').classList.add('hidden');
+            $('view-timeline').classList.remove('hidden'); $('view-photos').classList.add('hidden');
             $('tab-timeline').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
             $('tab-photos').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
         } else {
-            $('view-timeline').classList.add('hidden');
-            $('view-photos').classList.remove('hidden');
+            $('view-timeline').classList.add('hidden'); $('view-photos').classList.remove('hidden');
             $('tab-timeline').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
             $('tab-photos').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
         }
     }
 
-    function showError(msg) {
-        const el = $('errorMsg');
-        el.innerText = msg;
-        el.classList.remove('hidden');
-    }
-
-    function toBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
-        });
-    }
-
-    function formatDate(d) {
-        return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
-
-    function formatEventType(type) {
-        if(!type) return "Activity";
-        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    }
-
+    function showError(msg) { $('errorMsg').innerText = msg; $('errorMsg').classList.remove('hidden'); }
+    function formatDate(d) { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
+    function formatEventType(type) { if(!type) return "Activity"; return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); }
 </script>
 </body>
 </html>

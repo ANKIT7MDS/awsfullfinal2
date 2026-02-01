@@ -10,172 +10,329 @@
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' } } } } }</script>
   <style>
     body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 40%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 40%), #020617; color: #e2e8f0; }
-    .glass { background: rgba(30,41,59,0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
-    .animate-spin-slow { animation: spin 2s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .glass { background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); }
+    .search-glow { box-shadow: 0 0 40px -10px rgba(249, 115, 22, 0.3); }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .timeline-line::before { content: ''; position: absolute; left: 23px; top: 30px; bottom: -20px; width: 2px; background: #334155; z-index: 0; }
+    .timeline-item:last-child .timeline-line::before { display: none; }
   </style>
 </head>
-<body class="min-h-screen">
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="glass rounded-2xl p-6 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl border-t-2 border-orange-500/50">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-400"><i class="fa-solid fa-magnifying-glass-chart text-xl"></i></div>
-        <div><h1 class="text-2xl font-extrabold text-white">Karyakarta Search</h1><p class="text-slate-400 text-sm">EventLens Political Module</p></div>
-      </div>
-      <div class="text-right hidden md:block"><div class="text-xs font-mono text-slate-500" id="tokenDisplay">Token: Checking...</div></div>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+  <!-- SEARCH HEADER -->
+  <div class="w-full max-w-xl mt-8 mb-6 text-center">
+    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-500 mb-4 ring-1 ring-orange-500/20">
+      <i class="fa-solid fa-face-viewfinder text-2xl"></i>
     </div>
+    <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">Search Karyakarta</h1>
+    <p class="text-slate-400 text-sm mt-2">Upload a photo to find timeline & details</p>
+  </div>
 
-    <div class="grid md:grid-cols-12 gap-6">
-      <!-- Sidebar -->
-      <div class="md:col-span-4 space-y-6">
-        <div class="glass rounded-2xl p-6 shadow-lg border-l-4 border-orange-500">
-          <h2 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-camera"></i> 1. Search by Selfie</h2>
-          <div class="relative group cursor-pointer mb-4">
-            <input id="selfieInput" accept="image/*" type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this)" />
-            <div id="uploadBox" class="h-48 border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center bg-slate-800/50 group-hover:border-orange-500 transition-colors">
-              <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i><span class="text-sm text-slate-400">Tap to upload image</span>
-            </div>
-            <img id="preview" class="hidden h-48 w-full object-cover rounded-xl border border-slate-600" />
-          </div>
-          <button id="searchBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold shadow-lg shadow-orange-500/25 transition-all active:scale-95 flex items-center justify-center gap-2">
-            <span>Search Database</span> <i class="fa-solid fa-search"></i>
-          </button>
-          <div id="statusBox" class="hidden mt-4 p-3 rounded-lg text-sm text-center"></div>
+  <!-- SEARCH BOX -->
+  <div class="w-full max-w-xl glass rounded-2xl p-1 search-glow transition-all duration-300 hover:border-orange-500/30">
+    <div class="relative group cursor-pointer">
+      <input type="file" id="searchFile" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" onchange="handleSearch(event)" />
+      <div id="dropzone" class="flex items-center gap-4 p-4 rounded-xl bg-slate-900/50 group-hover:bg-slate-800/80 transition-colors">
+        <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-orange-400 transition-colors">
+          <i class="fa-solid fa-camera text-xl"></i>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-sm font-medium text-white group-hover:text-orange-200">Tap to Search Face</h3>
+          <p class="text-xs text-slate-500">Supports JPG, PNG (Max 5MB)</p>
+        </div>
+        <div class="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center">
+          <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
         </div>
       </div>
-
-      <!-- Results -->
-      <div class="md:col-span-8">
-        <div class="glass rounded-2xl p-6 shadow-lg min-h-[400px]">
-          <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
-             <h2 class="font-bold text-xl text-white flex items-center gap-2"><i class="fa-solid fa-timeline"></i> Result Timeline</h2>
-             <span id="matchScore" class="text-sm font-mono text-slate-400"></span>
-          </div>
-          <div id="timeline" class="space-y-4">
-             <div class="text-center py-10 text-slate-500"><i class="fa-regular fa-image text-4xl mb-3 opacity-50"></i><p>Upload a selfie to view history.</p></div>
-          </div>
-          <div id="photosSection" class="hidden mt-8 pt-6 border-t border-slate-700">
-             <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fa-regular fa-images"></i> Related Photos</h3>
-             <div id="photosGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
-          </div>
-        </div>
+      
+      <!-- Preview & Loader Overlay -->
+      <div id="processing" class="absolute inset-0 bg-slate-900 z-30 rounded-xl flex items-center justify-center gap-3 hidden">
+        <img id="searchPreview" class="w-10 h-10 rounded-full object-cover border-2 border-orange-500">
+        <span class="text-sm text-orange-400 font-medium animate-pulse">Searching Database...</span>
       </div>
     </div>
   </div>
 
+  <!-- RESULTS CONTAINER -->
+  <div id="resultsArea" class="w-full max-w-xl mt-8 hidden">
+    
+    <!-- PERSON PROFILE CARD -->
+    <div id="profileCard" class="glass rounded-2xl p-6 mb-6 relative overflow-hidden hidden">
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500"></div>
+      <div class="flex gap-5 items-start">
+        <div class="relative">
+          <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-slate-700 shadow-xl">
+            <img id="resultImage" src="" class="w-full h-full object-cover">
+          </div>
+          <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center border border-slate-700 text-orange-500 text-xs font-bold">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </div>
+        <div class="flex-1">
+          <h2 id="personName" class="text-xl font-bold text-white">Unknown Person</h2>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <span id="personPhone" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden"><i class="fa-solid fa-phone mr-1.5 text-orange-500"></i> <span id="phoneVal"></span></span>
+            <span id="personDesig" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden"><i class="fa-solid fa-id-badge mr-1.5 text-blue-400"></i> <span id="desigVal"></span></span>
+          </div>
+          <div class="mt-3 text-xs text-slate-500 flex gap-4">
+            <span><i class="fa-regular fa-clock mr-1"></i> First Seen: <span id="firstSeen" class="text-slate-300">--</span></span>
+            <span><i class="fa-solid fa-history mr-1"></i> Visits: <span id="visitCount" class="text-slate-300">0</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="flex gap-4 border-b border-slate-800 mb-6">
+      <button onclick="switchTab('timeline')" id="tab-timeline" class="pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors">Activity Timeline</button>
+      <button onclick="switchTab('photos')" id="tab-photos" class="pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors">All Photos</button>
+    </div>
+
+    <!-- TIMELINE VIEW -->
+    <div id="view-timeline" class="space-y-0">
+      <!-- Items injected via JS -->
+    </div>
+
+    <!-- PHOTOS VIEW -->
+    <div id="view-photos" class="hidden">
+      <div id="photosGrid" class="grid grid-cols-3 gap-2">
+        <!-- Photos injected via JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <div id="errorMsg" class="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center hidden"></div>
+
 <script>
-  const API_ID = 'vxid0yoovj'; const REGION = 'ap-south-1'; const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
-  let lastFaceId = null; const qs = (n) => new URL(window.location.href).searchParams.get(n); const token = qs('token');
-  document.getElementById('tokenDisplay').innerText = token ? `Token: ${token.substring(0,8)}...` : 'Admin Mode';
+    // ==========================================
+    // CONFIGURATION
+    // ==========================================
+    // Updated with the correct ID and Region
+    const API_ID = "vxid0yoovj"; 
+    const REGION = "ap-south-1";
+    
+    // Correct Routes for Search and Timeline
+    const SEARCH_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/search`; 
+    const TIMELINE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/timeline`; 
 
-  function previewImage(input) {
-    const f = input.files[0]; if(f){ const r = new FileReader(); r.onload = (e) => { document.getElementById('preview').src = e.target.result; document.getElementById('preview').classList.remove('hidden'); document.getElementById('uploadBox').classList.add('hidden'); }; r.readAsDataURL(f); }
-  }
+    // Helper Utils
+    const $ = (id) => document.getElementById(id);
+    const qs = (k) => new URLSearchParams(window.location.search).get(k);
+    const COLLECTION_ID = qs('cid');
 
-  const showStatus = (msg, err=false) => {
-    const b=document.getElementById('statusBox'); b.classList.remove('hidden', 'bg-emerald-500/10', 'text-emerald-400', 'bg-red-500/10', 'text-red-400');
-    b.classList.add(err ? 'bg-red-500/10' : 'bg-emerald-500/10'); b.classList.add(err ? 'text-red-400' : 'text-emerald-400'); b.innerHTML = msg;
-  };
+    // ==========================================
+    // CORE LOGIC
+    // ==========================================
 
-  async function apiCall(action, payload) {
-    const url = `${BASE_URL}/political${token ? '/public/search' : '/search'}`; const headers = { 'Content-Type': 'application/json' };
-    if(!token) { const jwt = localStorage.getItem('idToken') || localStorage.getItem('accessToken'); if(jwt) headers['Authorization'] = 'Bearer ' + jwt; }
-    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ action, payload }) });
-    const data = await res.json(); if(!res.ok) throw new Error(data.message || data.error || 'API Error'); return data;
-  }
-  async function uploadToS3(url, file) { const r = await fetch(url, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file }); if(!r.ok) throw new Error("Upload Failed"); }
+    async function handleSearch(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-  document.getElementById("searchBtn").onclick = async () => {
-    const file = document.getElementById("selfieInput").files[0];
-    if(!token && !localStorage.getItem('idToken')) return showStatus("Authentication Missing", true);
-    if(!file) return showStatus("Select a selfie first", true);
-    const btn = document.getElementById("searchBtn"); const oldText = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Searching...'; showStatus('');
-    document.getElementById("timeline").innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-orange-500"></i></div>';
+        // Reset UI
+        $('resultsArea').classList.add('hidden');
+        $('errorMsg').classList.add('hidden');
+        $('processing').classList.remove('hidden');
+        
+        // Show Preview
+        const reader = new FileReader();
+        reader.onload = (ev) => $('searchPreview').src = ev.target.result;
+        reader.readAsDataURL(file);
 
-    try {
-      const init = await apiCall("init_search", { token, mime_type: file.type }); await uploadToS3(init.upload_url, file);
-      const res = await apiCall("run_search", { token, search_id: init.search_id }); lastFaceId = res.face_id;
-      
-      document.getElementById("matchScore").innerHTML = res.similarity > 0 ? `<span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">Match: ${Math.round(res.similarity)}%</span>` : `<span class="bg-red-500/20 text-red-400 px-2 py-1 rounded">No Match Found</span>`;
-      
-      const tl = document.getElementById("timeline");
-      if(res.timeline && res.timeline.length > 0) {
-          tl.innerHTML = res.timeline.map((t) => {
-            const d = t.data || {};
-            let extraInfo = '';
+        try {
+            // 1. Get Image Hash (SHA-256) - Useful for caching or dedupe logic if needed
+            // (Keeping it simple for now, sending raw bytes/base64 to backend)
             
-            // Logic to show detailed info based on form type
-            if(t.form_type === 'program_info') {
-               extraInfo = `
-                 <div class="mt-2 text-xs bg-slate-800/50 p-2 rounded border border-slate-700">
-                   <div class="font-semibold text-orange-300 mb-1">${d.program_title || 'Untitled Program'}</div>
-                   <div class="grid grid-cols-2 gap-1 text-slate-400">
-                     <div><i class="fa-solid fa-map-pin mr-1"></i>${d.program_location || '-'}</div>
-                     <div><i class="fa-solid fa-calendar mr-1"></i>${d.program_date || '-'}</div>
-                     <div><i class="fa-solid fa-users mr-1"></i>${d.expected_people || '-'}</div>
-                     <div><i class="fa-solid fa-clock mr-1"></i>${d.program_time || '-'}</div>
-                   </div>
-                 </div>`;
-            } else if (t.form_type === 'president_tour') {
-               extraInfo = `
-                 <div class="mt-2 text-xs bg-slate-800/50 p-2 rounded border border-slate-700">
-                   <div class="font-semibold text-teal-300 mb-1">Tour: ${d.tour_place || 'Unknown'}</div>
-                   <div class="text-slate-400"><i class="fa-solid fa-user-tie mr-1"></i>VIP: ${d.vip_person || '-'}</div>
-                   <div class="text-slate-400"><i class="fa-solid fa-calendar mr-1"></i>Date: ${d.tour_date || '-'}</div>
-                 </div>`;
-            } else if (t.form_type === 'party_attendance') {
-               extraInfo = `
-                 <div class="mt-2 text-xs bg-slate-800/50 p-2 rounded border border-slate-700">
-                   <div class="font-semibold text-blue-300 mb-1">Meeting: ${d.program_name || 'Meeting'}</div>
-                   <div class="text-slate-400"><i class="fa-solid fa-users mr-1"></i>Count: ${d.attendance_count || '-'}</div>
-                   <div class="text-slate-400"><i class="fa-solid fa-calendar mr-1"></i>Date: ${d.program_date || '-'}</div>
-                 </div>`;
-            } else if (t.form_type === 'coordinator_entry') {
-               extraInfo = `
-                 <div class="mt-2 text-xs bg-slate-800/50 p-2 rounded border border-slate-700">
-                   <div class="text-purple-300 font-semibold">Role: ${d.coordinator_role || '-'}</div>
-                   <div class="text-slate-400">Area: ${d.area || '-'}</div>
-                 </div>`;
-            } else if (t.form_type === 'mandal_reporting') {
-               extraInfo = `
-                 <div class="mt-2 text-xs bg-slate-800/50 p-2 rounded border border-slate-700">
-                   <div class="text-pink-300 font-semibold">Type: ${d.report_type || '-'}</div>
-                   <div class="text-slate-400">Issues: ${d.issues || '-'}</div>
-                   <div class="text-slate-400">Workers: ${d.workers_count || '-'}</div>
-                 </div>`;
-            }
+            // 2. Prepare Payload
+            // We need to send base64 image to search API
+            const base64 = await toBase64(file);
+            const cleanBase64 = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
-            return `
-            <div class="relative pl-8 pb-6 border-l border-slate-700 last:border-0 last:pb-0">
-                <div class="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-orange-500 ring-4 ring-slate-900"></div>
-                <div class="glass p-4 rounded-xl border border-slate-700 hover:border-orange-500/50 transition-colors">
+            // 3. Call Search API
+            const searchRes = await fetch(SEARCH_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    image_bytes: cleanBase64,
+                    collection_id: COLLECTION_ID 
+                })
+            });
+
+            if (!searchRes.ok) throw new Error("Search failed or no face found");
+            const searchData = await searchRes.json();
+
+            if (!searchData.face_id) throw new Error("No matching face found in database");
+
+            // 4. Face Found! Now Fetch Timeline
+            const faceId = searchData.face_id;
+            await fetchTimeline(faceId, searchData);
+
+        } catch (err) {
+            console.error(err);
+            showError(err.message || "An error occurred during search");
+        } finally {
+            $('processing').classList.add('hidden');
+            $('searchFile').value = ''; // Reset input
+        }
+    }
+
+    async function fetchTimeline(faceId, searchData) {
+        try {
+            const res = await fetch(TIMELINE_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ face_id: faceId })
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch timeline");
+            const data = await res.json();
+
+            renderProfile(data.person_info || searchData.person_info, data.stats);
+            renderTimeline(data.events);
+            renderPhotos(data.photos);
+
+            $('resultsArea').classList.remove('hidden');
+
+        } catch (err) {
+            showError("Found face, but could not load history.");
+        }
+    }
+
+    // ==========================================
+    // RENDERING
+    // ==========================================
+
+    function renderProfile(info, stats) {
+        $('profileCard').classList.remove('hidden');
+        $('resultImage').src = $('searchPreview').src; // Show the searched image or fetched profile pic
+        
+        if (info) {
+            $('personName').innerText = info.name || "Unknown";
+            
+            if (info.mobile) {
+                $('phoneVal').innerText = info.mobile;
+                $('personPhone').classList.remove('hidden');
+            } else $('personPhone').classList.add('hidden');
+
+            if (info.designation) {
+                $('desigVal').innerText = info.designation;
+                $('personDesig').classList.remove('hidden');
+            } else $('personDesig').classList.add('hidden');
+        } else {
+            $('personName').innerText = "Unknown Person";
+            $('personPhone').classList.add('hidden');
+            $('personDesig').classList.add('hidden');
+        }
+
+        $('visitCount').innerText = stats?.total_visits || (info?.visit_count || 0);
+        $('firstSeen').innerText = formatDate(stats?.first_seen || new Date());
+    }
+
+    function renderTimeline(events) {
+        const container = $('view-timeline');
+        container.innerHTML = '';
+
+        if (!events || events.length === 0) {
+            container.innerHTML = `<div class="text-center text-slate-500 py-8">No activity history found.</div>`;
+            return;
+        }
+
+        events.forEach(ev => {
+            const date = new Date(ev.timestamp);
+            const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+            const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            
+            // Icon Selection based on Event Type
+            let icon = 'fa-calendar-check';
+            let color = 'text-blue-400';
+            if(ev.type === 'visitor_form') { icon = 'fa-building-user'; color = 'text-orange-400'; }
+            if(ev.type === 'party_attendance') { icon = 'fa-handshake'; color = 'text-green-400'; }
+            if(ev.type === 'program_info') { icon = 'fa-microphone'; color = 'text-purple-400'; }
+
+            const html = `
+            <div class="timeline-item relative pl-12 pb-8">
+                <div class="timeline-line"></div>
+                <div class="absolute left-0 top-0 w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center z-10 ${color}">
+                    <i class="fa-solid ${icon}"></i>
+                </div>
+                <div class="glass p-4 rounded-xl border border-slate-700/50 hover:border-orange-500/30 transition-colors">
                     <div class="flex justify-between items-start mb-1">
-                        <span class="text-xs font-mono text-orange-400">${t.created_at_iso ? new Date(t.created_at_iso).toLocaleDateString() : 'Date Unknown'}</span>
-                        <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300 capitalize">${t.form_type?.replace(/_/g, ' ') || 'Entry'}</span>
+                        <h4 class="font-bold text-slate-200 text-sm">${formatEventType(ev.type)}</h4>
+                        <span class="text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full">${dateStr} • ${timeStr}</span>
                     </div>
-                    <div class="font-bold text-white text-lg">${t.name || 'Unknown'}</div>
-                    <div class="text-slate-400 text-sm mt-1">${t.reason || (d.program_title ? d.program_title : 'No description provided')}</div>
-                    
-                    ${extraInfo}
-
-                    <div class="text-xs text-slate-500 mt-2 flex gap-3">
-                       ${t.district ? `<span><i class="fa-solid fa-map-location-dot"></i> ${t.district}</span>` : ''} 
-                       ${t.mandal ? `<span><i class="fa-solid fa-sitemap"></i> ${t.mandal}</span>` : ''}
-                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">${ev.description || ev.location || 'Activity recorded'}</p>
+                    ${ev.image_url ? `<div class="mt-3 rounded-lg overflow-hidden h-24 w-32 border border-slate-700"><img src="${ev.image_url}" class="w-full h-full object-cover"></div>` : ''}
                 </div>
             </div>`;
-          }).join('');
-      } else { tl.innerHTML = `<div class="p-4 bg-yellow-500/10 text-yellow-500 rounded-xl text-center">No history found for this face.</div>`; }
+            container.innerHTML += html;
+        });
+    }
 
-      const pg = document.getElementById("photosGrid");
-      if(res.photo_urls && res.photo_urls.length > 0) {
-        document.getElementById("photosSection").classList.remove('hidden');
-        pg.innerHTML = res.photo_urls.map(u => `<a href="${u}" target="_blank" class="block aspect-square overflow-hidden rounded-lg border border-slate-700 hover:border-orange-500 transition"><img src="${u}" class="w-full h-full object-cover transition hover:scale-110"></a>`).join('');
-      } else { document.getElementById("photosSection").classList.add('hidden'); }
+    function renderPhotos(photos) {
+        const grid = $('photosGrid');
+        grid.innerHTML = '';
 
-      showStatus("✅ Search Complete", false);
-    } catch(e) { showStatus(e.message, true); document.getElementById("timeline").innerHTML = `<div class="text-center text-red-400">Error loading data.</div>`; } finally { btn.disabled = false; btn.innerHTML = oldText; }
-  };
+        if (!photos || photos.length === 0) {
+            $('view-photos').innerHTML = `<div class="text-center text-slate-500 py-8">No photos found.</div>`;
+            return;
+        }
+
+        photos.forEach(p => {
+            const html = `
+            <a href="${p.url}" target="_blank" class="block aspect-square rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition group relative">
+                <img src="${p.url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <i class="fa-solid fa-expand text-white"></i>
+                </div>
+            </a>`;
+            grid.innerHTML += html;
+        });
+    }
+
+    // ==========================================
+    // HELPERS
+    // ==========================================
+
+    function switchTab(tab) {
+        if(tab === 'timeline') {
+            $('view-timeline').classList.remove('hidden');
+            $('view-photos').classList.add('hidden');
+            $('tab-timeline').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
+            $('tab-photos').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
+        } else {
+            $('view-timeline').classList.add('hidden');
+            $('view-photos').classList.remove('hidden');
+            $('tab-timeline').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
+            $('tab-photos').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
+        }
+    }
+
+    function showError(msg) {
+        const el = $('errorMsg');
+        el.innerText = msg;
+        el.classList.remove('hidden');
+    }
+
+    function toBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    function formatDate(d) {
+        return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function formatEventType(type) {
+        if(!type) return "Activity";
+        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
 </script>
 </body>
 </html>

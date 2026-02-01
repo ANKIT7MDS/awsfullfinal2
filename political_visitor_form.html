@@ -163,19 +163,18 @@
     // CONFIGURATION - API & BRANDING
     // ==========================================
     
-    // Updated as per user confirmation
+    // Using the verified ID from your working code
     const API_ID = "vxid0yoovj"; 
     const AWS_REGION = "ap-south-1";
     
-    // BASE URL
-    const BASE_API_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
+    const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
 
-    // ROUTES Logic (Corrected)
-    // Private: /political/forms
-    // Public:  /public/forms (Note: if your original file had /political/public/forms, please edit the line below)
-    // Timeline: /political/timeline
+    // ROUTES Logic matched to your WORKING CODE:
+    // Public Form:  .../prod/political/public/forms
+    // Private Form: .../prod/political/forms
+    // Timeline:     .../prod/political/timeline
 
-    const TIMELINE_API = `${BASE_API_URL}/political/timeline`; 
+    const TIMELINE_API = `${BASE_URL}/political/timeline`; 
 
     // This object can be updated via Admin Console in future (stored in S3 or DB)
     const BRANDING_CONFIG = {
@@ -304,9 +303,11 @@
     const FIELD_IDS = ['mobile','name','designation','district','vidhansabha','mandal','address','reason']; 
     const FORM_TYPE = 'visitor_form';
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const cidParam = urlParams.get('cid');
+    // Better query param parsing
+    const qs = (n) => { try{ return (new URL(window.location.href)).searchParams.get(n)||''; }catch(e){ return ''; } };
+    const token = qs('token'); 
+    const cidParam = (qs('cid') || qs('collection_id') || qs('id')).trim(); 
+    
     function isPublicMode() { return !!token; }
 
     function showStatus(msg, isError) {
@@ -436,7 +437,6 @@
             }
         } catch(e) {
             console.log("User lookup failed or new user", e);
-            // Optional: If API fails completely, don't show success msg
         } finally {
             $('mobile-loader').classList.add('hidden');
         }
@@ -473,12 +473,9 @@
     // ==========================================
     async function apiCall(action, payload, useAuth=false) {
         try {
-            // DYNAMIC ROUTE SELECTION
-            // If useAuth is true (Private mode), use /political/forms
-            // If useAuth is false (Public mode), use /public/forms (Matches Route List provided)
-            
-            const endpoint = isPublicMode() ? '/public/forms' : '/political/forms';
-            const url = `${BASE_API_URL}${endpoint}`;
+            // EXACT PATH LOGIC FROM YOUR WORKING CODE
+            const path = isPublicMode() ? '/political/public/forms' : '/political/forms';
+            const url = `${BASE_URL}${path}`;
 
             const res = await fetch(url, {
                 method: 'POST',

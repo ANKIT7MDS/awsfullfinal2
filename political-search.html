@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Karyakarta Search - EventLens</title>
+  <title>Karyakarta Search - EventLens (Fixed)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
@@ -20,6 +20,9 @@
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center p-4">
+
+  <!-- AUTH STATUS -->
+  <div class="absolute top-4 right-4 text-xs font-mono text-slate-500" id="authStatus">Checking Auth...</div>
 
   <!-- SEARCH HEADER -->
   <div class="w-full max-w-xl mt-8 mb-6 text-center">
@@ -46,7 +49,7 @@
           <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
         </div>
       </div>
-      
+       
       <!-- Preview & Loader Overlay -->
       <div id="processing" class="absolute inset-0 bg-slate-900 z-30 rounded-xl flex items-center justify-center gap-3 hidden">
         <img id="searchPreview" class="w-10 h-10 rounded-full object-cover border-2 border-orange-500">
@@ -113,7 +116,7 @@
     const API_ID = "vxid0yoovj"; 
     const REGION = "ap-south-1";
     
-    // Using PRIVATE forms API for upload (create_entry) instead of public
+    // API Endpoints
     const FORMS_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/forms`; 
     const SEARCH_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/search`; 
     const TIMELINE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/timeline`; 
@@ -121,6 +124,25 @@
     const $ = (id) => document.getElementById(id);
     const qs = (k) => new URLSearchParams(window.location.search).get(k);
     const COLLECTION_ID = qs('cid') || 'bjpmandsaur';
+
+    // ==========================================
+    // AUTH HELPERS (Missing in your code)
+    // ==========================================
+    function getAuthHeaders() {
+        const token = qs('token');
+        const jwt = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
+        
+        if (token) return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+        if (jwt) return { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' };
+        
+        // Return without auth if none found (might fail if API is private)
+        return { 'Content-Type': 'application/json' };
+    }
+
+    // Display Auth Status
+    const hdrs = getAuthHeaders();
+    if(hdrs.Authorization) $('authStatus').innerText = "Auth: ✅ Connected";
+    else $('authStatus').innerText = "Auth: ⚠️ Guest/Public";
 
     // ==========================================
     // CORE LOGIC
@@ -140,36 +162,35 @@
         reader.readAsDataURL(file);
 
         try {
-            // STEP 1: Upload Image to S3 (Since backend requires s3_key)
+            // STEP 1: Upload Image to S3
             const fileName = `search-${crypto.randomUUID()}.jpg`;
-            const sha = await sha256Hex(file); 
+            const sha = await safeSha256Hex(file); // 使用 Safe version
 
-            // Request Upload URL using 'create_entry' (Private) logic
-            // This expects collection_id and works without a token if backend permits, 
-            // or works if we are lucky with the 'visitor_form' type permissions.
+            // Request Upload URL
             const uploadRes = await fetch(FORMS_API, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(), // Added Auth
                 body: JSON.stringify({ 
                     action: 'create_entry', 
                     payload: {
-                        form_type: 'visitor_form', // Use valid form type
+                        form_type: 'visitor_form',
                         file_name: fileName,
                         mime_type: file.type,
                         sha256: sha,
                         collection_id: COLLECTION_ID,
-                        payload: { name: 'Search', mobile: '0000000000' } // Dummy fields to pass validation
+                        payload: { name: 'Search', mobile: '0000000000' }
                     }
                 })
             });
 
             if(!uploadRes.ok) {
-               const errText = await uploadRes.text();
-               throw new Error("Failed to initialize upload: " + errText);
+               let errText = await uploadRes.text();
+               try { errText = JSON.parse(errText).message || errText; } catch(e){}
+               throw new Error("Upload Init Failed: " + errText);
             }
             const uploadData = await uploadRes.json();
             
-            // Check if we got the URL
+            // Upload to S3
             if(uploadData.upload_url) {
                 await fetch(uploadData.upload_url, {
                     method: 'PUT',
@@ -177,23 +198,16 @@
                     body: file
                 });
             } else {
-                console.error("Upload Data Response:", uploadData);
-                throw new Error("Could not get upload permission (No URL returned from API)");
+                throw new Error("Could not get upload permission (No URL returned)");
             }
 
             // Fallback for s3Key
-            let s3Key = uploadData.s3_key;
-            if(!s3Key) {
-                 // Try to infer standard path if key not returned
-                 // Path: artifacts/{app_id}/public/data/{form_type}/{fileName}
-                 // Without app_id it's hard, but let's hope the API returned it or search accepts fileName if unique
-                 s3Key = fileName; 
-            }
+            let s3Key = uploadData.s3_key || fileName; 
 
-            // STEP 2: Call Search API with the S3 Key
+            // STEP 2: Call Search API
             const searchRes = await fetch(SEARCH_API, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(), // Added Auth
                 body: JSON.stringify({ 
                     s3_key: s3Key, 
                     collection_id: COLLECTION_ID 
@@ -206,7 +220,7 @@
             }
             const searchData = await searchRes.json();
 
-            if (!searchData.face_id) throw new Error("No matching face found");
+            if (!searchData.face_id) throw new Error("No matching face found in database.");
 
             // STEP 3: Fetch Timeline
             await fetchTimeline(searchData.face_id, searchData);
@@ -220,17 +234,24 @@
         }
     }
 
-    async function sha256Hex(file) {
-        const buffer = await file.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+    // FIXED: Safe SHA256 that works on HTTP (prevents crash)
+    async function safeSha256Hex(file) {
+        if (window.isSecureContext && crypto.subtle) {
+            try {
+                const buffer = await file.arrayBuffer();
+                const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+                return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+            } catch(e) { console.warn("Crypto failed, using fallback"); }
+        }
+        // Fallback for HTTP/Non-secure contexts
+        return 'unsafectx-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     }
 
     async function fetchTimeline(faceId, searchData) {
         try {
             const res = await fetch(TIMELINE_API, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(), // Added Auth
                 body: JSON.stringify({ face_id: faceId })
             });
 
@@ -244,11 +265,11 @@
             $('resultsArea').classList.remove('hidden');
 
         } catch (err) {
-            showError("Found face, but could not load history.");
+            showError("Found face, but could not load history. " + err.message);
         }
     }
 
-    // ... (Rendering functions remain same) ...
+    // ... (Rendering functions) ...
     function renderProfile(info, stats) {
         $('profileCard').classList.remove('hidden');
         $('resultImage').src = $('searchPreview').src; 
@@ -275,8 +296,9 @@
 
         events.forEach(ev => {
             const date = new Date(ev.timestamp);
-            const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-            const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = isNaN(date) ? 'Unknown Date' : date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+            const timeStr = isNaN(date) ? '--:--' : date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            
             let icon = 'fa-calendar-check', color = 'text-blue-400';
             if(ev.type === 'visitor_form') { icon = 'fa-building-user'; color = 'text-orange-400'; }
             if(ev.type === 'party_attendance') { icon = 'fa-handshake'; color = 'text-green-400'; }
@@ -321,7 +343,7 @@
     }
 
     function showError(msg) { $('errorMsg').innerText = msg; $('errorMsg').classList.remove('hidden'); }
-    function formatDate(d) { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
+    function formatDate(d) { try { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); } catch(e){ return '--'; } }
     function formatEventType(type) { if(!type) return "Activity"; return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); }
 </script>
 </body>

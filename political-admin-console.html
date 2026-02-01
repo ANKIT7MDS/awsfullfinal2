@@ -309,6 +309,7 @@
 
     const qs = (name) => (new URL(window.location.href)).searchParams.get(name) || '';
     collectionId = qs('cid') || qs('collection_id');
+    const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
 
     // Init
     if(!collectionId) {
@@ -446,11 +447,22 @@
       tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
 
       try {
-        // Simulate API Delay
-        await new Promise(r => setTimeout(r, 600)); 
+        // ACTUAL API CALL
+        const res = await fetch(`${BASE_URL}/political/admin/list`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                collection_id: collectionId,
+                form_type: currentTab
+            })
+        });
 
-        // Generate Mock Data based on Tab
-        rawData = generateMockData(currentTab);
+        if(!res.ok) throw new Error(`API Error: ${res.status}`);
+        const json = await res.json();
+        
+        // Adapt response: API might return { data: [...] } or just [...]
+        rawData = Array.isArray(json) ? json : (json.data || json.items || []);
+        
         filteredData = [...rawData];
         
         renderTable();
@@ -458,50 +470,6 @@
       } catch(err) { 
           tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-red-400">Error loading data.</td></tr>`; 
       }
-    }
-
-    function generateMockData(type) {
-        const count = 15;
-        const data = [];
-        const districts = ['Indore', 'Bhopal', 'Ujjain', 'Dewas', 'Ratlam'];
-        
-        for(let i=0; i<count; i++) {
-            let payload = {};
-            if(type === 'program_info') {
-                payload = { 
-                    program_title: `Jan Aakrosh Yatra - Phase ${i+1}`, program_date: `2025-10-${10+i}`, 
-                    program_time: '10:00 AM', program_location: `Gandhi Hall ${i}`, 
-                    district: districts[i%5], expected_people: 500 + (i*50) 
-                };
-            } else if(type === 'coordinator_entry') {
-                payload = {
-                    convenor_name: ['Rahul Singh', 'Amit Sharma', 'Priya Verma'][i%3],
-                    coordinator_role: ['Mandal Adhyaksh', 'Ward Sanyojak', 'Vidhan Sabha Sanyojak'][i%3],
-                    convenor_mobile: `9893${100000+i}`, area: `Ward ${i+1}`, designation_type: 'Primary'
-                };
-            } else if(type === 'visitor_form') {
-                payload = {
-                    name: `Visitor ${i+1}`, mobile: `999888${1000+i}`, district: districts[i%5],
-                    reason: i%2===0 ? 'Complaint regarding water' : 'Meeting with Adhyaksh', created_at: '2025-10-01'
-                };
-            } else if(type === 'mandal_reporting') {
-                payload = {
-                    program_name: `Booth Sashaktikaran ${i}`, report_level: 'Mandal', 
-                    total_attendance: 50+i, issues: 'None'
-                };
-            } else if(type === 'president_tour') {
-                payload = {
-                    tour_place: districts[i%5], tour_date: `2025-11-${i+1}`, vip_person: 'State President',
-                    stay_arrangement: 'Circuit House'
-                };
-            }
-
-            data.push({
-                entry_id: `id_${Math.random().toString(36).substr(2,6)}`,
-                payload: payload
-            });
-        }
-        return data;
     }
 
     // --- Rendering & Filtering ---

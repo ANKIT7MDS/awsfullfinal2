@@ -80,8 +80,7 @@
             <span id="personDesig" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden"><i class="fa-solid fa-id-badge mr-1.5 text-blue-400"></i> <span id="desigVal"></span></span>
           </div>
           <div class="mt-3 text-xs text-slate-500 flex gap-4">
-            <span><i class="fa-regular fa-clock mr-1"></i> First Seen: <span id="firstSeen" class="text-slate-300">--</span></span>
-            <span><i class="fa-solid fa-history mr-1"></i> Visits: <span id="visitCount" class="text-slate-300">0</span></span>
+            <span><i class="fa-regular fa-clock mr-1"></i> Match Score: <span id="matchScore" class="text-emerald-400">--</span></span>
           </div>
         </div>
       </div>
@@ -116,17 +115,15 @@
     const API_ID = "vxid0yoovj"; 
     const REGION = "ap-south-1";
     
-    // API Endpoints
-    const FORMS_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/forms`; 
-    const SEARCH_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/search`; 
-    const TIMELINE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/timeline`; 
+    // API Base URL
+    const BASE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political`; 
 
     const $ = (id) => document.getElementById(id);
     const qs = (k) => new URLSearchParams(window.location.search).get(k);
     const COLLECTION_ID = qs('cid') || 'bjpmandsaur';
 
     // ==========================================
-    // AUTH HELPERS (Missing in your code)
+    // AUTH HELPERS
     // ==========================================
     function getAuthHeaders() {
         const token = qs('token');
@@ -135,7 +132,7 @@
         if (token) return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
         if (jwt) return { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' };
         
-        // Return without auth if none found (might fail if API is private)
+        // Return without auth (for public endpoints)
         return { 'Content-Type': 'application/json' };
     }
 
@@ -162,55 +159,51 @@
         reader.readAsDataURL(file);
 
         try {
-            // STEP 1: Upload Image to S3
-            const fileName = `search-${crypto.randomUUID()}.jpg`;
-            const sha = await safeSha256Hex(file); // 使用 Safe version
+            // Determine correct API Endpoint (Public vs Protected)
+            const token = qs('token');
+            // If token exists in URL, use public/search, else use /search (which might check headers)
+            const searchEndpoint = token ? `${BASE_API}/public/search` : `${BASE_API}/search`;
 
-            // Request Upload URL
-            const uploadRes = await fetch(FORMS_API, {
+            // STEP 1: Init Search (Get Upload URL using correct Search API Action)
+            const initRes = await fetch(searchEndpoint, {
                 method: 'POST',
-                headers: getAuthHeaders(), // Added Auth
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ 
-                    action: 'create_entry', 
+                    action: 'init_search', 
                     payload: {
-                        form_type: 'visitor_form',
-                        file_name: fileName,
-                        mime_type: file.type,
-                        sha256: sha,
-                        collection_id: COLLECTION_ID,
-                        payload: { name: 'Search', mobile: '0000000000' }
+                        mime_type: file.type || 'application/octet-stream',
+                        collection_id: COLLECTION_ID
                     }
                 })
             });
 
-            if(!uploadRes.ok) {
-               let errText = await uploadRes.text();
+            if(!initRes.ok) {
+               let errText = await initRes.text();
                try { errText = JSON.parse(errText).message || errText; } catch(e){}
-               throw new Error("Upload Init Failed: " + errText);
+               throw new Error("Init Failed: " + errText);
             }
-            const uploadData = await uploadRes.json();
+            const initData = await initRes.json();
             
-            // Upload to S3
-            if(uploadData.upload_url) {
-                await fetch(uploadData.upload_url, {
+            // STEP 2: Upload to S3
+            if(initData.upload_url) {
+                await fetch(initData.upload_url, {
                     method: 'PUT',
-                    headers: { 'Content-Type': file.type },
+                    headers: { 'Content-Type': file.type || 'application/octet-stream' },
                     body: file
                 });
             } else {
-                throw new Error("Could not get upload permission (No URL returned)");
+                throw new Error("API did not provide upload URL.");
             }
 
-            // Fallback for s3Key
-            let s3Key = uploadData.s3_key || fileName; 
-
-            // STEP 2: Call Search API
-            const searchRes = await fetch(SEARCH_API, {
+            // STEP 3: Run Search
+            const searchRes = await fetch(searchEndpoint, {
                 method: 'POST',
-                headers: getAuthHeaders(), // Added Auth
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ 
-                    s3_key: s3Key, 
-                    collection_id: COLLECTION_ID 
+                    action: 'run_search', 
+                    payload: { 
+                        search_id: initData.search_id 
+                    }
                 })
             });
 
@@ -220,10 +213,22 @@
             }
             const searchData = await searchRes.json();
 
-            if (!searchData.face_id) throw new Error("No matching face found in database.");
+            // STEP 4: Render Results
+            // The Search API returns { similarity, timeline: [], photo_urls: [] }
+            
+            const timeline = searchData.timeline || [];
+            const photos = searchData.photo_urls || [];
+            const similarity = searchData.similarity || 0;
 
-            // STEP 3: Fetch Timeline
-            await fetchTimeline(searchData.face_id, searchData);
+            if (similarity === 0 && timeline.length === 0) {
+                 throw new Error("No matching face found.");
+            }
+
+            renderProfile(null, { similarity }); // Profile info isn't always in search res, so we handle basic info
+            renderTimeline(timeline);
+            renderPhotos(photos);
+
+            $('resultsArea').classList.remove('hidden');
 
         } catch (err) {
             console.error(err);
@@ -234,59 +239,20 @@
         }
     }
 
-    // FIXED: Safe SHA256 that works on HTTP (prevents crash)
-    async function safeSha256Hex(file) {
-        if (window.isSecureContext && crypto.subtle) {
-            try {
-                const buffer = await file.arrayBuffer();
-                const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-                return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
-            } catch(e) { console.warn("Crypto failed, using fallback"); }
-        }
-        // Fallback for HTTP/Non-secure contexts
-        return 'unsafectx-' + Date.now() + '-' + Math.random().toString(36).substring(7);
-    }
-
-    async function fetchTimeline(faceId, searchData) {
-        try {
-            const res = await fetch(TIMELINE_API, {
-                method: 'POST',
-                headers: getAuthHeaders(), // Added Auth
-                body: JSON.stringify({ face_id: faceId })
-            });
-
-            if (!res.ok) throw new Error("Failed to fetch timeline");
-            const data = await res.json();
-
-            renderProfile(data.person_info || searchData.person_info, data.stats);
-            renderTimeline(data.events);
-            renderPhotos(data.photos);
-
-            $('resultsArea').classList.remove('hidden');
-
-        } catch (err) {
-            showError("Found face, but could not load history. " + err.message);
-        }
-    }
-
     // ... (Rendering functions) ...
     function renderProfile(info, stats) {
         $('profileCard').classList.remove('hidden');
         $('resultImage').src = $('searchPreview').src; 
         
-        if (info) {
-            $('personName').innerText = info.name || "Unknown";
-            if (info.mobile) { $('phoneVal').innerText = info.mobile; $('personPhone').classList.remove('hidden'); } 
-            else $('personPhone').classList.add('hidden');
-            if (info.designation) { $('desigVal').innerText = info.designation; $('personDesig').classList.remove('hidden'); } 
-            else $('personDesig').classList.add('hidden');
-        } else {
-            $('personName').innerText = "Unknown Person";
-            $('personPhone').classList.add('hidden');
-            $('personDesig').classList.add('hidden');
+        // Search API might not return person details directly if not an exact match
+        // So we default to showing match score
+        $('personName').innerText = "Found Person";
+        $('personPhone').classList.add('hidden');
+        $('personDesig').classList.add('hidden');
+        
+        if(stats.similarity) {
+            $('matchScore').innerText = Math.round(stats.similarity) + "%";
         }
-        $('visitCount').innerText = stats?.total_visits || (info?.visit_count || 0);
-        $('firstSeen').innerText = formatDate(stats?.first_seen || new Date());
     }
 
     function renderTimeline(events) {
@@ -295,14 +261,22 @@
         if (!events || events.length === 0) { container.innerHTML = `<div class="text-center text-slate-500 py-8">No activity history found.</div>`; return; }
 
         events.forEach(ev => {
-            const date = new Date(ev.timestamp);
+            // Handle original data structure
+            const data = ev.data || {};
+            const date = new Date(ev.created_at_iso || ev.timestamp);
             const dateStr = isNaN(date) ? 'Unknown Date' : date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
             const timeStr = isNaN(date) ? '--:--' : date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
             
             let icon = 'fa-calendar-check', color = 'text-blue-400';
-            if(ev.type === 'visitor_form') { icon = 'fa-building-user'; color = 'text-orange-400'; }
-            if(ev.type === 'party_attendance') { icon = 'fa-handshake'; color = 'text-green-400'; }
-            if(ev.type === 'program_info') { icon = 'fa-microphone'; color = 'text-purple-400'; }
+            const type = ev.form_type || ev.type;
+
+            if(type === 'visitor_form') { icon = 'fa-building-user'; color = 'text-orange-400'; }
+            else if(type === 'party_attendance') { icon = 'fa-handshake'; color = 'text-green-400'; }
+            else if(type === 'program_info') { icon = 'fa-microphone'; color = 'text-purple-400'; }
+            
+            // Construct Description based on available data fields
+            let desc = ev.reason || data.program_title || data.program_name || data.tour_place || 'Activity Recorded';
+            if(data.program_location) desc += ` @ ${data.program_location}`;
 
             const html = `
             <div class="timeline-item relative pl-12 pb-8">
@@ -310,11 +284,11 @@
                 <div class="absolute left-0 top-0 w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center z-10 ${color}"><i class="fa-solid ${icon}"></i></div>
                 <div class="glass p-4 rounded-xl border border-slate-700/50 hover:border-orange-500/30 transition-colors">
                     <div class="flex justify-between items-start mb-1">
-                        <h4 class="font-bold text-slate-200 text-sm">${formatEventType(ev.type)}</h4>
+                        <h4 class="font-bold text-slate-200 text-sm">${formatEventType(type)}</h4>
                         <span class="text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full">${dateStr} • ${timeStr}</span>
                     </div>
-                    <p class="text-xs text-slate-400 leading-relaxed">${ev.description || ev.location || 'Activity recorded'}</p>
-                    ${ev.image_url ? `<div class="mt-3 rounded-lg overflow-hidden h-24 w-32 border border-slate-700"><img src="${ev.image_url}" class="w-full h-full object-cover"></div>` : ''}
+                    <p class="text-xs text-slate-400 leading-relaxed">${desc}</p>
+                    ${data.program_date ? `<div class="mt-1 text-xs text-slate-500"><i class="fa-regular fa-calendar mr-1"></i>Event Date: ${data.program_date}</div>` : ''}
                 </div>
             </div>`;
             container.innerHTML += html;
@@ -325,8 +299,13 @@
         const grid = $('photosGrid');
         grid.innerHTML = '';
         if (!photos || photos.length === 0) { $('view-photos').innerHTML = `<div class="text-center text-slate-500 py-8">No photos found.</div>`; return; }
+        
         photos.forEach(p => {
-            grid.innerHTML += `<a href="${p.url}" target="_blank" class="block aspect-square rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition group relative"><img src="${p.url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500"><div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"><i class="fa-solid fa-expand text-white"></i></div></a>`;
+            // Handle both string URLs and object format
+            const url = typeof p === 'string' ? p : p.url;
+            if(!url) return;
+
+            grid.innerHTML += `<a href="${url}" target="_blank" class="block aspect-square rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition group relative"><img src="${url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500"><div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"><i class="fa-solid fa-expand text-white"></i></div></a>`;
         });
     }
 
@@ -343,7 +322,6 @@
     }
 
     function showError(msg) { $('errorMsg').innerText = msg; $('errorMsg').classList.remove('hidden'); }
-    function formatDate(d) { try { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); } catch(e){ return '--'; } }
     function formatEventType(type) { if(!type) return "Activity"; return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); }
 </script>
 </body>

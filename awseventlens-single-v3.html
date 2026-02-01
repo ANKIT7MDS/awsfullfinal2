@@ -594,8 +594,15 @@
       <div class="tab-content" id="tPol">
         <div class="card">
 <div class="row" style="justify-content: space-between; margin-bottom: 14px; align-items:center;">
-  <h3>Political Public Link Generator</h3>
-  <div class="text-sm text-muted">Search + 6 Forms (Token Based)</div>
+  <div>
+    <h3 style="margin:0;">Political Public Link Generator</h3>
+    <div class="text-sm text-muted">Search + 6 Forms (Token Based)</div>
+  </div>
+  <div class="row" style="gap:10px; align-items:center;">
+    <button class="btn secondary" onclick="openPoliticalAdminConsole()" title="All forms entries dashboard">
+      <i class="fa-solid fa-table-list"></i> Open Admin Console
+    </button>
+  </div>
 </div>
 
 <div class="row" style="gap: 20px; align-items: flex-end; flex-wrap: wrap;">
@@ -2255,6 +2262,35 @@ if(id === 'tClient') loadClientSelections();
     document.execCommand('copy');
     showToast('Copied');
   }
+
+function openPoliticalAdminConsole(){
+  try{
+    let cid = '';
+    if(typeof curCol !== 'undefined' && curCol && curCol.collection_id) cid = String(curCol.collection_id||'').trim();
+    if(!cid){
+      const inp = document.getElementById('polCid');
+      if(inp && inp.value) cid = String(inp.value).trim();
+    }
+    if(!cid){
+      const cdIdEl = document.getElementById('cdId');
+      if(cdIdEl && cdIdEl.textContent) cid = String(cdIdEl.textContent).replace('ID:','').trim();
+      if(cid === '-' || cid.toLowerCase() === 'id:') cid = '';
+    }
+    if(!cid){
+      const u = new URL(window.location.href);
+      cid = (u.searchParams.get('collection_id') || u.searchParams.get('cid') || '').trim();
+    }
+    if(!cid){
+      cid = prompt('Collection ID नहीं मिला. कृपया CID डालें:');
+      if(!cid) return;
+      cid = String(cid).trim();
+    }
+    const url = `political-admin-console.html?cid=${encodeURIComponent(cid)}`;
+    window.open(url, '_blank');
+  }catch(e){
+    alert('Failed to open admin console: ' + (e && e.message ? e.message : e));
+  }
+}
 
 function updatePoliticalLinkUI(){
   // show/hide "Form Type" field based on Link Category

@@ -121,7 +121,9 @@
     // Helper Utils
     const $ = (id) => document.getElementById(id);
     const qs = (k) => new URLSearchParams(window.location.search).get(k);
-    const COLLECTION_ID = qs('cid');
+    
+    // Default Collection ID logic to prevent "missing collection_id" error
+    const COLLECTION_ID = qs('cid') || 'bjpmandsaur'; // Fallback if URL param missing
 
     // ==========================================
     // CORE LOGIC
@@ -160,7 +162,10 @@
                 })
             });
 
-            if (!searchRes.ok) throw new Error("Search failed or no face found");
+            if (!searchRes.ok) {
+                const errJson = await searchRes.json();
+                throw new Error(errJson.message || "Search failed or no face found");
+            }
             const searchData = await searchRes.json();
 
             if (!searchData.face_id) throw new Error("No matching face found in database");

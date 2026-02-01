@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Political Forms Admin Console • EventLens</title>
+<style>
+:root{--bg:#0b1020;--card:#121a33;--muted:#9fb0ff;--text:#e9eeff;--btn:#3b82f6;--btn2:#22c55e;--danger:#ef4444;--border:rgba(255,255,255,.12)}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#070a14,#0b1020);color:var(--text)}
+header{position:sticky;top:0;background:rgba(7,10,20,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;gap:12px;align-items:center;z-index:10}
+header h1{font-size:16px;margin:0;font-weight:900}
+header .pill{font-size:12px;color:var(--muted);border:1px solid var(--border);padding:4px 10px;border-radius:999px}
+main{max-width:1400px;margin:0 auto;padding:16px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:16px}
+@media(max-width:1050px){.grid{grid-template-columns:1fr}}
+.card{background:rgba(18,26,51,.72);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.card h2{margin:0;padding:14px 14px 0;font-size:14px}
+.body{padding:14px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+input,select,textarea{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:10px 12px;outline:none}
+textarea{min-height:110px;resize:vertical;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+button{border:0;border-radius:12px;padding:10px 12px;color:white;background:var(--btn);cursor:pointer;font-weight:900}
+button.secondary{background:rgba(255,255,255,.10);border:1px solid var(--border)}
+button.success{background:var(--btn2)}
+button.danger{background:var(--danger)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.col{flex:1;min-width:180px}
+.tabs{display:flex;gap:10px;padding:14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tab{padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);cursor:pointer;font-weight:900;color:var(--muted)}
+.tab.active{background:rgba(59,130,246,.18);color:var(--text);border-color:rgba(59,130,246,.45)}
+.hidden{display:none}
+.tableWrap{overflow:auto;border:1px solid var(--border);border-radius:14px}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th,td{padding:10px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
+th{position:sticky;top:0;background:rgba(18,26,51,.95);text-align:left;color:var(--muted)}
+tr:hover td{background:rgba(255,255,255,.03)}
+.pill2{display:inline-block;font-size:11px;border:1px solid var(--border);padding:2px 8px;border-radius:999px;color:var(--muted)}
+.muted{color:var(--muted);font-size:12px}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:720px){.kpi{grid-template-columns:1fr}}
+.kpi .box{padding:12px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.06)}
+.kpi .num{font-size:20px;font-weight:900;margin-top:6px}
+.bar{height:10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--border);overflow:hidden}
+.bar > div{height:100%;background:rgba(59,130,246,.65)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal.show{display:flex}
+.modal .panel{max-width:980px;width:100%;max-height:88vh;overflow:auto;background:rgba(18,26,51,.98);border:1px solid var(--border);border-radius:18px}
+.modal .panel header{position:sticky;top:0;background:rgba(18,26,51,.98);border-bottom:1px solid var(--border)}
+.modal .panel header h1{font-size:14px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:980px){.split{grid-template-columns:1fr}}
+iframe{width:100%;height:560px;border:1px solid var(--border);border-radius:14px;background:#0b1020}
+.toast{position:fixed;right:16px;bottom:16px;background:rgba(18,26,51,.95);border:1px solid var(--border);padding:10px 12px;border-radius:14px;display:none;max-width:520px;z-index:60}
+.toast.show{display:block}
+.hr{height:1px;background:var(--border);margin:14px 0}
+a{color:#93c5fd;text-decoration:none}
+</style></head>
+<body>
+<header>
+  <h1>Political Admin Console</h1>
+  <span class="pill" id="cidPill">CID: —</span>
+  <span class="pill">Data + Analytics + Branding</span>
+  <div style="margin-left:auto" class="row">
+    <button class="secondary" id="btnBack">Back</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab active" data-tab="entriesTab">Entries</div>
+    <div class="tab" data-tab="analyticsTab">Analytics</div>
+    <div class="tab" data-tab="brandingTab">Branding Studio</div>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Config + Filters</h2>
+      <div class="body">
+        <label>Collection ID (prefill)</label>
+        <input id="cid" readonly/>
+
+        <label>Admin API</label>
+        <input id="ADMIN_API" placeholder="https://.../prod/political/admin"/>
+
+        <label>Forms API (optional fallback)</label>
+        <input id="FORMS_API" placeholder="https://.../prod/political/forms"/>
+
+        <label>Auth Token (dashboard only)</label>
+        <input id="AUTH_TOKEN" placeholder="JWT token"/>
+
+        <div class="row" style="margin-top:10px">
+          <button class="success" id="btnSaveCfg">Save</button>
+          <button class="secondary" id="btnLoadCfg">Load Saved</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <label>Form Type</label>
+        <select id="formType">
+          <option value="">All</option>
+          <option value="political_visitor_form">political_visitor_form</option>
+          <option value="political_party_attendance_form">political_party_attendance_form</option>
+          <option value="political_president_tour_form">political_president_tour_form</option>
+          <option value="political_mandal_reporting_form">political_mandal_reporting_form</option>
+          <option value="political_coordinator_entry_form">political_coordinator_entry_form</option>
+          <option value="political_program_info_form">political_program_info_form</option>
+        </select>
+
+        <div class="row">
+          <div class="col">
+            <label>Date From</label>
+            <input id="dateFrom" type="date"/>
+          </div>
+          <div class="col">
+            <label>Date To</label>
+            <input id="dateTo" type="date"/>
+          </div>
+        </div>
+
+        <label>Search (name/phone/city/text)</label>
+        <input id="q" placeholder="Type to filter"/>
+
+        <div class="row" style="margin-top:10px">
+          <button id="btnRefresh">Refresh</button>
+          <button class="secondary" id="btnExport">Export CSV</button>
+          <button class="secondary" id="btnSlide">Slide View</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 id="rightTitle">Entries</h2>
+      <div class="body">
+        <div id="entriesTab">
+          <div class="muted" id="entriesInfo">Refresh to load.</div>
+          <div style="margin-top:12px" class="tableWrap">
+            <table>
+              <thead><tr><th>Created</th><th>Form Type</th><th>Main</th><th>Actions</th></tr></thead>
+              <tbody id="tbody"><tr><td colspan="4" class="muted">No data.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="analyticsTab" class="hidden">
+          <div class="kpi" id="kpis"></div>
+          <div class="hr"></div>
+          <h2 style="padding:0;margin:0 0 10px;font-size:14px">Form Type Breakdown</h2>
+          <div id="breakdown"></div>
+          <div class="hr"></div>
+          <h2 style="padding:0;margin:0 0 10px;font-size:14px">Last 14 Days Activity</h2>
+          <div id="activity"></div>
+        </div>
+
+        <div id="brandingTab" class="hidden">
+          <div class="split">
+            <div>
+              <h2 style="padding:0;margin:0 0 10px;font-size:14px">Branding Controls</h2>
+              <label>Header Title</label><input id="b_header_title" placeholder="ex: Event Name / Leader Name"/>
+              <label>Slogan</label><input id="b_slogan" placeholder="ex: Your slogan"/>
+              <label>Footer Text</label><input id="b_footer" placeholder="ex: Powered by ..."/>
+              <label>Logo URL</label><input id="b_logo" placeholder="https://.../logo.png"/>
+              <label>Header Image URL</label><input id="b_header_img" placeholder="https://.../header.jpg"/>
+
+              <div class="row">
+                <div class="col"><label>Primary Color</label><input id="b_primary" placeholder="#22c55e"/></div>
+                <div class="col"><label>Accent Color</label><input id="b_accent" placeholder="#3b82f6"/></div>
+              </div>
+              <div class="row">
+                <div class="col"><label>Background</label><input id="b_bg" placeholder="#0b1020"/></div>
+                <div class="col"><label>Card</label><input id="b_card" placeholder="#121a33"/></div>
+              </div>
+              <div class="row">
+                <div class="col"><label>Text</label><input id="b_text" placeholder="#e9eeff"/></div>
+                <div class="col"><label>Muted</label><input id="b_muted" placeholder="#9fb0ff"/></div>
+              </div>
+              <label>Border</label><input id="b_border" placeholder="rgba(255,255,255,.12)"/>
+
+              <div class="row" style="margin-top:10px">
+                <button class="secondary" id="btnPreview">Live Preview</button>
+                <button class="secondary" id="btnSaveDraft">Save Draft</button>
+              </div>
+              <div class="row" style="margin-top:10px">
+                <button class="success" id="btnPublish">Publish to Server</button>
+                <button class="secondary" id="btnLoadBranding">Load Published</button>
+              </div>
+
+              <div class="hr"></div>
+              <label>Preview Form</label>
+              <select id="previewForm">
+                <option value="political_visitor_form.html">political_visitor_form.html</option>
+                <option value="political_party_attendance_form.html">political_party_attendance_form.html</option>
+                <option value="political_president_tour_form.html">political_president_tour_form.html</option>
+                <option value="political_mandal_reporting_form.html">political_mandal_reporting_form.html</option>
+                <option value="political_coordinator_entry_form.html">political_coordinator_entry_form.html</option>
+                <option value="political_program_info_form.html">political_program_info_form.html</option>
+              </select>
+              <div class="row" style="margin-top:10px">
+                <button id="btnOpenForm">Open Form New Tab</button>
+              </div>
+              <div class="muted" style="margin-top:10px">Preview instant. Publish के बाद सारे forms में apply.</div>
+            </div>
+            <div>
+              <h2 style="padding:0;margin:0 0 10px;font-size:14px">Preview</h2>
+              <iframe id="previewFrame"></iframe>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="modal" id="modal">
+  <div class="panel">
+    <header>
+      <h1 id="modalTitle">Entry</h1>
+      <div style="margin-left:auto" class="row">
+        <button class="secondary" id="btnClose">Close</button>
+      </div>
+    </header>
+    <div class="body">
+      <div class="split">
+        <div>
+          <div class="muted" id="modalMeta"></div>
+          <label>Payload (JSON)</label>
+          <textarea id="payloadEditor"></textarea>
+          <div class="row">
+            <button class="success" id="btnSaveEntry">Save Changes</button>
+            <button class="danger" id="btnDeleteEntry">Delete Entry</button>
+          </div>
+        </div>
+        <div>
+          <h2 style="padding:0;margin:0 0 10px;font-size:14px">Detail View</h2>
+          <div id="detailView"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $=(id)=>document.getElementById(id);
+const qp=(n)=>new URLSearchParams(location.search).get(n);
+const CFG_KEY="political_admin_console_cfg_v1";
+let entries=[]; let current=null;
+
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600);}
+function safeJsonParse(s,f){try{return JSON.parse(s);}catch{return f;}}
+function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,(c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));}
+function getToken(){return $("AUTH_TOKEN").value.trim()||localStorage.getItem("idToken")||localStorage.getItem("accessToken")||"";}
+async function postJson(url,payload,token){
+  const h={"Content-Type":"application/json"}; if(token) h["Authorization"]=token;
+  const res=await fetch(url,{method:"POST",mode:"cors",headers:h,body:JSON.stringify(payload)});
+  const text=await res.text(); let data=null; try{data=JSON.parse(text);}catch{data={raw:text};}
+  if(!res.ok) throw new Error((data&&(data.message||data.error))||`HTTP ${res.status}`);
+  return data;
+}
+function saveCfg(){
+  const cfg={cid:$("cid").value.trim(),ADMIN_API:$("ADMIN_API").value.trim(),FORMS_API:$("FORMS_API").value.trim(),AUTH_TOKEN:$("AUTH_TOKEN").value.trim()};
+  localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
+  if(cfg.AUTH_TOKEN) localStorage.setItem("idToken",cfg.AUTH_TOKEN);
+  if(cfg.ADMIN_API) localStorage.setItem("POLITICAL_ADMIN_API_V1",cfg.ADMIN_API);
+  if(cfg.FORMS_API) localStorage.setItem("POLITICAL_FORMS_API_V2",cfg.FORMS_API);
+  toast("Saved.");
+}
+function loadCfg(){
+  const cfg=safeJsonParse(localStorage.getItem(CFG_KEY)||"{}",{});
+  if(cfg.cid) $("cid").value=cfg.cid;
+  if(cfg.ADMIN_API) $("ADMIN_API").value=cfg.ADMIN_API;
+  if(cfg.FORMS_API) $("FORMS_API").value=cfg.FORMS_API;
+  if(cfg.AUTH_TOKEN) $("AUTH_TOKEN").value=cfg.AUTH_TOKEN;
+  const a=localStorage.getItem("POLITICAL_ADMIN_API_V1"), f=localStorage.getItem("POLITICAL_FORMS_API_V2");
+  if(a&&!$("ADMIN_API").value) $("ADMIN_API").value=a;
+  if(f&&!$("FORMS_API").value) $("FORMS_API").value=f;
+}
+function inDateRange(iso){
+  if(!iso) return true;
+  const d=new Date(iso); if(isNaN(d.getTime())) return true;
+  const df=$("dateFrom").value?new Date($("dateFrom").value+"T00:00:00"):null;
+  const dt=$("dateTo").value?new Date($("dateTo").value+"T23:59:59"):null;
+  if(df&&d<df) return false; if(dt&&d>dt) return false; return true;
+}
+function filterEntries(all){
+  const ft=$("formType").value;
+  const q=($("q").value||"").trim().toLowerCase();
+  return (all||[]).filter(e=>{
+    if(ft&&(e.form_type||"")!==ft) return false;
+    if(!inDateRange(e.created_at||e.updated_at)) return false;
+    if(q && JSON.stringify(e).toLowerCase().indexOf(q)<0) return false;
+    return true;
+  });
+}
+function guessMain(e){
+  const p=e.payload||{};
+  const name=p.name||p.member_name||p.reporter_name||p.coordinator_name||p.program_name||"—";
+  const phone=p.phone||p.coordinator_phone||"";
+  const city=p.city||p.tour_city||p.venue||p.mandal_name||p.area||"";
+  return {name,phone,city};
+}
+function renderDetail(e){
+  const box=$("detailView"); const p=e.payload||{}; const keys=Object.keys(p||{});
+  if(keys.length===0){box.innerHTML='<div class="muted">No payload</div>';return;}
+  box.innerHTML="";
+  keys.forEach(k=>{
+    const div=document.createElement("div");
+    div.style="padding:10px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.05);margin-bottom:10px";
+    div.innerHTML=`<div class="muted">${escapeHtml(k)}</div><div style="font-weight:900;margin-top:3px">${escapeHtml(p[k])}</div>`;
+    box.appendChild(div);
+  });
+}
+function openModal(e){
+  current=e;
+  $("modalTitle").textContent=`Entry • ${e.form_type||""}`;
+  $("modalMeta").innerHTML=`<span class="pill2">Entry: ${escapeHtml(e.entry_id||e.id||"")}</span>`;
+  $("payloadEditor").value=JSON.stringify(e.payload||{},null,2);
+  renderDetail(e);
+  $("modal").classList.add("show");
+}
+function closeModal(){ $("modal").classList.remove("show"); current=null; }
+function renderTable(){
+  const tbody=$("tbody");
+  const rows=filterEntries(entries).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+  $("entriesInfo").textContent=`Loaded: ${entries.length} • Showing: ${rows.length}`;
+  if(rows.length===0){tbody.innerHTML='<tr><td colspan="4" class="muted">No results.</td></tr>';return;}
+  tbody.innerHTML="";
+  rows.forEach(e=>{
+    const m=guessMain(e);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><div>${escapeHtml((e.created_at||"").replace("T"," ").slice(0,19))}</div><div class="pill2">${escapeHtml(e.entry_id||e.id||"")}</div></td>
+      <td><div class="pill2">${escapeHtml(e.form_type||"")}</div></td>
+      <td><div style="font-weight:900">${escapeHtml(m.name)}</div><div class="muted">Phone: ${escapeHtml(m.phone)} • ${escapeHtml(m.city)}</div></td>
+      <td><button class="secondary">View/Edit</button></td>`;
+    tr.querySelector("button").onclick=()=>openModal(e);
+    tbody.appendChild(tr);
+  });
+}
+async function loadEntries(){
+  const cid=$("cid").value.trim();
+  const adminApi=$("ADMIN_API").value.trim();
+  const formsApi=$("FORMS_API").value.trim();
+  const token=getToken();
+  if(!cid){toast("CID missing");return;}
+  if(!adminApi&&!formsApi){toast("Admin API missing");return;}
+  $("tbody").innerHTML='<tr><td colspan="4" class="muted">Loading...</td></tr>';
+  const candidates=[
+    {url:adminApi,action:"list_entries"},
+    {url:adminApi,action:"list_form_entries"},
+    {url:formsApi,action:"list_entries"},
+    {url:formsApi,action:"list_form_entries"},
+  ].filter(x=>x.url);
+  let lastErr=null;
+  for(const c of candidates){
+    try{
+      const res=await postJson(c.url,{action:c.action,cid,collection_id:cid,form_type:$("formType").value||null},token);
+      entries=res.items||res.entries||res.data||res.results||[];
+      if(!Array.isArray(entries)) entries=[];
+      renderTable(); buildAnalytics();
+      toast("Loaded."); return;
+    }catch(e){lastErr=e;}
+  }
+  toast("Load failed: "+(lastErr?(lastErr.message||String(lastErr)):"Unknown"));
+  $("tbody").innerHTML='<tr><td colspan="4" class="muted">Error</td></tr>';
+}
+async function saveEntry(){
+  if(!current) return;
+  const cid=$("cid").value.trim();
+  const adminApi=$("ADMIN_API").value.trim();
+  const formsApi=$("FORMS_API").value.trim();
+  const token=getToken();
+  let payload=null; try{payload=JSON.parse($("payloadEditor").value||"{}");}catch{toast("Invalid JSON");return;}
+  const candidates=[
+    {url:adminApi,action:"update_entry"},{url:adminApi,action:"edit_entry"},
+    {url:formsApi,action:"update_entry"},{url:formsApi,action:"edit_entry"},
+  ].filter(x=>x.url);
+  let lastErr=null;
+  for(const c of candidates){
+    try{
+      await postJson(c.url,{action:c.action,cid,collection_id:cid,entry_id:current.entry_id||current.id,pk:current.pk,sk:current.sk,form_type:current.form_type,payload},token);
+      current.payload=payload; renderTable(); renderDetail(current); toast("Saved."); return;
+    }catch(e){lastErr=e;}
+  }
+  toast("Save failed: "+(lastErr?(lastErr.message||String(lastErr)):"Unknown"));
+}
+async function deleteEntry(){
+  if(!current) return;
+  if(!confirm("Delete this entry?")) return;
+  const cid=$("cid").value.trim();
+  const adminApi=$("ADMIN_API").value.trim();
+  const formsApi=$("FORMS_API").value.trim();
+  const token=getToken();
+  const candidates=[
+    {url:adminApi,action:"delete_entry"},{url:adminApi,action:"remove_entry"},
+    {url:formsApi,action:"delete_entry"},{url:formsApi,action:"remove_entry"},
+  ].filter(x=>x.url);
+  let lastErr=null;
+  for(const c of candidates){
+    try{
+      await postJson(c.url,{action:c.action,cid,collection_id:cid,entry_id:current.entry_id||current.id,pk:current.pk,sk:current.sk,form_type:current.form_type},token);
+      entries=entries.filter(e=>(e.entry_id||e.id)!==(current.entry_id||current.id));
+      renderTable(); buildAnalytics(); closeModal(); toast("Deleted."); return;
+    }catch(e){lastErr=e;}
+  }
+  toast("Delete failed: "+(lastErr?(lastErr.message||String(lastErr)):"Unknown"));
+}
+function exportCSV(){
+  const rows=filterEntries(entries).slice().sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
+  const header=["created_at","form_type","entry_id","payload"];
+  const csv=[header.join(",")].concat(rows.map(e=>{
+    return [JSON.stringify(e.created_at||""),JSON.stringify(e.form_type||""),JSON.stringify(e.entry_id||e.id||""),JSON.stringify(JSON.stringify(e.payload||{}))].join(",");
+  })).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url; a.download=`political_entries_${$("cid").value.trim()}_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
+}
+function slideView(){
+  const rows=filterEntries(entries).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+  if(rows.length===0){toast("No data");return;}
+  let idx=0;
+  const show=()=>{
+    const e=rows[idx]; openModal(e);
+    $("payloadEditor").disabled=true;
+    $("btnSaveEntry").style.display="none";
+    $("btnDeleteEntry").style.display="none";
+    $("modalMeta").innerHTML=`<span class="pill2">Slide ${idx+1}/${rows.length}</span> <span class="pill2">${escapeHtml(e.form_type||"")}</span>`;
+  };
+  show();
+  const onKey=(ev)=>{
+    if(!$("modal").classList.contains("show")) return;
+    if(ev.key==="ArrowRight"){idx=Math.min(rows.length-1,idx+1);show();}
+    if(ev.key==="ArrowLeft"){idx=Math.max(0,idx-1);show();}
+    if(ev.key==="Escape"){closeModal();}
+  };
+  window.addEventListener("keydown",onKey);
+  const restore=()=>{
+    window.removeEventListener("keydown",onKey);
+    $("payloadEditor").disabled=false;
+    $("btnSaveEntry").style.display="inline-block";
+    $("btnDeleteEntry").style.display="inline-block";
+  };
+  const oldClose=$("btnClose").onclick;
+  $("btnClose").onclick=()=>{restore(); oldClose&&oldClose(); closeModal();};
+}
+function buildAnalytics(){
+  const data=entries.slice(); const total=data.length;
+  const types={}, byDay={};
+  data.forEach(e=>{
+    const t=e.form_type||"unknown"; types[t]=(types[t]||0)+1;
+    const d=(e.created_at||"").slice(0,10); if(d) byDay[d]=(byDay[d]||0)+1;
+  });
+  const kpis=$("kpis"); kpis.innerHTML="";
+  const boxes=[
+    {label:"Total Entries",num:total},
+    {label:"Unique Form Types",num:Object.keys(types).length},
+    {label:"Today",num:(byDay[new Date().toISOString().slice(0,10)]||0)}
+  ];
+  boxes.forEach(b=>{
+    const div=document.createElement("div"); div.className="box";
+    div.innerHTML=`<div class="muted">${escapeHtml(b.label)}</div><div class="num">${escapeHtml(b.num)}</div>`;
+    kpis.appendChild(div);
+  });
+  const bd=$("breakdown"); bd.innerHTML="";
+  const max=Math.max(1,...Object.values(types));
+  Object.entries(types).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+    const row=document.createElement("div"); row.style="margin-bottom:10px";
+    row.innerHTML=`<div class="row" style="align-items:center"><div style="min-width:240px;font-weight:900">${escapeHtml(k)}</div><div class="muted">${escapeHtml(v)}</div></div>
+      <div class="bar"><div style="width:${(v/max)*100}%"></div></div>`;
+    bd.appendChild(row);
+  });
+  const act=$("activity"); act.innerHTML="";
+  const days=[]; for(let i=13;i>=0;i--){days.push(new Date(Date.now()-i*86400000).toISOString().slice(0,10));}
+  const maxD=Math.max(1,...days.map(d=>byDay[d]||0));
+  days.forEach(d=>{
+    const v=byDay[d]||0;
+    const row=document.createElement("div"); row.style="margin-bottom:10px";
+    row.innerHTML=`<div class="row" style="align-items:center"><div style="min-width:120px" class="muted">${escapeHtml(d)}</div>
+      <div style="min-width:40px" class="muted">${escapeHtml(v)}</div><div style="flex:1"><div class="bar"><div style="width:${(v/maxD)*100}%"></div></div></div></div>`;
+    act.appendChild(row);
+  });
+}
+function showTab(id){
+  ["entriesTab","analyticsTab","brandingTab"].forEach(x=>$(x).classList.add("hidden"));
+  $(id).classList.remove("hidden");
+  $("rightTitle").textContent=id==="entriesTab"?"Entries":(id==="analyticsTab"?"Analytics":"Branding Studio");
+}
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); t.classList.add("active"); showTab(t.dataset.tab);};
+});
+function readBrandingInputs(){
+  return {cid:$("cid").value.trim(),header_title:$("b_header_title").value.trim(),slogan:$("b_slogan").value.trim(),footer_text:$("b_footer").value.trim(),
+    logo_url:$("b_logo").value.trim(),header_image_url:$("b_header_img").value.trim(),
+    theme:{primary:$("b_primary").value.trim(),accent:$("b_accent").value.trim(),bg:$("b_bg").value.trim(),card:$("b_card").value.trim(),text:$("b_text").value.trim(),muted:$("b_muted").value.trim(),border:$("b_border").value.trim()}};
+}
+function fillBrandingInputs(b){
+  b=b||{}; $("b_header_title").value=b.header_title||""; $("b_slogan").value=b.slogan||""; $("b_footer").value=b.footer_text||"";
+  $("b_logo").value=b.logo_url||""; $("b_header_img").value=b.header_image_url||"";
+  const t=b.theme||{}; $("b_primary").value=t.primary||""; $("b_accent").value=t.accent||""; $("b_bg").value=t.bg||""; $("b_card").value=t.card||"";
+  $("b_text").value=t.text||""; $("b_muted").value=t.muted||""; $("b_border").value=t.border||"";
+}
+function sendPreview(){
+  const cid=$("cid").value.trim();
+  $("previewFrame").contentWindow && $("previewFrame").contentWindow.postMessage({type:"branding_preview",cid,branding:readBrandingInputs()}, "*");
+}
+function openPreviewFrame(){
+  const cid=$("cid").value.trim();
+  const f=$("previewForm").value;
+  $("previewFrame").src=`${f}?cid=${encodeURIComponent(cid)}&preview=1`;
+  setTimeout(()=>sendPreview(),500);
+}
+$("btnPreview").onclick=()=>{sendPreview();toast("Preview updated.");};
+$("btnSaveDraft").onclick=()=>{
+  const cid=$("cid").value.trim();
+  localStorage.setItem(`political_branding_draft__${cid}`, JSON.stringify(readBrandingInputs()));
+  toast("Draft saved.");
+};
+$("btnLoadBranding").onclick=async ()=>{
+  const cid=$("cid").value.trim();
+  const adminApi=$("ADMIN_API").value.trim();
+  if(!adminApi){toast("Admin API missing");return;}
+  try{
+    const res=await postJson(adminApi,{action:"get_branding",cid,collection_id:cid},getToken());
+    const b=res.branding||res.item||res; fillBrandingInputs(b); openPreviewFrame(); toast("Loaded published.");
+  }catch(e){toast("Load failed: "+(e.message||String(e)));}
+};
+$("btnPublish").onclick=async ()=>{
+  const cid=$("cid").value.trim();
+  const adminApi=$("ADMIN_API").value.trim();
+  if(!adminApi){toast("Admin API missing");return;}
+  const branding=readBrandingInputs();
+  try{
+    await postJson(adminApi,{action:"set_branding",cid,collection_id:cid,branding},getToken());
+    localStorage.removeItem(`political_branding_draft__${cid}`);
+    localStorage.setItem(`political_branding_published__${cid}`, JSON.stringify(branding));
+    toast("Published ✅");
+  }catch(e){toast("Publish failed: "+(e.message||String(e)));}
+};
+$("previewForm").onchange=()=>openPreviewFrame();
+$("btnOpenForm").onclick=()=>{const cid=$("cid").value.trim();const f=$("previewForm").value;window.open(`${f}?cid=${encodeURIComponent(cid)}`,"_blank");};
+
+$("btnClose").onclick=()=>{ $("payloadEditor").disabled=false; $("btnSaveEntry").style.display="inline-block"; $("btnDeleteEntry").style.display="inline-block"; closeModal(); };
+$("modal").onclick=(e)=>{ if(e.target.id==="modal") $("btnClose").click(); };
+$("btnSaveEntry").onclick=()=>saveEntry();
+$("btnDeleteEntry").onclick=()=>deleteEntry();
+$("btnRefresh").onclick=()=>loadEntries();
+$("btnExport").onclick=()=>exportCSV();
+$("btnSlide").onclick=()=>slideView();
+$("formType").onchange=()=>renderTable();
+$("q").oninput=()=>renderTable();
+$("dateFrom").onchange=()=>renderTable();
+$("dateTo").onchange=()=>renderTable();
+$("btnSaveCfg").onclick=()=>saveCfg();
+$("btnLoadCfg").onclick=()=>{loadCfg();toast("Loaded.");};
+$("btnBack").onclick=()=>{const cid=$("cid").value.trim(); window.location.href=`awseventlens-single-v3_SUPERADMIN_POLITICAL_v1_UPDATED_WITH_ADMIN_CONSOLE.html#collection=${encodeURIComponent(cid)}`;};
+
+const cidFromUrl=qp("cid")||qp("collection_id")||"";
+if(cidFromUrl){$("cid").value=cidFromUrl; $("cidPill").textContent="CID: "+cidFromUrl;}
+loadCfg();
+if($("cid").value){ const cid=$("cid").value.trim();
+  const draft=safeJsonParse(localStorage.getItem(`political_branding_draft__${cid}`)||"null",null);
+  if(draft) fillBrandingInputs(draft);
+  openPreviewFrame();
+}
+</script>
+</body></html>

@@ -286,10 +286,10 @@
     // UTILITIES
     // ==========================================
     const $ = (id) => document.getElementById(id);
-    const FIELD_IDS = ['mobile','name','designation','district','vidhansabha','mandal','address','reason','booth']; 
+    const FIELD_IDS = ['mobile','name','designation','district','vidhansabha','mandal','address','reason']; 
     const FORM_TYPE = 'visitor_form';
+    // IMPORTANT: Verify this URL in your AWS API Gateway Console
     const FORMS_API = "https://7s17416n0i.execute-api.ap-south-1.amazonaws.com/prod/forms"; 
-    // Timeline API for looking up user by mobile
     const TIMELINE_API = "https://7s17416n0i.execute-api.ap-south-1.amazonaws.com/prod/timeline"; 
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -484,7 +484,12 @@
 
             // Collect Data
             const data = {}; 
-            for(const id of FIELD_IDS) data[id] = $(id).value.trim();
+            for(const id of FIELD_IDS) {
+                const el = $(id);
+                if(el) {
+                    data[id] = el.value.trim();
+                }
+            }
 
             if(!data.district) throw new Error("कृपया जिला चुनें");
             if(!data.vidhansabha) throw new Error("कृपया विधानसभा चुनें");

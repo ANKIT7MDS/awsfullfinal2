@@ -15,6 +15,8 @@
     .sidebar-link:hover { background: rgba(255,255,255,0.05); color: #fff; }
     .sidebar-link.active { background: linear-gradient(135deg, #f97316, #ea580c); color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
     .table-row:hover { background: rgba(255,255,255,0.03); }
+    th { cursor: pointer; user-select: none; }
+    th:hover { color: #fb923c; }
     
     /* Modal Animation */
     .modal { transition: opacity 0.3s ease-in-out, visibility 0.3s; opacity: 0; visibility: hidden; }
@@ -37,7 +39,7 @@
 <body class="h-screen flex overflow-hidden">
 
   <!-- Sidebar -->
-  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0">
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-20">
     <div class="p-6 border-b border-slate-800">
       <div class="flex items-center gap-3 text-orange-500">
         <i class="fa-solid fa-user-shield text-2xl"></i>
@@ -48,7 +50,7 @@
       </div>
     </div>
     
-    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
       <div class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-2">Data Management</div>
       <div class="sidebar-link active" onclick="switchTab('program_info', this)">
         <i class="fa-solid fa-calendar-days w-5"></i> Events
@@ -80,13 +82,25 @@
   <!-- Main Content -->
   <main class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
     <!-- Header -->
-    <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-sm shrink-0">
+    <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-sm shrink-0 z-10">
       <h2 id="pageTitle" class="text-lg font-semibold text-white">Event Details</h2>
       <div class="flex items-center gap-4">
         <div id="cidWarning" class="hidden px-3 py-1 rounded bg-red-500/10 text-red-400 text-xs border border-red-500/20">
             <i class="fa-solid fa-circle-exclamation mr-1"></i> No CID
         </div>
-        <button onclick="window.close()" class="text-slate-400 hover:text-white transition text-sm flex items-center gap-2">
+        
+        <!-- Controls for Data View -->
+        <div id="dataControls" class="flex items-center gap-3">
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search data..." onkeyup="filterTable()" class="bg-slate-800 text-sm text-white rounded-lg pl-9 pr-3 py-1.5 border border-slate-700 focus:border-orange-500 outline-none w-64">
+                <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+            </div>
+            <button onclick="exportCSV()" class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-sm transition">
+                <i class="fa-solid fa-file-csv mr-1"></i> Export
+            </button>
+        </div>
+
+        <button onclick="window.close()" class="text-slate-400 hover:text-white transition text-sm flex items-center gap-2 border-l border-slate-700 pl-4 ml-2">
             <i class="fa-solid fa-xmark"></i> Close
         </button>
       </div>
@@ -96,53 +110,70 @@
     <div class="flex-1 overflow-hidden relative">
         
         <!-- DATA VIEW (Tables) -->
-        <div id="dataView" class="absolute inset-0 p-6 overflow-auto">
-            <div class="glass rounded-xl overflow-hidden shadow-2xl">
+        <div id="dataView" class="absolute inset-0 p-6 overflow-auto custom-scrollbar">
+            <div class="glass rounded-xl overflow-hidden shadow-2xl min-h-[300px]">
                 <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold">
+                <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold sticky top-0 z-10 shadow-lg">
                     <tr id="tableHeaderRow">
                     <!-- Dynamic Headers -->
                     </tr>
                 </thead>
                 <tbody id="tableBody" class="text-sm text-slate-300 divide-y divide-slate-800">
-                    <tr><td class="p-8 text-center text-slate-500">Loading...</td></tr>
+                    <tr><td class="p-8 text-center text-slate-500">Select a tab to view data...</td></tr>
                 </tbody>
                 </table>
+                <div id="emptyState" class="hidden p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-800 text-slate-600 mb-4">
+                        <i class="fa-solid fa-database text-2xl"></i>
+                    </div>
+                    <h3 class="text-slate-400 font-medium">No Data Found</h3>
+                    <p class="text-slate-500 text-xs mt-1">Try refreshing or changing the filter.</p>
+                </div>
+            </div>
+            <div class="mt-4 text-xs text-slate-500 flex justify-between">
+                <span id="recordCount">0 Records</span>
+                <span>Last Updated: <span id="lastUpdated">Just now</span></span>
             </div>
         </div>
 
         <!-- SETTINGS VIEW (Branding & Links) -->
-        <div id="settingsView" class="absolute inset-0 p-6 overflow-auto hidden">
+        <div id="settingsView" class="absolute inset-0 p-6 overflow-auto hidden custom-scrollbar">
             <div class="flex flex-col lg:flex-row gap-8 h-full">
                 
                 <!-- Left: Controls -->
                 <div class="flex-1 space-y-6 overflow-y-auto pr-2 pb-10">
                     
                     <!-- Branding Form -->
-                    <div class="glass rounded-xl p-6">
-                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">App Appearance</h3>
+                    <div class="glass rounded-xl p-6 border-l-4 border-orange-500">
+                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2 flex justify-between">
+                            <span>Admin Branding</span>
+                            <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-1 rounded">Local Settings</span>
+                        </h3>
                         <div class="space-y-4">
                             <!-- Logo Upload -->
                             <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Organization Logo</label>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Organization Logo (URL or Upload)</label>
                                 <div class="flex items-center gap-3">
-                                    <div class="h-12 w-12 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center relative">
+                                    <div class="h-12 w-12 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center relative group">
                                         <img id="logoPreviewSmall" class="h-full w-full object-cover hidden">
                                         <i id="logoPlaceholder" class="fa-solid fa-image text-slate-600"></i>
                                     </div>
-                                    <input type="file" id="logoInput" accept="image/*" class="text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-orange-400 hover:file:bg-slate-700 cursor-pointer" onchange="handleImageUpload(this, 'previewLogo', 'logoPreviewSmall')">
+                                    <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'previewLogo', 'logoPreviewSmall')">
+                                    <button onclick="document.getElementById('logoInput').click()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded transition">Upload File</button>
                                 </div>
                             </div>
 
                             <!-- Header BG Upload -->
                             <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Header Background Image</label>
-                                <input type="file" id="headerInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-blue-400 hover:file:bg-slate-700 cursor-pointer" onchange="handleImageUpload(this, 'previewHeaderBg')">
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Header Background</label>
+                                <div class="flex gap-2">
+                                    <input type="file" id="headerInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-blue-400 hover:file:bg-slate-700 cursor-pointer" onchange="handleImageUpload(this, 'previewHeaderBg')">
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Org Name</label>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Organization Name</label>
                                     <input type="text" id="brandName" value="EventLens Political" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" oninput="updatePreview()">
                                 </div>
                                 <div>
@@ -161,32 +192,35 @@
                                 <input type="text" id="brandFooter" value="Powered by EventLens" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" oninput="updatePreview()">
                             </div>
 
-                            <button onclick="saveSettings()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition w-full mt-2">Save Configuration</button>
+                            <button onclick="saveSettings()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition w-full mt-2 shadow-lg shadow-orange-500/20">
+                                <i class="fa-solid fa-save mr-1"></i> Save Configuration
+                            </button>
+                            <p class="text-[10px] text-slate-500 text-center mt-1">Settings are saved locally for this Collection ID.</p>
                         </div>
                     </div>
 
                     <!-- Links Generator -->
                     <div class="glass rounded-xl p-6">
-                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Form Links</h3>
+                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Public Form Links</h3>
                         <div class="space-y-3">
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-calendar-days w-6 text-center text-slate-500"></i> Event Details</span>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-calendar-days w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Event Details</span>
                                 <button onclick="copyLink('political_program_info_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
                             </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-users-gear w-6 text-center text-slate-500"></i> Coordinator</span>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-users-gear w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Coordinator</span>
                                 <button onclick="copyLink('political_coordinator_entry_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
                             </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-clipboard-check w-6 text-center text-slate-500"></i> Reporting</span>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-clipboard-check w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Reporting</span>
                                 <button onclick="copyLink('political_mandal_reporting_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
                             </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-plane-departure w-6 text-center text-slate-500"></i> President Tour</span>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-plane-departure w-6 text-center text-slate-500 group-hover:text-orange-400"></i> President Tour</span>
                                 <button onclick="copyLink('political_president_tour_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
                             </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-user-group w-6 text-center text-slate-500"></i> Visitor Form</span>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-user-group w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Visitor Form</span>
                                 <button onclick="copyLink('political_visitor_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
                             </div>
                         </div>
@@ -267,81 +301,99 @@
     const API_ID = 'vxid0yoovj';
     const REGION = 'ap-south-1';
     let currentTab = 'program_info';
-    let currentData = [];
+    let rawData = []; // Stores all data fetched
+    let filteredData = []; // Stores data after search/filter
     let editingId = null;
     let collectionId = '';
+    let sortDir = 1; // 1 for asc, -1 for desc
 
     const qs = (name) => (new URL(window.location.href)).searchParams.get(name) || '';
     collectionId = qs('cid') || qs('collection_id');
 
+    // Init
     if(!collectionId) {
         document.getElementById('cidWarning').classList.remove('hidden');
         document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
-        document.getElementById('tableBody').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-400">Error: No Collection ID found in URL.<br>Please use ?cid=YOUR_ID</td></tr>`;
     } else {
         document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
+        loadSettings(); // Load Branding Logic
         loadData();
     }
 
+    // --- Data Schemas (Matching your forms) ---
     const SCHEMAS = {
       'program_info': {
         title: 'Event Details',
-        headers: ['Program', 'Date/Time', 'Location', 'District', 'Action'],
+        headers: ['Program Title', 'Date', 'Time', 'Location', 'District', 'Action'],
         fields: [
-            { key: 'program_name', label: 'Name' }, { key: 'program_time', label: 'Time', type: 'datetime-local' },
-            { key: 'program_location', label: 'Location' }, { key: 'district', label: 'District' }
+            { key: 'program_title', label: 'Program Title' }, 
+            { key: 'program_date', label: 'Date', type: 'date' },
+            { key: 'program_time', label: 'Time', type: 'time' },
+            { key: 'program_location', label: 'Location' }, 
+            { key: 'district', label: 'District' },
+            { key: 'expected_people', label: 'Expected People', type: 'number' }
         ],
         previewFields: [
-            { icon: 'fa-user', ph: 'Coordinator Name' }, { icon: 'fa-heading', ph: 'Program Title' },
-            { icon: 'fa-map-location-dot', ph: 'District' }, { icon: 'fa-map-pin', ph: 'Location' },
-            { icon: 'fa-calendar-day', ph: 'Date & Time' }
+            { icon: 'fa-heading', ph: 'Program Title' }, { icon: 'fa-map-location-dot', ph: 'District' },
+            { icon: 'fa-map-pin', ph: 'Location' }, { icon: 'fa-calendar-day', ph: 'Date & Time' },
+            { icon: 'fa-users', ph: 'Expected Attendance' }
         ]
       },
       'coordinator_entry': {
-        title: 'Coordinator Form',
-        headers: ['Name', 'Role', 'Mobile', 'Area', 'Action'],
+        title: 'Coordinator Management',
+        headers: ['Name', 'Role', 'Mobile', 'Area', 'Type', 'Action'],
         fields: [
-            { key: 'convenor_name', label: 'Name' }, { key: 'coordinator_role', label: 'Role' },
-            { key: 'convenor_mobile', label: 'Mobile' }, { key: 'area', label: 'Area' }
+            { key: 'convenor_name', label: 'Name' }, 
+            { key: 'coordinator_role', label: 'Role', type: 'select', options: ['Vidhan Sabha Sanyojak', 'Mandal Adhyaksh', 'Ward Sanyojak'] },
+            { key: 'convenor_mobile', label: 'Mobile' }, 
+            { key: 'area', label: 'Area/Ward' },
+            { key: 'designation_type', label: 'Type' }
         ],
         previewFields: [
             { icon: 'fa-bullhorn', ph: 'Program Name' }, { icon: 'fa-map-location-dot', ph: 'District' },
             { icon: 'fa-user', ph: 'Convenor Name' }, { icon: 'fa-phone', ph: 'Convenor Mobile' },
-            { icon: 'fa-user-plus', ph: 'Co-Convenor 1' }, { icon: 'fa-user-plus', ph: 'Co-Convenor 2' }
+            { icon: 'fa-user-plus', ph: 'Co-Convenor Details' }
         ]
       },
       'mandal_reporting': {
         title: 'Mandal Reporting',
-        headers: ['Program', 'Level', 'Attendance', 'Action'],
+        headers: ['Program', 'Level', 'Attendance', 'Issues', 'Action'],
         fields: [
-            { key: 'program_name', label: 'Program' }, { key: 'report_level', label: 'Level', type: 'select', options:['mandal','district','vidhansabha'] },
-            { key: 'total_attendance', label: 'Attendance' }
+            { key: 'program_name', label: 'Program' }, 
+            { key: 'report_level', label: 'Level', type: 'select', options:['Mandal','District','Vidhan Sabha'] },
+            { key: 'total_attendance', label: 'Attendance' },
+            { key: 'issues', label: 'Issues/Feedback' }
         ],
         previewFields: [
             { icon: 'fa-heading', ph: 'Program Name' }, { icon: 'fa-layer-group', ph: 'Level (Mandal/Dist)' },
-            { icon: 'fa-map-location-dot', ph: 'Location Info' }, { icon: 'fa-users', ph: 'Total Attendance' },
-            { icon: 'fa-camera', ph: 'Upload Photos (Box)' }
+            { icon: 'fa-users', ph: 'Total Attendance' }, { icon: 'fa-comment-dots', ph: 'Key Issues' },
+            { icon: 'fa-camera', ph: 'Upload Photos' }
         ]
       },
       'president_tour': {
         title: 'President Tour',
-        headers: ['Tour Place', 'Date', 'VIP', 'Action'],
+        headers: ['Tour Place', 'Date', 'VIP', 'Stay Location', 'Action'],
         fields: [
-            { key: 'tour_place', label: 'Place' }, { key: 'tour_date', label: 'Date', type: 'date' },
-            { key: 'vip_person', label: 'VIP' }
+            { key: 'tour_place', label: 'Place' }, 
+            { key: 'tour_date', label: 'Date', type: 'date' },
+            { key: 'vip_person', label: 'VIP' },
+            { key: 'stay_arrangement', label: 'Stay' }
         ],
         previewFields: [
             { icon: 'fa-user', ph: 'Your Name' }, { icon: 'fa-calendar-day', ph: 'Tour Date' },
             { icon: 'fa-location-arrow', ph: 'Tour Place' }, { icon: 'fa-user-tie', ph: 'VIP Name' },
-            { icon: 'fa-camera', ph: 'Event Photos' }
+            { icon: 'fa-bed', ph: 'Stay Arrangement' }
         ]
       },
       'visitor_form': {
         title: 'Visitor Entry',
-        headers: ['Name', 'Mobile', 'District', 'Reason', 'Action'],
+        headers: ['Name', 'Mobile', 'District', 'Reason', 'Date', 'Action'],
         fields: [
-            { key: 'name', label: 'Name' }, { key: 'mobile', label: 'Mobile' },
-            { key: 'district', label: 'District' }, { key: 'reason', label: 'Reason' }
+            { key: 'name', label: 'Name' }, 
+            { key: 'mobile', label: 'Mobile' },
+            { key: 'district', label: 'District' }, 
+            { key: 'reason', label: 'Reason' },
+            { key: 'created_at', label: 'Date', type: 'date', readonly: true }
         ],
         previewFields: [
             { icon: 'fa-user', ph: 'Visitor Name' }, { icon: 'fa-phone', ph: 'Mobile Number' },
@@ -351,6 +403,7 @@
       }
     };
 
+    // --- Tab Switching ---
     function switchTab(tab, el) {
       currentTab = tab;
       document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
@@ -365,28 +418,243 @@
 
       if(tab === 'settings') {
         document.getElementById('dataView').classList.add('hidden');
+        document.getElementById('dataControls').classList.add('hidden');
         document.getElementById('settingsView').classList.remove('hidden');
         updatePreview();
       } else {
         document.getElementById('settingsView').classList.add('hidden');
         document.getElementById('dataView').classList.remove('hidden');
+        document.getElementById('dataControls').classList.remove('hidden');
         loadData();
       }
     }
 
-    // --- Image Upload & Preview Logic ---
+    // --- Data Loading & Mocking ---
+    async function loadData() {
+      if(!collectionId) return;
+      const tbody = document.getElementById('tableBody');
+      const thead = document.getElementById('tableHeaderRow');
+      const schema = SCHEMAS[currentTab];
+      
+      // Setup Headers
+      thead.innerHTML = schema.headers.map((h, index) => 
+        `<th class="p-4 border-b border-slate-700 whitespace-nowrap" onclick="sortTable(${index}, '${h}')">
+            ${h} <i class="fa-solid fa-sort text-slate-600 text-[10px] ml-1"></i>
+         </th>`
+      ).join('');
+
+      tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
+
+      try {
+        // Simulate API Delay
+        await new Promise(r => setTimeout(r, 600)); 
+
+        // Generate Mock Data based on Tab
+        rawData = generateMockData(currentTab);
+        filteredData = [...rawData];
+        
+        renderTable();
+        document.getElementById('lastUpdated').innerText = new Date().toLocaleTimeString();
+      } catch(err) { 
+          tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-red-400">Error loading data.</td></tr>`; 
+      }
+    }
+
+    function generateMockData(type) {
+        const count = 15;
+        const data = [];
+        const districts = ['Indore', 'Bhopal', 'Ujjain', 'Dewas', 'Ratlam'];
+        
+        for(let i=0; i<count; i++) {
+            let payload = {};
+            if(type === 'program_info') {
+                payload = { 
+                    program_title: `Jan Aakrosh Yatra - Phase ${i+1}`, program_date: `2025-10-${10+i}`, 
+                    program_time: '10:00 AM', program_location: `Gandhi Hall ${i}`, 
+                    district: districts[i%5], expected_people: 500 + (i*50) 
+                };
+            } else if(type === 'coordinator_entry') {
+                payload = {
+                    convenor_name: ['Rahul Singh', 'Amit Sharma', 'Priya Verma'][i%3],
+                    coordinator_role: ['Mandal Adhyaksh', 'Ward Sanyojak', 'Vidhan Sabha Sanyojak'][i%3],
+                    convenor_mobile: `9893${100000+i}`, area: `Ward ${i+1}`, designation_type: 'Primary'
+                };
+            } else if(type === 'visitor_form') {
+                payload = {
+                    name: `Visitor ${i+1}`, mobile: `999888${1000+i}`, district: districts[i%5],
+                    reason: i%2===0 ? 'Complaint regarding water' : 'Meeting with Adhyaksh', created_at: '2025-10-01'
+                };
+            } else if(type === 'mandal_reporting') {
+                payload = {
+                    program_name: `Booth Sashaktikaran ${i}`, report_level: 'Mandal', 
+                    total_attendance: 50+i, issues: 'None'
+                };
+            } else if(type === 'president_tour') {
+                payload = {
+                    tour_place: districts[i%5], tour_date: `2025-11-${i+1}`, vip_person: 'State President',
+                    stay_arrangement: 'Circuit House'
+                };
+            }
+
+            data.push({
+                entry_id: `id_${Math.random().toString(36).substr(2,6)}`,
+                payload: payload
+            });
+        }
+        return data;
+    }
+
+    // --- Rendering & Filtering ---
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        const schema = SCHEMAS[currentTab];
+        document.getElementById('recordCount').innerText = `${filteredData.length} Records`;
+
+        if(filteredData.length === 0) {
+            document.getElementById('emptyState').classList.remove('hidden');
+            return;
+        }
+        document.getElementById('emptyState').classList.add('hidden');
+
+        filteredData.forEach(item => {
+            const d = item.payload || {};
+            let tds = '';
+            schema.fields.forEach(f => { 
+                let val = d[f.key] || '-';
+                if(f.type === 'date' && val !== '-') { /* basic format if needed */ }
+                tds += `<td class="p-4 text-slate-300 border-b border-slate-800/50">${val}</td>`; 
+            });
+            tbody.innerHTML += `
+            <tr class="table-row transition">
+                ${tds}
+                <td class="p-4 text-right border-b border-slate-800/50">
+                    <button onclick="openEdit('${item.entry_id}')" class="text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
+                    </button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function filterTable() {
+        const term = document.getElementById('searchInput').value.toLowerCase();
+        const schema = SCHEMAS[currentTab];
+        
+        filteredData = rawData.filter(item => {
+            const d = item.payload || {};
+            return schema.fields.some(f => String(d[f.key] || '').toLowerCase().includes(term));
+        });
+        renderTable();
+    }
+
+    function sortTable(colIndex, headerName) {
+        sortDir = sortDir * -1;
+        const key = SCHEMAS[currentTab].fields[colIndex].key;
+        
+        filteredData.sort((a, b) => {
+            const valA = String(a.payload[key] || '').toLowerCase();
+            const valB = String(b.payload[key] || '').toLowerCase();
+            if (valA < valB) return -1 * sortDir;
+            if (valA > valB) return 1 * sortDir;
+            return 0;
+        });
+        renderTable();
+    }
+
+    function exportCSV() {
+        if(filteredData.length === 0) return alert("No data to export");
+        
+        const schema = SCHEMAS[currentTab];
+        const headers = schema.fields.map(f => f.label).join(',');
+        const rows = filteredData.map(item => {
+            return schema.fields.map(f => `"${item.payload[f.key] || ''}"`).join(',');
+        }).join('\n');
+        
+        const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${currentTab}_export_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- Branding Logic (LocalStorage) ---
+    function saveSettings() {
+        const settings = {
+            name: document.getElementById('brandName').value,
+            theme: document.getElementById('brandTheme').value,
+            footer: document.getElementById('brandFooter').value,
+            // Images are not saved in localStorage in this simplified version to avoid quota limits, 
+            // but we save text preferences.
+        };
+        localStorage.setItem(`political_branding_${collectionId}`, JSON.stringify(settings));
+        alert("Branding Settings Saved Locally!");
+        updatePreview();
+    }
+
+    function loadSettings() {
+        const saved = localStorage.getItem(`political_branding_${collectionId}`);
+        if(saved) {
+            const s = JSON.parse(saved);
+            if(s.name) document.getElementById('brandName').value = s.name;
+            if(s.theme) document.getElementById('brandTheme').value = s.theme;
+            if(s.footer) document.getElementById('brandFooter').value = s.footer;
+            // Trigger update to apply styles
+            updatePreview();
+        }
+    }
+
+    // --- Editor Modal & Images ---
+    function openEdit(id) {
+        const item = rawData.find(i => i.entry_id === id); if(!item) return; editingId = id;
+        const formContainer = document.getElementById('modalForm'); formContainer.innerHTML = '';
+        const fields = SCHEMAS[currentTab].fields || []; const data = item.payload || {};
+        
+        fields.forEach(field => {
+            if(field.readonly) return;
+            const val = data[field.key] || '';
+            let inputHtml = `<input type="${field.type || 'text'}" id="edit_${field.key}" value="${val}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-orange-500" />`;
+            
+            if(field.type === 'select') {
+                inputHtml = `<select id="edit_${field.key}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:border-orange-500">
+                    ${field.options.map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}
+                </select>`;
+            }
+            formContainer.innerHTML += `<div><label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase">${field.label}</label>${inputHtml}</div>`;
+        });
+        document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+    
+    function saveChanges() {
+        // Mock update logic
+        const item = rawData.find(i => i.entry_id === editingId);
+        const fields = SCHEMAS[currentTab].fields;
+        fields.forEach(f => {
+            if(f.readonly) return;
+            const el = document.getElementById(`edit_${f.key}`);
+            if(el) item.payload[f.key] = el.value;
+        });
+        filterTable(); // Re-render
+        closeModal();
+    }
+
+    // --- Image Preview Utils ---
     function handleImageUpload(input, targetImgId, smallPreviewId = null) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = document.getElementById(targetImgId);
-                
                 if(targetImgId === 'previewHeaderBg') {
                     img.style.backgroundImage = `url('${e.target.result}')`;
                 } else {
                     img.src = e.target.result;
+                    img.classList.remove('hidden');
                 }
-
                 if (smallPreviewId) {
                     const small = document.getElementById(smallPreviewId);
                     small.src = e.target.result;
@@ -412,7 +680,7 @@
         // Theme Colors
         const btn = document.getElementById('prevBtn');
         const screen = document.getElementById('mobileScreen');
-        let bgGrad, btnGrad, focusColor;
+        let bgGrad, btnGrad;
 
         if(theme === 'blue') {
             bgGrad = 'radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 50%), #0f172a';
@@ -455,62 +723,17 @@
         });
     }
 
-    async function loadData() {
-      if(!collectionId) return;
-      const tbody = document.getElementById('tableBody');
-      const thead = document.getElementById('tableHeaderRow');
-      const schema = SCHEMAS[currentTab];
-      thead.innerHTML = schema.headers.map(h => `<th class="p-4 border-b border-slate-700">${h}</th>`).join('');
-      tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>Loading Data...</td></tr>`;
-
-      try {
-        await new Promise(r => setTimeout(r, 600)); 
-        const mockData = Array.from({length: 5}).map((_,i) => ({
-            entry_id: `id_${Math.random().toString(36).substr(2,5)}`,
-            payload: { program_name: `Event ${i+1}`, program_time: '2025-10-10T10:00', district: 'Indore', program_location: 'Hall A', convenor_name: 'Rahul Singh', coordinator_role: 'Adhyaksh', convenor_mobile: '9998887776', area: 'Ward 5', report_level: 'mandal', total_attendance: 150 + (i*10), tour_place: 'Bhopal', tour_date: '2025-11-01', vip_person: 'President', name: 'Visitor Name', mobile: '9998887776', reason: 'Meeting' }
-        }));
-        renderTable(mockData);
-      } catch(err) { tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-red-400">Error: ${err.message}</td></tr>`; }
-    }
-
-    function renderTable(data) {
-        currentData = data;
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        const schema = SCHEMAS[currentTab];
-        data.forEach(item => {
-            const d = item.payload || {};
-            let tds = '';
-            schema.fields.forEach(f => { tds += `<td class="p-4 text-slate-300">${d[f.key] || '-'}</td>`; });
-            tbody.innerHTML += `<tr class="table-row border-b border-slate-800/50 transition">${tds}<td class="p-4 text-right"><button onclick="openEdit('${item.entry_id}')" class="text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg text-xs font-medium">Edit</button></td></tr>`;
-        });
-    }
-
-    function openEdit(id) {
-        const item = currentData.find(i => i.entry_id === id); if(!item) return; editingId = id;
-        const formContainer = document.getElementById('modalForm'); formContainer.innerHTML = '';
-        const fields = SCHEMAS[currentTab].fields || []; const data = item.payload || {};
-        fields.forEach(field => {
-            const val = data[field.key] || '';
-            let inputHtml = `<input type="${field.type || 'text'}" id="edit_${field.key}" value="${val}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white outline-none" />`;
-            if(field.type === 'select') inputHtml = `<select id="edit_${field.key}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white">${field.options.map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;
-            formContainer.innerHTML += `<div><label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase">${field.label}</label>${inputHtml}</div>`;
-        });
-        document.getElementById('editModal').classList.add('open');
-    }
-
-    function closeModal() { document.getElementById('editModal').classList.remove('open'); }
-    function saveChanges() { closeModal(); alert("Changes Saved (Mock Mode)"); }
-    function saveSettings() { alert("Settings Saved! This branding will apply to public forms."); }
     function copyLink(filename) {
         if(!collectionId) { alert("Collection ID Missing!"); return; }
         const base = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
         const link = `${base}/${filename}?cid=${collectionId}`;
         navigator.clipboard.writeText(link);
-        alert("Link Copied: " + link);
+        // Simple Toast
+        const btn = event.currentTarget;
+        const orig = btn.innerText;
+        btn.innerText = "Copied!";
+        setTimeout(() => btn.innerText = orig, 1500);
     }
-    
-    updatePreview();
   </script>
 </body>
 </html>

@@ -159,6 +159,15 @@
         reader.readAsDataURL(file);
 
         try {
+            // AUTH CHECK: Explicitly block request if no credentials are present
+            const headers = getAuthHeaders();
+            if (!headers.Authorization) {
+                // If we are strictly checking for auth, throw error here.
+                // NOTE: If you have a truly public endpoint that needs no token, remove this block.
+                // But based on your error "missing token", this check is required.
+                throw new Error("Authentication Failed: No login token found. Please login or use a valid link.");
+            }
+
             // Determine correct API Endpoint (Public vs Protected)
             const token = qs('token');
             // If token exists in URL, use public/search, else use /search (which might check headers)
@@ -167,7 +176,7 @@
             // STEP 1: Init Search (Get Upload URL using correct Search API Action)
             const initRes = await fetch(searchEndpoint, {
                 method: 'POST',
-                headers: getAuthHeaders(),
+                headers: headers,
                 body: JSON.stringify({ 
                     action: 'init_search', 
                     payload: {
@@ -179,7 +188,10 @@
 
             if(!initRes.ok) {
                let errText = await initRes.text();
-               try { errText = JSON.parse(errText).message || errText; } catch(e){}
+               try { 
+                   const jsonErr = JSON.parse(errText);
+                   errText = jsonErr.message || jsonErr.error || errText; 
+               } catch(e){}
                throw new Error("Init Failed: " + errText);
             }
             const initData = await initRes.json();
@@ -198,7 +210,7 @@
             // STEP 3: Run Search
             const searchRes = await fetch(searchEndpoint, {
                 method: 'POST',
-                headers: getAuthHeaders(),
+                headers: headers,
                 body: JSON.stringify({ 
                     action: 'run_search', 
                     payload: { 

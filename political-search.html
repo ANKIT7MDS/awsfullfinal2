@@ -3,11 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Karyakarta Search - EventLens (Fixed)</title>
+  <title>Karyakarta Search - EventLens (Token Fixed)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' } } } } }</script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: { brand: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' } }
+        }
+      }
+    }
+  </script>
   <style>
     body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 40%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 40%), #020617; color: #e2e8f0; }
     .glass { background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); }
@@ -19,6 +28,7 @@
     .timeline-item:last-child .timeline-line::before { display: none; }
   </style>
 </head>
+
 <body class="min-h-screen flex flex-col items-center p-4">
 
   <!-- AUTH STATUS -->
@@ -49,10 +59,10 @@
           <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
         </div>
       </div>
-       
+
       <!-- Preview & Loader Overlay -->
       <div id="processing" class="absolute inset-0 bg-slate-900 z-30 rounded-xl flex items-center justify-center gap-3 hidden">
-        <img id="searchPreview" class="w-10 h-10 rounded-full object-cover border-2 border-orange-500">
+        <img id="searchPreview" class="w-10 h-10 rounded-full object-cover border-2 border-orange-500" alt="preview">
         <span class="text-sm text-orange-400 font-medium animate-pulse">Searching Database...</span>
       </div>
     </div>
@@ -60,14 +70,14 @@
 
   <!-- RESULTS CONTAINER -->
   <div id="resultsArea" class="w-full max-w-xl mt-8 hidden">
-    
+
     <!-- PERSON PROFILE CARD -->
     <div id="profileCard" class="glass rounded-2xl p-6 mb-6 relative overflow-hidden hidden">
       <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500"></div>
       <div class="flex gap-5 items-start">
         <div class="relative">
           <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-slate-700 shadow-xl">
-            <img id="resultImage" src="" class="w-full h-full object-cover">
+            <img id="resultImage" src="" class="w-full h-full object-cover" alt="result">
           </div>
           <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center border border-slate-700 text-orange-500 text-xs font-bold">
             <i class="fa-solid fa-check"></i>
@@ -76,8 +86,12 @@
         <div class="flex-1">
           <h2 id="personName" class="text-xl font-bold text-white">Unknown Person</h2>
           <div class="flex flex-wrap gap-2 mt-2">
-            <span id="personPhone" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden"><i class="fa-solid fa-phone mr-1.5 text-orange-500"></i> <span id="phoneVal"></span></span>
-            <span id="personDesig" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden"><i class="fa-solid fa-id-badge mr-1.5 text-blue-400"></i> <span id="desigVal"></span></span>
+            <span id="personPhone" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden">
+              <i class="fa-solid fa-phone mr-1.5 text-orange-500"></i> <span id="phoneVal"></span>
+            </span>
+            <span id="personDesig" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden">
+              <i class="fa-solid fa-id-badge mr-1.5 text-blue-400"></i> <span id="desigVal"></span>
+            </span>
           </div>
           <div class="mt-3 text-xs text-slate-500 flex gap-4">
             <span><i class="fa-regular fa-clock mr-1"></i> Match Score: <span id="matchScore" class="text-emerald-400">--</span></span>
@@ -93,15 +107,11 @@
     </div>
 
     <!-- TIMELINE VIEW -->
-    <div id="view-timeline" class="space-y-0">
-      <!-- Items injected via JS -->
-    </div>
+    <div id="view-timeline" class="space-y-0"></div>
 
     <!-- PHOTOS VIEW -->
     <div id="view-photos" class="hidden">
-      <div id="photosGrid" class="grid grid-cols-3 gap-2">
-        <!-- Photos injected via JS -->
-      </div>
+      <div id="photosGrid" class="grid grid-cols-3 gap-2"></div>
     </div>
 
   </div>
@@ -109,232 +119,296 @@
   <div id="errorMsg" class="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center hidden"></div>
 
 <script>
-    // ==========================================
-    // CONFIGURATION
-    // ==========================================
-    const API_ID = "vxid0yoovj"; 
-    const REGION = "ap-south-1";
-    
-    // API Base URL
-    const BASE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political`; 
+  // ==========================================
+  // CONFIGURATION
+  // ==========================================
+  const API_ID = "vxid0yoovj";
+  const REGION = "ap-south-1";
+  const BASE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political`;
 
-    const $ = (id) => document.getElementById(id);
-    const qs = (k) => new URLSearchParams(window.location.search).get(k);
-    const COLLECTION_ID = qs('cid') || 'bjpmandsaur';
+  const $ = (id) => document.getElementById(id);
+  const qs = (k) => new URLSearchParams(window.location.search).get(k);
 
-    // ==========================================
-    // AUTH HELPERS
-    // ==========================================
-    function getAuthHeaders() {
-        const token = qs('token');
-        const jwt = localStorage.getItem('idToken') || localStorage.getItem('accessToken');
-        
-        if (token) return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
-        if (jwt) return { 'Authorization': 'Bearer ' + jwt, 'Content-Type': 'application/json' };
-        
-        // Return without auth (for public endpoints)
-        return { 'Content-Type': 'application/json' };
+  const COLLECTION_ID = qs('cid') || 'bjpmandsaur';
+  const PUBLIC_TOKEN = qs('token'); // public link token (if exists)
+
+  // ==========================================
+  // AUTH / MODE
+  // ==========================================
+  function getJwtFromStorage() {
+    return localStorage.getItem('idToken') || localStorage.getItem('accessToken');
+  }
+
+  function getMode() {
+    // If URL token exists => PUBLIC mode
+    if (PUBLIC_TOKEN) return 'public';
+    // else => admin mode (JWT must exist)
+    return 'admin';
+  }
+
+  function getApiUrl() {
+    const mode = getMode();
+    return `${BASE_API}${mode === 'public' ? '/public/search' : '/search'}`;
+  }
+
+  function getHeaders() {
+    const headers = { 'Content-Type': 'application/json' };
+    // IMPORTANT:
+    // Public mode: do NOT send Authorization, token goes in payload
+    // Admin mode: send Authorization Bearer JWT
+    if (getMode() === 'admin') {
+      const jwt = getJwtFromStorage();
+      if (jwt) headers['Authorization'] = 'Bearer ' + jwt;
+    }
+    return headers;
+  }
+
+  // Auth status text
+  (function(){
+    const mode = getMode();
+    if (mode === 'public') $('authStatus').innerText = "Mode: ✅ Public Link (token)";
+    else {
+      const jwt = getJwtFromStorage();
+      $('authStatus').innerText = jwt ? "Mode: ✅ Admin (JWT)" : "Mode: ⚠️ Admin (missing JWT)";
+    }
+  })();
+
+  // ==========================================
+  // CORE LOGIC
+  // ==========================================
+  async function safeJson(res) {
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return { raw: text }; }
+  }
+
+  async function apiPost(action, payload) {
+    const url = getApiUrl();
+    const headers = getHeaders();
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action, payload })
+    });
+
+    const data = await safeJson(res);
+    if (!res.ok) {
+      const msg = data?.message || data?.error || data?.raw || 'API Error';
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  async function uploadToS3(uploadUrl, file) {
+    const putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file
+    });
+    if (!putRes.ok) throw new Error("S3 Upload Failed");
+  }
+
+  async function handleSearch(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    // size check 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      showError("File 5MB से बड़ा है. छोटा photo चुनो.");
+      $('searchFile').value = '';
+      return;
     }
 
-    // Display Auth Status
-    const hdrs = getAuthHeaders();
-    if(hdrs.Authorization) $('authStatus').innerText = "Auth: ✅ Connected";
-    else $('authStatus').innerText = "Auth: ⚠️ Guest/Public";
+    // UI reset
+    $('resultsArea').classList.add('hidden');
+    $('errorMsg').classList.add('hidden');
+    $('processing').classList.remove('hidden');
 
-    // ==========================================
-    // CORE LOGIC
-    // ==========================================
+    const reader = new FileReader();
+    reader.onload = (ev) => $('searchPreview').src = ev.target.result;
+    reader.readAsDataURL(file);
 
-    async function handleSearch(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    try {
+      const mode = getMode();
+      const jwt = getJwtFromStorage();
 
-        // UI Reset
-        $('resultsArea').classList.add('hidden');
-        $('errorMsg').classList.add('hidden');
-        $('processing').classList.remove('hidden');
-        
-        const reader = new FileReader();
-        reader.onload = (ev) => $('searchPreview').src = ev.target.result;
-        reader.readAsDataURL(file);
+      // auth validation
+      if (mode === 'public' && !PUBLIC_TOKEN) {
+        throw new Error("Public token missing. Link में ?token=... नहीं मिला.");
+      }
+      if (mode === 'admin' && !jwt) {
+        throw new Error("Admin login token नहीं मिला. पहले Admin panel से login करो.");
+      }
 
-        try {
-            // AUTH CHECK: Explicitly block request if no credentials are present
-            const headers = getAuthHeaders();
-            if (!headers.Authorization) {
-                // If we are strictly checking for auth, throw error here.
-                // NOTE: If you have a truly public endpoint that needs no token, remove this block.
-                // But based on your error "missing token", this check is required.
-                throw new Error("Authentication Failed: No login token found. Please login or use a valid link.");
-            }
+      // ✅ IMPORTANT FIX:
+      // Public mode में token payload में जाना चाहिए (Authorization header नहीं)
+      const commonPayload = {
+        collection_id: COLLECTION_ID,
+        token: PUBLIC_TOKEN || undefined
+      };
 
-            // Determine correct API Endpoint (Public vs Protected)
-            const token = qs('token');
-            // If token exists in URL, use public/search, else use /search (which might check headers)
-            const searchEndpoint = token ? `${BASE_API}/public/search` : `${BASE_API}/search`;
+      // STEP 1: init_search
+      const initData = await apiPost('init_search', {
+        ...commonPayload,
+        mime_type: file.type || 'application/octet-stream'
+      });
 
-            // STEP 1: Init Search (Get Upload URL using correct Search API Action)
-            const initRes = await fetch(searchEndpoint, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({ 
-                    action: 'init_search', 
-                    payload: {
-                        mime_type: file.type || 'application/octet-stream',
-                        collection_id: COLLECTION_ID
-                    }
-                })
-            });
+      if (!initData.upload_url || !initData.search_id) {
+        throw new Error("Init response invalid (upload_url/search_id missing).");
+      }
 
-            if(!initRes.ok) {
-               let errText = await initRes.text();
-               try { 
-                   const jsonErr = JSON.parse(errText);
-                   errText = jsonErr.message || jsonErr.error || errText; 
-               } catch(e){}
-               throw new Error("Init Failed: " + errText);
-            }
-            const initData = await initRes.json();
-            
-            // STEP 2: Upload to S3
-            if(initData.upload_url) {
-                await fetch(initData.upload_url, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': file.type || 'application/octet-stream' },
-                    body: file
-                });
-            } else {
-                throw new Error("API did not provide upload URL.");
-            }
+      // STEP 2: upload to S3
+      await uploadToS3(initData.upload_url, file);
 
-            // STEP 3: Run Search
-            const searchRes = await fetch(searchEndpoint, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify({ 
-                    action: 'run_search', 
-                    payload: { 
-                        search_id: initData.search_id 
-                    }
-                })
-            });
+      // STEP 3: run_search
+      const searchData = await apiPost('run_search', {
+        ...commonPayload,
+        search_id: initData.search_id
+      });
 
-            if (!searchRes.ok) {
-                const errJson = await searchRes.json();
-                throw new Error(errJson.message || "Search failed");
-            }
-            const searchData = await searchRes.json();
+      const timeline = searchData.timeline || [];
+      const photos = searchData.photo_urls || [];
+      const similarity = searchData.similarity || 0;
 
-            // STEP 4: Render Results
-            // The Search API returns { similarity, timeline: [], photo_urls: [] }
-            
-            const timeline = searchData.timeline || [];
-            const photos = searchData.photo_urls || [];
-            const similarity = searchData.similarity || 0;
+      if (similarity === 0 && timeline.length === 0) {
+        throw new Error("No matching face found.");
+      }
 
-            if (similarity === 0 && timeline.length === 0) {
-                 throw new Error("No matching face found.");
-            }
+      renderProfile(null, { similarity });
+      renderTimeline(timeline);
+      renderPhotos(photos);
 
-            renderProfile(null, { similarity }); // Profile info isn't always in search res, so we handle basic info
-            renderTimeline(timeline);
-            renderPhotos(photos);
+      $('resultsArea').classList.remove('hidden');
 
-            $('resultsArea').classList.remove('hidden');
+    } catch (err) {
+      console.error(err);
+      showError(err.message || "Search failed. Please try again.");
+    } finally {
+      $('processing').classList.add('hidden');
+      $('searchFile').value = '';
+    }
+  }
 
-        } catch (err) {
-            console.error(err);
-            showError(err.message || "Search failed. Please try again.");
-        } finally {
-            $('processing').classList.add('hidden');
-            $('searchFile').value = ''; 
-        }
+  // ==========================================
+  // RENDERING
+  // ==========================================
+  function renderProfile(info, stats) {
+    $('profileCard').classList.remove('hidden');
+    $('resultImage').src = $('searchPreview').src;
+
+    $('personName').innerText = "Found Person";
+    $('personPhone').classList.add('hidden');
+    $('personDesig').classList.add('hidden');
+
+    if (stats && stats.similarity != null) {
+      $('matchScore').innerText = Math.round(stats.similarity) + "%";
+    } else {
+      $('matchScore').innerText = "--";
+    }
+  }
+
+  function renderTimeline(events) {
+    const container = $('view-timeline');
+    container.innerHTML = '';
+    if (!events || events.length === 0) {
+      container.innerHTML = `<div class="text-center text-slate-500 py-8">No activity history found.</div>`;
+      return;
     }
 
-    // ... (Rendering functions) ...
-    function renderProfile(info, stats) {
-        $('profileCard').classList.remove('hidden');
-        $('resultImage').src = $('searchPreview').src; 
-        
-        // Search API might not return person details directly if not an exact match
-        // So we default to showing match score
-        $('personName').innerText = "Found Person";
-        $('personPhone').classList.add('hidden');
-        $('personDesig').classList.add('hidden');
-        
-        if(stats.similarity) {
-            $('matchScore').innerText = Math.round(stats.similarity) + "%";
-        }
+    events.forEach(ev => {
+      const data = ev.data || {};
+      const date = new Date(ev.created_at_iso || ev.timestamp || ev.created_at);
+      const dateStr = isNaN(date) ? 'Unknown Date' : date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      const timeStr = isNaN(date) ? '--:--' : date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      let icon = 'fa-calendar-check', color = 'text-blue-400';
+      const type = ev.form_type || ev.type;
+
+      if (type === 'visitor_form') { icon = 'fa-building-user'; color = 'text-orange-400'; }
+      else if (type === 'party_attendance') { icon = 'fa-handshake'; color = 'text-green-400'; }
+      else if (type === 'program_info') { icon = 'fa-microphone'; color = 'text-purple-400'; }
+      else if (type === 'president_tour') { icon = 'fa-person-walking'; color = 'text-teal-400'; }
+      else if (type === 'coordinator_entry') { icon = 'fa-user-gear'; color = 'text-pink-400'; }
+      else if (type === 'mandal_reporting') { icon = 'fa-chart-line'; color = 'text-yellow-400'; }
+
+      let desc = ev.reason || data.program_title || data.program_name || data.tour_place || 'Activity Recorded';
+      if (data.program_location) desc += ` @ ${data.program_location}`;
+
+      const html = `
+        <div class="timeline-item relative pl-12 pb-8">
+          <div class="timeline-line"></div>
+          <div class="absolute left-0 top-0 w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center z-10 ${color}">
+            <i class="fa-solid ${icon}"></i>
+          </div>
+          <div class="glass p-4 rounded-xl border border-slate-700/50 hover:border-orange-500/30 transition-colors">
+            <div class="flex justify-between items-start mb-1">
+              <h4 class="font-bold text-slate-200 text-sm">${formatEventType(type)}</h4>
+              <span class="text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full">${dateStr} • ${timeStr}</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">${escapeHtml(desc)}</p>
+            ${data.program_date ? `<div class="mt-1 text-xs text-slate-500"><i class="fa-regular fa-calendar mr-1"></i>Event Date: ${escapeHtml(String(data.program_date))}</div>` : ''}
+          </div>
+        </div>`;
+      container.innerHTML += html;
+    });
+  }
+
+  function renderPhotos(photos) {
+    const grid = $('photosGrid');
+    grid.innerHTML = '';
+
+    if (!photos || photos.length === 0) {
+      $('view-photos').innerHTML = `<div class="text-center text-slate-500 py-8">No photos found.</div>`;
+      return;
     }
 
-    function renderTimeline(events) {
-        const container = $('view-timeline');
-        container.innerHTML = '';
-        if (!events || events.length === 0) { container.innerHTML = `<div class="text-center text-slate-500 py-8">No activity history found.</div>`; return; }
+    photos.forEach(p => {
+      const url = typeof p === 'string' ? p : p.url;
+      if (!url) return;
 
-        events.forEach(ev => {
-            // Handle original data structure
-            const data = ev.data || {};
-            const date = new Date(ev.created_at_iso || ev.timestamp);
-            const dateStr = isNaN(date) ? 'Unknown Date' : date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-            const timeStr = isNaN(date) ? '--:--' : date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-            
-            let icon = 'fa-calendar-check', color = 'text-blue-400';
-            const type = ev.form_type || ev.type;
+      grid.innerHTML += `
+        <a href="${url}" target="_blank" class="block aspect-square rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition group relative">
+          <img src="${url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt="photo">
+          <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+            <i class="fa-solid fa-expand text-white"></i>
+          </div>
+        </a>`;
+    });
+  }
 
-            if(type === 'visitor_form') { icon = 'fa-building-user'; color = 'text-orange-400'; }
-            else if(type === 'party_attendance') { icon = 'fa-handshake'; color = 'text-green-400'; }
-            else if(type === 'program_info') { icon = 'fa-microphone'; color = 'text-purple-400'; }
-            
-            // Construct Description based on available data fields
-            let desc = ev.reason || data.program_title || data.program_name || data.tour_place || 'Activity Recorded';
-            if(data.program_location) desc += ` @ ${data.program_location}`;
-
-            const html = `
-            <div class="timeline-item relative pl-12 pb-8">
-                <div class="timeline-line"></div>
-                <div class="absolute left-0 top-0 w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center z-10 ${color}"><i class="fa-solid ${icon}"></i></div>
-                <div class="glass p-4 rounded-xl border border-slate-700/50 hover:border-orange-500/30 transition-colors">
-                    <div class="flex justify-between items-start mb-1">
-                        <h4 class="font-bold text-slate-200 text-sm">${formatEventType(type)}</h4>
-                        <span class="text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full">${dateStr} • ${timeStr}</span>
-                    </div>
-                    <p class="text-xs text-slate-400 leading-relaxed">${desc}</p>
-                    ${data.program_date ? `<div class="mt-1 text-xs text-slate-500"><i class="fa-regular fa-calendar mr-1"></i>Event Date: ${data.program_date}</div>` : ''}
-                </div>
-            </div>`;
-            container.innerHTML += html;
-        });
+  function switchTab(tab) {
+    if (tab === 'timeline') {
+      $('view-timeline').classList.remove('hidden');
+      $('view-photos').classList.add('hidden');
+      $('tab-timeline').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
+      $('tab-photos').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
+    } else {
+      $('view-timeline').classList.add('hidden');
+      $('view-photos').classList.remove('hidden');
+      $('tab-timeline').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
+      $('tab-photos').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
     }
+  }
 
-    function renderPhotos(photos) {
-        const grid = $('photosGrid');
-        grid.innerHTML = '';
-        if (!photos || photos.length === 0) { $('view-photos').innerHTML = `<div class="text-center text-slate-500 py-8">No photos found.</div>`; return; }
-        
-        photos.forEach(p => {
-            // Handle both string URLs and object format
-            const url = typeof p === 'string' ? p : p.url;
-            if(!url) return;
+  function showError(msg) {
+    $('errorMsg').innerText = msg;
+    $('errorMsg').classList.remove('hidden');
+  }
 
-            grid.innerHTML += `<a href="${url}" target="_blank" class="block aspect-square rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition group relative"><img src="${url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500"><div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center"><i class="fa-solid fa-expand text-white"></i></div></a>`;
-        });
-    }
+  function formatEventType(type) {
+    if (!type) return "Activity";
+    return String(type).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
 
-    function switchTab(tab) {
-        if(tab === 'timeline') {
-            $('view-timeline').classList.remove('hidden'); $('view-photos').classList.add('hidden');
-            $('tab-timeline').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
-            $('tab-photos').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
-        } else {
-            $('view-timeline').classList.add('hidden'); $('view-photos').classList.remove('hidden');
-            $('tab-timeline').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
-            $('tab-photos').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
-        }
-    }
-
-    function showError(msg) { $('errorMsg').innerText = msg; $('errorMsg').classList.remove('hidden'); }
-    function formatEventType(type) { if(!type) return "Activity"; return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); }
+  // basic HTML escape (desc safety)
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 </script>
+
 </body>
 </html>

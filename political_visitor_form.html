@@ -163,13 +163,16 @@
     // CONFIGURATION - API & BRANDING
     // ==========================================
     
-    // Updated: Removing /prod to fix 404 error
     const API_ID = "vxid0yoovj"; 
     const AWS_REGION = "ap-south-1";
+    const BASE_API_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com`;
     
-    // Using default stage (no /prod)
-    const FORMS_API = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/forms`; 
-    const TIMELINE_API = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/timeline`; 
+    // UPDATED ROUTES based on user input
+    // /political/timeline [POST]
+    // /political/forms [POST] (Private/Office)
+    // /public/forms [POST] (Public)
+    
+    const TIMELINE_API = `${BASE_API_URL}/political/timeline`; 
 
     // This object can be updated via Admin Console in future (stored in S3 or DB)
     const BRANDING_CONFIG = {
@@ -385,7 +388,7 @@
         $('mobile-loader').classList.remove('hidden');
         
         try {
-            // Using Timeline API to fetch user history/metadata
+            // Updated to use the correct TIMELINE route
             const res = await fetch(TIMELINE_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -394,10 +397,6 @@
             
             if(!res.ok) throw new Error(`API Error: ${res.status}`);
             const data = await res.json();
-            
-            // Assuming the API returns some metadata if user exists
-            // The structure depends on your backend response, likely in `metadata` or `visitor_info`
-            // Based on backup: timeline_handler returns "events" and potentially "visitor_details"
             
             if(data && (data.visitor_details || (data.events && data.events.length > 0))) {
                 const info = data.visitor_details || (data.events[0]); // Fallback to first event data
@@ -430,7 +429,6 @@
             }
         } catch(e) {
             console.log("User lookup failed or new user", e);
-            // Optional: If API fails completely, don't show success msg
         } finally {
             $('mobile-loader').classList.add('hidden');
         }
@@ -467,7 +465,12 @@
     // ==========================================
     async function apiCall(action, payload, useAuth=false) {
         try {
-            const res = await fetch(FORMS_API, {
+            // DYNAMIC ROUTE SELECTION
+            // If useAuth is true (Private mode), use /political/forms
+            // If useAuth is false (Public mode), use /public/forms
+            const url = useAuth ? `${BASE_API_URL}/political/forms` : `${BASE_API_URL}/public/forms`;
+
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action, ...payload })

@@ -10,129 +10,389 @@
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] } } } }</script>
   <style>
     body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 50%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.1), transparent 50%), #0f172a; color: #fff; }
-    .glass { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-    .input-group { position: relative; transition: transform 0.2s; }
-    .input-field { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 0.85rem; padding: 0.85rem 1rem 0.85rem 2.75rem; color: white; transition: all 0.3s; outline: none; }
-    .input-field:focus { border-color: #f97316; box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15); }
-    .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
-    .input-field:focus ~ .input-icon { color: #f97316; }
-    .btn-gradient { background: linear-gradient(135deg, #f97316, #ea580c); transition: all 0.3s; }
-    .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.4); }
-    .section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 700; }
+    .glass { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); }
+    .input-field { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s ease; }
+    .input-field:focus { border-color: #f97316; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); outline: none; }
+    .input-field:disabled { opacity: 0.5; cursor: not-allowed; background: rgba(15, 23, 42, 0.4); }
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-  <div class="glass w-full max-w-lg rounded-3xl p-6 md:p-8 relative overflow-hidden">
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-orange-500 rounded-b-full shadow-[0_0_20px_rgba(249,115,22,0.6)]"></div>
-    
-    <div class="text-center mb-6 mt-2">
-      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-500 mb-4 ring-1 ring-orange-500/20">
-        <i class="fa-solid fa-users-gear text-2xl"></i>
-      </div>
-      <h1 class="text-2xl font-bold">Coordinator Entry</h1>
-      <p class="text-slate-400 text-sm mt-1">Management Team Details</p>
+
+<div class="w-full max-w-lg glass rounded-2xl p-6 relative">
+    <div class="text-center mb-6">
+        <h1 id="program_title" class="text-2xl font-bold text-orange-500">Coordinator Entry</h1>
+        <p class="text-slate-400 text-xs">Enter details for the selected program level</p>
     </div>
 
-    <form id="f" class="space-y-3">
-      
-      <!-- Basic Details -->
-      <div class="input-group">
-        <input id="program_name" type="text" placeholder="कार्यक्रम का नाम *" required class="input-field" />
-        <i class="fa-solid fa-bullhorn input-icon"></i>
-      </div>
+    <form id="f" class="space-y-4">
 
-      <div class="input-group">
-        <input id="district" type="text" placeholder="जिला *" required class="input-field" />
-        <i class="fa-solid fa-map-location-dot input-icon"></i>
-      </div>
+        <!-- LEVEL SELECTION -->
+        <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Select Level (स्तर चुनें)</label>
+            <select id="level" class="w-full rounded-lg px-3 py-2.5 text-sm input-field bg-slate-800 border-orange-500/50">
+                <option value="">— Select Level —</option>
+                <option value="district">District (जिला)</option>
+                <option value="vidhansabha">Vidhan Sabha (विधानसभा)</option>
+                <option value="mandal">Mandal (मंडल)</option>
+            </select>
+        </div>
 
-      <div class="grid grid-cols-2 gap-3">
-        <div class="input-group"><input id="vidhansabha" type="text" placeholder="विधानसभा" class="input-field" /><i class="fa-solid fa-landmark input-icon"></i></div>
-        <div class="input-group"><input id="mandal" type="text" placeholder="मंडल" class="input-field" /><i class="fa-solid fa-sitemap input-icon"></i></div>
-      </div>
+        <!-- DYNAMIC LOCATION DROPDOWNS -->
+        <div id="location-section" class="space-y-3 p-3 bg-slate-800/30 rounded-xl border border-slate-700 hidden">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">District</label>
+                <select id="district" class="w-full rounded-lg px-3 py-2 text-sm input-field">
+                    <option value="">— Select District —</option>
+                </select>
+            </div>
+            
+            <div id="vs-box" class="hidden">
+                <label class="block text-xs text-slate-400 mb-1">Vidhan Sabha</label>
+                <select id="vidhansabha" class="w-full rounded-lg px-3 py-2 text-sm input-field" disabled>
+                    <option value="">— Select District First —</option>
+                </select>
+            </div>
 
-      <!-- Convenor -->
-      <div class="section-title">संयोजक (Convenor)</div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="input-group"><input id="convenor_name" type="text" placeholder="नाम *" required class="input-field" /><i class="fa-solid fa-user input-icon"></i></div>
-        <div class="input-group"><input id="convenor_mobile" type="tel" placeholder="मोबाइल *" maxlength="10" required class="input-field" /><i class="fa-solid fa-phone input-icon"></i></div>
-      </div>
+            <div id="mandal-box" class="hidden">
+                <label class="block text-xs text-slate-400 mb-1">Mandal</label>
+                <select id="mandal" class="w-full rounded-lg px-3 py-2 text-sm input-field" disabled>
+                    <option value="">— Select Vidhan Sabha First —</option>
+                </select>
+            </div>
+        </div>
 
-      <!-- Co-Convenor 1 -->
-      <div class="section-title">सह संयोजक 1 (Co-Convenor)</div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="input-group"><input id="co_convenor1_name" type="text" placeholder="नाम" class="input-field" /><i class="fa-solid fa-user-plus input-icon"></i></div>
-        <div class="input-group"><input id="co_convenor1_mobile" type="tel" placeholder="मोबाइल" maxlength="10" class="input-field" /><i class="fa-solid fa-phone input-icon"></i></div>
-      </div>
+        <!-- COORDINATOR 1 (MAIN) -->
+        <div class="border-t border-slate-700 pt-4">
+            <h3 class="text-sm font-bold text-orange-400 mb-2">Main Coordinator (संयोजक)</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Name</label>
+                    <input type="text" id="coord_name" class="w-full rounded-lg px-3 py-2 text-sm input-field" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Mobile</label>
+                    <input type="tel" id="coord_mobile" class="w-full rounded-lg px-3 py-2 text-sm input-field" required>
+                </div>
+            </div>
+        </div>
 
-      <!-- Co-Convenor 2 -->
-      <div class="section-title">सह संयोजक 2 (Co-Convenor)</div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="input-group"><input id="co_convenor2_name" type="text" placeholder="नाम" class="input-field" /><i class="fa-solid fa-user-plus input-icon"></i></div>
-        <div class="input-group"><input id="co_convenor2_mobile" type="tel" placeholder="मोबाइल" maxlength="10" class="input-field" /><i class="fa-solid fa-phone input-icon"></i></div>
-      </div>
+        <!-- CO-COORDINATOR 1 -->
+        <div class="border-t border-slate-700 pt-2">
+            <h3 class="text-sm font-bold text-blue-400 mb-2">Co-Coordinator 1 (सह संयोजक)</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Name</label>
+                    <input type="text" id="co_coord1_name" class="w-full rounded-lg px-3 py-2 text-sm input-field">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Mobile</label>
+                    <input type="tel" id="co_coord1_mobile" class="w-full rounded-lg px-3 py-2 text-sm input-field">
+                </div>
+            </div>
+        </div>
 
-      <button id="submitBtn" type="submit" class="w-full btn-gradient text-white font-bold py-4 rounded-xl shadow-lg mt-6 flex items-center justify-center gap-2 text-lg">
-        <span>Save Coordinators</span> <i class="fa-solid fa-check-circle"></i>
-      </button>
+        <!-- CO-COORDINATOR 2 -->
+        <div class="border-t border-slate-700 pt-2">
+            <h3 class="text-sm font-bold text-blue-400 mb-2">Co-Coordinator 2 (सह संयोजक)</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Name</label>
+                    <input type="text" id="co_coord2_name" class="w-full rounded-lg px-3 py-2 text-sm input-field">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Mobile</label>
+                    <input type="tel" id="co_coord2_mobile" class="w-full rounded-lg px-3 py-2 text-sm input-field">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl shadow-lg transition mt-4">
+            Save Coordinator Team
+        </button>
+
     </form>
-    <div id="statusBox" class="hidden mt-4 p-4 rounded-xl text-sm text-center font-medium border border-transparent"></div>
-  </div>
+    <div id="status" class="mt-4 text-center text-xs font-medium hidden"></div>
+</div>
 
 <script>
-    (() => {
-        const API_ID = 'vxid0yoovj'; const REGION = 'ap-south-1'; const FORM_TYPE = 'coordinator_entry';
-        const FIELD_IDS = [
-            'program_name','district','vidhansabha','mandal',
-            'convenor_name','convenor_mobile',
-            'co_convenor1_name','co_convenor1_mobile',
-            'co_convenor2_name','co_convenor2_mobile'
-        ];
-        const $ = (id) => document.getElementById(id);
-        const qs = (n) => { try{ return (new URL(window.location.href)).searchParams.get(n)||''; }catch(e){ return ''; } };
-        const token = qs('token'); const cidParam = (qs('cid') || qs('collection_id') || qs('id')).trim(); const isPublicMode = () => !!token;
+    // ==========================================
+    // CONFIGURATION - API & BRANDING
+    // ==========================================
+    const API_ID = "vxid0yoovj"; 
+    const AWS_REGION = "ap-south-1";
+    const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
 
-        function showStatus(msg, isErr=false){
-            const b=$('statusBox');
-            b.classList.remove('hidden', 'bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/20', 'bg-red-500/10', 'text-red-400', 'border-red-500/20');
-            b.classList.add(isErr ? 'bg-red-500/10' : 'bg-emerald-500/10');
-            b.classList.add(isErr ? 'text-red-400' : 'text-emerald-400');
-            b.classList.add(isErr ? 'border-red-500/20' : 'border-emerald-500/20');
-            b.innerHTML = msg;
+    // BRANDING CONFIG (Program Name from Backend/Params)
+    const BRANDING_CONFIG = {
+        default: { title: "Coordinator Management", successMsg: "Team saved successfully!" },
+        bjpmandsaur: { title: "कार्यकर्ता महाकुंभ - संयोजक फॉर्म", successMsg: "संयोजक टीम सुरक्षित कर ली गई है।" }
+    };
+
+    // ==========================================
+    // DATA SOURCE
+    // ==========================================
+    const DISTRICT_DATA = {
+    "मंदसौर": {
+        "मंदसौर": ["मंदसौर नगर उत्तर", "मंदसौर नगर दक्षिण", "मंदसौर ग्रामीण"],
+        "सुवासरा": ["सीतामऊ", "सुवासरा", "शामगढ़"],
+        "गरोठ": ["गरोठ", "भानपुरा", "मेलखेड़ा"],
+        "मल्हारगढ़": ["मल्हारगढ़", "नारायणगढ़", "पिपलियामंडी"]
+    },
+    "रतलाम": {
+        "रतलाम सिटी": ["दीनदयाल नगर", "अम्बेडकर नगर", "श्यामा प्रसाद मुखर्जी नगर"],
+        "रतलाम ग्रामीण": ["धराड़", "बांगरोद", "नामली"],
+        "सैलाना": ["सैलाना", "बाजना", "रावटी"],
+        "जावरा": ["जावरा नगर", "जावरा ग्रामीण", "पिप्लौदा"],
+        "आलोट": ["आलोट", "बड़ावदा", "ताल"]
+    },
+    "नीमच": {
+        "नीमच": ["नीमच उत्तर", "नीमच दक्षिण", "नीमच पश्चिम", "जीरन"],
+        "मनासा": ["मनासा", "रामपुरा", "कुकाड़ेश्वर"],
+        "जावद": ["जावद", "सिंगोली", "रतनगढ़"]
+    },
+    "उज्जैन": {
+        "उज्जैन उत्तर": ["दौलतगंज", "नई सड़क", "फ्रीगंज"],
+        "उज्जैन दक्षिण": ["महानंदा", "नानाखेड़ा", "कोठी रोड"],
+        "घट्टिया": ["घट्टिया", "उन्हेल", "पानबिहार"],
+        "तराना": ["तराना", "माकड़ोन", "कायथा"],
+        "महिदपुर": ["महिदपुर नगर", "महिदपुर ग्रामीण", "झारड़ा"],
+        "नागदा-खाचरौद": ["नागदा", "खाचरौद", "बिरलाग्राम"],
+        "बड़नगर": ["बड़नगर", "इंगोरिया", "खरसौद"]
+    },
+    "आगर-मालवा": {
+        "आगर": ["आगर नगर", "आगर ग्रामीण", "बड़ौद"],
+        "सुसनेर": ["सुसनेर", "नलखेड़ा", "सोयत"]
+    },
+    "शाजापुर": {
+        "शाजापुर": ["शाजापुर नगर", "शाजापुर ग्रामीण", "मो. बड़ोदिया"],
+        "शुजालपुर": ["शुजालपुर मंडी", "शुजालपुर सिटी", "अकोदिया"],
+        "कालापीपल": ["कालापीपल", "पोलायकलां", "खोकराकलां"]
+    },
+    "देवास": {
+        "देवास": ["देवास उत्तर", "देवास दक्षिण", "देवास पश्चिम"],
+        "सोनकच्छ": ["सोनकच्छ", "टोंकखुर्द", "पीपलरावां"],
+        "हाटपिपल्या": ["हाटपिपल्या", "नेवरी", "करनावाद"],
+        "खातेगांव": ["खातेगांव", "कन्नौद", "हरणगांव"],
+        "बागली": ["बागली", "उदयनगर", "सतवास"]
+    },
+    "इंदौर": {
+        "इंदौर-1": ["वार्ड 1-5", "वार्ड 6-10", "वार्ड 11-15"],
+        "इंदौर-2": ["वार्ड 16-20", "वार्ड 21-25", "वार्ड 26-30"],
+        "इंदौर-3": ["वार्ड 31-35", "वार्ड 36-40", "वार्ड 41-45"],
+        "इंदौर-4": ["वार्ड 46-50", "वार्ड 51-55", "वार्ड 56-60"],
+        "इंदौर-5": ["वार्ड 61-65", "वार्ड 66-70", "वार्ड 71-75"],
+        "राऊ": ["राऊ नगर", "तेजाजी नगर", "दत्तौदा"],
+        "महू": ["महू नगर", "महू ग्रामीण", "मानपुर"],
+        "देपालपुर": ["देपालपुर", "गौतमपुरा", "बेटमा"],
+        "सांवेर": ["सांवेर", "चंद्रावतीगंज", "क्षिप्रा"]
+    },
+    "धार": {
+        "धार": ["धार नगर", "धार ग्रामीण", "तिरला"],
+        "पीथमपुर": ["पीथमपुर", "सागौर", "नालछा"],
+        "बदनावर": ["बदनावर", "कानवन", "मुलथान"],
+        "सरदारपुर": ["सरदारपुर", "राजगढ़", "अमझेरा"],
+        "गंधवानी": ["गंधवानी", "बाग", "टांडा"],
+        "कुक्षी": ["कुक्षी", "डही", "निसरपुर"],
+        "मनावर": ["मनावर", "उमरबन", "सिंघाना"],
+        "धरमपुरी": ["धरमपुरी", "धामनोद", "मांडू"]
+    },
+    "झाबुआ": {
+        "झाबुआ": ["झाबुआ नगर", "झाबुआ ग्रामीण", "रामा"],
+        "थांदला": ["थांदला", "खवासा", "मेघनगर"],
+        "पेटलावद": ["पेटलावद", "रायपुरिया", "सारंगी"]
+    },
+    "अलीराजपुर": {
+        "अलीराजपुर": ["अलीराजपुर नगर", "अलीराजपुर ग्रामीण", "सोंडवा"],
+        "जोबट": ["जोबट", "उदयगढ़", "भाबरा"]
+    },
+    "खरगोन": {
+        "खरगोन": ["खरगोन नगर", "खरगोन ग्रामीण", "सनावद"],
+        "भीकनगांव": ["भीकनगांव", "झिरन्या", "गोगावां"],
+        "बड़वाह": ["बड़वाह", "महेश्वर", "करही"],
+        "महेश्वर": ["महेश्वर", "मंडलेश्वर", "धामनोद"],
+        "कसरावद": ["कसरावद", "पिपलगोन", "बालकवाड़ा"],
+        "भगवानपुरा": ["भगवानपुरा", "सेगांव", "बिस्टान"]
+    },
+    "बड़वानी": {
+        "बड़वानी": ["बड़वानी नगर", "बड़वानी ग्रामीण", "पाटी"],
+        "सेंधवा": ["सेंधवा नगर", "सेंधवा ग्रामीण", "चाचरीया"],
+        "राजपुर": ["राजपुर", "ठीकरी", "अंजड़"],
+        "पानसेमल": ["पानसेमल", "खेतिया", "निवाली"]
+    },
+    "खंडवा": {
+        "खंडवा": ["खंडवा नगर", "खंडवा ग्रामीण", "छैगांवमाखन"],
+        "पंधाना": ["पंधाना", "सिंघोट", "आरुद"],
+        "मांधाता": ["मांधाता", "पुनासा", "मूंदी"],
+        "हरसूद": ["हरसूद", "खालवा", "किillod"]
+    },
+    "बुरहानपुर": {
+        "बुरहानपुर": ["बुरहानपुर नगर", "बुरहानपुर ग्रामीण", "शाहपुर"],
+        "नेपानगर": ["नेपानगर", "धुलकोट", "खकनार"]
+    }
+    };
+
+    // ==========================================
+    // LOGIC
+    // ==========================================
+    const $ = (id) => document.getElementById(id);
+    const qs = (n) => { try{ return (new URL(window.location.href)).searchParams.get(n)||''; }catch(e){ return ''; } };
+    const token = qs('token'); 
+    const cidParam = (qs('cid') || qs('collection_id') || qs('id')).trim(); 
+    const FORM_TYPE = 'coordinator_entry';
+    
+    function isPublicMode() { return !!token; }
+
+    function showStatus(msg, isError) {
+        const el = $('status'); el.classList.remove('hidden','text-green-400','text-red-400');
+        el.classList.add(isError ? 'text-red-400' : 'text-green-400');
+        el.innerText = msg; el.classList.remove('hidden');
+    }
+
+    function applyBranding() {
+        const config = (cidParam && BRANDING_CONFIG[cidParam]) ? BRANDING_CONFIG[cidParam] : BRANDING_CONFIG['default'];
+        $('program_title').textContent = config.title;
+    }
+
+    // LEVEL CHANGE HANDLER
+    $('level').addEventListener('change', function() {
+        const level = this.value;
+        const locSec = $('location-section');
+        const vsBox = $('vs-box');
+        const mBox = $('mandal-box');
+
+        if(!level) {
+            locSec.classList.add('hidden');
+            return;
         }
 
-        async function apiCall(action, payload, auth=false){
-            const base = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod${isPublicMode()?'/political/public/forms':'/political/forms'}`;
-            const headers = {'Content-Type':'application/json'};
-            if(auth){ const jwt = localStorage.getItem('idToken') || localStorage.getItem('accessToken'); if(!jwt) throw new Error('Auth Missing'); headers['Authorization'] = 'Bearer '+jwt; }
-            const res = await fetch(base, { method:'POST', headers, body:JSON.stringify({action, payload}) });
-            const data = await res.json();
-            if(!res.ok) throw new Error(data.message || data.error || 'API Error');
-            return data;
+        locSec.classList.remove('hidden');
+        
+        // Reset Logic
+        $('district').value = "";
+        $('vidhansabha').innerHTML = '<option value="">— Select District First —</option>';
+        $('vidhansabha').disabled = true;
+        $('mandal').innerHTML = '<option value="">— Select Vidhan Sabha First —</option>';
+        $('mandal').disabled = true;
+
+        if(level === 'district') {
+            vsBox.classList.add('hidden');
+            mBox.classList.add('hidden');
+        } else if (level === 'vidhansabha') {
+            vsBox.classList.remove('hidden');
+            mBox.classList.add('hidden');
+        } else if (level === 'mandal') {
+            vsBox.classList.remove('hidden');
+            mBox.classList.remove('hidden');
         }
+    });
 
-        $('f').addEventListener('submit', async (e)=>{
-            e.preventDefault();
-            const btn = $('submitBtn'); const ot = btn.innerHTML; btn.disabled=true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; showStatus('');
-            try {
-                const data = {}; for(const id of FIELD_IDS) data[id] = $(id).value.trim();
-                
-                // NO PHOTO UPLOAD LOGIC
-                let res;
-                if(isPublicMode()){ 
-                    res = await apiCall('public_create_entry', { token, form_type: FORM_TYPE, file_kind:'none', payload: data }); 
-                } else { 
-                    if(!cidParam) throw new Error('Missing Collection ID'); 
-                    res = await apiCall('create_entry', { collection_id: cidParam, form_type: FORM_TYPE, file_kind:'none', payload: data }, true); 
-                }
-
-                const af = isPublicMode() ? 'public_finalize_entry' : 'finalize_entry';
-                await apiCall(af, { finalize_token: res.finalize_token, entry_id: res.entry_id }, !isPublicMode());
-                
-                showStatus('✅ Coordinators Saved Successfully!', false); $('f').reset();
-            } catch(err) { showStatus('❌ ' + err.message, true); } finally { btn.disabled=false; btn.innerHTML = ot; }
+    // LOCATION LOGIC
+    function initLocations() {
+        applyBranding();
+        const dEl = $('district'); const vEl = $('vidhansabha'); const mEl = $('mandal');
+        
+        // Fill District
+        const districts = Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b, "hi"));
+        districts.forEach(d => {
+            const opt = document.createElement('option'); opt.value = d; opt.textContent = d; dEl.appendChild(opt);
         });
-    })();
+
+        dEl.addEventListener('change', () => {
+            const dVal = dEl.value;
+            // Reset lower levels
+            vEl.innerHTML = '<option value="">— Select Vidhan Sabha —</option>'; vEl.disabled = !dVal;
+            mEl.innerHTML = '<option value="">— Select Mandal —</option>'; mEl.disabled = true;
+
+            if(dVal && DISTRICT_DATA[dVal]) {
+                const vidhans = Object.keys(DISTRICT_DATA[dVal]).sort((a,b)=>a.localeCompare(b, "hi"));
+                vidhans.forEach(v => {
+                    const opt = document.createElement('option'); opt.value = v; opt.textContent = v; vEl.appendChild(opt);
+                });
+            }
+        });
+
+        vEl.addEventListener('change', () => {
+            const dVal = dEl.value; const vVal = vEl.value;
+            mEl.innerHTML = '<option value="">— Select Mandal —</option>'; mEl.disabled = !vVal;
+
+            if(dVal && vVal && DISTRICT_DATA[dVal][vVal]) {
+                const mandals = DISTRICT_DATA[dVal][vVal].sort((a,b)=>a.localeCompare(b, "hi"));
+                mandals.forEach(m => {
+                    const opt = document.createElement('option'); opt.value = m; opt.textContent = m; mEl.appendChild(opt);
+                });
+            }
+        });
+    }
+    document.addEventListener('DOMContentLoaded', initLocations);
+
+    // API CALL
+    async function apiCall(action, payload, useAuth=false) {
+        // Correct path logic:
+        const path = isPublicMode() ? '/political/public/forms' : '/political/forms';
+        const url = `${BASE_URL}${path}`;
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, payload })
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.message || data.error || 'API Error');
+        return data;
+    }
+
+    // SUBMIT
+    $('f').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const btn = $('submitBtn'); const ot = btn.innerHTML; 
+        btn.disabled=true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; 
+        showStatus('');
+        
+        try {
+            // Manual Data Collection
+            const level = $('level').value;
+            if(!level) throw new Error("Please select a Level");
+
+            const data = {
+                level: level,
+                district: $('district').value,
+                vidhansabha: $('vidhansabha').value,
+                mandal: $('mandal').value,
+                
+                // Coordinator
+                coord_name: $('coord_name').value.trim(),
+                coord_mobile: $('coord_mobile').value.trim(),
+                
+                // Co-Coordinators
+                co_coord1_name: $('co_coord1_name').value.trim(),
+                co_coord1_mobile: $('co_coord1_mobile').value.trim(),
+                co_coord2_name: $('co_coord2_name').value.trim(),
+                co_coord2_mobile: $('co_coord2_mobile').value.trim()
+            };
+
+            // Validation based on level
+            if(!data.district) throw new Error("District is required");
+            if(level !== 'district' && !data.vidhansabha) throw new Error("Vidhan Sabha is required");
+            if(level === 'mandal' && !data.mandal) throw new Error("Mandal is required");
+
+            // NO PHOTO REQUIRED
+            let res;
+            if(isPublicMode()){ 
+                res = await apiCall('public_create_entry', { token, form_type: FORM_TYPE, file_kind:'none', payload: data }); 
+            } else { 
+                if(!cidParam) throw new Error('Missing Collection ID'); 
+                res = await apiCall('create_entry', { collection_id: cidParam, form_type: FORM_TYPE, file_kind:'none', payload: data }, true); 
+            }
+
+            const af = isPublicMode() ? 'public_finalize_entry' : 'finalize_entry';
+            await apiCall(af, { finalize_token: res.finalize_token, entry_id: res.entry_id }, !isPublicMode());
+            
+            showStatus('✅ Team Saved Successfully!', false); 
+            $('f').reset(); 
+            $('location-section').classList.add('hidden'); // Hide location after reset
+            
+        } catch(err) { showStatus('❌ ' + err.message, true); } finally { btn.disabled=false; btn.innerHTML = ot; }
+    });
 </script>
 </body>
 </html>

@@ -1,565 +1,516 @@
-<!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Political Forms Admin Console • EventLens</title>
-<style>
-:root{--bg:#0b1020;--card:#121a33;--muted:#9fb0ff;--text:#e9eeff;--btn:#3b82f6;--btn2:#22c55e;--danger:#ef4444;--border:rgba(255,255,255,.12)}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#070a14,#0b1020);color:var(--text)}
-header{position:sticky;top:0;background:rgba(7,10,20,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;gap:12px;align-items:center;z-index:10}
-header h1{font-size:16px;margin:0;font-weight:900}
-header .pill{font-size:12px;color:var(--muted);border:1px solid var(--border);padding:4px 10px;border-radius:999px}
-main{max-width:1400px;margin:0 auto;padding:16px}
-.grid{display:grid;grid-template-columns:360px 1fr;gap:16px}
-@media(max-width:1050px){.grid{grid-template-columns:1fr}}
-.card{background:rgba(18,26,51,.72);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
-.card h2{margin:0;padding:14px 14px 0;font-size:14px}
-.body{padding:14px}
-label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
-input,select,textarea{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:10px 12px;outline:none}
-textarea{min-height:110px;resize:vertical;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
-button{border:0;border-radius:12px;padding:10px 12px;color:white;background:var(--btn);cursor:pointer;font-weight:900}
-button.secondary{background:rgba(255,255,255,.10);border:1px solid var(--border)}
-button.success{background:var(--btn2)}
-button.danger{background:var(--danger)}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.col{flex:1;min-width:180px}
-.tabs{display:flex;gap:10px;padding:14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.tab{padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);cursor:pointer;font-weight:900;color:var(--muted)}
-.tab.active{background:rgba(59,130,246,.18);color:var(--text);border-color:rgba(59,130,246,.45)}
-.hidden{display:none}
-.tableWrap{overflow:auto;border:1px solid var(--border);border-radius:14px}
-table{width:100%;border-collapse:separate;border-spacing:0}
-th,td{padding:10px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
-th{position:sticky;top:0;background:rgba(18,26,51,.95);text-align:left;color:var(--muted)}
-tr:hover td{background:rgba(255,255,255,.03)}
-.pill2{display:inline-block;font-size:11px;border:1px solid var(--border);padding:2px 8px;border-radius:999px;color:var(--muted)}
-.muted{color:var(--muted);font-size:12px}
-.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-@media(max-width:720px){.kpi{grid-template-columns:1fr}}
-.kpi .box{padding:12px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.06)}
-.kpi .num{font-size:20px;font-weight:900;margin-top:6px}
-.bar{height:10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--border);overflow:hidden}
-.bar > div{height:100%;background:rgba(59,130,246,.65)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
-.modal.show{display:flex}
-.modal .panel{max-width:980px;width:100%;max-height:88vh;overflow:auto;background:rgba(18,26,51,.98);border:1px solid var(--border);border-radius:18px}
-.modal .panel header{position:sticky;top:0;background:rgba(18,26,51,.98);border-bottom:1px solid var(--border)}
-.modal .panel header h1{font-size:14px}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:980px){.split{grid-template-columns:1fr}}
-iframe{width:100%;height:560px;border:1px solid var(--border);border-radius:14px;background:#0b1020}
-.toast{position:fixed;right:16px;bottom:16px;background:rgba(18,26,51,.95);border:1px solid var(--border);padding:10px 12px;border-radius:14px;display:none;max-width:520px;z-index:60}
-.toast.show{display:block}
-.hr{height:1px;background:var(--border);margin:14px 0}
-a{color:#93c5fd;text-decoration:none}
-</style></head>
-<body>
-<header>
-  <h1>Political Admin Console</h1>
-  <span class="pill" id="cidPill">CID: —</span>
-  <span class="pill">Data + Analytics + Branding</span>
-  <div style="margin-left:auto" class="row">
-    <button class="secondary" id="btnBack">Back</button>
-  </div>
-</header>
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Political Admin Console - EventLens</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] } } } }</script>
+  <style>
+    body { background: #0f172a; color: #fff; }
+    .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; transition: all 0.2s; color: #94a3b8; cursor: pointer; }
+    .sidebar-link:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .sidebar-link.active { background: linear-gradient(135deg, #f97316, #ea580c); color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
+    .table-row:hover { background: rgba(255,255,255,0.03); }
+    
+    /* Modal Animation */
+    .modal { transition: opacity 0.3s ease-in-out, visibility 0.3s; opacity: 0; visibility: hidden; }
+    .modal.open { opacity: 1; visibility: visible; }
+    .modal-content { transform: scale(0.95); transition: transform 0.3s; }
+    .modal.open .modal-content { transform: scale(1); }
 
-<main>
-  <div class="tabs">
-    <div class="tab active" data-tab="entriesTab">Entries</div>
-    <div class="tab" data-tab="analyticsTab">Analytics</div>
-    <div class="tab" data-tab="brandingTab">Branding Studio</div>
-  </div>
+    /* Mobile Preview Container */
+    .mobile-frame { border: 8px solid #1e293b; border-radius: 30px; overflow: hidden; height: 600px; width: 320px; position: relative; background: #0f172a; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); margin: 0 auto; }
+    .mobile-screen { height: 100%; width: 100%; overflow-y: auto; background-size: cover; background-position: center; position: relative; }
+    .mobile-screen::-webkit-scrollbar { width: 4px; }
+    .mobile-screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    
+    .preview-glass { background: rgba(30, 41, 59, 0.90); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 20px; margin-top: -40px; position: relative; z-index: 10; margin-left: 10px; margin-right: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    
+    .header-bg-preview { height: 150px; width: 100%; background-size: cover; background-position: center; position: relative; }
+    .header-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(15, 23, 42, 1)); }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden">
 
-  <div class="grid">
-    <section class="card">
-      <h2>Config + Filters</h2>
-      <div class="body">
-        <label>Collection ID (prefill)</label>
-        <input id="cid" readonly/>
-
-        <label>Admin API</label>
-        <input id="ADMIN_API" placeholder="https://.../prod/political/admin"/>
-
-        <label>Forms API (optional fallback)</label>
-        <input id="FORMS_API" placeholder="https://.../prod/political/forms"/>
-
-        <label>Auth Token (dashboard only)</label>
-        <input id="AUTH_TOKEN" placeholder="JWT token"/>
-
-        <div class="row" style="margin-top:10px">
-          <button class="success" id="btnSaveCfg">Save</button>
-          <button class="secondary" id="btnLoadCfg">Load Saved</button>
-        </div>
-
-        <div class="hr"></div>
-
-        <label>Form Type</label>
-        <select id="formType">
-          <option value="">All</option>
-          <option value="political_visitor_form">political_visitor_form</option>
-          <option value="political_party_attendance_form">political_party_attendance_form</option>
-          <option value="political_president_tour_form">political_president_tour_form</option>
-          <option value="political_mandal_reporting_form">political_mandal_reporting_form</option>
-          <option value="political_coordinator_entry_form">political_coordinator_entry_form</option>
-          <option value="political_program_info_form">political_program_info_form</option>
-        </select>
-
-        <div class="row">
-          <div class="col">
-            <label>Date From</label>
-            <input id="dateFrom" type="date"/>
-          </div>
-          <div class="col">
-            <label>Date To</label>
-            <input id="dateTo" type="date"/>
-          </div>
-        </div>
-
-        <label>Search (name/phone/city/text)</label>
-        <input id="q" placeholder="Type to filter"/>
-
-        <div class="row" style="margin-top:10px">
-          <button id="btnRefresh">Refresh</button>
-          <button class="secondary" id="btnExport">Export CSV</button>
-          <button class="secondary" id="btnSlide">Slide View</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2 id="rightTitle">Entries</h2>
-      <div class="body">
-        <div id="entriesTab">
-          <div class="muted" id="entriesInfo">Refresh to load.</div>
-          <div style="margin-top:12px" class="tableWrap">
-            <table>
-              <thead><tr><th>Created</th><th>Form Type</th><th>Main</th><th>Actions</th></tr></thead>
-              <tbody id="tbody"><tr><td colspan="4" class="muted">No data.</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="analyticsTab" class="hidden">
-          <div class="kpi" id="kpis"></div>
-          <div class="hr"></div>
-          <h2 style="padding:0;margin:0 0 10px;font-size:14px">Form Type Breakdown</h2>
-          <div id="breakdown"></div>
-          <div class="hr"></div>
-          <h2 style="padding:0;margin:0 0 10px;font-size:14px">Last 14 Days Activity</h2>
-          <div id="activity"></div>
-        </div>
-
-        <div id="brandingTab" class="hidden">
-          <div class="split">
-            <div>
-              <h2 style="padding:0;margin:0 0 10px;font-size:14px">Branding Controls</h2>
-              <label>Header Title</label><input id="b_header_title" placeholder="ex: Event Name / Leader Name"/>
-              <label>Slogan</label><input id="b_slogan" placeholder="ex: Your slogan"/>
-              <label>Footer Text</label><input id="b_footer" placeholder="ex: Powered by ..."/>
-              <label>Logo URL</label><input id="b_logo" placeholder="https://.../logo.png"/>
-              <label>Header Image URL</label><input id="b_header_img" placeholder="https://.../header.jpg"/>
-
-              <div class="row">
-                <div class="col"><label>Primary Color</label><input id="b_primary" placeholder="#22c55e"/></div>
-                <div class="col"><label>Accent Color</label><input id="b_accent" placeholder="#3b82f6"/></div>
-              </div>
-              <div class="row">
-                <div class="col"><label>Background</label><input id="b_bg" placeholder="#0b1020"/></div>
-                <div class="col"><label>Card</label><input id="b_card" placeholder="#121a33"/></div>
-              </div>
-              <div class="row">
-                <div class="col"><label>Text</label><input id="b_text" placeholder="#e9eeff"/></div>
-                <div class="col"><label>Muted</label><input id="b_muted" placeholder="#9fb0ff"/></div>
-              </div>
-              <label>Border</label><input id="b_border" placeholder="rgba(255,255,255,.12)"/>
-
-              <div class="row" style="margin-top:10px">
-                <button class="secondary" id="btnPreview">Live Preview</button>
-                <button class="secondary" id="btnSaveDraft">Save Draft</button>
-              </div>
-              <div class="row" style="margin-top:10px">
-                <button class="success" id="btnPublish">Publish to Server</button>
-                <button class="secondary" id="btnLoadBranding">Load Published</button>
-              </div>
-
-              <div class="hr"></div>
-              <label>Preview Form</label>
-              <select id="previewForm">
-                <option value="political_visitor_form.html">political_visitor_form.html</option>
-                <option value="political_party_attendance_form.html">political_party_attendance_form.html</option>
-                <option value="political_president_tour_form.html">political_president_tour_form.html</option>
-                <option value="political_mandal_reporting_form.html">political_mandal_reporting_form.html</option>
-                <option value="political_coordinator_entry_form.html">political_coordinator_entry_form.html</option>
-                <option value="political_program_info_form.html">political_program_info_form.html</option>
-              </select>
-              <div class="row" style="margin-top:10px">
-                <button id="btnOpenForm">Open Form New Tab</button>
-              </div>
-              <div class="muted" style="margin-top:10px">Preview instant. Publish के बाद सारे forms में apply.</div>
-            </div>
-            <div>
-              <h2 style="padding:0;margin:0 0 10px;font-size:14px">Preview</h2>
-              <iframe id="previewFrame"></iframe>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-  </div>
-</main>
-
-<div class="modal" id="modal">
-  <div class="panel">
-    <header>
-      <h1 id="modalTitle">Entry</h1>
-      <div style="margin-left:auto" class="row">
-        <button class="secondary" id="btnClose">Close</button>
-      </div>
-    </header>
-    <div class="body">
-      <div class="split">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0">
+    <div class="p-6 border-b border-slate-800">
+      <div class="flex items-center gap-3 text-orange-500">
+        <i class="fa-solid fa-user-shield text-2xl"></i>
         <div>
-          <div class="muted" id="modalMeta"></div>
-          <label>Payload (JSON)</label>
-          <textarea id="payloadEditor"></textarea>
-          <div class="row">
-            <button class="success" id="btnSaveEntry">Save Changes</button>
-            <button class="danger" id="btnDeleteEntry">Delete Entry</button>
-          </div>
-        </div>
-        <div>
-          <h2 style="padding:0;margin:0 0 10px;font-size:14px">Detail View</h2>
-          <div id="detailView"></div>
+            <span class="font-bold text-lg text-white block leading-tight">Admin Console</span>
+            <span class="text-[10px] text-slate-500" id="sidebarCidDisplay">CID: Loading...</span>
         </div>
       </div>
     </div>
+    
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+      <div class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-2">Data Management</div>
+      <div class="sidebar-link active" onclick="switchTab('program_info', this)">
+        <i class="fa-solid fa-calendar-days w-5"></i> Events
+      </div>
+      <div class="sidebar-link" onclick="switchTab('coordinator_entry', this)">
+        <i class="fa-solid fa-users-gear w-5"></i> Coordinators
+      </div>
+      <div class="sidebar-link" onclick="switchTab('mandal_reporting', this)">
+        <i class="fa-solid fa-clipboard-check w-5"></i> Reporting
+      </div>
+      <div class="sidebar-link" onclick="switchTab('president_tour', this)">
+        <i class="fa-solid fa-plane-departure w-5"></i> President Tour
+      </div>
+      <div class="sidebar-link" onclick="switchTab('visitor_form', this)">
+        <i class="fa-solid fa-user-group w-5"></i> Visitors
+      </div>
+
+      <div class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Settings</div>
+      <div class="sidebar-link" onclick="switchTab('settings', this)">
+        <i class="fa-solid fa-paintbrush w-5"></i> Branding & Links
+      </div>
+    </nav>
+    
+    <div class="p-4 border-t border-slate-800">
+        <button onclick="loadData()" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 text-sm font-medium py-2 rounded-lg transition"><i class="fa-solid fa-sync mr-1"></i> Refresh Data</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
+    <!-- Header -->
+    <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-sm shrink-0">
+      <h2 id="pageTitle" class="text-lg font-semibold text-white">Event Details</h2>
+      <div class="flex items-center gap-4">
+        <div id="cidWarning" class="hidden px-3 py-1 rounded bg-red-500/10 text-red-400 text-xs border border-red-500/20">
+            <i class="fa-solid fa-circle-exclamation mr-1"></i> No CID
+        </div>
+        <button onclick="window.close()" class="text-slate-400 hover:text-white transition text-sm flex items-center gap-2">
+            <i class="fa-solid fa-xmark"></i> Close
+        </button>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-hidden relative">
+        
+        <!-- DATA VIEW (Tables) -->
+        <div id="dataView" class="absolute inset-0 p-6 overflow-auto">
+            <div class="glass rounded-xl overflow-hidden shadow-2xl">
+                <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold">
+                    <tr id="tableHeaderRow">
+                    <!-- Dynamic Headers -->
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="text-sm text-slate-300 divide-y divide-slate-800">
+                    <tr><td class="p-8 text-center text-slate-500">Loading...</td></tr>
+                </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SETTINGS VIEW (Branding & Links) -->
+        <div id="settingsView" class="absolute inset-0 p-6 overflow-auto hidden">
+            <div class="flex flex-col lg:flex-row gap-8 h-full">
+                
+                <!-- Left: Controls -->
+                <div class="flex-1 space-y-6 overflow-y-auto pr-2 pb-10">
+                    
+                    <!-- Branding Form -->
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">App Appearance</h3>
+                        <div class="space-y-4">
+                            <!-- Logo Upload -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Organization Logo</label>
+                                <div class="flex items-center gap-3">
+                                    <div class="h-12 w-12 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center relative">
+                                        <img id="logoPreviewSmall" class="h-full w-full object-cover hidden">
+                                        <i id="logoPlaceholder" class="fa-solid fa-image text-slate-600"></i>
+                                    </div>
+                                    <input type="file" id="logoInput" accept="image/*" class="text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-orange-400 hover:file:bg-slate-700 cursor-pointer" onchange="handleImageUpload(this, 'previewLogo', 'logoPreviewSmall')">
+                                </div>
+                            </div>
+
+                            <!-- Header BG Upload -->
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Header Background Image</label>
+                                <input type="file" id="headerInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-blue-400 hover:file:bg-slate-700 cursor-pointer" onchange="handleImageUpload(this, 'previewHeaderBg')">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Org Name</label>
+                                    <input type="text" id="brandName" value="EventLens Political" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" oninput="updatePreview()">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1">Theme Color</label>
+                                    <select id="brandTheme" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" onchange="updatePreview()">
+                                        <option value="orange">Orange (Saffron)</option>
+                                        <option value="blue">Blue (Corporate)</option>
+                                        <option value="green">Green (Nature)</option>
+                                        <option value="red">Red (Urgent)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Footer Text</label>
+                                <input type="text" id="brandFooter" value="Powered by EventLens" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" oninput="updatePreview()">
+                            </div>
+
+                            <button onclick="saveSettings()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition w-full mt-2">Save Configuration</button>
+                        </div>
+                    </div>
+
+                    <!-- Links Generator -->
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Form Links</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-calendar-days w-6 text-center text-slate-500"></i> Event Details</span>
+                                <button onclick="copyLink('political_program_info_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                            </div>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-users-gear w-6 text-center text-slate-500"></i> Coordinator</span>
+                                <button onclick="copyLink('political_coordinator_entry_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                            </div>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-clipboard-check w-6 text-center text-slate-500"></i> Reporting</span>
+                                <button onclick="copyLink('political_mandal_reporting_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                            </div>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-plane-departure w-6 text-center text-slate-500"></i> President Tour</span>
+                                <button onclick="copyLink('political_president_tour_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                            </div>
+                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-user-group w-6 text-center text-slate-500"></i> Visitor Form</span>
+                                <button onclick="copyLink('political_visitor_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Preview -->
+                <div class="w-full lg:w-[360px] flex flex-col items-center justify-start shrink-0">
+                    <div class="w-full flex justify-between items-center mb-4 px-2">
+                        <div class="text-slate-400 text-xs uppercase tracking-widest font-semibold">Live Preview</div>
+                        <select id="previewFormSelector" onchange="updatePreview()" class="bg-slate-800 text-white text-xs border border-slate-700 rounded px-2 py-1 outline-none focus:border-orange-500 cursor-pointer">
+                            <option value="program_info">Event Details Form</option>
+                            <option value="coordinator_entry">Coordinator Form</option>
+                            <option value="mandal_reporting">Reporting Form</option>
+                            <option value="president_tour">President Tour Form</option>
+                            <option value="visitor_form">Visitor Form</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mobile-frame shadow-2xl relative">
+                        <!-- Simulated Mobile Screen -->
+                        <div class="mobile-screen" id="mobileScreen">
+                            
+                            <!-- Header BG -->
+                            <div id="previewHeaderBg" class="header-bg-preview" style="background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1000&auto=format&fit=crop');">
+                                <div class="header-overlay"></div>
+                            </div>
+
+                            <!-- Main Card -->
+                            <div class="preview-glass">
+                                <!-- Logo & Title -->
+                                <div class="text-center mb-6">
+                                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 mb-3 overflow-hidden shadow-lg relative -mt-12 z-20">
+                                        <img id="previewLogo" src="https://cdn-icons-png.flaticon.com/512/9313/9313234.png" class="w-full h-full object-cover">
+                                    </div>
+                                    <h1 id="prevHeader" class="text-xl font-bold text-white leading-tight">EventLens Political</h1>
+                                    <p id="prevSubHeader" class="text-slate-400 text-xs mt-1">Form Name Here</p>
+                                </div>
+
+                                <!-- Dynamic Form Fields (Preview) -->
+                                <div id="previewFields" class="space-y-3">
+                                    <!-- Populated by JS -->
+                                </div>
+
+                                <!-- Button -->
+                                <div id="prevBtn" class="h-12 bg-gradient-to-r rounded-xl w-full mt-5 shadow-lg flex items-center justify-center text-white font-bold text-sm cursor-pointer">
+                                    Submit
+                                </div>
+                            </div>
+
+                            <div id="prevFooter" class="text-[10px] text-slate-500 text-center mt-6 pb-4">Powered by EventLens</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+  </main>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="modal-content glass w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+        <h3 class="font-bold text-lg text-white">Edit Entry</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <div class="p-6 overflow-y-auto space-y-4" id="modalForm"></div>
+      <div class="p-5 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
+        <button onclick="closeModal()" class="px-5 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Cancel</button>
+        <button onclick="saveChanges()" class="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-lg shadow-orange-500/20 transition">Save Changes</button>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <script>
+    const API_ID = 'vxid0yoovj';
+    const REGION = 'ap-south-1';
+    let currentTab = 'program_info';
+    let currentData = [];
+    let editingId = null;
+    let collectionId = '';
 
-<script>
-const $=(id)=>document.getElementById(id);
-const qp=(n)=>new URLSearchParams(location.search).get(n);
-const CFG_KEY="political_admin_console_cfg_v1";
-let entries=[]; let current=null;
+    const qs = (name) => (new URL(window.location.href)).searchParams.get(name) || '';
+    collectionId = qs('cid') || qs('collection_id');
 
-function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600);}
-function safeJsonParse(s,f){try{return JSON.parse(s);}catch{return f;}}
-function escapeHtml(s){return String(s||"").replace(/[&<>"']/g,(c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));}
-function getToken(){return $("AUTH_TOKEN").value.trim()||localStorage.getItem("idToken")||localStorage.getItem("accessToken")||"";}
-async function postJson(url,payload,token){
-  const h={"Content-Type":"application/json"}; if(token) h["Authorization"]=token;
-  const res=await fetch(url,{method:"POST",mode:"cors",headers:h,body:JSON.stringify(payload)});
-  const text=await res.text(); let data=null; try{data=JSON.parse(text);}catch{data={raw:text};}
-  if(!res.ok) throw new Error((data&&(data.message||data.error))||`HTTP ${res.status}`);
-  return data;
-}
-function saveCfg(){
-  const cfg={cid:$("cid").value.trim(),ADMIN_API:$("ADMIN_API").value.trim(),FORMS_API:$("FORMS_API").value.trim(),AUTH_TOKEN:$("AUTH_TOKEN").value.trim()};
-  localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
-  if(cfg.AUTH_TOKEN) localStorage.setItem("idToken",cfg.AUTH_TOKEN);
-  if(cfg.ADMIN_API) localStorage.setItem("POLITICAL_ADMIN_API_V1",cfg.ADMIN_API);
-  if(cfg.FORMS_API) localStorage.setItem("POLITICAL_FORMS_API_V2",cfg.FORMS_API);
-  toast("Saved.");
-}
-function loadCfg(){
-  const cfg=safeJsonParse(localStorage.getItem(CFG_KEY)||"{}",{});
-  if(cfg.cid) $("cid").value=cfg.cid;
-  if(cfg.ADMIN_API) $("ADMIN_API").value=cfg.ADMIN_API;
-  if(cfg.FORMS_API) $("FORMS_API").value=cfg.FORMS_API;
-  if(cfg.AUTH_TOKEN) $("AUTH_TOKEN").value=cfg.AUTH_TOKEN;
-  const a=localStorage.getItem("POLITICAL_ADMIN_API_V1"), f=localStorage.getItem("POLITICAL_FORMS_API_V2");
-  if(a&&!$("ADMIN_API").value) $("ADMIN_API").value=a;
-  if(f&&!$("FORMS_API").value) $("FORMS_API").value=f;
-}
-function inDateRange(iso){
-  if(!iso) return true;
-  const d=new Date(iso); if(isNaN(d.getTime())) return true;
-  const df=$("dateFrom").value?new Date($("dateFrom").value+"T00:00:00"):null;
-  const dt=$("dateTo").value?new Date($("dateTo").value+"T23:59:59"):null;
-  if(df&&d<df) return false; if(dt&&d>dt) return false; return true;
-}
-function filterEntries(all){
-  const ft=$("formType").value;
-  const q=($("q").value||"").trim().toLowerCase();
-  return (all||[]).filter(e=>{
-    if(ft&&(e.form_type||"")!==ft) return false;
-    if(!inDateRange(e.created_at||e.updated_at)) return false;
-    if(q && JSON.stringify(e).toLowerCase().indexOf(q)<0) return false;
-    return true;
-  });
-}
-function guessMain(e){
-  const p=e.payload||{};
-  const name=p.name||p.member_name||p.reporter_name||p.coordinator_name||p.program_name||"—";
-  const phone=p.phone||p.coordinator_phone||"";
-  const city=p.city||p.tour_city||p.venue||p.mandal_name||p.area||"";
-  return {name,phone,city};
-}
-function renderDetail(e){
-  const box=$("detailView"); const p=e.payload||{}; const keys=Object.keys(p||{});
-  if(keys.length===0){box.innerHTML='<div class="muted">No payload</div>';return;}
-  box.innerHTML="";
-  keys.forEach(k=>{
-    const div=document.createElement("div");
-    div.style="padding:10px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.05);margin-bottom:10px";
-    div.innerHTML=`<div class="muted">${escapeHtml(k)}</div><div style="font-weight:900;margin-top:3px">${escapeHtml(p[k])}</div>`;
-    box.appendChild(div);
-  });
-}
-function openModal(e){
-  current=e;
-  $("modalTitle").textContent=`Entry • ${e.form_type||""}`;
-  $("modalMeta").innerHTML=`<span class="pill2">Entry: ${escapeHtml(e.entry_id||e.id||"")}</span>`;
-  $("payloadEditor").value=JSON.stringify(e.payload||{},null,2);
-  renderDetail(e);
-  $("modal").classList.add("show");
-}
-function closeModal(){ $("modal").classList.remove("show"); current=null; }
-function renderTable(){
-  const tbody=$("tbody");
-  const rows=filterEntries(entries).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
-  $("entriesInfo").textContent=`Loaded: ${entries.length} • Showing: ${rows.length}`;
-  if(rows.length===0){tbody.innerHTML='<tr><td colspan="4" class="muted">No results.</td></tr>';return;}
-  tbody.innerHTML="";
-  rows.forEach(e=>{
-    const m=guessMain(e);
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td><div>${escapeHtml((e.created_at||"").replace("T"," ").slice(0,19))}</div><div class="pill2">${escapeHtml(e.entry_id||e.id||"")}</div></td>
-      <td><div class="pill2">${escapeHtml(e.form_type||"")}</div></td>
-      <td><div style="font-weight:900">${escapeHtml(m.name)}</div><div class="muted">Phone: ${escapeHtml(m.phone)} • ${escapeHtml(m.city)}</div></td>
-      <td><button class="secondary">View/Edit</button></td>`;
-    tr.querySelector("button").onclick=()=>openModal(e);
-    tbody.appendChild(tr);
-  });
-}
-async function loadEntries(){
-  const cid=$("cid").value.trim();
-  const adminApi=$("ADMIN_API").value.trim();
-  const formsApi=$("FORMS_API").value.trim();
-  const token=getToken();
-  if(!cid){toast("CID missing");return;}
-  if(!adminApi&&!formsApi){toast("Admin API missing");return;}
-  $("tbody").innerHTML='<tr><td colspan="4" class="muted">Loading...</td></tr>';
-  const candidates=[
-    {url:adminApi,action:"list_entries"},
-    {url:adminApi,action:"list_form_entries"},
-    {url:formsApi,action:"list_entries"},
-    {url:formsApi,action:"list_form_entries"},
-  ].filter(x=>x.url);
-  let lastErr=null;
-  for(const c of candidates){
-    try{
-      const res=await postJson(c.url,{action:c.action,cid,collection_id:cid,form_type:$("formType").value||null},token);
-      entries=res.items||res.entries||res.data||res.results||[];
-      if(!Array.isArray(entries)) entries=[];
-      renderTable(); buildAnalytics();
-      toast("Loaded."); return;
-    }catch(e){lastErr=e;}
-  }
-  toast("Load failed: "+(lastErr?(lastErr.message||String(lastErr)):"Unknown"));
-  $("tbody").innerHTML='<tr><td colspan="4" class="muted">Error</td></tr>';
-}
-async function saveEntry(){
-  if(!current) return;
-  const cid=$("cid").value.trim();
-  const adminApi=$("ADMIN_API").value.trim();
-  const formsApi=$("FORMS_API").value.trim();
-  const token=getToken();
-  let payload=null; try{payload=JSON.parse($("payloadEditor").value||"{}");}catch{toast("Invalid JSON");return;}
-  const candidates=[
-    {url:adminApi,action:"update_entry"},{url:adminApi,action:"edit_entry"},
-    {url:formsApi,action:"update_entry"},{url:formsApi,action:"edit_entry"},
-  ].filter(x=>x.url);
-  let lastErr=null;
-  for(const c of candidates){
-    try{
-      await postJson(c.url,{action:c.action,cid,collection_id:cid,entry_id:current.entry_id||current.id,pk:current.pk,sk:current.sk,form_type:current.form_type,payload},token);
-      current.payload=payload; renderTable(); renderDetail(current); toast("Saved."); return;
-    }catch(e){lastErr=e;}
-  }
-  toast("Save failed: "+(lastErr?(lastErr.message||String(lastErr)):"Unknown"));
-}
-async function deleteEntry(){
-  if(!current) return;
-  if(!confirm("Delete this entry?")) return;
-  const cid=$("cid").value.trim();
-  const adminApi=$("ADMIN_API").value.trim();
-  const formsApi=$("FORMS_API").value.trim();
-  const token=getToken();
-  const candidates=[
-    {url:adminApi,action:"delete_entry"},{url:adminApi,action:"remove_entry"},
-    {url:formsApi,action:"delete_entry"},{url:formsApi,action:"remove_entry"},
-  ].filter(x=>x.url);
-  let lastErr=null;
-  for(const c of candidates){
-    try{
-      await postJson(c.url,{action:c.action,cid,collection_id:cid,entry_id:current.entry_id||current.id,pk:current.pk,sk:current.sk,form_type:current.form_type},token);
-      entries=entries.filter(e=>(e.entry_id||e.id)!==(current.entry_id||current.id));
-      renderTable(); buildAnalytics(); closeModal(); toast("Deleted."); return;
-    }catch(e){lastErr=e;}
-  }
-  toast("Delete failed: "+(lastErr?(lastErr.message||String(lastErr)):"Unknown"));
-}
-function exportCSV(){
-  const rows=filterEntries(entries).slice().sort((a,b)=>String(a.created_at||"").localeCompare(String(b.created_at||"")));
-  const header=["created_at","form_type","entry_id","payload"];
-  const csv=[header.join(",")].concat(rows.map(e=>{
-    return [JSON.stringify(e.created_at||""),JSON.stringify(e.form_type||""),JSON.stringify(e.entry_id||e.id||""),JSON.stringify(JSON.stringify(e.payload||{}))].join(",");
-  })).join("\n");
-  const blob=new Blob([csv],{type:"text/csv"});
-  const url=URL.createObjectURL(blob); const a=document.createElement("a");
-  a.href=url; a.download=`political_entries_${$("cid").value.trim()}_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
-}
-function slideView(){
-  const rows=filterEntries(entries).slice().sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
-  if(rows.length===0){toast("No data");return;}
-  let idx=0;
-  const show=()=>{
-    const e=rows[idx]; openModal(e);
-    $("payloadEditor").disabled=true;
-    $("btnSaveEntry").style.display="none";
-    $("btnDeleteEntry").style.display="none";
-    $("modalMeta").innerHTML=`<span class="pill2">Slide ${idx+1}/${rows.length}</span> <span class="pill2">${escapeHtml(e.form_type||"")}</span>`;
-  };
-  show();
-  const onKey=(ev)=>{
-    if(!$("modal").classList.contains("show")) return;
-    if(ev.key==="ArrowRight"){idx=Math.min(rows.length-1,idx+1);show();}
-    if(ev.key==="ArrowLeft"){idx=Math.max(0,idx-1);show();}
-    if(ev.key==="Escape"){closeModal();}
-  };
-  window.addEventListener("keydown",onKey);
-  const restore=()=>{
-    window.removeEventListener("keydown",onKey);
-    $("payloadEditor").disabled=false;
-    $("btnSaveEntry").style.display="inline-block";
-    $("btnDeleteEntry").style.display="inline-block";
-  };
-  const oldClose=$("btnClose").onclick;
-  $("btnClose").onclick=()=>{restore(); oldClose&&oldClose(); closeModal();};
-}
-function buildAnalytics(){
-  const data=entries.slice(); const total=data.length;
-  const types={}, byDay={};
-  data.forEach(e=>{
-    const t=e.form_type||"unknown"; types[t]=(types[t]||0)+1;
-    const d=(e.created_at||"").slice(0,10); if(d) byDay[d]=(byDay[d]||0)+1;
-  });
-  const kpis=$("kpis"); kpis.innerHTML="";
-  const boxes=[
-    {label:"Total Entries",num:total},
-    {label:"Unique Form Types",num:Object.keys(types).length},
-    {label:"Today",num:(byDay[new Date().toISOString().slice(0,10)]||0)}
-  ];
-  boxes.forEach(b=>{
-    const div=document.createElement("div"); div.className="box";
-    div.innerHTML=`<div class="muted">${escapeHtml(b.label)}</div><div class="num">${escapeHtml(b.num)}</div>`;
-    kpis.appendChild(div);
-  });
-  const bd=$("breakdown"); bd.innerHTML="";
-  const max=Math.max(1,...Object.values(types));
-  Object.entries(types).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
-    const row=document.createElement("div"); row.style="margin-bottom:10px";
-    row.innerHTML=`<div class="row" style="align-items:center"><div style="min-width:240px;font-weight:900">${escapeHtml(k)}</div><div class="muted">${escapeHtml(v)}</div></div>
-      <div class="bar"><div style="width:${(v/max)*100}%"></div></div>`;
-    bd.appendChild(row);
-  });
-  const act=$("activity"); act.innerHTML="";
-  const days=[]; for(let i=13;i>=0;i--){days.push(new Date(Date.now()-i*86400000).toISOString().slice(0,10));}
-  const maxD=Math.max(1,...days.map(d=>byDay[d]||0));
-  days.forEach(d=>{
-    const v=byDay[d]||0;
-    const row=document.createElement("div"); row.style="margin-bottom:10px";
-    row.innerHTML=`<div class="row" style="align-items:center"><div style="min-width:120px" class="muted">${escapeHtml(d)}</div>
-      <div style="min-width:40px" class="muted">${escapeHtml(v)}</div><div style="flex:1"><div class="bar"><div style="width:${(v/maxD)*100}%"></div></div></div></div>`;
-    act.appendChild(row);
-  });
-}
-function showTab(id){
-  ["entriesTab","analyticsTab","brandingTab"].forEach(x=>$(x).classList.add("hidden"));
-  $(id).classList.remove("hidden");
-  $("rightTitle").textContent=id==="entriesTab"?"Entries":(id==="analyticsTab"?"Analytics":"Branding Studio");
-}
-document.querySelectorAll(".tab").forEach(t=>{
-  t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); t.classList.add("active"); showTab(t.dataset.tab);};
-});
-function readBrandingInputs(){
-  return {cid:$("cid").value.trim(),header_title:$("b_header_title").value.trim(),slogan:$("b_slogan").value.trim(),footer_text:$("b_footer").value.trim(),
-    logo_url:$("b_logo").value.trim(),header_image_url:$("b_header_img").value.trim(),
-    theme:{primary:$("b_primary").value.trim(),accent:$("b_accent").value.trim(),bg:$("b_bg").value.trim(),card:$("b_card").value.trim(),text:$("b_text").value.trim(),muted:$("b_muted").value.trim(),border:$("b_border").value.trim()}};
-}
-function fillBrandingInputs(b){
-  b=b||{}; $("b_header_title").value=b.header_title||""; $("b_slogan").value=b.slogan||""; $("b_footer").value=b.footer_text||"";
-  $("b_logo").value=b.logo_url||""; $("b_header_img").value=b.header_image_url||"";
-  const t=b.theme||{}; $("b_primary").value=t.primary||""; $("b_accent").value=t.accent||""; $("b_bg").value=t.bg||""; $("b_card").value=t.card||"";
-  $("b_text").value=t.text||""; $("b_muted").value=t.muted||""; $("b_border").value=t.border||"";
-}
-function sendPreview(){
-  const cid=$("cid").value.trim();
-  $("previewFrame").contentWindow && $("previewFrame").contentWindow.postMessage({type:"branding_preview",cid,branding:readBrandingInputs()}, "*");
-}
-function openPreviewFrame(){
-  const cid=$("cid").value.trim();
-  const f=$("previewForm").value;
-  $("previewFrame").src=`${f}?cid=${encodeURIComponent(cid)}&preview=1`;
-  setTimeout(()=>sendPreview(),500);
-}
-$("btnPreview").onclick=()=>{sendPreview();toast("Preview updated.");};
-$("btnSaveDraft").onclick=()=>{
-  const cid=$("cid").value.trim();
-  localStorage.setItem(`political_branding_draft__${cid}`, JSON.stringify(readBrandingInputs()));
-  toast("Draft saved.");
-};
-$("btnLoadBranding").onclick=async ()=>{
-  const cid=$("cid").value.trim();
-  const adminApi=$("ADMIN_API").value.trim();
-  if(!adminApi){toast("Admin API missing");return;}
-  try{
-    const res=await postJson(adminApi,{action:"get_branding",cid,collection_id:cid},getToken());
-    const b=res.branding||res.item||res; fillBrandingInputs(b); openPreviewFrame(); toast("Loaded published.");
-  }catch(e){toast("Load failed: "+(e.message||String(e)));}
-};
-$("btnPublish").onclick=async ()=>{
-  const cid=$("cid").value.trim();
-  const adminApi=$("ADMIN_API").value.trim();
-  if(!adminApi){toast("Admin API missing");return;}
-  const branding=readBrandingInputs();
-  try{
-    await postJson(adminApi,{action:"set_branding",cid,collection_id:cid,branding},getToken());
-    localStorage.removeItem(`political_branding_draft__${cid}`);
-    localStorage.setItem(`political_branding_published__${cid}`, JSON.stringify(branding));
-    toast("Published ✅");
-  }catch(e){toast("Publish failed: "+(e.message||String(e)));}
-};
-$("previewForm").onchange=()=>openPreviewFrame();
-$("btnOpenForm").onclick=()=>{const cid=$("cid").value.trim();const f=$("previewForm").value;window.open(`${f}?cid=${encodeURIComponent(cid)}`,"_blank");};
+    if(!collectionId) {
+        document.getElementById('cidWarning').classList.remove('hidden');
+        document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
+        document.getElementById('tableBody').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-400">Error: No Collection ID found in URL.<br>Please use ?cid=YOUR_ID</td></tr>`;
+    } else {
+        document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
+        loadData();
+    }
 
-$("btnClose").onclick=()=>{ $("payloadEditor").disabled=false; $("btnSaveEntry").style.display="inline-block"; $("btnDeleteEntry").style.display="inline-block"; closeModal(); };
-$("modal").onclick=(e)=>{ if(e.target.id==="modal") $("btnClose").click(); };
-$("btnSaveEntry").onclick=()=>saveEntry();
-$("btnDeleteEntry").onclick=()=>deleteEntry();
-$("btnRefresh").onclick=()=>loadEntries();
-$("btnExport").onclick=()=>exportCSV();
-$("btnSlide").onclick=()=>slideView();
-$("formType").onchange=()=>renderTable();
-$("q").oninput=()=>renderTable();
-$("dateFrom").onchange=()=>renderTable();
-$("dateTo").onchange=()=>renderTable();
-$("btnSaveCfg").onclick=()=>saveCfg();
-$("btnLoadCfg").onclick=()=>{loadCfg();toast("Loaded.");};
-$("btnBack").onclick=()=>{const cid=$("cid").value.trim(); window.location.href=`awseventlens-single-v3_SUPERADMIN_POLITICAL_v1_UPDATED_WITH_ADMIN_CONSOLE.html#collection=${encodeURIComponent(cid)}`;};
+    const SCHEMAS = {
+      'program_info': {
+        title: 'Event Details',
+        headers: ['Program', 'Date/Time', 'Location', 'District', 'Action'],
+        fields: [
+            { key: 'program_name', label: 'Name' }, { key: 'program_time', label: 'Time', type: 'datetime-local' },
+            { key: 'program_location', label: 'Location' }, { key: 'district', label: 'District' }
+        ],
+        previewFields: [
+            { icon: 'fa-user', ph: 'Coordinator Name' }, { icon: 'fa-heading', ph: 'Program Title' },
+            { icon: 'fa-map-location-dot', ph: 'District' }, { icon: 'fa-map-pin', ph: 'Location' },
+            { icon: 'fa-calendar-day', ph: 'Date & Time' }
+        ]
+      },
+      'coordinator_entry': {
+        title: 'Coordinator Form',
+        headers: ['Name', 'Role', 'Mobile', 'Area', 'Action'],
+        fields: [
+            { key: 'convenor_name', label: 'Name' }, { key: 'coordinator_role', label: 'Role' },
+            { key: 'convenor_mobile', label: 'Mobile' }, { key: 'area', label: 'Area' }
+        ],
+        previewFields: [
+            { icon: 'fa-bullhorn', ph: 'Program Name' }, { icon: 'fa-map-location-dot', ph: 'District' },
+            { icon: 'fa-user', ph: 'Convenor Name' }, { icon: 'fa-phone', ph: 'Convenor Mobile' },
+            { icon: 'fa-user-plus', ph: 'Co-Convenor 1' }, { icon: 'fa-user-plus', ph: 'Co-Convenor 2' }
+        ]
+      },
+      'mandal_reporting': {
+        title: 'Mandal Reporting',
+        headers: ['Program', 'Level', 'Attendance', 'Action'],
+        fields: [
+            { key: 'program_name', label: 'Program' }, { key: 'report_level', label: 'Level', type: 'select', options:['mandal','district','vidhansabha'] },
+            { key: 'total_attendance', label: 'Attendance' }
+        ],
+        previewFields: [
+            { icon: 'fa-heading', ph: 'Program Name' }, { icon: 'fa-layer-group', ph: 'Level (Mandal/Dist)' },
+            { icon: 'fa-map-location-dot', ph: 'Location Info' }, { icon: 'fa-users', ph: 'Total Attendance' },
+            { icon: 'fa-camera', ph: 'Upload Photos (Box)' }
+        ]
+      },
+      'president_tour': {
+        title: 'President Tour',
+        headers: ['Tour Place', 'Date', 'VIP', 'Action'],
+        fields: [
+            { key: 'tour_place', label: 'Place' }, { key: 'tour_date', label: 'Date', type: 'date' },
+            { key: 'vip_person', label: 'VIP' }
+        ],
+        previewFields: [
+            { icon: 'fa-user', ph: 'Your Name' }, { icon: 'fa-calendar-day', ph: 'Tour Date' },
+            { icon: 'fa-location-arrow', ph: 'Tour Place' }, { icon: 'fa-user-tie', ph: 'VIP Name' },
+            { icon: 'fa-camera', ph: 'Event Photos' }
+        ]
+      },
+      'visitor_form': {
+        title: 'Visitor Entry',
+        headers: ['Name', 'Mobile', 'District', 'Reason', 'Action'],
+        fields: [
+            { key: 'name', label: 'Name' }, { key: 'mobile', label: 'Mobile' },
+            { key: 'district', label: 'District' }, { key: 'reason', label: 'Reason' }
+        ],
+        previewFields: [
+            { icon: 'fa-user', ph: 'Visitor Name' }, { icon: 'fa-phone', ph: 'Mobile Number' },
+            { icon: 'fa-map-location-dot', ph: 'District' }, { icon: 'fa-sitemap', ph: 'Mandal' },
+            { icon: 'fa-comment-dots', ph: 'Reason for Visit' }, { icon: 'fa-camera', ph: 'Selfie' }
+        ]
+      }
+    };
 
-const cidFromUrl=qp("cid")||qp("collection_id")||"";
-if(cidFromUrl){$("cid").value=cidFromUrl; $("cidPill").textContent="CID: "+cidFromUrl;}
-loadCfg();
-if($("cid").value){ const cid=$("cid").value.trim();
-  const draft=safeJsonParse(localStorage.getItem(`political_branding_draft__${cid}`)||"null",null);
-  if(draft) fillBrandingInputs(draft);
-  openPreviewFrame();
-}
-</script>
-</body></html>
+    function switchTab(tab, el) {
+      currentTab = tab;
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      el.classList.add('active');
+      
+      const titles = { 
+          'program_info': 'Event Details', 'coordinator_entry': 'Coordinator Management', 
+          'mandal_reporting': 'Mandal Reports', 'president_tour': 'President Tour Logs', 
+          'visitor_form': 'Visitor Entries', 'settings': 'Dashboard Settings' 
+      };
+      document.getElementById('pageTitle').textContent = titles[tab];
+
+      if(tab === 'settings') {
+        document.getElementById('dataView').classList.add('hidden');
+        document.getElementById('settingsView').classList.remove('hidden');
+        updatePreview();
+      } else {
+        document.getElementById('settingsView').classList.add('hidden');
+        document.getElementById('dataView').classList.remove('hidden');
+        loadData();
+      }
+    }
+
+    // --- Image Upload & Preview Logic ---
+    function handleImageUpload(input, targetImgId, smallPreviewId = null) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById(targetImgId);
+                
+                if(targetImgId === 'previewHeaderBg') {
+                    img.style.backgroundImage = `url('${e.target.result}')`;
+                } else {
+                    img.src = e.target.result;
+                }
+
+                if (smallPreviewId) {
+                    const small = document.getElementById(smallPreviewId);
+                    small.src = e.target.result;
+                    small.classList.remove('hidden');
+                    document.getElementById('logoPlaceholder').classList.add('hidden');
+                }
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function updatePreview() {
+        const name = document.getElementById('brandName').value;
+        const footer = document.getElementById('brandFooter').value;
+        const theme = document.getElementById('brandTheme').value;
+        const selectedForm = document.getElementById('previewFormSelector').value;
+
+        // Texts
+        document.getElementById('prevHeader').textContent = name;
+        document.getElementById('prevFooter').textContent = footer;
+        document.getElementById('prevSubHeader').textContent = SCHEMAS[selectedForm].title;
+
+        // Theme Colors
+        const btn = document.getElementById('prevBtn');
+        const screen = document.getElementById('mobileScreen');
+        let bgGrad, btnGrad, focusColor;
+
+        if(theme === 'blue') {
+            bgGrad = 'radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 50%), #0f172a';
+            btnGrad = 'from-blue-600 to-indigo-600';
+        } else if(theme === 'green') {
+            bgGrad = 'radial-gradient(circle at top left, rgba(16,185,129,0.15), transparent 50%), #0f172a';
+            btnGrad = 'from-emerald-600 to-teal-600';
+        } else if(theme === 'red') {
+            bgGrad = 'radial-gradient(circle at top left, rgba(239,68,68,0.15), transparent 50%), #0f172a';
+            btnGrad = 'from-red-600 to-rose-600';
+        } else { // Orange
+            bgGrad = 'radial-gradient(circle at top left, rgba(249,115,22,0.15), transparent 50%), #0f172a';
+            btnGrad = 'from-orange-500 to-red-500';
+        }
+
+        screen.style.background = bgGrad;
+        btn.className = `h-12 bg-gradient-to-r rounded-xl w-full mt-5 shadow-lg flex items-center justify-center text-white font-bold text-sm ${btnGrad}`;
+
+        // Render Form Fields
+        const fieldsContainer = document.getElementById('previewFields');
+        fieldsContainer.innerHTML = '';
+        const previewSchema = SCHEMAS[selectedForm].previewFields || [];
+
+        previewSchema.forEach(f => {
+            let innerContent = '';
+            if(f.icon === 'fa-camera') {
+                innerContent = `
+                <div class="border-2 border-dashed border-slate-600/50 rounded-xl h-24 flex flex-col items-center justify-center bg-slate-800/30">
+                    <i class="fa-solid fa-camera text-slate-500 mb-1"></i>
+                    <span class="text-[10px] text-slate-500">${f.ph}</span>
+                </div>`;
+            } else {
+                innerContent = `
+                <div class="relative">
+                    <input disabled type="text" placeholder="${f.ph}" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg py-3 pl-10 pr-3 text-xs text-slate-400">
+                    <i class="fa-solid ${f.icon} absolute left-3 top-3.5 text-slate-500 text-xs"></i>
+                </div>`;
+            }
+            fieldsContainer.innerHTML += innerContent;
+        });
+    }
+
+    async function loadData() {
+      if(!collectionId) return;
+      const tbody = document.getElementById('tableBody');
+      const thead = document.getElementById('tableHeaderRow');
+      const schema = SCHEMAS[currentTab];
+      thead.innerHTML = schema.headers.map(h => `<th class="p-4 border-b border-slate-700">${h}</th>`).join('');
+      tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>Loading Data...</td></tr>`;
+
+      try {
+        await new Promise(r => setTimeout(r, 600)); 
+        const mockData = Array.from({length: 5}).map((_,i) => ({
+            entry_id: `id_${Math.random().toString(36).substr(2,5)}`,
+            payload: { program_name: `Event ${i+1}`, program_time: '2025-10-10T10:00', district: 'Indore', program_location: 'Hall A', convenor_name: 'Rahul Singh', coordinator_role: 'Adhyaksh', convenor_mobile: '9998887776', area: 'Ward 5', report_level: 'mandal', total_attendance: 150 + (i*10), tour_place: 'Bhopal', tour_date: '2025-11-01', vip_person: 'President', name: 'Visitor Name', mobile: '9998887776', reason: 'Meeting' }
+        }));
+        renderTable(mockData);
+      } catch(err) { tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-red-400">Error: ${err.message}</td></tr>`; }
+    }
+
+    function renderTable(data) {
+        currentData = data;
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        const schema = SCHEMAS[currentTab];
+        data.forEach(item => {
+            const d = item.payload || {};
+            let tds = '';
+            schema.fields.forEach(f => { tds += `<td class="p-4 text-slate-300">${d[f.key] || '-'}</td>`; });
+            tbody.innerHTML += `<tr class="table-row border-b border-slate-800/50 transition">${tds}<td class="p-4 text-right"><button onclick="openEdit('${item.entry_id}')" class="text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg text-xs font-medium">Edit</button></td></tr>`;
+        });
+    }
+
+    function openEdit(id) {
+        const item = currentData.find(i => i.entry_id === id); if(!item) return; editingId = id;
+        const formContainer = document.getElementById('modalForm'); formContainer.innerHTML = '';
+        const fields = SCHEMAS[currentTab].fields || []; const data = item.payload || {};
+        fields.forEach(field => {
+            const val = data[field.key] || '';
+            let inputHtml = `<input type="${field.type || 'text'}" id="edit_${field.key}" value="${val}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white outline-none" />`;
+            if(field.type === 'select') inputHtml = `<select id="edit_${field.key}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white">${field.options.map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;
+            formContainer.innerHTML += `<div><label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase">${field.label}</label>${inputHtml}</div>`;
+        });
+        document.getElementById('editModal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+    function saveChanges() { closeModal(); alert("Changes Saved (Mock Mode)"); }
+    function saveSettings() { alert("Settings Saved! This branding will apply to public forms."); }
+    function copyLink(filename) {
+        if(!collectionId) { alert("Collection ID Missing!"); return; }
+        const base = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        const link = `${base}/${filename}?cid=${collectionId}`;
+        navigator.clipboard.writeText(link);
+        alert("Link Copied: " + link);
+    }
+    
+    updatePreview();
+  </script>
+</body>
+</html>

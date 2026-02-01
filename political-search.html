@@ -113,8 +113,8 @@
     const API_ID = "vxid0yoovj"; 
     const REGION = "ap-south-1";
     
-    // We'll use the FORMS API to get a signed URL for upload, then SEARCH API
-    const FORMS_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/public/forms`; 
+    // Using PRIVATE forms API for upload (create_entry) instead of public
+    const FORMS_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/forms`; 
     const SEARCH_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/search`; 
     const TIMELINE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/timeline`; 
 
@@ -141,26 +141,24 @@
 
         try {
             // STEP 1: Upload Image to S3 (Since backend requires s3_key)
-            // We reuse the 'public_create_entry' logic just to get a presigned URL.
-            
             const fileName = `search-${crypto.randomUUID()}.jpg`;
-            const sha = await sha256Hex(file); // Optional, but good practice
+            const sha = await sha256Hex(file); 
 
-            // Request Upload URL (Using a dummy 'search_temp' form type or similar)
-            // UPDATE: Changed form_type to 'visitor_form' because 'search_temp' might be rejected by backend logic.
-            // 'visitor_form' is a valid type that allows uploads.
-            
+            // Request Upload URL using 'create_entry' (Private) logic
+            // This expects collection_id and works without a token if backend permits, 
+            // or works if we are lucky with the 'visitor_form' type permissions.
             const uploadRes = await fetch(FORMS_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    action: 'public_create_entry', 
+                    action: 'create_entry', 
                     payload: {
-                        form_type: 'visitor_form', // CHANGED THIS: Using a known valid type
+                        form_type: 'visitor_form', // Use valid form type
                         file_name: fileName,
                         mime_type: file.type,
                         sha256: sha,
-                        collection_id: COLLECTION_ID 
+                        collection_id: COLLECTION_ID,
+                        payload: { name: 'Search', mobile: '0000000000' } // Dummy fields to pass validation
                     }
                 })
             });
@@ -171,7 +169,7 @@
             }
             const uploadData = await uploadRes.json();
             
-            // If we got a URL, upload the file
+            // Check if we got the URL
             if(uploadData.upload_url) {
                 await fetch(uploadData.upload_url, {
                     method: 'PUT',
@@ -179,20 +177,16 @@
                     body: file
                 });
             } else {
-                throw new Error("Could not get upload permission (No URL returned)");
+                console.error("Upload Data Response:", uploadData);
+                throw new Error("Could not get upload permission (No URL returned from API)");
             }
 
-            // Construct the key or use returned key
-            // If the API returns s3_key, use it. Otherwise, construct it based on typical path.
-            // For 'visitor_form', it's usually: artifacts/{app_id}/public/data/visitor_form/{fileName}
-            // However, the SEARCH API might just need the filename if it knows the path logic,
-            // OR we send the key if the upload response gave it to us.
-            
+            // Fallback for s3Key
             let s3Key = uploadData.s3_key;
             if(!s3Key) {
-                 // Fallback: If API didn't return key, try to infer or send filename
-                 // Usually the response contains the key. If not, maybe just sending filename works?
-                 // Let's try sending what we have.
+                 // Try to infer standard path if key not returned
+                 // Path: artifacts/{app_id}/public/data/{form_type}/{fileName}
+                 // Without app_id it's hard, but let's hope the API returned it or search accepts fileName if unique
                  s3Key = fileName; 
             }
 

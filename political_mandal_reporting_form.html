@@ -10,192 +10,415 @@
   <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] } } } }</script>
   <style>
     body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 50%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.1), transparent 50%), #0f172a; color: #fff; }
-    .glass { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-    .input-group { position: relative; transition: transform 0.2s; }
-    .input-field { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 0.85rem; padding: 0.85rem 1rem 0.85rem 2.75rem; color: white; transition: all 0.3s; outline: none; }
-    .input-field:focus { border-color: #f97316; box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15); }
-    .input-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
-    .input-field:focus ~ .input-icon { color: #f97316; }
-    .btn-gradient { background: linear-gradient(135deg, #f97316, #ea580c); transition: all 0.3s; }
-    .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.4); }
-    select.input-field option { background: #0f172a; color: white; }
-    
-    .hidden-field { display: none; }
+    .glass { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); }
+    .input-field { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s ease; }
+    .input-field:focus { border-color: #f97316; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); outline: none; }
+    .input-field:disabled { opacity: 0.5; cursor: not-allowed; background: rgba(15, 23, 42, 0.4); }
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-  <div class="glass w-full max-w-lg rounded-3xl p-6 md:p-8 relative overflow-hidden">
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-orange-500 rounded-b-full shadow-[0_0_20px_rgba(249,115,22,0.6)]"></div>
-    
-    <div class="text-center mb-6 mt-2">
-      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-500 mb-4 ring-1 ring-orange-500/20">
-        <i class="fa-solid fa-clipboard-check text-2xl"></i>
-      </div>
-      <h1 class="text-2xl font-bold">Event Report</h1>
-      <p class="text-slate-400 text-sm mt-1">Submit Post-Event Details</p>
+
+<div class="w-full max-w-lg glass rounded-2xl p-6 relative">
+    <div class="text-center mb-6">
+        <h1 id="program_title" class="text-2xl font-bold text-orange-500">Mandal Reporting</h1>
+        <p class="text-slate-400 text-xs">Enter reporting details</p>
     </div>
 
     <form id="f" class="space-y-4">
-      
-      <!-- Program Name -->
-      <div class="input-group">
-        <input id="program_name" type="text" placeholder="कार्यक्रम का नाम *" required class="input-field" />
-        <i class="fa-solid fa-heading input-icon"></i>
-      </div>
 
-      <!-- Level Selection -->
-      <div class="input-group">
-        <select id="report_level" class="input-field" onchange="toggleLevels()">
-            <option value="district">Level: District (जिला)</option>
-            <option value="vidhansabha">Level: Vidhansabha (विधानसभा)</option>
-            <option value="mandal" selected>Level: Mandal (मंडल)</option>
-        </select>
-        <i class="fa-solid fa-layer-group input-icon"></i>
-      </div>
-
-      <!-- District (Always Visible) -->
-      <div class="input-group" id="div_district">
-        <input id="district" type="text" placeholder="जिला *" required class="input-field" />
-        <i class="fa-solid fa-map-location-dot input-icon"></i>
-      </div>
-
-      <!-- Vidhansabha (Hidden for District Level) -->
-      <div class="input-group" id="div_vidhansabha">
-        <input id="vidhansabha" type="text" placeholder="विधानसभा *" class="input-field" />
-        <i class="fa-solid fa-landmark input-icon"></i>
-      </div>
-
-      <!-- Mandal (Hidden for District & Vidhansabha Level) -->
-      <div class="input-group" id="div_mandal">
-        <input id="mandal" type="text" placeholder="मंडल *" class="input-field" />
-        <i class="fa-solid fa-sitemap input-icon"></i>
-      </div>
-
-      <!-- Details -->
-      <div class="input-group">
-        <input id="program_location" type="text" placeholder="कार्यक्रम का स्थान *" required class="input-field" />
-        <i class="fa-solid fa-map-pin input-icon"></i>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div class="input-group">
-            <input id="total_attendance" type="number" placeholder="कुल उपस्थिति" class="input-field" />
-            <i class="fa-solid fa-users input-icon"></i>
+        <!-- LEVEL SELECTION -->
+        <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Select Level (स्तर चुनें)</label>
+            <select id="level" class="w-full rounded-lg px-3 py-2.5 text-sm input-field bg-slate-800 border-orange-500/50">
+                <option value="">— Select Level —</option>
+                <option value="district">District (जिला)</option>
+                <option value="vidhansabha">Vidhan Sabha (विधानसभा)</option>
+                <option value="mandal">Mandal (मंडल)</option>
+            </select>
         </div>
-        <div class="input-group">
-            <input id="key_speaker" type="text" placeholder="प्रमुख वक्ता" class="input-field" />
-            <i class="fa-solid fa-microphone-lines input-icon"></i>
-        </div>
-      </div>
 
-      <!-- Photo Upload -->
-      <div class="pt-3">
-        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 ml-1">कार्यक्रम के फोटो *</label>
-        <div class="relative group cursor-pointer overflow-hidden rounded-2xl">
-          <input id="selfie" type="file" accept="image/*" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" onchange="previewImage(this)" />
-          <div id="uploadBox" class="border-2 border-dashed border-slate-600 rounded-2xl p-6 flex flex-col items-center justify-center bg-slate-800/40 group-hover:border-orange-500 transition-all h-32">
-            <div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center mb-2"><i class="fa-solid fa-camera text-xl text-slate-300"></i></div>
-            <span class="text-sm font-medium text-slate-300">Upload Photos</span>
-          </div>
-          <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover rounded-2xl z-10" />
-          <button type="button" id="removePreview" class="hidden absolute top-2 right-2 z-30 bg-black/60 text-white rounded-full p-1.5 hover:bg-red-500 transition" onclick="clearImage(event)"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-      </div>
+        <!-- DYNAMIC LOCATION DROPDOWNS -->
+        <div id="location-section" class="space-y-3 p-3 bg-slate-800/30 rounded-xl border border-slate-700 hidden">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">District (जिला)</label>
+                <select id="district" class="w-full rounded-lg px-3 py-2 text-sm input-field">
+                    <option value="">— Select District —</option>
+                </select>
+            </div>
+            
+            <div id="vs-box" class="hidden">
+                <label class="block text-xs text-slate-400 mb-1">Vidhan Sabha</label>
+                <select id="vidhansabha" class="w-full rounded-lg px-3 py-2 text-sm input-field" disabled>
+                    <option value="">— Select District First —</option>
+                </select>
+            </div>
 
-      <button id="submitBtn" type="submit" class="w-full btn-gradient text-white font-bold py-4 rounded-xl shadow-lg mt-4 flex items-center justify-center gap-2 text-lg">
-        <span>Submit Report</span> <i class="fa-solid fa-paper-plane"></i>
-      </button>
+            <div id="mandal-box" class="hidden">
+                <label class="block text-xs text-slate-400 mb-1">Mandal</label>
+                <select id="mandal" class="w-full rounded-lg px-3 py-2 text-sm input-field" disabled>
+                    <option value="">— Select Vidhan Sabha First —</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- REPORTING FIELDS -->
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Date (दिनांक)</label>
+                <input type="date" id="event_date" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" required>
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Time (समय)</label>
+                <input type="time" id="event_time" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" required>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-xs text-slate-400 mb-1">Venue (कार्यक्रम स्थान)</label>
+            <input type="text" id="venue" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Place Name" required>
+        </div>
+
+        <div>
+            <label class="block text-xs text-slate-400 mb-1">Total Attendance (कुल उपस्थिति संख्या)</label>
+            <input type="number" id="attendance" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="e.g. 150">
+        </div>
+
+        <div>
+            <label class="block text-xs text-slate-400 mb-1">Key Guests/Speakers (प्रमुख वक्ता/अतिथि)</label>
+            <textarea id="guests" rows="2" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Names of VIPs present..."></textarea>
+        </div>
+
+        <div class="space-y-2">
+            <label class="block text-xs font-semibold text-slate-300">Program Photo (Required)</label>
+            <div class="relative">
+                <input type="file" id="selfie" accept="image/*" class="hidden" onchange="previewImage(event)">
+                <label for="selfie" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-orange-500 hover:bg-slate-800/50 transition" id="dropzone">
+                    <div id="preview-container" class="hidden w-full h-full relative">
+                        <img id="preview" class="w-full h-full object-cover rounded-lg">
+                        <button type="button" onclick="clearImage(event)" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center"><i class="fa-solid fa-times text-xs"></i></button>
+                    </div>
+                    <div id="upload-placeholder" class="text-center p-4">
+                        <i class="fa-solid fa-image text-2xl text-slate-400 mb-2"></i>
+                        <p class="text-xs text-slate-400">Upload Photo</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition">
+            Submit Report
+        </button>
+
     </form>
-    <div id="statusBox" class="hidden mt-4 p-4 rounded-xl text-sm text-center font-medium border border-transparent"></div>
-  </div>
+    <div id="status" class="mt-4 text-center text-xs font-medium hidden"></div>
+</div>
 
 <script>
-    // Logic to toggle fields based on Level selection
-    function toggleLevels() {
-        const level = document.getElementById('report_level').value;
-        const divVidhan = document.getElementById('div_vidhansabha');
-        const divMandal = document.getElementById('div_mandal');
-        const inpVidhan = document.getElementById('vidhansabha');
-        const inpMandal = document.getElementById('mandal');
+    // DATA
+    const DISTRICT_DATA = {
+    "मंदसौर": {
+        "मंदसौर": ["मंदसौर नगर उत्तर", "मंदसौर नगर दक्षिण", "मंदसौर ग्रामीण"],
+        "सुवासरा": ["सीतामऊ", "सुवासरा", "शामगढ़"],
+        "गरोठ": ["गरोठ", "भानपुरा", "मेलखेड़ा"],
+        "मल्हारगढ़": ["मल्हारगढ़", "नारायणगढ़", "पिपलियामंडी"]
+    },
+    "रतलाम": {
+        "रतलाम सिटी": ["दीनदयाल नगर", "अम्बेडकर नगर", "श्यामा प्रसाद मुखर्जी नगर"],
+        "रतलाम ग्रामीण": ["धराड़", "बांगरोद", "नामली"],
+        "सैलाना": ["सैलाना", "बाजना", "रावटी"],
+        "जावरा": ["जावरा नगर", "जावरा ग्रामीण", "पिप्लौदा"],
+        "आलोट": ["आलोट", "बड़ावदा", "ताल"]
+    },
+    "नीमच": {
+        "नीमच": ["नीमच उत्तर", "नीमच दक्षिण", "नीमच पश्चिम", "जीरन"],
+        "मनासा": ["मनासा", "रामपुरा", "कुकाड़ेश्वर"],
+        "जावद": ["जावद", "सिंगोली", "रतनगढ़"]
+    },
+    "उज्जैन": {
+        "उज्जैन उत्तर": ["दौलतगंज", "नई सड़क", "फ्रीगंज"],
+        "उज्जैन दक्षिण": ["महानंदा", "नानाखेड़ा", "कोठी रोड"],
+        "घट्टिया": ["घट्टिया", "उन्हेल", "पानबिहार"],
+        "तराना": ["तराना", "माकड़ोन", "कायथा"],
+        "महिदपुर": ["महिदपुर नगर", "महिदपुर ग्रामीण", "झारड़ा"],
+        "नागदा-खाचरौद": ["नागदा", "खाचरौद", "बिरलाग्राम"],
+        "बड़नगर": ["बड़नगर", "इंगोरिया", "खरसौद"]
+    },
+    "आगर-मालवा": {
+        "आगर": ["आगर नगर", "आगर ग्रामीण", "बड़ौद"],
+        "सुसनेर": ["सुसनेर", "नलखेड़ा", "सोयत"]
+    },
+    "शाजापुर": {
+        "शाजापुर": ["शाजापुर नगर", "शाजापुर ग्रामीण", "मो. बड़ोदिया"],
+        "शुजालपुर": ["शुजालपुर मंडी", "शुजालपुर सिटी", "अकोदिया"],
+        "कालापीपल": ["कालापीपल", "पोलायकलां", "खोकराकलां"]
+    },
+    "देवास": {
+        "देवास": ["देवास उत्तर", "देवास दक्षिण", "देवास पश्चिम"],
+        "सोनकच्छ": ["सोनकच्छ", "टोंकखुर्द", "पीपलरावां"],
+        "हाटपिपल्या": ["हाटपिपल्या", "नेवरी", "करनावाद"],
+        "खातेगांव": ["खातेगांव", "कन्नौद", "हरणगांव"],
+        "बागली": ["बागली", "उदयनगर", "सतवास"]
+    },
+    "इंदौर": {
+        "इंदौर-1": ["वार्ड 1-5", "वार्ड 6-10", "वार्ड 11-15"],
+        "इंदौर-2": ["वार्ड 16-20", "वार्ड 21-25", "वार्ड 26-30"],
+        "इंदौर-3": ["वार्ड 31-35", "वार्ड 36-40", "वार्ड 41-45"],
+        "इंदौर-4": ["वार्ड 46-50", "वार्ड 51-55", "वार्ड 56-60"],
+        "इंदौर-5": ["वार्ड 61-65", "वार्ड 66-70", "वार्ड 71-75"],
+        "राऊ": ["राऊ नगर", "तेजाजी नगर", "दत्तौदा"],
+        "महू": ["महू नगर", "महू ग्रामीण", "मानपुर"],
+        "देपालपुर": ["देपालपुर", "गौतमपुरा", "बेटमा"],
+        "सांवेर": ["सांवेर", "चंद्रावतीगंज", "क्षिप्रा"]
+    },
+    "धार": {
+        "धार": ["धार नगर", "धार ग्रामीण", "तिरला"],
+        "पीथमपुर": ["पीथमपुर", "सागौर", "नालछा"],
+        "बदनावर": ["बदनावर", "कानवन", "मुलथान"],
+        "सरदारपुर": ["सरदारपुर", "राजगढ़", "अमझेरा"],
+        "गंधवानी": ["गंधवानी", "बाग", "टांडा"],
+        "कुक्षी": ["कुक्षी", "डही", "निसरपुर"],
+        "मनावर": ["मनावर", "उमरबन", "सिंघाना"],
+        "धरमपुरी": ["धरमपुरी", "धामनोद", "मांडू"]
+    },
+    "झाबुआ": {
+        "झाबुआ": ["झाबुआ नगर", "झाबुआ ग्रामीण", "रामा"],
+        "थांदला": ["थांदला", "खवासा", "मेघनगर"],
+        "पेटलावद": ["पेटलावद", "रायपुरिया", "सारंगी"]
+    },
+    "अलीराजपुर": {
+        "अलीराजपुर": ["अलीराजपुर नगर", "अलीराजपुर ग्रामीण", "सोंडवा"],
+        "जोबट": ["जोबट", "उदयगढ़", "भाबरा"]
+    },
+    "खरगोन": {
+        "खरगोन": ["खरगोन नगर", "खरगोन ग्रामीण", "सनावद"],
+        "भीकनगांव": ["भीकनगांव", "झिरन्या", "गोगावां"],
+        "बड़वाह": ["बड़वाह", "महेश्वर", "करही"],
+        "महेश्वर": ["महेश्वर", "मंडलेश्वर", "धामनोद"],
+        "कसरावद": ["कसरावद", "पिपलगोन", "बालकवाड़ा"],
+        "भगवानपुरा": ["भगवानपुरा", "सेगांव", "बिस्टान"]
+    },
+    "बड़वानी": {
+        "बड़वानी": ["बड़वानी नगर", "बड़वानी ग्रामीण", "पाटी"],
+        "सेंधवा": ["सेंधवा नगर", "सेंधवा ग्रामीण", "चाचरीया"],
+        "राजपुर": ["राजपुर", "ठीकरी", "अंजड़"],
+        "पानसेमल": ["पानसेमल", "खेतिया", "निवाली"]
+    },
+    "खंडवा": {
+        "खंडवा": ["खंडवा नगर", "खंडवा ग्रामीण", "छैगांवमाखन"],
+        "पंधाना": ["पंधाना", "सिंघोट", "आरुद"],
+        "मांधाता": ["मांधाता", "पुनासा", "मूंदी"],
+        "हरसूद": ["हरसूद", "खालवा", "किillod"]
+    },
+    "बुरहानपुर": {
+        "बुरहानपुर": ["बुरहानपुर नगर", "बुरहानपुर ग्रामीण", "शाहपुर"],
+        "नेपानगर": ["नेपानगर", "धुलकोट", "खकनार"]
+    }
+    };
 
-        if(level === 'district') {
-            divVidhan.classList.add('hidden-field');
-            divMandal.classList.add('hidden-field');
-            inpVidhan.required = false; inpMandal.required = false;
-            inpVidhan.value = ''; inpMandal.value = ''; // Clear hidden values
-        } else if(level === 'vidhansabha') {
-            divVidhan.classList.remove('hidden-field');
-            divMandal.classList.add('hidden-field');
-            inpVidhan.required = true; inpMandal.required = false;
-            inpMandal.value = '';
-        } else { // mandal
-            divVidhan.classList.remove('hidden-field');
-            divMandal.classList.remove('hidden-field');
-            inpVidhan.required = true; inpMandal.required = true;
-        }
+    // ==========================================
+    // CONFIGURATION - API & BRANDING
+    // ==========================================
+    const API_ID = "vxid0yoovj"; 
+    const AWS_REGION = "ap-south-1";
+    const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
+
+    // BRANDING CONFIG
+    const BRANDING_CONFIG = {
+        default: { title: "Reporting Form", successMsg: "Report Submitted Successfully!" },
+        bjpmandsaur: { title: "कार्यकर्ता महाकुंभ - रिपोर्टिंग", successMsg: "रिपोर्ट सफलतापूर्वक जमा कर ली गई है।" }
+    };
+
+    function applyBranding() {
+        const config = (cidParam && BRANDING_CONFIG[cidParam]) ? BRANDING_CONFIG[cidParam] : BRANDING_CONFIG['default'];
+        document.getElementById('program_title').textContent = config.title;
     }
 
-    // Initialize on load
-    window.onload = toggleLevels;
+    // ==========================================
+    // LOGIC
+    // ==========================================
+    const $ = (id) => document.getElementById(id);
+    const qs = (n) => { try{ return (new URL(window.location.href)).searchParams.get(n)||''; }catch(e){ return ''; } };
+    const token = qs('token'); 
+    const cidParam = (qs('cid') || qs('collection_id') || qs('id')).trim(); 
+    const FORM_TYPE = 'mandal_reporting';
+    
+    function isPublicMode() { return !!token; }
 
-    function previewImage(i){const f=i.files[0];if(f){const r=new FileReader();r.onload=(e)=>{document.getElementById('preview').src=e.target.result;document.getElementById('preview').classList.remove('hidden');document.getElementById('removePreview').classList.remove('hidden');document.getElementById('uploadBox').classList.add('hidden');};r.readAsDataURL(f);}}
-    function clearImage(e){e.preventDefault();e.stopPropagation();document.getElementById('selfie').value='';document.getElementById('preview').classList.add('hidden');document.getElementById('removePreview').classList.add('hidden');document.getElementById('uploadBox').classList.remove('hidden');}
+    function showStatus(msg, isError) {
+        const el = $('status'); el.classList.remove('hidden','text-green-400','text-red-400');
+        el.classList.add(isError ? 'text-red-400' : 'text-green-400');
+        el.innerText = msg; el.classList.remove('hidden');
+    }
 
-    (() => {
-        const API_ID = 'vxid0yoovj'; const REGION = 'ap-south-1'; const FORM_TYPE = 'mandal_reporting';
-        const FIELD_IDS = ['program_name','report_level','district','vidhansabha','mandal','program_location','total_attendance','key_speaker'];
-        const $ = (id) => document.getElementById(id);
-        const qs = (n) => { try{ return (new URL(window.location.href)).searchParams.get(n)||''; }catch(e){ return ''; } };
-        const token = qs('token'); const cidParam = (qs('cid') || qs('collection_id') || qs('id')).trim(); const isPublicMode = () => !!token;
+    // LEVEL CHANGE HANDLER
+    $('level').addEventListener('change', function() {
+        const level = this.value;
+        const locSec = $('location-section');
+        const vsBox = $('vs-box');
+        const mBox = $('mandal-box');
 
-        function showStatus(msg, isErr=false){
-            const b=$('statusBox');
-            b.classList.remove('hidden', 'bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/20', 'bg-red-500/10', 'text-red-400', 'border-red-500/20');
-            b.classList.add(isErr ? 'bg-red-500/10' : 'bg-emerald-500/10');
-            b.classList.add(isErr ? 'text-red-400' : 'text-emerald-400');
-            b.classList.add(isErr ? 'border-red-500/20' : 'border-emerald-500/20');
-            b.innerHTML = msg;
+        if(!level) {
+            locSec.classList.add('hidden');
+            return;
         }
 
-        async function sha256Hex(file){ const buf = await file.arrayBuffer(); const hash = await crypto.subtle.digest('SHA-256', buf); return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
-        function getJwt(){ return localStorage.getItem('idToken') || localStorage.getItem('accessToken') || ''; }
+        locSec.classList.remove('hidden');
+        
+        // Reset Logic
+        $('district').value = "";
+        $('vidhansabha').innerHTML = '<option value="">— Select District First —</option>';
+        $('vidhansabha').disabled = true;
+        $('mandal').innerHTML = '<option value="">— Select Vidhan Sabha First —</option>';
+        $('mandal').disabled = true;
 
-        async function apiCall(action, payload, auth=false){
-            const base = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod${isPublicMode()?'/political/public/forms':'/political/forms'}`;
-            const headers = {'Content-Type':'application/json'};
-            if(auth){ const jwt = getJwt(); if(!jwt) throw new Error('Auth Missing'); headers['Authorization'] = 'Bearer '+jwt; }
-            const res = await fetch(base, { method:'POST', headers, body:JSON.stringify({action, payload}) });
-            const data = await res.json();
-            if(!res.ok) throw new Error(data.message || data.error || 'API Error');
-            return data;
+        if(level === 'district') {
+            vsBox.classList.add('hidden');
+            mBox.classList.add('hidden');
+        } else if (level === 'vidhansabha') {
+            vsBox.classList.remove('hidden');
+            mBox.classList.add('hidden');
+        } else if (level === 'mandal') {
+            vsBox.classList.remove('hidden');
+            mBox.classList.remove('hidden');
         }
-        async function uploadToS3(url, file){ const res = await fetch(url, { method:'PUT', headers:{'Content-Type':file.type}, body:file }); if(!res.ok) throw new Error('Photo Upload Failed'); }
+    });
 
-        $('f').addEventListener('submit', async (e)=>{
-            e.preventDefault();
-            const btn = $('submitBtn'); const ot = btn.innerHTML; btn.disabled=true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; showStatus('');
-            try {
-                const file = $('selfie').files[0]; if(!file) throw new Error('Program Photo required');
-                const data = {}; for(const id of FIELD_IDS) data[id] = $(id).value.trim();
-                const sha = await sha256Hex(file); const fileName = `${crypto.randomUUID()}.jpg`;
-                
-                let res;
-                if(isPublicMode()){ 
-                    res = await apiCall('public_create_entry', { token, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }); 
-                } else { 
-                    if(!cidParam) throw new Error('Missing Collection ID'); 
-                    res = await apiCall('create_entry', { collection_id: cidParam, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }, true); 
-                }
-
-                if(res.upload_url) await uploadToS3(res.upload_url, file);
-                
-                const af = isPublicMode() ? 'public_finalize_entry' : 'finalize_entry';
-                await apiCall(af, { finalize_token: res.finalize_token, entry_id: res.entry_id }, !isPublicMode());
-                
-                showStatus('✅ Report Submitted Successfully!', false); $('f').reset(); clearImage(e); toggleLevels();
-            } catch(err) { showStatus('❌ ' + err.message, true); } finally { btn.disabled=false; btn.innerHTML = ot; }
+    function initLocations() {
+        applyBranding();
+        const dEl = document.getElementById('district');
+        const vEl = document.getElementById('vidhansabha');
+        const mEl = document.getElementById('mandal');
+        
+        const districts = Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b, "hi"));
+        districts.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d; opt.textContent = d;
+            dEl.appendChild(opt);
         });
-    })();
+
+        dEl.addEventListener('change', () => {
+            const dVal = dEl.value;
+            vEl.innerHTML = '<option value="">— Select Vidhan Sabha —</option>';
+            vEl.disabled = !dVal;
+            mEl.innerHTML = '<option value="">— Select Mandal —</option>';
+            mEl.disabled = true;
+
+            if(dVal && DISTRICT_DATA[dVal]) {
+                const vidhans = Object.keys(DISTRICT_DATA[dVal]).sort((a,b)=>a.localeCompare(b, "hi"));
+                vidhans.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v; opt.textContent = v;
+                    vEl.appendChild(opt);
+                });
+            }
+        });
+
+        vEl.addEventListener('change', () => {
+            const dVal = dEl.value;
+            const vVal = vEl.value;
+            mEl.innerHTML = '<option value="">— Select Mandal —</option>';
+            mEl.disabled = !vVal;
+
+            if(dVal && vVal && DISTRICT_DATA[dVal][vVal]) {
+                const mandals = DISTRICT_DATA[dVal][vVal].sort((a,b)=>a.localeCompare(b, "hi"));
+                mandals.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m; opt.textContent = m;
+                    mEl.appendChild(opt);
+                });
+            }
+        });
+    }
+    document.addEventListener('DOMContentLoaded', initLocations);
+
+    function previewImage(event) {
+        const file = event.target.files[0];
+        if(file){
+            const src = URL.createObjectURL(file);
+            $('preview').src = src; $('preview-container').classList.remove('hidden');
+            $('dropzone').classList.add('border-orange-500'); $('upload-placeholder').classList.add('hidden');
+        }
+    }
+    function clearImage(e) {
+        if(e) e.stopPropagation();
+        $('selfie').value = ''; $('preview').src = '';
+        $('preview-container').classList.add('hidden');
+        $('dropzone').classList.remove('border-orange-500'); $('upload-placeholder').classList.remove('hidden');
+    }
+
+    async function sha256Hex(file) {
+        const buffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    async function apiCall(action, payload, useAuth=false) {
+        // Correct path logic:
+        const path = isPublicMode() ? '/political/public/forms' : '/political/forms';
+        const url = `${BASE_URL}${path}`;
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, payload })
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.message || data.error || 'API Error');
+        return data;
+    }
+
+    async function uploadToS3(url, file) {
+        await fetch(url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+    }
+
+    $('f').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const btn = $('submitBtn'); const ot = btn.innerHTML; 
+        btn.disabled=true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...'; 
+        showStatus('');
+        try {
+            const file = $('selfie').files[0]; if(!file) throw new Error('Program Photo required');
+            
+            // Manual Data Collection
+            const level = $('level').value;
+            if(!level) throw new Error("Please select a Level");
+
+            const data = {
+                level: level,
+                district: $('district').value,
+                vidhansabha: $('vidhansabha').value,
+                mandal: $('mandal').value,
+                event_date: $('event_date').value,
+                event_time: $('event_time').value,
+                venue: $('venue').value.trim(),
+                attendance: $('attendance').value.trim(),
+                guests: $('guests').value.trim()
+            };
+
+            // Validation based on level
+            if(!data.district) throw new Error("District is required");
+            if(level !== 'district' && !data.vidhansabha) throw new Error("Vidhan Sabha is required");
+            if(level === 'mandal' && !data.mandal) throw new Error("Mandal is required");
+
+            const sha = await sha256Hex(file); const fileName = `${crypto.randomUUID()}.jpg`;
+            
+            let res;
+            if(isPublicMode()){ 
+                res = await apiCall('public_create_entry', { token, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }); 
+            } else { 
+                if(!cidParam) throw new Error('Missing Collection ID'); 
+                res = await apiCall('create_entry', { collection_id: cidParam, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }, true); 
+            }
+
+            if(res.upload_url) await uploadToS3(res.upload_url, file);
+            
+            const af = isPublicMode() ? 'public_finalize_entry' : 'finalize_entry';
+            await apiCall(af, { finalize_token: res.finalize_token, entry_id: res.entry_id }, !isPublicMode());
+            
+            showStatus('✅ Report Submitted Successfully!', false); $('f').reset(); clearImage(e); 
+            $('location-section').classList.add('hidden'); // Hide location after reset
+        } catch(err) { showStatus('❌ ' + err.message, true); } finally { btn.disabled=false; btn.innerHTML = ot; }
+    });
 </script>
 </body>
 </html>

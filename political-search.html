@@ -142,32 +142,33 @@
         try {
             // STEP 1: Upload Image to S3 (Since backend requires s3_key)
             // We reuse the 'public_create_entry' logic just to get a presigned URL.
-            // This is a bit of a hack, but ensures we get a valid S3 Key.
             
             const fileName = `search-${crypto.randomUUID()}.jpg`;
             const sha = await sha256Hex(file); // Optional, but good practice
 
             // Request Upload URL (Using a dummy 'search_temp' form type or similar)
-            // Note: The backend might expect a specific form_type. Let's try 'visitor_form' as it allows photos.
-            // Ideally, there should be a dedicated 'get_upload_url' action.
+            // UPDATE: Changed form_type to 'visitor_form' because 'search_temp' might be rejected by backend logic.
+            // 'visitor_form' is a valid type that allows uploads.
             
-            // Let's try to fetch an upload URL using the forms API structure we know works
             const uploadRes = await fetch(FORMS_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     action: 'public_create_entry', 
                     payload: {
-                        form_type: 'search_temp', // Temporary type
+                        form_type: 'visitor_form', // CHANGED THIS: Using a known valid type
                         file_name: fileName,
                         mime_type: file.type,
                         sha256: sha,
-                        collection_id: COLLECTION_ID // Needs to be passed if logic requires it
+                        collection_id: COLLECTION_ID 
                     }
                 })
             });
 
-            if(!uploadRes.ok) throw new Error("Failed to initialize search upload");
+            if(!uploadRes.ok) {
+               const errText = await uploadRes.text();
+               throw new Error("Failed to initialize upload: " + errText);
+            }
             const uploadData = await uploadRes.json();
             
             // If we got a URL, upload the file
@@ -178,35 +179,29 @@
                     body: file
                 });
             } else {
-                throw new Error("Could not get upload permission");
+                throw new Error("Could not get upload permission (No URL returned)");
             }
 
-            // The 's3_key' is usually constructed from the path. 
-            // Based on your backend, it's likely: public/data/search_temp/fileName
-            // OR the API returned the key. Let's assume the API needs the key we generated or the one returned.
-            // BUT: The error says "missing s3_key".
-            // Let's pass the 'file_name' we sent, or if the API returned a key use that.
-            // The backup shows key construction usually happens in Lambda.
-            // Let's try passing 's3_key' as the relative path.
+            // Construct the key or use returned key
+            // If the API returns s3_key, use it. Otherwise, construct it based on typical path.
+            // For 'visitor_form', it's usually: artifacts/{app_id}/public/data/visitor_form/{fileName}
+            // However, the SEARCH API might just need the filename if it knows the path logic,
+            // OR we send the key if the upload response gave it to us.
             
-            // Constructing the likely key based on standard patterns:
-            // "artifacts/{app_id}/public/data/{form_type}/{file_name}"
-            // But we don't know app_id here easily.
-            // WAIT: The Search API might just take the 'file_name' if we tell it where we put it.
-            
-            // LET'S TRY SENDING 's3_key' as the full path returned in uploadData (if available) or just the filename.
-            // Actually, simpler approach: The error "missing s3_key" comes from the Search Lambda.
-            // If we provide 's3_key', it uses that.
-            
-            // Let's try passing the file name we generated.
-            const s3Key = uploadData.s3_key || `public/data/search_temp/${fileName}`; // Guessing path structure if not returned
+            let s3Key = uploadData.s3_key;
+            if(!s3Key) {
+                 // Fallback: If API didn't return key, try to infer or send filename
+                 // Usually the response contains the key. If not, maybe just sending filename works?
+                 // Let's try sending what we have.
+                 s3Key = fileName; 
+            }
 
             // STEP 2: Call Search API with the S3 Key
             const searchRes = await fetch(SEARCH_API, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    s3_key: s3Key, // Now sending what it asked for!
+                    s3_key: s3Key, 
                     collection_id: COLLECTION_ID 
                 })
             });

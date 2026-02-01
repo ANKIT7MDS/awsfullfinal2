@@ -160,8 +160,17 @@
 
 <script>
     // ==========================================
-    // BRANDING & CONFIGURATION
+    // CONFIGURATION - API & BRANDING
     // ==========================================
+    
+    // IMPORTANT: Replace this ID with your actual AWS API Gateway ID if 'vxid0yoovj' is incorrect.
+    // Check your AWS Console -> API Gateway -> select API -> check ID.
+    const API_ID = "vxid0yoovj"; 
+    const AWS_REGION = "ap-south-1";
+    
+    const FORMS_API = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod/forms`; 
+    const TIMELINE_API = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod/timeline`; 
+
     // This object can be updated via Admin Console in future (stored in S3 or DB)
     const BRANDING_CONFIG = {
         default: {
@@ -288,9 +297,6 @@
     const $ = (id) => document.getElementById(id);
     const FIELD_IDS = ['mobile','name','designation','district','vidhansabha','mandal','address','reason']; 
     const FORM_TYPE = 'visitor_form';
-    // IMPORTANT: Verify this URL in your AWS API Gateway Console
-    const FORMS_API = "https://7s17416n0i.execute-api.ap-south-1.amazonaws.com/prod/forms"; 
-    const TIMELINE_API = "https://7s17416n0i.execute-api.ap-south-1.amazonaws.com/prod/timeline"; 
 
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -386,6 +392,7 @@
                 body: JSON.stringify({ mobile: val }) // Sending mobile to API
             });
             
+            if(!res.ok) throw new Error(`API Error: ${res.status}`);
             const data = await res.json();
             
             // Assuming the API returns some metadata if user exists
@@ -423,6 +430,7 @@
             }
         } catch(e) {
             console.log("User lookup failed or new user", e);
+            // Optional: If API fails completely, don't show success msg
         } finally {
             $('mobile-loader').classList.add('hidden');
         }
@@ -458,14 +466,27 @@
     // API & SUBMIT
     // ==========================================
     async function apiCall(action, payload, useAuth=false) {
-        const res = await fetch(FORMS_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, ...payload })
-        });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.message || data.error || 'API Error');
-        return data;
+        try {
+            const res = await fetch(FORMS_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, ...payload })
+            });
+            
+            if(!res.ok) {
+                // Try to parse error message if possible
+                const text = await res.text();
+                let errData;
+                try { errData = JSON.parse(text); } catch(e) {}
+                throw new Error((errData && (errData.message || errData.error)) || `API Error: ${res.status} (Check Connection)`);
+            }
+            return await res.json();
+        } catch(e) {
+            if(e.name === 'TypeError' && e.message === 'Failed to fetch') {
+                throw new Error("API Server Unreachable. Please check API_ID configuration.");
+            }
+            throw e;
+        }
     }
 
     async function uploadToS3(url, file) {

@@ -614,7 +614,7 @@
   // ====== HELPERS ======
   const qs = new URLSearchParams(window.location.search);
   const token = qs.get("token") || "";
-
+  const collectionId = qs.get("collection_id") || qs.get("cid") || qs.get("collection") || "";
   const el = {
     envPill: document.getElementById("envPill"),
     selfieInput: document.getElementById("selfieInput"),
@@ -1218,16 +1218,72 @@
 
   // ====== API CALL ======
   async function callSearch(file){
-    const fd = new FormData();
-    fd.append("selfie", file);
-    if (token) fd.append("token", token);
-
-    const resp = await fetch(SEARCH_ENDPOINT, { method:"POST", body: fd });
-    const data = await resp.json().catch(()=> ({}));
-    if (!resp.ok){
-      const msg = data && (data.message || data.error) ? (data.message || data.error) : ("HTTP " + resp.status);
-      throw new Error(msg);
+    if (!token) {
+      throw new Error("missing token (collection link)");
     }
+    if (!file) {
+      throw new Error("No selfie selected");
+    }
+
+    // 1) init_search => get S3 upload URL + search_id
+    const initBody = {
+      action: "init_search",
+      token: token,
+      mime_type: file.type || "image/jpeg"
+    };
+    if (collectionId) initBody.collection_id = collectionId;
+
+    const initResp = await fetch(SEARCH_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(initBody)
+    });
+
+    let initJson = {};
+    try { initJson = await initResp.json(); } catch(e) {}
+    if (!initResp.ok) {
+      throw new Error(initJson.message || initJson.error || ("init_search failed: HTTP " + initResp.status));
+    }
+    if (!initJson.upload_url || !initJson.search_id) {
+      throw new Error("init_search response missing upload_url/search_id");
+    }
+
+    // 2) PUT selfie to S3 (presigned URL)
+    const putResp = await fetch(initJson.upload_url, {
+      method: "PUT",
+      headers: { "Content-Type": (file.type || "image/jpeg") },
+      body: file
+    });
+    if (!putResp.ok) {
+      throw new Error("S3 upload failed: HTTP " + putResp.status);
+    }
+
+    // 3) run_search => get results
+    const runBody = {
+      action: "run_search",
+      token: token,
+      search_id: initJson.search_id
+    };
+    if (collectionId) runBody.collection_id = collectionId;
+
+    const runResp = await fetch(SEARCH_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(runBody)
+    });
+
+    let out = {};
+    try { out = await runResp.json(); } catch(e) {}
+    if (!runResp.ok) {
+      throw new Error(out.message || out.error || ("run_search failed: HTTP " + runResp.status));
+    }
+
+    // Attach useful debug
+    out.debug = out.debug || {};
+    if (!out.debug.used_s3_key && initJson.s3_key) out.debug.used_s3_key = initJson.s3_key;
+    return out;
+  }
+
     return data;
   }
 

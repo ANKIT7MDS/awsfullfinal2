@@ -56,8 +56,7 @@
           </div>
           <div id="photosSection" class="hidden mt-8 pt-6 border-t border-slate-700">
              <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fa-regular fa-images"></i> Related Photos</h3>
-             <div class="text-xs text-slate-400 mb-3">थंबनेल पर क्लिक करके फोटो खुल जाएगी। View/DL से full photo देखें या डाउनलोड करें।</div>
-             <div id="photosGroups" class="space-y-4"></div>
+             <div id="photosGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
           </div>
         </div>
       </div>
@@ -89,7 +88,7 @@
     matchScore: document.getElementById("matchScore"),
     timeline: document.getElementById("timeline"),
     photosSection: document.getElementById("photosSection"),
-    photosGrid: document.getElementById("photosGroups"),
+    photosGrid: document.getElementById("photosGrid"),
     searchBtn: document.getElementById("searchBtn"),
   };
 
@@ -141,6 +140,28 @@
     if (!isNonEmpty(iso)) return "";
     return String(iso).replace("T", " ").replace(/\.\d+/, "").replace("+00:00", " UTC");
   }
+
+  // --------- Preview Image (required for onchange="previewImage(this)") ----------
+  function previewImage(input) {
+    try {
+      const file = input && input.files && input.files[0];
+      const img = document.getElementById("preview");
+      if (!img) return;
+      if (!file) {
+        img.src = "";
+        img.classList.add("hidden");
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      img.classList.remove("hidden");
+      img.onload = () => { try { URL.revokeObjectURL(url); } catch (_) {} };
+    } catch (e) {
+      console.error("previewImage error", e);
+    }
+  }
+  window.previewImage = previewImage;
+
   function setStatus(msg, type = "info") {
     if (!el.statusBox) return;
     el.statusBox.textContent = msg || "";
@@ -305,127 +326,6 @@
     }
   }
 
-  function collectEventPhotoKeys(ev) {
-    const keys = [];
-    if (!ev) return keys;
-
-    // Direct fields
-    if (typeof ev.s3_key === "string" && ev.s3_key) keys.push(ev.s3_key);
-    if (Array.isArray(ev.s3_keys)) keys.push(...ev.s3_keys);
-    if (Array.isArray(ev.photo_keys)) keys.push(...ev.photo_keys);
-
-    // Nested in data
-    const data = ev.data || {};
-    if (typeof data.s3_key === "string" && data.s3_key) keys.push(data.s3_key);
-    if (Array.isArray(data.s3_keys)) keys.push(...data.s3_keys);
-    if (Array.isArray(data.photo_keys)) keys.push(...data.photo_keys);
-
-    // Sometimes timeline item may contain a list of photo urls; keep keys empty in that case.
-
-    // De-dupe + clean
-    const out = [];
-    const seen = new Set();
-    for (const k of keys) {
-      if (!k || typeof k !== "string") continue;
-      if (seen.has(k)) continue;
-      seen.add(k);
-      out.push(k);
-    }
-    return out;
-  }
-
-  function openImageModal(url, titleText) {
-    if (!url) return;
-    const body = document.createElement("div");
-    body.className = "space-y-3";
-
-    const img = document.createElement("img");
-    img.src = url;
-    img.alt = titleText || "photo";
-    img.className = "w-full rounded-2xl border border-slate-700 bg-slate-950";
-    img.loading = "lazy";
-    img.decoding = "async";
-
-    body.appendChild(img);
-
-    const footer = `
-      <div class="flex flex-wrap items-center justify-end gap-2">
-        <a href="${url}" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm">Open</a>
-        <a href="${url}" download class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm text-white">Download</a>
-      </div>
-    `;
-    modal.open(titleText || "Photo", body, footer);
-  }
-
-  function makePhotoThumb(url, labelText) {
-    const wrap = document.createElement("div");
-    wrap.className = "relative group rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 cursor-pointer";
-
-    const img = document.createElement("img");
-    img.src = url; // If you later add thumbnail URLs from backend, switch this to thumb_url
-    img.alt = labelText || "photo";
-    img.className = "w-full h-28 object-cover";
-    img.loading = "lazy";
-    img.decoding = "async";
-    wrap.appendChild(img);
-
-    const overlay = document.createElement("div");
-    overlay.className = "absolute inset-x-0 bottom-0 bg-black/50 text-[10px] text-white px-2 py-1 opacity-0 group-hover:opacity-100 truncate";
-    overlay.textContent = labelText || "";
-    wrap.appendChild(overlay);
-
-    const actions = document.createElement("div");
-    actions.className = "absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100";
-
-    const openBtn = document.createElement("button");
-    openBtn.className = "px-2 py-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-white text-xs";
-    openBtn.type = "button";
-    openBtn.textContent = "View";
-    openBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      openImageModal(url, labelText || "Photo");
-    });
-
-    const dl = document.createElement("a");
-    dl.className = "px-2 py-1 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs";
-    dl.href = url;
-    dl.download = "photo.jpg";
-    dl.textContent = "DL";
-    dl.addEventListener("click", (e) => e.stopPropagation());
-
-    actions.appendChild(openBtn);
-    actions.appendChild(dl);
-    wrap.appendChild(actions);
-
-    wrap.addEventListener("click", () => openImageModal(url, labelText || "Photo"));
-
-    return wrap;
-  }
-
-  function escapeHtml(str) {
-    return (str || "").toString()
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function labelFormType(formType) {
-    const map = {
-      "visitor_form": "Visitor Form",
-      "party_attendance": "Party Attendance",
-      "president_tour_form": "President Tour",
-      "mandal_reporting": "Mandal Reporting",
-      "district_president": "District President",
-      "vidhansabha_president": "Vidhansabha President",
-      "mandal_president": "Mandal President"
-    };
-    return map[formType] || (formType || "Form");
-  }
-
-
-
   // --------- Render Timeline ----------
   function renderTimeline(timeline, photoUrlByKey) {
     if (!el.timeline) return;
@@ -515,80 +415,42 @@
       card.appendChild(bottom);
 
       card.addEventListener("click", () => {
-        const detail = document.createElement("div");
-        detail.className = "grid gap-3";
+        const body = document.createElement("div");
+        body.className = "space-y-4";
 
-        // Details table
-        const detailsBox = document.createElement("div");
-        detailsBox.className = "rounded-2xl border border-slate-700 bg-slate-900/40 p-4";
-        const detailsTitle = document.createElement("div");
-        detailsTitle.className = "text-xs font-semibold text-slate-300 mb-2";
-        detailsTitle.textContent = "Details";
-        detailsBox.appendChild(detailsTitle);
-
-        const detailsWrap = document.createElement("div");
-        detailsWrap.innerHTML = keyValueTable(sum);
-        detailsBox.appendChild(detailsWrap);
-
-        // Photos for this event
-        const keys = collectEventPhotoKeys(ev);
-        const urls = [];
-        for (const k of keys) {
-          const u = photoUrlByKey && typeof photoUrlByKey.get === "function" ? photoUrlByKey.get(k) : null;
-          if (u) urls.push(u);
-        }
-        if (Array.isArray(ev.photo_urls)) urls.push(...ev.photo_urls);
-        if (typeof ev.photo_url === "string") urls.push(ev.photo_url);
-
-        const uniqUrls = [];
-        const seenU = new Set();
-        for (const u of urls) {
-          if (!u || typeof u !== "string") continue;
-          if (seenU.has(u)) continue;
-          seenU.add(u);
-          uniqUrls.push(u);
+        if (isNonEmpty(photoUrl)) {
+          const ph = document.createElement("div");
+          ph.className = "space-y-2";
+          const img = document.createElement("img");
+          img.src = photoUrl;
+          img.loading = "lazy";
+          img.decoding = "async";
+          img.className = "w-full max-h-[420px] object-contain rounded-xl border border-slate-700 bg-slate-950";
+          const dl = document.createElement("a");
+          dl.href = photoUrl;
+          dl.textContent = "Download photo";
+          dl.className = "inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white w-fit";
+          dl.setAttribute("download", "");
+          ph.appendChild(img);
+          ph.appendChild(dl);
+          body.appendChild(ph);
         }
 
-        const photosBox = document.createElement("div");
-        photosBox.className = "rounded-2xl border border-slate-700 bg-slate-900/40 p-4";
-        const photosHead = document.createElement("div");
-        photosHead.className = "flex items-center justify-between gap-3 mb-2";
-        const photosTitle = document.createElement("div");
-        photosTitle.className = "text-xs font-semibold text-slate-300";
-        photosTitle.textContent = `Photos (${uniqUrls.length})`;
-        const photosHint = document.createElement("div");
-        photosHint.className = "text-xs text-slate-500";
-        photosHint.textContent = "Click thumbnail to open";
-        photosHead.appendChild(photosTitle);
-        photosHead.appendChild(photosHint);
-        photosBox.appendChild(photosHead);
+        body.appendChild(makeKVTable(sum.details));
 
-        if (uniqUrls.length) {
-          const grid = document.createElement("div");
-          grid.className = "grid grid-cols-3 gap-2";
-          for (const u of uniqUrls) {
-            grid.appendChild(makePhotoThumb(u, title || labelFormType(ev.form_type) || "photo"));
-          }
-          photosBox.appendChild(grid);
-        } else {
-          const no = document.createElement("div");
-          no.className = "text-xs text-slate-400";
-          no.textContent = "No photo URLs returned for this entry.";
-          photosBox.appendChild(no);
-        }
+        const raw = document.createElement("details");
+        raw.className = "bg-slate-950/60 rounded-xl border border-slate-700 p-3";
+        const sm = document.createElement("summary");
+        sm.className = "cursor-pointer text-slate-300 font-medium";
+        sm.textContent = "Raw data (JSON)";
+        const pre = document.createElement("pre");
+        pre.className = "mt-3 text-xs text-slate-200 overflow-auto";
+        pre.textContent = JSON.stringify(sum.rawData || {}, null, 2);
+        raw.appendChild(sm);
+        raw.appendChild(pre);
+        body.appendChild(raw);
 
-        detail.appendChild(detailsBox);
-        detail.appendChild(photosBox);
-
-        const footerHtml = `
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="text-xs text-slate-400">Entry: ${escapeHtml(ev.entry_id || "")}</div>
-            <div class="flex gap-2">
-              ${photoUrl ? `<a class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm" target="_blank" rel="noopener" href="${photoUrl}">Open first photo</a>` : ""}
-            </div>
-          </div>
-        `;
-        modal.open(title || labelFormType(ev.form_type) || "Event", detail, footerHtml);
+        modal.open(sum.title, body);
       });
 
       el.timeline.appendChild(card);
@@ -596,118 +458,98 @@
   }
 
   // --------- Render Photos ----------
-  function renderPhotos(searchData, photoUrlByKey) {
-    const wrap = document.getElementById("photosSection");
-    const groupsEl = document.getElementById("photosGroups");
-    if (!wrap || !groupsEl) return;
+  function renderPhotos(photoUrls, timeline) {
+    if (!el.photosSection || !el.photosGrid) return;
 
-    const timeline = (searchData && Array.isArray(searchData.timeline)) ? searchData.timeline : [];
-    const allUrls = (searchData && Array.isArray(searchData.photo_urls)) ? searchData.photo_urls : [];
+    el.photosGrid.innerHTML = "";
 
-    groupsEl.innerHTML = "";
-
-    // Build groups by timeline entry so different programs show separately
-    const groups = [];
-    const usedUrls = new Set();
-
-    for (const ev of timeline) {
-      const keys = collectEventPhotoKeys(ev);
-      const urls = [];
-
-      for (const k of keys) {
-        const u = (photoUrlByKey && typeof photoUrlByKey.get === "function") ? photoUrlByKey.get(k) : null;
-        if (u) urls.push(u);
-      }
-
-      // If backend ever returns embedded urls per event
-      if (Array.isArray(ev.photo_urls)) urls.push(...ev.photo_urls);
-      if (typeof ev.photo_url === "string") urls.push(ev.photo_url);
-
-      // de-dupe
-      const uniq = [];
-      for (const u of urls) {
-        if (!u || typeof u !== "string") continue;
-        if (usedUrls.has(u)) continue;
-        usedUrls.add(u);
-        uniq.push(u);
-      }
-
-      if (uniq.length) groups.push({ ev, urls: uniq });
-    }
-
-    // Any leftover photo_urls that aren't in timeline mapping
-    const leftovers = [];
-    for (const u of allUrls) {
-      if (!u || typeof u !== "string") continue;
-      if (usedUrls.has(u)) continue;
-      usedUrls.add(u);
-      leftovers.push(u);
-    }
-    if (leftovers.length) groups.push({ ev: null, urls: leftovers });
-
-    if (!groups.length) {
-      groupsEl.innerHTML = `<div class="text-xs text-slate-400">No photos found.</div>`;
+    if (!Array.isArray(photoUrls) || photoUrls.length === 0) {
+      el.photosSection.classList.add("hidden");
       return;
     }
 
-    // Render groups
-    for (const g of groups) {
-      const card = document.createElement("div");
-      card.className = "rounded-2xl border border-slate-700 bg-slate-900/40 p-4";
-
-      const header = document.createElement("div");
-      header.className = "flex items-start justify-between gap-3";
-
-      const left = document.createElement("div");
-      left.className = "min-w-0";
-
-      const titleEl = document.createElement("div");
-      titleEl.className = "text-sm font-semibold text-slate-100 truncate";
-
-      const subtitleEl = document.createElement("div");
-      subtitleEl.className = "mt-1 text-xs text-slate-400 truncate";
-
-      if (g.ev) {
-        const sum = buildEventSummary(g.ev);
-        const title = (sum[0]?.value || labelFormType(g.ev.form_type) || "Event").toString();
-        const subtitle = (sum[1]?.value || "").toString();
-        titleEl.textContent = subtitle ? `${title} • ${subtitle}` : title;
-
-        // Show useful bits (date / venue / guests)
-        const bits = [];
-        for (const kv of sum.slice(2)) {
-          const v = (kv?.value || "").toString().trim();
-          if (!v) continue;
-          bits.push(`${kv.label}: ${v}`);
-          if (bits.length >= 3) break;
-        }
-        subtitleEl.textContent = bits.join(" • ");
-      } else {
-        titleEl.textContent = "Other Photos";
-        subtitleEl.textContent = "Photos returned by search (not mapped to a single event)";
-      }
-
-      const right = document.createElement("div");
-      right.className = "shrink-0 text-xs text-slate-400";
-      right.textContent = `${g.urls.length} फोटो`;
-
-      left.appendChild(titleEl);
-      left.appendChild(subtitleEl);
-      header.appendChild(left);
-      header.appendChild(right);
-
-      const grid = document.createElement("div");
-      grid.className = "mt-3 grid grid-cols-3 gap-2";
-
-      for (const url of g.urls) {
-        const label = g.ev ? (labelFormType(g.ev.form_type) || "photo") : "photo";
-        grid.appendChild(makePhotoThumb(url, label));
-      }
-
-      card.appendChild(header);
-      card.appendChild(grid);
-      groupsEl.appendChild(card);
+    // Add toggle button once
+    const header = el.photosSection.querySelector("h3");
+    if (header && !header.dataset.toggleAdded) {
+      const btn = document.createElement("button");
+      btn.className = "ml-auto px-3 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700";
+      btn.textContent = "Hide";
+      btn.addEventListener("click", () => {
+        const hidden = el.photosGrid.classList.toggle("hidden");
+        btn.textContent = hidden ? "Show" : "Hide";
+      });
+      header.className = "flex items-center gap-3";
+      header.appendChild(btn);
+      header.dataset.toggleAdded = "1";
     }
+
+    // Key->URL unique
+    const byKey = new Map();
+    photoUrls.forEach((u) => {
+      const k = parseS3KeyFromUrl(u);
+      if (isNonEmpty(k) && !byKey.has(k)) byKey.set(k, u);
+    });
+
+    // labels by key from timeline
+    const labelByKey = new Map();
+    (timeline || []).forEach((t) => {
+      if (isNonEmpty(t.s3_key)) {
+        const sum = buildEventSummary(t);
+        labelByKey.set(t.s3_key, sum.title);
+      }
+    });
+
+    const entries = Array.from(byKey.entries()); // [key, url]
+
+    entries.forEach(([k, url]) => {
+      const card = document.createElement("div");
+      card.className = "rounded-xl overflow-hidden border border-slate-700 bg-slate-900/40 hover:bg-slate-900/60 transition cursor-pointer";
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.className = "w-full h-32 object-cover bg-slate-950";
+      img.alt = "photo";
+
+      const cap = document.createElement("div");
+      cap.className = "p-2 text-xs text-slate-200";
+      cap.textContent = labelByKey.get(k) || "Photo";
+
+      card.appendChild(img);
+      card.appendChild(cap);
+
+      card.addEventListener("click", () => {
+        const body = document.createElement("div");
+        body.className = "space-y-3";
+
+        const photo = document.createElement("img");
+        photo.src = url;
+        photo.loading = "lazy";
+        photo.decoding = "async";
+        photo.className = "w-full max-h-[520px] object-contain rounded-xl border border-slate-700 bg-slate-950";
+
+        const dl = document.createElement("a");
+        dl.href = url;
+        dl.textContent = "Download photo";
+        dl.className = "inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white w-fit";
+        dl.setAttribute("download", "");
+
+        const meta = document.createElement("div");
+        meta.className = "text-xs text-slate-400 break-all";
+        meta.textContent = k;
+
+        body.appendChild(photo);
+        body.appendChild(dl);
+        body.appendChild(meta);
+
+        modal.open(labelByKey.get(k) || "Photo", body);
+      });
+
+      el.photosGrid.appendChild(card);
+    });
+
+    el.photosSection.classList.remove("hidden");
   }
 
   // --------- Thumbnail preview (selfie) ----------
@@ -847,7 +689,7 @@
         });
 
         renderTimeline(res.timeline || [], photoUrlByKey);
-        renderPhotos(res, photoUrlByKey);
+        renderPhotos(res.photo_urls || [], res.timeline || []);
 
       } catch (err) {
         console.error(err);

@@ -3,412 +3,864 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Karyakarta Search - EventLens (Token Fixed)</title>
+  <title>Karyakarta Search - EventLens</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
-          colors: { brand: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' } }
-        }
-      }
-    }
-  </script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' } } } } }</script>
   <style>
     body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 40%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 40%), #020617; color: #e2e8f0; }
-    .glass { background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); }
-    .search-glow { box-shadow: 0 0 40px -10px rgba(249, 115, 22, 0.3); }
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    .timeline-line::before { content: ''; position: absolute; left: 23px; top: 30px; bottom: -20px; width: 2px; background: #334155; z-index: 0; }
-    .timeline-item:last-child .timeline-line::before { display: none; }
+    .glass { background: rgba(30,41,59,0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
+    .animate-spin-slow { animation: spin 2s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
 </head>
-
-<body class="min-h-screen flex flex-col items-center p-4">
-
-  <!-- AUTH STATUS -->
-  <div class="absolute top-4 right-4 text-xs font-mono text-slate-500" id="authStatus">Checking Auth...</div>
-
-  <!-- SEARCH HEADER -->
-  <div class="w-full max-w-xl mt-8 mb-6 text-center">
-    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-500 mb-4 ring-1 ring-orange-500/20">
-      <i class="fa-solid fa-face-viewfinder text-2xl"></i>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="glass rounded-2xl p-6 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl border-t-2 border-orange-500/50">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-400"><i class="fa-solid fa-magnifying-glass-chart text-xl"></i></div>
+        <div><h1 class="text-2xl font-extrabold text-white">Karyakarta Search</h1><p class="text-slate-400 text-sm">EventLens Political Module</p></div>
+      </div>
+      <div class="text-right hidden md:block"><div class="text-xs font-mono text-slate-500" id="tokenDisplay">Token: Checking...</div></div>
     </div>
-    <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-400">Search Karyakarta</h1>
-    <p class="text-slate-400 text-sm mt-2">Upload a photo to find timeline & details</p>
-  </div>
 
-  <!-- SEARCH BOX -->
-  <div class="w-full max-w-xl glass rounded-2xl p-1 search-glow transition-all duration-300 hover:border-orange-500/30">
-    <div class="relative group cursor-pointer">
-      <input type="file" id="searchFile" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" onchange="handleSearch(event)" />
-      <div id="dropzone" class="flex items-center gap-4 p-4 rounded-xl bg-slate-900/50 group-hover:bg-slate-800/80 transition-colors">
-        <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-orange-400 transition-colors">
-          <i class="fa-solid fa-camera text-xl"></i>
-        </div>
-        <div class="flex-1">
-          <h3 class="text-sm font-medium text-white group-hover:text-orange-200">Tap to Search Face</h3>
-          <p class="text-xs text-slate-500">Supports JPG, PNG (Max 5MB)</p>
-        </div>
-        <div class="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center">
-          <i class="fa-solid fa-chevron-right text-xs text-slate-500"></i>
+    <div class="grid md:grid-cols-12 gap-6">
+      <!-- Sidebar -->
+      <div class="md:col-span-4 space-y-6">
+        <div class="glass rounded-2xl p-6 shadow-lg border-l-4 border-orange-500">
+          <h2 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-camera"></i> 1. Search by Selfie</h2>
+          <div class="relative group cursor-pointer mb-4">
+            <input id="selfieInput" accept="image/*" type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="previewImage(this)" />
+            <div id="uploadBox" class="h-48 border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center bg-slate-800/50 group-hover:border-orange-500 transition-colors">
+              <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i><span class="text-sm text-slate-400">Tap to upload image</span>
+            </div>
+            <img id="preview" class="hidden h-48 w-full object-cover rounded-xl border border-slate-600" />
+          </div>
+          <button id="searchBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold shadow-lg shadow-orange-500/25 transition-all active:scale-95 flex items-center justify-center gap-2">
+            <span>Search Database</span> <i class="fa-solid fa-search"></i>
+          </button>
+          <div id="statusBox" class="hidden mt-4 p-3 rounded-lg text-sm text-center"></div>
         </div>
       </div>
 
-      <!-- Preview & Loader Overlay -->
-      <div id="processing" class="absolute inset-0 bg-slate-900 z-30 rounded-xl flex items-center justify-center gap-3 hidden">
-        <img id="searchPreview" class="w-10 h-10 rounded-full object-cover border-2 border-orange-500" alt="preview">
-        <span class="text-sm text-orange-400 font-medium animate-pulse">Searching Database...</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- RESULTS CONTAINER -->
-  <div id="resultsArea" class="w-full max-w-xl mt-8 hidden">
-
-    <!-- PERSON PROFILE CARD -->
-    <div id="profileCard" class="glass rounded-2xl p-6 mb-6 relative overflow-hidden hidden">
-      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500"></div>
-      <div class="flex gap-5 items-start">
-        <div class="relative">
-          <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-slate-700 shadow-xl">
-            <img id="resultImage" src="" class="w-full h-full object-cover" alt="result">
+      <!-- Results -->
+      <div class="md:col-span-8">
+        <div class="glass rounded-2xl p-6 shadow-lg min-h-[400px]">
+          <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+             <h2 class="font-bold text-xl text-white flex items-center gap-2"><i class="fa-solid fa-timeline"></i> Result Timeline</h2>
+             <span id="matchScore" class="text-sm font-mono text-slate-400"></span>
           </div>
-          <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center border border-slate-700 text-orange-500 text-xs font-bold">
-            <i class="fa-solid fa-check"></i>
+          <div id="timeline" class="space-y-4">
+             <div class="text-center py-10 text-slate-500"><i class="fa-regular fa-image text-4xl mb-3 opacity-50"></i><p>Upload a selfie to view history.</p></div>
           </div>
-        </div>
-        <div class="flex-1">
-          <h2 id="personName" class="text-xl font-bold text-white">Unknown Person</h2>
-          <div class="flex flex-wrap gap-2 mt-2">
-            <span id="personPhone" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden">
-              <i class="fa-solid fa-phone mr-1.5 text-orange-500"></i> <span id="phoneVal"></span>
-            </span>
-            <span id="personDesig" class="px-2.5 py-1 rounded-md bg-slate-800 text-xs text-slate-300 border border-slate-700 hidden">
-              <i class="fa-solid fa-id-badge mr-1.5 text-blue-400"></i> <span id="desigVal"></span>
-            </span>
-          </div>
-          <div class="mt-3 text-xs text-slate-500 flex gap-4">
-            <span><i class="fa-regular fa-clock mr-1"></i> Match Score: <span id="matchScore" class="text-emerald-400">--</span></span>
+          <div id="photosSection" class="hidden mt-8 pt-6 border-t border-slate-700">
+             <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fa-regular fa-images"></i> Related Photos</h3>
+             <div class="text-xs text-slate-400 mb-3">थंबनेल पर क्लिक करके फोटो खुल जाएगी। View/DL से full photo देखें या डाउनलोड करें।</div>
+             <div id="photosGroups" class="space-y-4"></div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- TABS -->
-    <div class="flex gap-4 border-b border-slate-800 mb-6">
-      <button onclick="switchTab('timeline')" id="tab-timeline" class="pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors">Activity Timeline</button>
-      <button onclick="switchTab('photos')" id="tab-photos" class="pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors">All Photos</button>
-    </div>
-
-    <!-- TIMELINE VIEW -->
-    <div id="view-timeline" class="space-y-0"></div>
-
-    <!-- PHOTOS VIEW -->
-    <div id="view-photos" class="hidden">
-      <div id="photosGrid" class="grid grid-cols-3 gap-2"></div>
-    </div>
-
   </div>
-
-  <div id="errorMsg" class="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center hidden"></div>
 
 <script>
-  // ==========================================
-  // CONFIGURATION
-  // ==========================================
+/**
+ * EventLens Political Search (Updated)
+ * - Timeline cards show: program/venue/date/time/guests + district/vidhansabha/mandal
+ * - Click any event card to open full details (and download photo)
+ * - Photos section shows ALL photos returned by API (with program names) + download
+ * - Selfie thumbnail preview (client-side) for fast UI
+ *
+ * NOTE: True bandwidth/billing saving thumbnails require backend to store separate thumb files.
+ */
+(() => {
   const API_ID = "vxid0yoovj";
   const REGION = "ap-south-1";
-  const BASE_API = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political`;
+  const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
 
-  const $ = (id) => document.getElementById(id);
-  const qs = (k) => new URLSearchParams(window.location.search).get(k);
+  const qs = new URLSearchParams(window.location.search);
+  const token = qs.get("token") || "";   // Public link token (recommended)
 
-  const COLLECTION_ID = qs('cid') || 'bjpmandsaur';
-  const PUBLIC_TOKEN = qs('token'); // public link token (if exists)
+  const el = {
+    selfieInput: document.getElementById("selfieInput"),
+    preview: document.getElementById("preview"),
+    statusBox: document.getElementById("statusBox"),
+    matchScore: document.getElementById("matchScore"),
+    timeline: document.getElementById("timeline"),
+    photosSection: document.getElementById("photosSection"),
+    photosGrid: document.getElementById("photosGroups"),
+    searchBtn: document.getElementById("searchBtn"),
+  };
 
-  // ==========================================
-  // AUTH / MODE
-  // ==========================================
-  function getJwtFromStorage() {
-    return localStorage.getItem('idToken') || localStorage.getItem('accessToken');
-  }
+  // --------- Modal (details / full photo) ----------
+  const modal = (() => {
+    const wrap = document.createElement("div");
+    wrap.id = "detailModal";
+    wrap.className = "fixed inset-0 z-50 hidden";
+    wrap.innerHTML = `
+      <div class="absolute inset-0 bg-black/60"></div>
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+            <div class="font-semibold text-white" id="detailModalTitle">Details</div>
+            <button id="detailModalClose" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100">Close</button>
+          </div>
+          <div class="p-5 max-h-[75vh] overflow-auto" id="detailModalBody"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
 
-  function getMode() {
-    // If URL token exists => PUBLIC mode
-    if (PUBLIC_TOKEN) return 'public';
-    // else => admin mode (JWT must exist)
-    return 'admin';
-  }
+    const titleEl = wrap.querySelector("#detailModalTitle");
+    const bodyEl = wrap.querySelector("#detailModalBody");
 
-  function getApiUrl() {
-    const mode = getMode();
-    return `${BASE_API}${mode === 'public' ? '/public/search' : '/search'}`;
-  }
-
-  function getHeaders() {
-    const headers = { 'Content-Type': 'application/json' };
-    // IMPORTANT:
-    // Public mode: do NOT send Authorization, token goes in payload
-    // Admin mode: send Authorization Bearer JWT
-    if (getMode() === 'admin') {
-      const jwt = getJwtFromStorage();
-      if (jwt) headers['Authorization'] = 'Bearer ' + jwt;
+    function open(title, bodyNode) {
+      titleEl.textContent = title || "Details";
+      bodyEl.innerHTML = "";
+      if (bodyNode) bodyEl.appendChild(bodyNode);
+      wrap.classList.remove("hidden");
+      document.body.classList.add("overflow-hidden");
     }
-    return headers;
-  }
-
-  // Auth status text
-  (function(){
-    const mode = getMode();
-    if (mode === 'public') $('authStatus').innerText = "Mode: ✅ Public Link (token)";
-    else {
-      const jwt = getJwtFromStorage();
-      $('authStatus').innerText = jwt ? "Mode: ✅ Admin (JWT)" : "Mode: ⚠️ Admin (missing JWT)";
+    function close() {
+      wrap.classList.add("hidden");
+      document.body.classList.remove("overflow-hidden");
     }
+
+    wrap.querySelector("#detailModalClose").addEventListener("click", close);
+    wrap.addEventListener("click", (e) => {
+      if (e.target === wrap.firstElementChild) close();
+    });
+
+    return { open, close };
   })();
 
-  // ==========================================
-  // CORE LOGIC
-  // ==========================================
-  async function safeJson(res) {
-    const text = await res.text();
-    try { return JSON.parse(text); } catch { return { raw: text }; }
+  // --------- UI Helpers ----------
+  function isNonEmpty(v) { return v !== null && v !== undefined && String(v).trim() !== ""; }
+  function prettyIso(iso) {
+    if (!isNonEmpty(iso)) return "";
+    return String(iso).replace("T", " ").replace(/\.\d+/, "").replace("+00:00", " UTC");
+  }
+  function setStatus(msg, type = "info") {
+    if (!el.statusBox) return;
+    el.statusBox.textContent = msg || "";
+    el.statusBox.className = "p-3 rounded-lg text-sm border " + (
+      type === "error"
+        ? "bg-red-900/20 border-red-700 text-red-200"
+        : type === "success"
+          ? "bg-emerald-900/20 border-emerald-700 text-emerald-200"
+          : "bg-slate-900/40 border-slate-700 text-slate-200"
+    );
+  }
+  function setMatch(text) {
+    if (!el.matchScore) return;
+    el.matchScore.textContent = text || "";
   }
 
-  async function apiPost(action, payload) {
-    const url = getApiUrl();
-    const headers = getHeaders();
-    const res = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ action, payload })
+  function makeBadge(text, kind = "blue") {
+    const span = document.createElement("span");
+    const base = "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border";
+    const map = {
+      blue: "bg-blue-900/30 text-blue-200 border-blue-700",
+      yellow: "bg-yellow-900/30 text-yellow-200 border-yellow-700",
+      gray: "bg-slate-800 text-slate-200 border-slate-700",
+      red: "bg-red-900/30 text-red-200 border-red-700",
+      green: "bg-emerald-900/30 text-emerald-200 border-emerald-700",
+      purple: "bg-purple-900/30 text-purple-200 border-purple-700",
+    };
+    span.className = base + " " + (map[kind] || map.gray);
+    span.textContent = text;
+    return span;
+  }
+
+  function get(obj, key, fallback = "") {
+    if (!obj) return fallback;
+    const v = obj[key];
+    return isNonEmpty(v) ? v : fallback;
+  }
+
+  // --------- Build event summary ----------
+  function buildEventSummary(item) {
+    const form = get(item, "form_type", "");
+    const data = item.data || {};
+
+    const district = get(item, "district", get(data, "district", ""));
+    const vidhansabha = get(item, "vidhansabha", get(data, "vidhansabha", ""));
+    const mandal = get(item, "mandal", get(data, "mandal", ""));
+    const createdAtIso = prettyIso(get(item, "created_at_iso", ""));
+
+    let title = form || "Event";
+    let subtitle = "";
+    const highlights = []; // key->value lines for card
+    const footer = [];     // small gray lines
+
+    if (form === "president_tour_form") {
+      title = get(data, "program_name", get(data, "program_type", "President Tour"));
+      const date = get(data, "tour_date", "");
+      const time = get(data, "tour_time", "");
+      const venue = get(data, "tour_venue", "");
+      subtitle = [date, time, venue].filter(isNonEmpty).join(" • ");
+      const guests = get(data, "guests", "");
+      const level = get(data, "level", "");
+      const attendance = get(data, "attendance", "");
+      if (isNonEmpty(guests)) highlights.push(["अतिथि", guests]);
+      if (isNonEmpty(level)) highlights.push(["Level", level]);
+      if (isNonEmpty(attendance)) highlights.push(["Attendance", attendance]);
+    } else if (form === "mandal_reporting") {
+      title = get(data, "venue", "Mandal Report");
+      const date = get(data, "event_date", "");
+      const time = get(data, "event_time", "");
+      subtitle = [date, time].filter(isNonEmpty).join(" • ");
+      const guests = get(data, "guests", "");
+      const level = get(data, "level", "");
+      const attendance = get(data, "attendance", "");
+      if (isNonEmpty(guests)) highlights.push(["अतिथि", guests]);
+      if (isNonEmpty(level)) highlights.push(["Level", level]);
+      if (isNonEmpty(attendance)) highlights.push(["Attendance", attendance]);
+    } else if (form === "visitor_form") {
+      title = get(item, "name", get(data, "name", "Visitor"));
+      subtitle = [get(item, "mobile", get(data, "mobile", "")), get(data, "reason", "")].filter(isNonEmpty).join(" • ");
+    } else if (form === "party_attendance") {
+      title = get(item, "name", get(data, "name", "Party Attendance"));
+      subtitle = [get(data, "designation", ""), get(item, "mobile", get(data, "mobile", ""))].filter(isNonEmpty).join(" • ");
+    } else {
+      // fallback
+      title = form || "Event";
+      subtitle = [get(item, "name", ""), get(item, "mobile", "")].filter(isNonEmpty).join(" • ");
+    }
+
+    const locBits = [];
+    if (isNonEmpty(district)) locBits.push(`District: ${district}`);
+    if (isNonEmpty(vidhansabha)) locBits.push(`Vidhansabha: ${vidhansabha}`);
+    if (isNonEmpty(mandal)) locBits.push(`Mandal: ${mandal}`);
+    if (locBits.length) footer.push(locBits.join(" • "));
+    if (isNonEmpty(createdAtIso)) footer.push(`Created: ${createdAtIso}`);
+
+    // details for modal
+    const details = [];
+    const pushD = (k, v) => { if (isNonEmpty(v)) details.push([k, String(v)]); };
+
+    pushD("Form Type", form);
+    pushD("Entry ID", get(item, "entry_id", ""));
+    pushD("Created", createdAtIso);
+    pushD("District", district);
+    pushD("Vidhansabha", vidhansabha);
+    pushD("Mandal", mandal);
+    pushD("S3 Key", get(item, "s3_key", ""));
+
+    const addIf = (label, key) => pushD(label, get(data, key, ""));
+    if (form === "president_tour_form") {
+      addIf("Program Name", "program_name");
+      addIf("Program Type", "program_type");
+      addIf("Tour Date", "tour_date");
+      addIf("Tour Time", "tour_time");
+      addIf("Venue", "tour_venue");
+      addIf("Guests", "guests");
+      addIf("Level", "level");
+      addIf("Attendance", "attendance");
+    } else if (form === "mandal_reporting") {
+      addIf("Venue", "venue");
+      addIf("Event Date", "event_date");
+      addIf("Event Time", "event_time");
+      addIf("Guests", "guests");
+      addIf("Level", "level");
+      addIf("Attendance", "attendance");
+    } else if (form === "visitor_form") {
+      addIf("Reason", "reason");
+      addIf("Address", "address");
+      addIf("Designation", "designation");
+    } else if (form === "party_attendance") {
+      addIf("Designation", "designation");
+    }
+
+    return { title, subtitle, highlights, footer, details, rawData: data };
+  }
+
+  function makeKVTable(rows) {
+    const table = document.createElement("table");
+    table.className = "w-full text-sm";
+    rows.forEach(([k, v]) => {
+      const tr = document.createElement("tr");
+      tr.className = "border-b border-slate-800 last:border-b-0";
+      const tdK = document.createElement("td");
+      tdK.className = "py-2 pr-4 font-medium text-slate-300 align-top w-44";
+      tdK.textContent = k;
+      const tdV = document.createElement("td");
+      tdV.className = "py-2 text-white whitespace-pre-wrap";
+      tdV.textContent = isNonEmpty(v) ? String(v) : "-";
+      tr.appendChild(tdK);
+      tr.appendChild(tdV);
+      table.appendChild(tr);
+    });
+    return table;
+  }
+
+  function parseS3KeyFromUrl(url) {
+    try {
+      const u = new URL(url);
+      const p = u.pathname || "";
+      return p.startsWith("/") ? p.slice(1) : p;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function collectEventPhotoKeys(ev) {
+    const keys = [];
+    if (!ev) return keys;
+
+    // Direct fields
+    if (typeof ev.s3_key === "string" && ev.s3_key) keys.push(ev.s3_key);
+    if (Array.isArray(ev.s3_keys)) keys.push(...ev.s3_keys);
+    if (Array.isArray(ev.photo_keys)) keys.push(...ev.photo_keys);
+
+    // Nested in data
+    const data = ev.data || {};
+    if (typeof data.s3_key === "string" && data.s3_key) keys.push(data.s3_key);
+    if (Array.isArray(data.s3_keys)) keys.push(...data.s3_keys);
+    if (Array.isArray(data.photo_keys)) keys.push(...data.photo_keys);
+
+    // Sometimes timeline item may contain a list of photo urls; keep keys empty in that case.
+
+    // De-dupe + clean
+    const out = [];
+    const seen = new Set();
+    for (const k of keys) {
+      if (!k || typeof k !== "string") continue;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(k);
+    }
+    return out;
+  }
+
+  function openImageModal(url, titleText) {
+    if (!url) return;
+    const body = document.createElement("div");
+    body.className = "space-y-3";
+
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = titleText || "photo";
+    img.className = "w-full rounded-2xl border border-slate-700 bg-slate-950";
+    img.loading = "lazy";
+    img.decoding = "async";
+
+    body.appendChild(img);
+
+    const footer = `
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <a href="${url}" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm">Open</a>
+        <a href="${url}" download class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm text-white">Download</a>
+      </div>
+    `;
+    modal.open(titleText || "Photo", body, footer);
+  }
+
+  function makePhotoThumb(url, labelText) {
+    const wrap = document.createElement("div");
+    wrap.className = "relative group rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 cursor-pointer";
+
+    const img = document.createElement("img");
+    img.src = url; // If you later add thumbnail URLs from backend, switch this to thumb_url
+    img.alt = labelText || "photo";
+    img.className = "w-full h-28 object-cover";
+    img.loading = "lazy";
+    img.decoding = "async";
+    wrap.appendChild(img);
+
+    const overlay = document.createElement("div");
+    overlay.className = "absolute inset-x-0 bottom-0 bg-black/50 text-[10px] text-white px-2 py-1 opacity-0 group-hover:opacity-100 truncate";
+    overlay.textContent = labelText || "";
+    wrap.appendChild(overlay);
+
+    const actions = document.createElement("div");
+    actions.className = "absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100";
+
+    const openBtn = document.createElement("button");
+    openBtn.className = "px-2 py-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-white text-xs";
+    openBtn.type = "button";
+    openBtn.textContent = "View";
+    openBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openImageModal(url, labelText || "Photo");
     });
 
-    const data = await safeJson(res);
-    if (!res.ok) {
-      const msg = data?.message || data?.error || data?.raw || 'API Error';
+    const dl = document.createElement("a");
+    dl.className = "px-2 py-1 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs";
+    dl.href = url;
+    dl.download = "photo.jpg";
+    dl.textContent = "DL";
+    dl.addEventListener("click", (e) => e.stopPropagation());
+
+    actions.appendChild(openBtn);
+    actions.appendChild(dl);
+    wrap.appendChild(actions);
+
+    wrap.addEventListener("click", () => openImageModal(url, labelText || "Photo"));
+
+    return wrap;
+  }
+
+  function escapeHtml(str) {
+    return (str || "").toString()
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function labelFormType(formType) {
+    const map = {
+      "visitor_form": "Visitor Form",
+      "party_attendance": "Party Attendance",
+      "president_tour_form": "President Tour",
+      "mandal_reporting": "Mandal Reporting",
+      "district_president": "District President",
+      "vidhansabha_president": "Vidhansabha President",
+      "mandal_president": "Mandal President"
+    };
+    return map[formType] || (formType || "Form");
+  }
+
+
+
+  // --------- Render Timeline ----------
+  function renderTimeline(timeline, photoUrlByKey) {
+    if (!el.timeline) return;
+    el.timeline.innerHTML = "";
+
+    if (!Array.isArray(timeline) || timeline.length === 0) {
+      el.timeline.innerHTML = `<div class="text-slate-300 text-sm">No timeline entries.</div>`;
+      return;
+    }
+
+    const sorted = [...timeline].sort((a, b) => (parseInt(b.created_at || "0", 10) - parseInt(a.created_at || "0", 10)));
+
+    sorted.forEach((item) => {
+      const sum = buildEventSummary(item);
+      const s3Key = get(item, "s3_key", "");
+      const photoUrl = isNonEmpty(s3Key) ? (photoUrlByKey.get(s3Key) || "") : "";
+
+      const card = document.createElement("div");
+      card.className = "p-4 rounded-xl border border-slate-700 bg-slate-900/40 hover:bg-slate-900/60 transition cursor-pointer";
+
+      const top = document.createElement("div");
+      top.className = "flex items-start justify-between gap-3";
+
+      const left = document.createElement("div");
+      const t = document.createElement("div");
+      t.className = "text-white font-semibold text-base";
+      t.textContent = sum.title;
+
+      const st = document.createElement("div");
+      st.className = "text-slate-300 text-sm mt-0.5";
+      st.textContent = sum.subtitle || "";
+
+      left.appendChild(t);
+      if (isNonEmpty(sum.subtitle)) left.appendChild(st);
+
+      const right = document.createElement("div");
+      right.className = "flex flex-wrap items-center gap-2 justify-end";
+      right.appendChild(makeBadge(item.form_type || "event", "blue"));
+      if (item.duplicate) right.appendChild(makeBadge("DUPLICATE", "yellow"));
+
+      top.appendChild(left);
+      top.appendChild(right);
+
+      const mid = document.createElement("div");
+      mid.className = "mt-3 space-y-1";
+      sum.highlights.forEach(([k, v]) => {
+        const row = document.createElement("div");
+        row.className = "text-sm";
+        const kk = document.createElement("span");
+        kk.className = "text-slate-300 font-medium";
+        kk.textContent = `${k}: `;
+        const vv = document.createElement("span");
+        vv.className = "text-white whitespace-pre-wrap";
+        vv.textContent = String(v);
+        row.appendChild(kk);
+        row.appendChild(vv);
+        mid.appendChild(row);
+      });
+
+      const bottom = document.createElement("div");
+      bottom.className = "mt-3 text-xs text-slate-400 space-y-1";
+      sum.footer.forEach((line) => {
+        const d = document.createElement("div");
+        d.textContent = line;
+        bottom.appendChild(d);
+      });
+
+      if (isNonEmpty(photoUrl)) {
+        const imgRow = document.createElement("div");
+        imgRow.className = "mt-4 flex items-center gap-3";
+        const img = document.createElement("img");
+        img.src = photoUrl;
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.className = "w-16 h-16 rounded-lg object-cover border border-slate-700";
+        img.alt = "event photo";
+        const tip = document.createElement("div");
+        tip.className = "text-xs text-slate-400";
+        tip.textContent = "Click to open details";
+        imgRow.appendChild(img);
+        imgRow.appendChild(tip);
+        card.appendChild(imgRow);
+      }
+
+      card.appendChild(top);
+      if (sum.highlights.length) card.appendChild(mid);
+      card.appendChild(bottom);
+
+      card.addEventListener("click", () => {
+        const detail = document.createElement("div");
+        detail.className = "grid gap-3";
+
+        // Details table
+        const detailsBox = document.createElement("div");
+        detailsBox.className = "rounded-2xl border border-slate-700 bg-slate-900/40 p-4";
+        const detailsTitle = document.createElement("div");
+        detailsTitle.className = "text-xs font-semibold text-slate-300 mb-2";
+        detailsTitle.textContent = "Details";
+        detailsBox.appendChild(detailsTitle);
+
+        const detailsWrap = document.createElement("div");
+        detailsWrap.innerHTML = keyValueTable(sum);
+        detailsBox.appendChild(detailsWrap);
+
+        // Photos for this event
+        const keys = collectEventPhotoKeys(ev);
+        const urls = [];
+        for (const k of keys) {
+          const u = photoUrlByKey && typeof photoUrlByKey.get === "function" ? photoUrlByKey.get(k) : null;
+          if (u) urls.push(u);
+        }
+        if (Array.isArray(ev.photo_urls)) urls.push(...ev.photo_urls);
+        if (typeof ev.photo_url === "string") urls.push(ev.photo_url);
+
+        const uniqUrls = [];
+        const seenU = new Set();
+        for (const u of urls) {
+          if (!u || typeof u !== "string") continue;
+          if (seenU.has(u)) continue;
+          seenU.add(u);
+          uniqUrls.push(u);
+        }
+
+        const photosBox = document.createElement("div");
+        photosBox.className = "rounded-2xl border border-slate-700 bg-slate-900/40 p-4";
+        const photosHead = document.createElement("div");
+        photosHead.className = "flex items-center justify-between gap-3 mb-2";
+        const photosTitle = document.createElement("div");
+        photosTitle.className = "text-xs font-semibold text-slate-300";
+        photosTitle.textContent = `Photos (${uniqUrls.length})`;
+        const photosHint = document.createElement("div");
+        photosHint.className = "text-xs text-slate-500";
+        photosHint.textContent = "Click thumbnail to open";
+        photosHead.appendChild(photosTitle);
+        photosHead.appendChild(photosHint);
+        photosBox.appendChild(photosHead);
+
+        if (uniqUrls.length) {
+          const grid = document.createElement("div");
+          grid.className = "grid grid-cols-3 gap-2";
+          for (const u of uniqUrls) {
+            grid.appendChild(makePhotoThumb(u, title || labelFormType(ev.form_type) || "photo"));
+          }
+          photosBox.appendChild(grid);
+        } else {
+          const no = document.createElement("div");
+          no.className = "text-xs text-slate-400";
+          no.textContent = "No photo URLs returned for this entry.";
+          photosBox.appendChild(no);
+        }
+
+        detail.appendChild(detailsBox);
+        detail.appendChild(photosBox);
+
+        const footerHtml = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="text-xs text-slate-400">Entry: ${escapeHtml(ev.entry_id || "")}</div>
+            <div class="flex gap-2">
+              ${photoUrl ? `<a class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm" target="_blank" rel="noopener" href="${photoUrl}">Open first photo</a>` : ""}
+            </div>
+          </div>
+        `;
+        modal.open(title || labelFormType(ev.form_type) || "Event", detail, footerHtml);
+      });
+
+      el.timeline.appendChild(card);
+    });
+  }
+
+  // --------- Render Photos ----------
+  function renderPhotos(searchData, photoUrlByKey) {
+    const wrap = document.getElementById("photosSection");
+    const groupsEl = document.getElementById("photosGroups");
+    if (!wrap || !groupsEl) return;
+
+    const timeline = (searchData && Array.isArray(searchData.timeline)) ? searchData.timeline : [];
+    const allUrls = (searchData && Array.isArray(searchData.photo_urls)) ? searchData.photo_urls : [];
+
+    groupsEl.innerHTML = "";
+
+    // Build groups by timeline entry so different programs show separately
+    const groups = [];
+    const usedUrls = new Set();
+
+    for (const ev of timeline) {
+      const keys = collectEventPhotoKeys(ev);
+      const urls = [];
+
+      for (const k of keys) {
+        const u = (photoUrlByKey && typeof photoUrlByKey.get === "function") ? photoUrlByKey.get(k) : null;
+        if (u) urls.push(u);
+      }
+
+      // If backend ever returns embedded urls per event
+      if (Array.isArray(ev.photo_urls)) urls.push(...ev.photo_urls);
+      if (typeof ev.photo_url === "string") urls.push(ev.photo_url);
+
+      // de-dupe
+      const uniq = [];
+      for (const u of urls) {
+        if (!u || typeof u !== "string") continue;
+        if (usedUrls.has(u)) continue;
+        usedUrls.add(u);
+        uniq.push(u);
+      }
+
+      if (uniq.length) groups.push({ ev, urls: uniq });
+    }
+
+    // Any leftover photo_urls that aren't in timeline mapping
+    const leftovers = [];
+    for (const u of allUrls) {
+      if (!u || typeof u !== "string") continue;
+      if (usedUrls.has(u)) continue;
+      usedUrls.add(u);
+      leftovers.push(u);
+    }
+    if (leftovers.length) groups.push({ ev: null, urls: leftovers });
+
+    if (!groups.length) {
+      groupsEl.innerHTML = `<div class="text-xs text-slate-400">No photos found.</div>`;
+      return;
+    }
+
+    // Render groups
+    for (const g of groups) {
+      const card = document.createElement("div");
+      card.className = "rounded-2xl border border-slate-700 bg-slate-900/40 p-4";
+
+      const header = document.createElement("div");
+      header.className = "flex items-start justify-between gap-3";
+
+      const left = document.createElement("div");
+      left.className = "min-w-0";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "text-sm font-semibold text-slate-100 truncate";
+
+      const subtitleEl = document.createElement("div");
+      subtitleEl.className = "mt-1 text-xs text-slate-400 truncate";
+
+      if (g.ev) {
+        const sum = buildEventSummary(g.ev);
+        const title = (sum[0]?.value || labelFormType(g.ev.form_type) || "Event").toString();
+        const subtitle = (sum[1]?.value || "").toString();
+        titleEl.textContent = subtitle ? `${title} • ${subtitle}` : title;
+
+        // Show useful bits (date / venue / guests)
+        const bits = [];
+        for (const kv of sum.slice(2)) {
+          const v = (kv?.value || "").toString().trim();
+          if (!v) continue;
+          bits.push(`${kv.label}: ${v}`);
+          if (bits.length >= 3) break;
+        }
+        subtitleEl.textContent = bits.join(" • ");
+      } else {
+        titleEl.textContent = "Other Photos";
+        subtitleEl.textContent = "Photos returned by search (not mapped to a single event)";
+      }
+
+      const right = document.createElement("div");
+      right.className = "shrink-0 text-xs text-slate-400";
+      right.textContent = `${g.urls.length} फोटो`;
+
+      left.appendChild(titleEl);
+      left.appendChild(subtitleEl);
+      header.appendChild(left);
+      header.appendChild(right);
+
+      const grid = document.createElement("div");
+      grid.className = "mt-3 grid grid-cols-3 gap-2";
+
+      for (const url of g.urls) {
+        const label = g.ev ? (labelFormType(g.ev.form_type) || "photo") : "photo";
+        grid.appendChild(makePhotoThumb(url, label));
+      }
+
+      card.appendChild(header);
+      card.appendChild(grid);
+      groupsEl.appendChild(card);
+    }
+  }
+
+  // --------- Thumbnail preview (selfie) ----------
+  async function createThumbnailDataUrl(file, maxSize = 360, quality = 0.75) {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result || ""));
+      fr.onerror = () => reject(fr.error);
+      fr.readAsDataURL(file);
+    });
+
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = dataUrl;
+    });
+
+    const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL("image/jpeg", quality);
+  }
+
+  // --------- API Call ----------
+  async function apiCall(action, payload, tokenOpt) {
+    const isPublic = !!tokenOpt;
+    const url = isPublic ? `${BASE_URL}/political/public/search` : `${BASE_URL}/political/search`;
+
+    const body = { action, payload: payload || {} };
+    if (isPublic) body.token = tokenOpt;
+
+    const headers = { "Content-Type": "application/json" };
+
+    // Private/admin mode: attach Authorization if available
+    if (!isPublic) {
+      const idToken = localStorage.getItem("id_token") || localStorage.getItem("idToken") || "";
+      if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+    }
+
+    const resp = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    const txt = await resp.text();
+    let json = {};
+    try { json = JSON.parse(txt); } catch (e) { json = { message: txt || "Invalid JSON" }; }
+
+    if (!resp.ok) {
+      const msg = json && json.message ? json.message : `HTTP ${resp.status}`;
       throw new Error(msg);
     }
-    return data;
+    return json;
   }
 
-  async function uploadToS3(uploadUrl, file) {
-    const putRes = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      body: file
-    });
-    if (!putRes.ok) throw new Error("S3 Upload Failed");
+  function setLoading(isLoading) {
+    if (!el.searchBtn) return;
+    el.searchBtn.disabled = isLoading;
+    el.searchBtn.textContent = isLoading ? "Searching..." : "Search";
   }
 
-  async function handleSearch(e) {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-
-    // size check 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      showError("File 5MB से बड़ा है. छोटा photo चुनो.");
-      $('searchFile').value = '';
-      return;
-    }
-
-    // UI reset
-    $('resultsArea').classList.add('hidden');
-    $('errorMsg').classList.add('hidden');
-    $('processing').classList.remove('hidden');
-
-    const reader = new FileReader();
-    reader.onload = (ev) => $('searchPreview').src = ev.target.result;
-    reader.readAsDataURL(file);
-
-    try {
-      const mode = getMode();
-      const jwt = getJwtFromStorage();
-
-      // auth validation
-      if (mode === 'public' && !PUBLIC_TOKEN) {
-        throw new Error("Public token missing. Link में ?token=... नहीं मिला.");
+  // --------- Events ----------
+  if (el.selfieInput) {
+    el.selfieInput.addEventListener("change", async () => {
+      const file = el.selfieInput.files && el.selfieInput.files[0];
+      if (!file) return;
+      try {
+        const thumb = await createThumbnailDataUrl(file, 360, 0.75);
+        if (el.preview) el.preview.src = thumb;
+        setStatus("Selfie selected (thumbnail preview).");
+      } catch (e) {
+        setStatus("Selfie selected.", "info");
       }
-      if (mode === 'admin' && !jwt) {
-        throw new Error("Admin login token नहीं मिला. पहले Admin panel से login करो.");
-      }
-
-      // ✅ IMPORTANT FIX:
-      // Public mode में token payload में जाना चाहिए (Authorization header नहीं)
-      const commonPayload = {
-        collection_id: COLLECTION_ID,
-        token: PUBLIC_TOKEN || undefined
-      };
-
-      // STEP 1: init_search
-      const initData = await apiPost('init_search', {
-        ...commonPayload,
-        mime_type: file.type || 'application/octet-stream'
-      });
-
-      if (!initData.upload_url || !initData.search_id) {
-        throw new Error("Init response invalid (upload_url/search_id missing).");
-      }
-
-      // STEP 2: upload to S3
-      await uploadToS3(initData.upload_url, file);
-
-      // STEP 3: run_search
-      const searchData = await apiPost('run_search', {
-        ...commonPayload,
-        search_id: initData.search_id
-      });
-
-      const timeline = searchData.timeline || [];
-      const photos = searchData.photo_urls || [];
-      const similarity = searchData.similarity || 0;
-
-      if (similarity === 0 && timeline.length === 0) {
-        throw new Error("No matching face found.");
-      }
-
-      renderProfile(null, { similarity });
-      renderTimeline(timeline);
-      renderPhotos(photos);
-
-      $('resultsArea').classList.remove('hidden');
-
-    } catch (err) {
-      console.error(err);
-      showError(err.message || "Search failed. Please try again.");
-    } finally {
-      $('processing').classList.add('hidden');
-      $('searchFile').value = '';
-    }
-  }
-
-  // ==========================================
-  // RENDERING
-  // ==========================================
-  function renderProfile(info, stats) {
-    $('profileCard').classList.remove('hidden');
-    $('resultImage').src = $('searchPreview').src;
-
-    $('personName').innerText = "Found Person";
-    $('personPhone').classList.add('hidden');
-    $('personDesig').classList.add('hidden');
-
-    if (stats && stats.similarity != null) {
-      $('matchScore').innerText = Math.round(stats.similarity) + "%";
-    } else {
-      $('matchScore').innerText = "--";
-    }
-  }
-
-  function renderTimeline(events) {
-    const container = $('view-timeline');
-    container.innerHTML = '';
-    if (!events || events.length === 0) {
-      container.innerHTML = `<div class="text-center text-slate-500 py-8">No activity history found.</div>`;
-      return;
-    }
-
-    events.forEach(ev => {
-      const data = ev.data || {};
-      const date = new Date(ev.created_at_iso || ev.timestamp || ev.created_at);
-      const dateStr = isNaN(date) ? 'Unknown Date' : date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-      const timeStr = isNaN(date) ? '--:--' : date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-
-      let icon = 'fa-calendar-check', color = 'text-blue-400';
-      const type = ev.form_type || ev.type;
-
-      if (type === 'visitor_form') { icon = 'fa-building-user'; color = 'text-orange-400'; }
-      else if (type === 'party_attendance') { icon = 'fa-handshake'; color = 'text-green-400'; }
-      else if (type === 'program_info') { icon = 'fa-microphone'; color = 'text-purple-400'; }
-      else if (type === 'president_tour') { icon = 'fa-person-walking'; color = 'text-teal-400'; }
-      else if (type === 'coordinator_entry') { icon = 'fa-user-gear'; color = 'text-pink-400'; }
-      else if (type === 'mandal_reporting') { icon = 'fa-chart-line'; color = 'text-yellow-400'; }
-
-      let desc = ev.reason || data.program_title || data.program_name || data.tour_place || 'Activity Recorded';
-      if (data.program_location) desc += ` @ ${data.program_location}`;
-
-      const html = `
-        <div class="timeline-item relative pl-12 pb-8">
-          <div class="timeline-line"></div>
-          <div class="absolute left-0 top-0 w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center z-10 ${color}">
-            <i class="fa-solid ${icon}"></i>
-          </div>
-          <div class="glass p-4 rounded-xl border border-slate-700/50 hover:border-orange-500/30 transition-colors">
-            <div class="flex justify-between items-start mb-1">
-              <h4 class="font-bold text-slate-200 text-sm">${formatEventType(type)}</h4>
-              <span class="text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded-full">${dateStr} • ${timeStr}</span>
-            </div>
-            <p class="text-xs text-slate-400 leading-relaxed">${escapeHtml(desc)}</p>
-            ${data.program_date ? `<div class="mt-1 text-xs text-slate-500"><i class="fa-regular fa-calendar mr-1"></i>Event Date: ${escapeHtml(String(data.program_date))}</div>` : ''}
-          </div>
-        </div>`;
-      container.innerHTML += html;
     });
   }
 
-  function renderPhotos(photos) {
-    const grid = $('photosGrid');
-    grid.innerHTML = '';
+  if (el.searchBtn) {
+    el.searchBtn.addEventListener("click", async () => {
+      const file = el.selfieInput && el.selfieInput.files && el.selfieInput.files[0];
+      if (!file) {
+        setStatus("कृपया पहले फोटो चुनें।", "error");
+        return;
+      }
 
-    if (!photos || photos.length === 0) {
-      $('view-photos').innerHTML = `<div class="text-center text-slate-500 py-8">No photos found.</div>`;
-      return;
-    }
+      setLoading(true);
+      setStatus("Starting search...");
 
-    photos.forEach(p => {
-      const url = typeof p === 'string' ? p : p.url;
-      if (!url) return;
+      try {
+        // 1) init_search -> upload_url + search_id
+        const init = await apiCall("init_search", { mime_type: file.type || "image/jpeg" }, token);
+        const uploadUrl = init.upload_url || init.url || "";
+        const searchId = init.search_id || init.searchId || "";
+        if (!uploadUrl || !searchId) throw new Error("init_search: upload_url / search_id missing");
 
-      grid.innerHTML += `
-        <a href="${url}" target="_blank" class="block aspect-square rounded-lg overflow-hidden border border-slate-700 hover:border-orange-500 transition group relative">
-          <img src="${url}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt="photo">
-          <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-            <i class="fa-solid fa-expand text-white"></i>
-          </div>
-        </a>`;
+        // 2) upload selfie
+        setStatus("Uploading selfie...");
+        const putResp = await fetch(uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type || "image/jpeg" },
+        });
+        if (!putResp.ok) throw new Error("Upload failed");
+
+        // 3) run_search
+        setStatus("Searching faces...");
+        const res = await apiCall("run_search", { search_id: searchId }, token);
+
+        const sim = isNonEmpty(res.similarity) ? Number(res.similarity).toFixed(2) : "0";
+        const facesCount = Array.isArray(res.face_ids) ? res.face_ids.length : (res.face_id ? 1 : 0);
+        const tCount = Array.isArray(res.timeline) ? res.timeline.length : 0;
+        const pCount = Array.isArray(res.photo_urls) ? res.photo_urls.length : 0;
+
+        if (res.message === "NO_MATCH" || tCount === 0) {
+          setStatus("NO MATCH (कोई व्यक्ति नहीं मिला)", "error");
+          setMatch(`Similarity: 0%`);
+          el.timeline.innerHTML = `<div class="text-slate-300 text-sm">No timeline entries.</div>`;
+          el.photosSection.classList.add("hidden");
+          return;
+        }
+
+        setStatus(`OK • Similarity: ${sim}% • Timeline: ${tCount} • Photos: ${pCount}`, "success");
+        setMatch(`Similarity: ${sim}% • Faces: ${facesCount}`);
+
+        // s3_key -> photo_url
+        const photoUrlByKey = new Map();
+        (res.photo_urls || []).forEach((u) => {
+          const k = parseS3KeyFromUrl(u);
+          if (isNonEmpty(k)) photoUrlByKey.set(k, u);
+        });
+
+        renderTimeline(res.timeline || [], photoUrlByKey);
+        renderPhotos(res, photoUrlByKey);
+
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message || "Error", "error");
+        setMatch("");
+        if (el.timeline) el.timeline.innerHTML = `<div class="text-slate-300 text-sm">Error.</div>`;
+        if (el.photosSection) el.photosSection.classList.add("hidden");
+      } finally {
+        setLoading(false);
+      }
     });
   }
-
-  function switchTab(tab) {
-    if (tab === 'timeline') {
-      $('view-timeline').classList.remove('hidden');
-      $('view-photos').classList.add('hidden');
-      $('tab-timeline').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
-      $('tab-photos').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
-    } else {
-      $('view-timeline').classList.add('hidden');
-      $('view-photos').classList.remove('hidden');
-      $('tab-timeline').className = "pb-3 text-sm font-medium text-slate-500 hover:text-slate-300 transition-colors";
-      $('tab-photos').className = "pb-3 text-sm font-medium text-orange-500 border-b-2 border-orange-500 transition-colors";
-    }
-  }
-
-  function showError(msg) {
-    $('errorMsg').innerText = msg;
-    $('errorMsg').classList.remove('hidden');
-  }
-
-  function formatEventType(type) {
-    if (!type) return "Activity";
-    return String(type).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  }
-
-  // basic HTML escape (desc safety)
-  function escapeHtml(str) {
-    return String(str)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+})();
 </script>
-
 </body>
 </html>

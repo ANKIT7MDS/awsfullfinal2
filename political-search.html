@@ -102,6 +102,31 @@
       background-size: 1000px 100%;
       animation: shimmer 2s infinite linear forwards;
     }
+
+    /* Markdown Styles for AI Report */
+    .ai-report-content h1, .ai-report-content h2, .ai-report-content h3 {
+        font-weight: 700;
+        color: #fff;
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+    }
+    .ai-report-content p {
+        margin-bottom: 0.8em;
+        line-height: 1.6;
+        color: #e2e8f0;
+    }
+    .ai-report-content ul {
+        list-style-type: disc;
+        padding-left: 1.5em;
+        margin-bottom: 1em;
+        color: #cbd5e1;
+    }
+    .ai-report-content li {
+        margin-bottom: 0.4em;
+    }
+    .ai-report-content strong {
+        color: #f97316;
+    }
   </style>
 
   <script>
@@ -169,7 +194,7 @@
         <div class="flex items-center gap-4">
            <!-- Share/Copy Button -->
            <button id="copySummaryBtn" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700 text-xs font-medium">
-             <i class="fa-regular fa-copy"></i> Copy Summary
+             <i class="fa-regular fa-copy"></i> Copy Stats
            </button>
            <div id="tokenDisplay" class="hidden md:block px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-xs font-mono text-slate-400">
              <i class="fa-solid fa-shield-halved mr-1 text-emerald-500"></i> Secure
@@ -310,7 +335,7 @@
         <div id="resultsContainer" class="hidden flex flex-col min-h-[500px]">
            
            <!-- Tabs (Mobile Optimized) -->
-           <div class="flex items-center gap-2 border-b border-slate-700/50 mb-6 sticky top-16 lg:top-0 bg-[#020617] lg:bg-transparent z-30 pt-4 lg:pt-0">
+           <div class="flex items-center gap-2 border-b border-slate-700/50 mb-4 sticky top-16 lg:top-0 bg-[#020617] lg:bg-transparent z-30 pt-4 lg:pt-0">
               <button id="btnTabTimeline" class="flex-1 lg:flex-none text-center lg:text-left font-bold border-b-2 pb-3 px-4 transition-all tab-active">
                   <i class="fa-solid fa-timeline mr-2"></i> Timeline
               </button>
@@ -319,12 +344,20 @@
               </button>
            </div>
 
-           <!-- Timeline Filters (New) -->
-           <div id="timelineFilters" class="hidden flex-wrap gap-2 mb-6 animate-fade-in">
-              <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium border border-orange-500 bg-orange-500/20 text-orange-200 transition-all" data-filter="all">All</button>
-              <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="tour">Tours</button>
-              <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="report">Reports</button>
-              <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="other">Others</button>
+           <!-- Actions Toolbar (Filters + AI) -->
+           <div class="flex flex-col sm:flex-row gap-3 sm:items-center justify-between mb-6 animate-fade-in">
+              <!-- Timeline Filters -->
+              <div id="timelineFilters" class="hidden flex-wrap gap-2">
+                 <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium border border-orange-500 bg-orange-500/20 text-orange-200 transition-all" data-filter="all">All</button>
+                 <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="tour">Tours</button>
+                 <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="report">Reports</button>
+                 <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="other">Others</button>
+              </div>
+
+              <!-- AI Button -->
+              <button id="btnAiReport" class="hidden px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/30 transition-all items-center gap-2 self-start sm:self-auto">
+                 <i class="fa-solid fa-wand-magic-sparkles"></i> Generate AI Report ✨
+              </button>
            </div>
 
            <!-- Timeline View -->
@@ -383,6 +416,7 @@
   const API_ID = "vxid0yoovj";
   const REGION = "ap-south-1";
   const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+  const apiKey = ""; // Runtime injection
 
   const qs = new URLSearchParams(window.location.search);
   const token = qs.get("token") || "";   
@@ -419,6 +453,7 @@
     
     searchBtn: document.getElementById("searchBtn"),
     copySummaryBtn: document.getElementById("copySummaryBtn"),
+    btnAiReport: document.getElementById("btnAiReport"),
   };
 
   // --------- Tab Logic ----------
@@ -480,6 +515,82 @@
       });
     }
     renderTimeline(filtered, globalPhotoMap);
+  }
+
+  // --------- Gemini AI Logic ----------
+  async function generateAiReport() {
+    if (!globalTimelineData.length) return;
+
+    const btn = el.btnAiReport;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+
+    try {
+        // Prepare simplified data for LLM to save tokens
+        const simplifiedEvents = globalTimelineData.slice(0, 30).map(item => {
+            const sum = buildEventSummary(item);
+            return {
+                date: sum.subtitle,
+                title: sum.title,
+                type: item.form_type,
+                details: sum.highlights.map(h => `${h[0]}: ${h[1]}`).join(", ")
+            };
+        });
+
+        const prompt = `You are a senior political analyst. Analyze the following timeline of a 'Karyakarta' (Party Worker) in India. 
+        Write a concise, professional performance summary report in HINDI language (Devanagari script).
+        
+        Structure the response in Markdown:
+        1. **Summary**: 2-3 sentences about their overall activity level and main focus area (e.g., Tours, Mandal meetings).
+        2. **Key Activities**: Bullet points of their most significant types of participation.
+        3. **Consistency**: Comment on their regularity based on dates.
+        4. **Tone**: Encouraging and formal.
+        
+        Data: ${JSON.stringify(simplifiedEvents)}`;
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+
+        const data = await response.json();
+        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (aiText) {
+            // Show in modal
+            const contentDiv = document.createElement("div");
+            contentDiv.className = "ai-report-content p-4 text-slate-200";
+            
+            // Simple markdown parser
+            const htmlContent = aiText
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/^- (.*)/gm, '<li>$1</li>');
+
+            contentDiv.innerHTML = htmlContent;
+            
+            modal.open("AI Performance Report ✨", contentDiv);
+        } else {
+            throw new Error("No response from AI");
+        }
+
+    } catch (error) {
+        console.error("AI Error:", error);
+        alert("Could not generate report. Please try again.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+  }
+
+  if (el.btnAiReport) {
+      el.btnAiReport.addEventListener("click", generateAiReport);
   }
 
   // --------- Copy Logic ----------
@@ -636,6 +747,14 @@
     el.timelineFilters.classList.remove("hidden");
     el.timelineFilters.classList.add("flex");
     initFilters();
+    
+    // Show AI Button if events > 0
+    if (events > 0) {
+        el.btnAiReport.classList.remove("hidden");
+        el.btnAiReport.classList.add("flex");
+    } else {
+        el.btnAiReport.classList.add("hidden");
+    }
 
     el.scoreVal.textContent = sim + "%";
     el.scoreBar.style.width = sim + "%";

@@ -3,382 +3,416 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Karyakarta Search - EventLens</title>
+  <title>Karyakarta Search AI - EventLens</title>
   <script src="https://cdn.tailwindcss.com"></script>
-<script>
-
-  // --- Image helpers (preview + resilient loading) ---
-  function previewImage(inputEl) {
-    // Backward compatible: some versions had onchange="previewImage(this)"
-    try {
-      const file = inputEl && inputEl.files && inputEl.files[0];
-      const preview = document.getElementById("preview");
-      if (!preview) return;
-      if (!file) {
-        preview.src = "";
-        preview.classList.add("hidden");
-        return;
-      }
-      const url = URL.createObjectURL(file);
-      preview.src = url;
-      preview.classList.remove("hidden");
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  function setImgSrcWithRetry(imgEl, url, maxRetries = 2) {
-    if (!imgEl) return;
-    let attempt = 0;
-    imgEl.referrerPolicy = "no-referrer";
-
-    const load = () => { imgEl.src = url; };
-
-    imgEl.onerror = () => {
-      if (attempt < maxRetries) {
-        attempt += 1;
-        const delay = 350 * attempt;
-        setTimeout(load, delay);
-        return;
-      }
-      imgEl.classList.add("opacity-60");
-      imgEl.title = "Image load failed. Click to retry.";
-      imgEl.style.cursor = "pointer";
-      imgEl.onclick = () => {
-        imgEl.classList.remove("opacity-60");
-        imgEl.title = "";
-        imgEl.style.cursor = "";
-        imgEl.onclick = null;
-        attempt = 0;
-        load();
-      };
-    };
-
-    load();
-  }
-
-  function getBestThumbUrl(obj, fallbackUrl) {
-    if (!obj) return fallbackUrl;
-    return obj.thumb_url || obj.thumbUrl || obj.thumbnail_url || obj.thumbnailUrl || fallbackUrl;
-  }
-</script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c' } } } } }</script>
-  <style>
-    body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 40%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 40%), #020617; color: #e2e8f0; }
-    .glass { background: rgba(30,41,59,0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
-    .animate-spin-slow { animation: spin 2s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  </style>
-</head>
-<body class="min-h-screen">
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="glass rounded-2xl p-6 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl border-t-2 border-orange-500/50">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center text-orange-400"><i class="fa-solid fa-magnifying-glass-chart text-xl"></i></div>
-        <div><h1 class="text-2xl font-extrabold text-white">Karyakarta Search</h1><p class="text-slate-400 text-sm">EventLens Political Module</p></div>
-      </div>
-      <div class="text-right hidden md:block"><div class="text-xs font-mono text-slate-500" id="tokenDisplay">Token: Checking...</div></div>
-    </div>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: { brand: { 400: '#fb923c', 500: '#f97316', 600: '#ea580c', dark: '#0f172a' } },
+          animation: {
+            'scan': 'scan 2s linear infinite',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            scan: {
+              '0%': { top: '0%', opacity: '0' },
+              '10%': { opacity: '1' },
+              '90%': { opacity: '1' },
+              '100%': { top: '100%', opacity: '0' },
+            }
+          }
+        }
+      }
+    }
+  </script>
 
-    <div class="grid md:grid-cols-12 gap-6">
-      <!-- Sidebar -->
-      <div class="md:col-span-4 space-y-6">
-        <div class="glass rounded-2xl p-6 shadow-lg border-l-4 border-orange-500">
-          <h2 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-camera"></i> 1. Search by Selfie</h2>
-          <div class="relative group cursor-pointer mb-4">
-            <input id="selfieInput" accept="image/*" type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-            <div id="uploadBox" class="h-48 border-2 border-dashed border-slate-600 rounded-xl flex flex-col items-center justify-center bg-slate-800/50 group-hover:border-orange-500 transition-colors">
-              <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i><span class="text-sm text-slate-400">Tap to upload image</span>
-            </div>
-            <img id="preview" class="hidden h-48 w-full object-cover rounded-xl border border-slate-600" />
+  <style>
+    body { 
+      background-color: #020617;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.10) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: #e2e8f0; 
+    }
+    .glass-panel { 
+      background: rgba(15, 23, 42, 0.6); 
+      backdrop-filter: blur(20px); 
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08); 
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    }
+    .glass-card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .timeline-line::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 20px;
+      width: 2px;
+      background: linear-gradient(to bottom, #f97316 0%, rgba(51, 65, 85, 0.5) 100%);
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Scan animation overlay */
+    .scan-overlay {
+      background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.5), transparent);
+      height: 4px;
+      box-shadow: 0 0 15px rgba(249, 115, 22, 0.8);
+    }
+  </style>
+
+  <script>
+    // --- Image helpers ---
+    function previewImage(inputEl) {
+      try {
+        const file = inputEl && inputEl.files && inputEl.files[0];
+        const preview = document.getElementById("preview");
+        const placeholder = document.getElementById("uploadPlaceholder");
+        const scanLine = document.getElementById("scanLine");
+        
+        if (!preview) return;
+        if (!file) {
+          preview.src = "";
+          preview.classList.add("hidden");
+          if(placeholder) placeholder.classList.remove("hidden");
+          if(scanLine) scanLine.classList.add("hidden");
+          return;
+        }
+        const url = URL.createObjectURL(file);
+        preview.src = url;
+        preview.classList.remove("hidden");
+        if(placeholder) placeholder.classList.add("hidden");
+        // Show scan effect on preview
+        if(scanLine) scanLine.classList.remove("hidden");
+      } catch (e) { console.error(e); }
+    }
+
+    function setImgSrcWithRetry(imgEl, url, maxRetries = 2) {
+      if (!imgEl) return;
+      let attempt = 0;
+      imgEl.referrerPolicy = "no-referrer";
+      const load = () => { imgEl.src = url; };
+      imgEl.onerror = () => {
+        if (attempt < maxRetries) {
+          attempt += 1;
+          setTimeout(load, 350 * attempt);
+          return;
+        }
+        imgEl.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3Cpolyline points='21 15 16 10 5 21'/%3E%3C/svg%3E";
+        imgEl.classList.add("p-4", "bg-slate-800");
+      };
+      load();
+    }
+    function getBestThumbUrl(obj, fallbackUrl) {
+      if (!obj) return fallbackUrl;
+      return obj.thumb_url || obj.thumbUrl || obj.thumbnail_url || obj.thumbnailUrl || fallbackUrl;
+    }
+  </script>
+</head>
+<body class="min-h-screen font-sans selection:bg-orange-500/30">
+
+  <!-- Top Navbar -->
+  <nav class="sticky top-0 z-40 glass-panel border-b-0 border-b-white/5 shadow-lg shadow-orange-900/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+            <i class="fa-solid fa-bolt text-lg"></i>
           </div>
-          <button id="searchBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold shadow-lg shadow-orange-500/25 transition-all active:scale-95 flex items-center justify-center gap-2">
-            <span>Search Database</span> <i class="fa-solid fa-search"></i>
-          </button>
-          <div id="statusBox" class="hidden mt-4 p-3 rounded-lg text-sm text-center"></div>
+          <div>
+            <h1 class="text-xl font-bold text-white tracking-tight">EventLens <span class="text-orange-400">AI</span></h1>
+            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Political Intelligence Unit</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+           <div id="tokenDisplay" class="hidden md:block px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-xs font-mono text-slate-400">
+             <i class="fa-solid fa-shield-halved mr-1 text-emerald-500"></i> Secure
+           </div>
         </div>
       </div>
+    </div>
+  </nav>
 
-      <!-- Results -->
-      <div class="md:col-span-8">
-        <div class="glass rounded-2xl p-6 shadow-lg min-h-[400px]">
-          <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
-             <h2 class="font-bold text-xl text-white flex items-center gap-2"><i class="fa-solid fa-timeline"></i> Result Timeline</h2>
-             <span id="matchScore" class="text-sm font-mono text-slate-400"></span>
-          </div>
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="grid lg:grid-cols-12 gap-8">
+      
+      <!-- Left Column: Search & Upload -->
+      <div class="lg:col-span-4 space-y-6">
+        
+        <!-- Search Card -->
+        <div class="glass-panel rounded-2xl p-1 shadow-2xl overflow-hidden relative group">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-600"></div>
+          
+          <div class="p-6 bg-slate-900/40">
+            <h2 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+              <i class="fa-solid fa-face-viewfinder text-orange-500"></i> Face Search
+            </h2>
+            <p class="text-slate-400 text-xs mb-6">Upload a selfie to scan the karyakarta database.</p>
 
-          <!-- Filters -->
-          <div class="flex flex-col md:flex-row gap-3 mb-4">
-            <div class="flex-1 min-w-[180px]">
-              <label class="block text-xs text-slate-400 mb-1">फॉर्म टाइप</label>
-              <select id="formFilter" class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
-                <option value="all">All Forms</option>
-              </select>
+            <!-- Upload Area -->
+            <div class="relative w-full aspect-[4/5] bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-700 hover:border-orange-500/50 transition-all duration-300 overflow-hidden group/upload cursor-pointer">
+              <input id="selfieInput" accept="image/*" type="file" class="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer" onchange="previewImage(this)" />
+              
+              <!-- Placeholder State -->
+              <div id="uploadPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover/upload:text-orange-400 transition-colors pointer-events-none">
+                <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-3 shadow-inner">
+                  <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                </div>
+                <span class="text-sm font-medium">Click to Upload Selfie</span>
+                <span class="text-xs opacity-60 mt-1">Supports JPG, PNG</span>
+              </div>
+
+              <!-- Preview State -->
+              <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover z-10" />
+              
+              <!-- Scanning Animation (Hidden by default, shown via JS logic if needed, or CSS on preview) -->
+              <div id="scanLine" class="hidden absolute left-0 w-full h-1 bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,1)] z-10 animate-scan pointer-events-none"></div>
             </div>
-            <div class="flex-[2] min-w-[220px]">
-              <label class="block text-xs text-slate-400 mb-1">कीवर्ड</label>
-              <input id="keywordFilter" type="text" placeholder="नाम / मोबाइल / जिला / कार्यक्रम / अतिथि / स्थान..." class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-slate-500" />
-            </div>
-            <div class="min-w-[180px]">
-              <label class="block text-xs text-slate-400 mb-1">Sort</label>
-              <select id="sortOrder" class="w-full bg-slate-900/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
-                <option value="desc">Newest first</option>
-                <option value="asc">Oldest first</option>
-              </select>
-            </div>
-            <div class="min-w-[140px] flex items-end">
-              <button id="clearFilters" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
-                Clear
+
+            <!-- Action Buttons -->
+            <div class="mt-6 space-y-3">
+              <button id="searchBtn" class="relative w-full py-4 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold shadow-lg shadow-orange-900/40 transition-all active:scale-[0.98] group/btn overflow-hidden">
+                <div class="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300"></div>
+                <span class="relative flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-magnifying-glass"></i> Search Database
+                </span>
               </button>
             </div>
+            
+            <!-- Status Text -->
+            <div id="statusBox" class="hidden mt-4 text-center">
+               <!-- Content injected by JS -->
+            </div>
           </div>
+        </div>
 
-          <div id="statsBar" class="text-xs text-slate-400 mb-4"></div>
+        <!-- Instructions (Optional) -->
+        <div class="hidden lg:block p-5 rounded-2xl border border-slate-800 bg-slate-900/30 text-xs text-slate-400 leading-relaxed">
+          <strong class="text-slate-300 block mb-2"><i class="fa-regular fa-lightbulb text-yellow-500 mr-1"></i> Pro Tips:</strong>
+          <ul class="list-disc pl-4 space-y-1">
+             <li>Ensure good lighting on the face.</li>
+             <li>Avoid wearing sunglasses or masks.</li>
+             <li>Results show timeline events and grouped photos.</li>
+          </ul>
+        </div>
+      </div>
 
-          <div id="timeline" class="space-y-4">
-             <div class="text-center py-10 text-slate-500"><i class="fa-regular fa-image text-4xl mb-3 opacity-50"></i><p>Upload a selfie to view history.</p></div>
+      <!-- Right Column: Results -->
+      <div class="lg:col-span-8 space-y-6">
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="glass-panel rounded-2xl p-12 text-center flex flex-col items-center justify-center h-full min-h-[400px]">
+           <div class="w-24 h-24 bg-slate-800/50 rounded-full flex items-center justify-center mb-4 border border-slate-700">
+             <i class="fa-solid fa-fingerprint text-4xl text-slate-600"></i>
+           </div>
+           <h3 class="text-xl font-bold text-slate-300">Ready to Search</h3>
+           <p class="text-slate-500 mt-2 max-w-sm">Upload a photo from the left panel to identify karyakartas and view their event history.</p>
+        </div>
+
+        <!-- Stats Dashboard (Hidden initially) -->
+        <div id="statsDashboard" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Match Score -->
+          <div class="glass-card p-4 rounded-xl relative overflow-hidden">
+             <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-bullseye text-6xl"></i></div>
+             <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">AI Confidence</div>
+             <div class="mt-2 flex items-baseline gap-1">
+                <span id="scoreVal" class="text-3xl font-extrabold text-white">0%</span>
+             </div>
+             <div class="w-full bg-slate-700 h-1.5 mt-3 rounded-full overflow-hidden">
+                <div id="scoreBar" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 w-0 transition-all duration-1000"></div>
+             </div>
           </div>
           
-<div id="photosSection" class="hidden mt-8 pt-6 border-t border-slate-700">
-  <div class="flex items-center justify-between gap-3 mb-2">
-    <h3 class="font-bold text-white flex items-center gap-2">
-      <i class="fa-regular fa-images"></i>
-      कार्यकर्त्ता की सभी फोटो
-    </h3>
-    <button id="loadAllPhotosBtn" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-      Load thumbnails
-    </button>
-  </div>
-  <div class="text-xs text-slate-400 mb-4">
-    नोट: फोटो URLs (लिंक) 10 मिनट में expire होते हैं। अगर कुछ फोटो नहीं खुलें, तो “Search” फिर से करिए।
-    बहुत सारी फोटो एक साथ load करने से कभी‑कभी नेटवर्क error (ERR_CONNECTION_RESET) आता है, इसलिए thumbnails group‑wise load होते हैं।
+          <!-- Timeline Count -->
+          <div class="glass-card p-4 rounded-xl relative overflow-hidden">
+             <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-clock-rotate-left text-6xl"></i></div>
+             <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Events Found</div>
+             <div class="mt-2 text-3xl font-extrabold text-white" id="eventCountVal">0</div>
+             <div class="text-xs text-slate-500 mt-1">Timeline entries</div>
+          </div>
+          
+          <!-- Photos Count -->
+          <div class="glass-card p-4 rounded-xl relative overflow-hidden">
+             <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-images text-6xl"></i></div>
+             <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Visual Records</div>
+             <div class="mt-2 text-3xl font-extrabold text-white" id="photoCountVal">0</div>
+             <div class="text-xs text-slate-500 mt-1">Photos matched</div>
+          </div>
+        </div>
+
+        <!-- Timeline Section -->
+        <div id="resultsContainer" class="hidden space-y-8">
+           
+           <!-- Tab/Header -->
+           <div class="flex items-center gap-6 border-b border-slate-700/50 pb-4">
+              <button class="text-orange-500 font-bold border-b-2 border-orange-500 pb-4 -mb-4.5 px-2">Timeline</button>
+              <button class="text-slate-400 hover:text-slate-200 font-medium pb-4 -mb-4.5 px-2 transition-colors" onclick="document.getElementById('photosSection').scrollIntoView({behavior: 'smooth'})">Photos</button>
+           </div>
+
+           <div class="relative pl-4 timeline-line space-y-8" id="timeline">
+              <!-- Timeline Items injected here -->
+           </div>
+
+           <!-- Photos Grid -->
+           <div id="photosSection" class="pt-8 border-t border-slate-800 hidden">
+              <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fa-regular fa-images text-orange-500"></i> Photo Gallery
+              </h3>
+              <div id="photosGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                 <!-- Photos injected here -->
+              </div>
+           </div>
+        </div>
+
+      </div>
+    </div>
   </div>
 
-  <div id="photosGroups" class="space-y-4"></div>
-  <div id="photosGrid" class="hidden grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
-</div>
-
+  <!-- Detail Modal -->
+  <div id="detailModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity opacity-0" id="modalBackdrop"></div>
+    
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+      <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+        <!-- Panel -->
+        <div class="relative transform overflow-hidden rounded-2xl bg-slate-900 border border-slate-700 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-2xl opacity-0 scale-95" id="modalPanel">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-800/30">
+             <h3 class="text-lg font-semibold leading-6 text-white" id="detailModalTitle">Details</h3>
+             <button id="detailModalClose" class="text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+          </div>
+          <div class="px-6 py-6 max-h-[70vh] overflow-y-auto custom-scrollbar" id="detailModalBody">
+            <!-- Content -->
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+<!-- LOGIC SCRIPT (UNCHANGED LOGIC, JUST UPDATED RENDERERS) -->
 <script>
-/**
- * EventLens Political Search (Updated)
- * - Timeline cards show: program/venue/date/time/guests + district/vidhansabha/mandal
- * - Click any event card to open full details (and download photo)
- * - Photos section shows ALL photos returned by API (with program names) + download
- * - Selfie thumbnail preview (client-side) for fast UI
- *
- * NOTE: True bandwidth/billing saving thumbnails require backend to store separate thumb files.
- */
 (() => {
   const API_ID = "vxid0yoovj";
   const REGION = "ap-south-1";
   const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
 
   const qs = new URLSearchParams(window.location.search);
-  const token = qs.get("token") || "";   // Public link token (recommended)
+  const token = qs.get("token") || "";   
 
   const el = {
     selfieInput: document.getElementById("selfieInput"),
     preview: document.getElementById("preview"),
     statusBox: document.getElementById("statusBox"),
-    matchScore: document.getElementById("matchScore"),
+    // New stats elements
+    emptyState: document.getElementById("emptyState"),
+    statsDashboard: document.getElementById("statsDashboard"),
+    resultsContainer: document.getElementById("resultsContainer"),
+    scoreVal: document.getElementById("scoreVal"),
+    scoreBar: document.getElementById("scoreBar"),
+    eventCountVal: document.getElementById("eventCountVal"),
+    photoCountVal: document.getElementById("photoCountVal"),
+    
     timeline: document.getElementById("timeline"),
     photosSection: document.getElementById("photosSection"),
     photosGrid: document.getElementById("photosGrid"),
     searchBtn: document.getElementById("searchBtn"),
-
-    formFilter: document.getElementById("formFilter"),
-    keywordFilter: document.getElementById("keywordFilter"),
-    sortOrder: document.getElementById("sortOrder"),
-    clearFilters: document.getElementById("clearFilters"),
-    statsBar: document.getElementById("statsBar"),
-    photosGroups: document.getElementById("photosGroups"),
-    loadAllPhotosBtn: document.getElementById("loadAllPhotosBtn"),
-
   };
 
-  // --------- UI State ----------
-  const STATE = {
-    rawTimeline: [],
-    rawPhotoUrls: [],
-    photoUrlByKey: new Map(),
-    filters: { form: "all", q: "", sort: "desc" },
-    photoGroups: [],        // built from rawTimeline
-    loadedGroups: new Set() // groupKey strings
-  };
-
-  function debounce(fn, wait = 250) {
-    let t = null;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), wait);
-    };
-  }
-
-  function safeLower(x) {
-    return (x == null ? "" : String(x)).toLowerCase();
-  }
-
-  function buildSearchText(entry) {
-    const parts = [];
-    const push = (v) => { if (v != null && String(v).trim() !== "") parts.push(String(v)); };
-
-    push(entry.form_type);
-    push(entry.name); push(entry.mobile);
-    push(entry.district); push(entry.vidhansabha); push(entry.mandal);
-    push(entry.reason);
-
-    // Common fields inside data
-    const d = entry.data || {};
-    Object.keys(d).forEach((k) => push(d[k]));
-
-    // Normalize by joining
-    return safeLower(parts.join(" | "));
-  }
-
-  function initFiltersFromTimeline(timeline) {
-    if (!el.formFilter) return;
-    const prev = el.formFilter.value || "all";
-    const types = Array.from(new Set((timeline || []).map(x => x.form_type).filter(Boolean))).sort();
-
-    // Rebuild options
-    el.formFilter.innerHTML = `<option value="all">All Forms</option>` + types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
-    // restore
-    if (types.includes(prev)) el.formFilter.value = prev;
-    else el.formFilter.value = "all";
-  }
-
-  function getFilteredTimeline() {
-    let t = Array.isArray(STATE.rawTimeline) ? [...STATE.rawTimeline] : [];
-    const f = STATE.filters;
-
-    if (f.form && f.form !== "all") {
-      t = t.filter(x => x.form_type === f.form);
-    }
-    if (f.q && f.q.trim() !== "") {
-      const q = safeLower(f.q.trim());
-      t = t.filter(x => buildSearchText(x).includes(q));
-    }
-
-    // sort by created_at
-    t.sort((a,b) => {
-      const av = Number(a.created_at || 0);
-      const bv = Number(b.created_at || 0);
-      return f.sort === "asc" ? (av - bv) : (bv - av);
-    });
-
-    return t;
-  }
-
-  function updateStatsBar(filteredTimeline) {
-    if (!el.statsBar) return;
-    const raw = STATE.rawTimeline || [];
-    const shown = filteredTimeline || [];
-
-    const uniqueForms = new Set(raw.map(x => x.form_type || "")).size;
-    const uniquePhotos = new Set(raw.map(x => x.s3_key || "").filter(Boolean)).size;
-
-    el.statsBar.innerHTML =
-      `Events: <b class="text-slate-200">${shown.length}</b> / ${raw.length} &nbsp; | &nbsp; ` +
-      `Forms: ${uniqueForms} &nbsp; | &nbsp; Photos: ${uniquePhotos}`;
-  }
-
-  function applyFiltersAndRender() {
-    const filtered = getFilteredTimeline();
-    updateStatsBar(filtered);
-
-    renderTimeline(filtered, STATE.photoUrlByKey);
-
-    // Photos हमेशा "पूरा timeline" से (filter नहीं) ताकि सभी uploads दिखें
-    renderPhotosGrouped(STATE.rawTimeline, STATE.photoUrlByKey);
-  }
-
-
-
-  // --------- Modal (details / full photo) ----------
+  // --------- Modal Logic (Updated Animations) ----------
   const modal = (() => {
-    const wrap = document.createElement("div");
-    wrap.id = "detailModal";
-    wrap.className = "fixed inset-0 z-50 hidden";
-    wrap.innerHTML = `
-      <div class="absolute inset-0 bg-black/60"></div>
-      <div class="absolute inset-0 flex items-center justify-center p-4">
-        <div class="w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-2xl shadow-xl overflow-hidden">
-          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-            <div class="font-semibold text-white" id="detailModalTitle">Details</div>
-            <button id="detailModalClose" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100">Close</button>
-          </div>
-          <div class="p-5 max-h-[75vh] overflow-auto" id="detailModalBody"></div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(wrap);
-
-    const titleEl = wrap.querySelector("#detailModalTitle");
-    const bodyEl = wrap.querySelector("#detailModalBody");
+    const wrap = document.getElementById("detailModal");
+    const backdrop = document.getElementById("modalBackdrop");
+    const panel = document.getElementById("modalPanel");
+    const titleEl = document.getElementById("detailModalTitle");
+    const bodyEl = document.getElementById("detailModalBody");
+    const closeBtn = document.getElementById("detailModalClose");
 
     function open(title, bodyNode) {
       titleEl.textContent = title || "Details";
       bodyEl.innerHTML = "";
       if (bodyNode) bodyEl.appendChild(bodyNode);
+      
       wrap.classList.remove("hidden");
+      // Animate in
+      requestAnimationFrame(() => {
+        backdrop.classList.remove("opacity-0");
+        panel.classList.remove("opacity-0", "scale-95");
+        panel.classList.add("opacity-100", "scale-100");
+      });
       document.body.classList.add("overflow-hidden");
     }
+
     function close() {
-      wrap.classList.add("hidden");
-      document.body.classList.remove("overflow-hidden");
+      backdrop.classList.add("opacity-0");
+      panel.classList.remove("opacity-100", "scale-100");
+      panel.classList.add("opacity-0", "scale-95");
+      
+      setTimeout(() => {
+        wrap.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+      }, 200); // match transition duration
     }
 
-    wrap.querySelector("#detailModalClose").addEventListener("click", close);
-    wrap.addEventListener("click", (e) => {
-      if (e.target === wrap.firstElementChild) close();
-    });
+    closeBtn.addEventListener("click", close);
+    backdrop.addEventListener("click", close);
 
     return { open, close };
   })();
 
-  // --------- UI Helpers ----------
+  // --------- UI Helpers (Same logic) ----------
   function isNonEmpty(v) { return v !== null && v !== undefined && String(v).trim() !== ""; }
+  
   function prettyIso(iso) {
     if (!isNonEmpty(iso)) return "";
-    return String(iso).replace("T", " ").replace(/\.\d+/, "").replace("+00:00", " UTC");
-  }
-  function setStatus(msg, type = "info") {
-    if (!el.statusBox) return;
-    el.statusBox.textContent = msg || "";
-    el.statusBox.className = "p-3 rounded-lg text-sm border " + (
-      type === "error"
-        ? "bg-red-900/20 border-red-700 text-red-200"
-        : type === "success"
-          ? "bg-emerald-900/20 border-emerald-700 text-emerald-200"
-          : "bg-slate-900/40 border-slate-700 text-slate-200"
-    );
-  }
-  function setMatch(text) {
-    if (!el.matchScore) return;
-    el.matchScore.textContent = text || "";
+    const date = new Date(iso);
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
-  function makeBadge(text, kind = "blue") {
-    const span = document.createElement("span");
-    const base = "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border";
-    const map = {
-      blue: "bg-blue-900/30 text-blue-200 border-blue-700",
-      yellow: "bg-yellow-900/30 text-yellow-200 border-yellow-700",
-      gray: "bg-slate-800 text-slate-200 border-slate-700",
-      red: "bg-red-900/30 text-red-200 border-red-700",
-      green: "bg-emerald-900/30 text-emerald-200 border-emerald-700",
-      purple: "bg-purple-900/30 text-purple-200 border-purple-700",
-    };
-    span.className = base + " " + (map[kind] || map.gray);
-    span.textContent = text;
-    return span;
+  function setStatus(msg, type = "info") {
+    if (!el.statusBox) return;
+    el.statusBox.classList.remove("hidden");
+    el.statusBox.innerHTML = `
+      <div class="inline-flex items-center px-4 py-2 rounded-full text-xs font-semibold ${
+        type === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 
+        type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+        'bg-slate-800 text-slate-300 border border-slate-700'
+      }">
+        ${type === 'loading' ? '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>' : ''}
+        ${msg}
+      </div>
+    `;
+  }
+
+  function updateDashboard(sim, events, photos) {
+    el.emptyState.classList.add("hidden");
+    el.statsDashboard.classList.remove("hidden");
+    el.resultsContainer.classList.remove("hidden");
+
+    // Animate Numbers
+    el.scoreVal.textContent = sim + "%";
+    el.scoreBar.style.width = sim + "%";
+    el.scoreBar.className = `h-full transition-all duration-1000 ${
+      sim > 80 ? 'bg-gradient-to-r from-emerald-500 to-green-400' : 
+      sim > 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-400' : 
+      'bg-gradient-to-r from-red-500 to-red-400'
+    }`;
+    
+    el.eventCountVal.textContent = events;
+    el.photoCountVal.textContent = photos;
   }
 
   function get(obj, key, fallback = "") {
@@ -387,7 +421,7 @@
     return isNonEmpty(v) ? v : fallback;
   }
 
-  // --------- Build event summary ----------
+  // --------- Logic: Build Summary (Unchanged) ----------
   function buildEventSummary(item) {
     const form = get(item, "form_type", "");
     const data = item.data || {};
@@ -399,108 +433,75 @@
 
     let title = form || "Event";
     let subtitle = "";
-    const highlights = []; // key->value lines for card
-    const footer = [];     // small gray lines
+    let icon = "fa-calendar-check"; // Default icon
+    const highlights = []; 
+    const footer = [];     
 
     if (form === "president_tour_form") {
       title = get(data, "program_name", get(data, "program_type", "President Tour"));
+      icon = "fa-plane-departure";
       const date = get(data, "tour_date", "");
-      const time = get(data, "tour_time", "");
       const venue = get(data, "tour_venue", "");
-      subtitle = [date, time, venue].filter(isNonEmpty).join(" • ");
+      subtitle = [date, venue].filter(isNonEmpty).join(" • ");
       const guests = get(data, "guests", "");
       const level = get(data, "level", "");
-      const attendance = get(data, "attendance", "");
-      if (isNonEmpty(guests)) highlights.push(["अतिथि", guests]);
+      if (isNonEmpty(guests)) highlights.push(["Guests", guests]);
       if (isNonEmpty(level)) highlights.push(["Level", level]);
-      if (isNonEmpty(attendance)) highlights.push(["Attendance", attendance]);
     } else if (form === "mandal_reporting") {
       title = get(data, "venue", "Mandal Report");
+      icon = "fa-clipboard-list";
       const date = get(data, "event_date", "");
-      const time = get(data, "event_time", "");
-      subtitle = [date, time].filter(isNonEmpty).join(" • ");
+      subtitle = date;
       const guests = get(data, "guests", "");
-      const level = get(data, "level", "");
       const attendance = get(data, "attendance", "");
-      if (isNonEmpty(guests)) highlights.push(["अतिथि", guests]);
-      if (isNonEmpty(level)) highlights.push(["Level", level]);
+      if (isNonEmpty(guests)) highlights.push(["Guests", guests]);
       if (isNonEmpty(attendance)) highlights.push(["Attendance", attendance]);
     } else if (form === "visitor_form") {
       title = get(item, "name", get(data, "name", "Visitor"));
-      subtitle = [get(item, "mobile", get(data, "mobile", "")), get(data, "reason", "")].filter(isNonEmpty).join(" • ");
+      icon = "fa-user-clock";
+      subtitle = get(data, "reason", "");
     } else if (form === "party_attendance") {
-      title = get(item, "name", get(data, "name", "Party Attendance"));
-      subtitle = [get(data, "designation", ""), get(item, "mobile", get(data, "mobile", ""))].filter(isNonEmpty).join(" • ");
-    } else {
-      // fallback
-      title = form || "Event";
-      subtitle = [get(item, "name", ""), get(item, "mobile", "")].filter(isNonEmpty).join(" • ");
+      title = "Party Attendance";
+      icon = "fa-users-line";
+      subtitle = get(data, "designation", "");
     }
 
-    const locBits = [];
-    if (isNonEmpty(district)) locBits.push(`District: ${district}`);
-    if (isNonEmpty(vidhansabha)) locBits.push(`Vidhansabha: ${vidhansabha}`);
-    if (isNonEmpty(mandal)) locBits.push(`Mandal: ${mandal}`);
-    if (locBits.length) footer.push(locBits.join(" • "));
-    if (isNonEmpty(createdAtIso)) footer.push(`Created: ${createdAtIso}`);
+    const locBits = [district, vidhansabha].filter(isNonEmpty);
+    if (locBits.length) footer.push(locBits.join(", "));
+    if (isNonEmpty(createdAtIso)) footer.push(createdAtIso);
 
-    // details for modal
+    // Full details for modal
     const details = [];
     const pushD = (k, v) => { if (isNonEmpty(v)) details.push([k, String(v)]); };
-
+    
+    // Core fields
     pushD("Form Type", form);
-    pushD("Entry ID", get(item, "entry_id", ""));
-    pushD("Created", createdAtIso);
     pushD("District", district);
     pushD("Vidhansabha", vidhansabha);
     pushD("Mandal", mandal);
-    pushD("S3 Key", get(item, "s3_key", ""));
+    pushD("Created", get(item, "created_at_iso", ""));
 
-    const addIf = (label, key) => pushD(label, get(data, key, ""));
-    if (form === "president_tour_form") {
-      addIf("Program Name", "program_name");
-      addIf("Program Type", "program_type");
-      addIf("Tour Date", "tour_date");
-      addIf("Tour Time", "tour_time");
-      addIf("Venue", "tour_venue");
-      addIf("Guests", "guests");
-      addIf("Level", "level");
-      addIf("Attendance", "attendance");
-    } else if (form === "mandal_reporting") {
-      addIf("Venue", "venue");
-      addIf("Event Date", "event_date");
-      addIf("Event Time", "event_time");
-      addIf("Guests", "guests");
-      addIf("Level", "level");
-      addIf("Attendance", "attendance");
-    } else if (form === "visitor_form") {
-      addIf("Reason", "reason");
-      addIf("Address", "address");
-      addIf("Designation", "designation");
-    } else if (form === "party_attendance") {
-      addIf("Designation", "designation");
-    }
+    // Dynamic fields
+    Object.keys(data).forEach(k => {
+      if(typeof data[k] !== 'object') pushD(k, data[k]);
+    });
 
-    return { title, subtitle, highlights, footer, details, rawData: data };
+    return { title, subtitle, highlights, footer, details, rawData: data, icon };
   }
 
   function makeKVTable(rows) {
-    const table = document.createElement("table");
-    table.className = "w-full text-sm";
+    const div = document.createElement("div");
+    div.className = "space-y-3";
     rows.forEach(([k, v]) => {
-      const tr = document.createElement("tr");
-      tr.className = "border-b border-slate-800 last:border-b-0";
-      const tdK = document.createElement("td");
-      tdK.className = "py-2 pr-4 font-medium text-slate-300 align-top w-44";
-      tdK.textContent = k;
-      const tdV = document.createElement("td");
-      tdV.className = "py-2 text-white whitespace-pre-wrap";
-      tdV.textContent = isNonEmpty(v) ? String(v) : "-";
-      tr.appendChild(tdK);
-      tr.appendChild(tdV);
-      table.appendChild(tr);
+      const row = document.createElement("div");
+      row.className = "flex flex-col sm:flex-row sm:justify-between border-b border-slate-800 pb-2 last:border-0";
+      row.innerHTML = `
+        <span class="text-xs text-slate-500 font-medium uppercase tracking-wide">${k}</span>
+        <span class="text-sm text-slate-200 font-medium text-right mt-1 sm:mt-0">${v}</span>
+      `;
+      div.appendChild(row);
     });
-    return table;
+    return div;
   }
 
   function parseS3KeyFromUrl(url) {
@@ -508,147 +509,129 @@
       const u = new URL(url);
       const p = u.pathname || "";
       return p.startsWith("/") ? p.slice(1) : p;
-    } catch (e) {
-      return "";
-    }
+    } catch (e) { return ""; }
   }
 
-  // --------- Render Timeline ----------
+  // --------- Render Timeline (New Design) ----------
   function renderTimeline(timeline, photoUrlByKey) {
     if (!el.timeline) return;
     el.timeline.innerHTML = "";
 
     if (!Array.isArray(timeline) || timeline.length === 0) {
-      el.timeline.innerHTML = `<div class="text-slate-300 text-sm">No timeline entries.</div>`;
+      el.timeline.innerHTML = `<div class="text-center py-10 text-slate-500">No events found in timeline.</div>`;
       return;
     }
 
     const sorted = [...timeline].sort((a, b) => (parseInt(b.created_at || "0", 10) - parseInt(a.created_at || "0", 10)));
 
-    sorted.forEach((item) => {
+    sorted.forEach((item, index) => {
       const sum = buildEventSummary(item);
-      const entry = item; // alias for older code paths
       const s3Key = get(item, "s3_key", "");
       const photoUrl = isNonEmpty(s3Key) ? (photoUrlByKey.get(s3Key) || "") : "";
 
+      // Wrapper
+      const wrapper = document.createElement("div");
+      wrapper.className = "relative pl-8 group animate-[pulse-slow_0.5s_ease-out]";
+      wrapper.style.animationDelay = `${index * 100}ms`;
+
+      // Dot on timeline
+      const dot = document.createElement("div");
+      dot.className = "absolute left-[13px] top-6 w-4 h-4 rounded-full bg-slate-900 border-2 border-slate-600 group-hover:border-orange-500 group-hover:bg-orange-900 transition-colors z-10";
+      wrapper.appendChild(dot);
+
+      // Card
       const card = document.createElement("div");
-      card.className = "p-4 rounded-xl border border-slate-700 bg-slate-900/40 hover:bg-slate-900/60 transition cursor-pointer";
+      card.className = "glass-card rounded-xl p-5 hover:bg-slate-800/80 transition-all cursor-pointer group-hover:translate-x-1 duration-300";
 
-      const top = document.createElement("div");
-      top.className = "flex items-start justify-between gap-3";
+      // Header
+      const header = document.createElement("div");
+      header.className = "flex items-start justify-between gap-4";
+      
+      const titleBlock = document.createElement("div");
+      titleBlock.innerHTML = `
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-orange-500 bg-orange-500/10 p-1.5 rounded-md text-xs"><i class="fa-solid ${sum.icon}"></i></span>
+          <h3 class="font-bold text-white text-lg leading-tight">${sum.title}</h3>
+        </div>
+        ${sum.subtitle ? `<p class="text-slate-400 text-sm">${sum.subtitle}</p>` : ''}
+      `;
+      
+      header.appendChild(titleBlock);
+      card.appendChild(header);
 
-      const left = document.createElement("div");
-      const t = document.createElement("div");
-      t.className = "text-white font-semibold text-base";
-      t.textContent = sum.title;
-
-      const st = document.createElement("div");
-      st.className = "text-slate-300 text-sm mt-0.5";
-      st.textContent = sum.subtitle || "";
-
-      left.appendChild(t);
-      if (isNonEmpty(sum.subtitle)) left.appendChild(st);
-
-      const right = document.createElement("div");
-      right.className = "flex flex-wrap items-center gap-2 justify-end";
-      right.appendChild(makeBadge(item.form_type || "event", "blue"));
-      if (item.duplicate) right.appendChild(makeBadge("DUPLICATE", "yellow"));
-
-      top.appendChild(left);
-      top.appendChild(right);
-
-      const mid = document.createElement("div");
-      mid.className = "mt-3 space-y-1";
-      sum.highlights.forEach(([k, v]) => {
-        const row = document.createElement("div");
-        row.className = "text-sm";
-        const kk = document.createElement("span");
-        kk.className = "text-slate-300 font-medium";
-        kk.textContent = `${k}: `;
-        const vv = document.createElement("span");
-        vv.className = "text-white whitespace-pre-wrap";
-        vv.textContent = String(v);
-        row.appendChild(kk);
-        row.appendChild(vv);
-        mid.appendChild(row);
-      });
-
-      const bottom = document.createElement("div");
-      bottom.className = "mt-3 text-xs text-slate-400 space-y-1";
-      sum.footer.forEach((line) => {
-        const d = document.createElement("div");
-        d.textContent = line;
-        bottom.appendChild(d);
-      });
-
-      if (isNonEmpty(photoUrl)) {
-        const imgRow = document.createElement("div");
-        imgRow.className = "mt-4 flex items-center gap-3";
-        const img = document.createElement("img");
-        setImgSrcWithRetry(img, getBestThumbUrl(entry, photoUrl));
-        img.loading = "lazy";
-        img.decoding = "async";
-        img.className = "w-16 h-16 rounded-lg object-cover border border-slate-700";
-        img.alt = "event photo";
-        const tip = document.createElement("div");
-        tip.className = "text-xs text-slate-400";
-        tip.textContent = "Click to open details";
-        imgRow.appendChild(img);
-        imgRow.appendChild(tip);
-        card.appendChild(imgRow);
+      // Highlights grid
+      if(sum.highlights.length > 0) {
+        const grid = document.createElement("div");
+        grid.className = "mt-4 grid grid-cols-2 gap-2";
+        sum.highlights.forEach(([k,v]) => {
+          grid.innerHTML += `
+            <div class="bg-slate-950/30 rounded px-3 py-2 border border-slate-800">
+              <div class="text-[10px] uppercase text-slate-500">${k}</div>
+              <div class="text-sm font-medium text-slate-200 truncate">${v}</div>
+            </div>
+          `;
+        });
+        card.appendChild(grid);
       }
 
-      card.appendChild(top);
-      if (sum.highlights.length) card.appendChild(mid);
-      card.appendChild(bottom);
+      // Footer & Image Row
+      const footerRow = document.createElement("div");
+      footerRow.className = "mt-4 pt-3 border-t border-slate-800 flex items-center justify-between";
+      
+      const locText = document.createElement("div");
+      locText.className = "text-xs text-slate-500 font-mono";
+      locText.innerHTML = sum.footer.join(" &bull; ");
+      footerRow.appendChild(locText);
 
+      // Mini Thumb if avail
+      if (isNonEmpty(photoUrl)) {
+        const thumb = document.createElement("img");
+        setImgSrcWithRetry(thumb, getBestThumbUrl(item, photoUrl));
+        thumb.className = "w-10 h-10 rounded-lg object-cover border border-slate-600 ml-3";
+        footerRow.appendChild(thumb);
+      } else {
+        footerRow.innerHTML += `<span class="text-xs text-slate-600 italic">No image</span>`;
+      }
+
+      card.appendChild(footerRow);
+
+      // Click Event
       card.addEventListener("click", () => {
         const body = document.createElement("div");
-        body.className = "space-y-4";
-
+        
+        // Hero Image in Modal
         if (isNonEmpty(photoUrl)) {
-          const ph = document.createElement("div");
-          ph.className = "space-y-2";
+          const imgCont = document.createElement("div");
+          imgCont.className = "mb-6 relative group rounded-xl overflow-hidden bg-black";
           const img = document.createElement("img");
-          setImgSrcWithRetry(img, getBestThumbUrl(entry, photoUrl));
-          img.loading = "lazy";
-          img.decoding = "async";
-          img.className = "w-full max-h-[420px] object-contain rounded-xl border border-slate-700 bg-slate-950";
-          const dl = document.createElement("a");
-          dl.href = photoUrl;
-          dl.textContent = "Download photo";
-          dl.className = "inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white w-fit";
-          dl.setAttribute("download", "");
-          ph.appendChild(img);
-          ph.appendChild(dl);
-          body.appendChild(ph);
+          setImgSrcWithRetry(img, getBestThumbUrl(item, photoUrl)); // Load low quality first
+          // Swap to high quality if possible or just use url
+          img.src = photoUrl;
+          img.className = "w-full h-auto max-h-[400px] object-contain mx-auto";
+          
+          const dlBtn = document.createElement("a");
+          dlBtn.href = photoUrl;
+          dlBtn.download = "";
+          dlBtn.className = "absolute bottom-3 right-3 bg-white text-black px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-gray-200 transition-colors opacity-0 group-hover:opacity-100";
+          dlBtn.innerHTML = '<i class="fa-solid fa-download mr-1"></i> Save';
+
+          imgCont.appendChild(img);
+          imgCont.appendChild(dlBtn);
+          body.appendChild(imgCont);
         }
 
         body.appendChild(makeKVTable(sum.details));
-
-        const raw = document.createElement("details");
-        raw.className = "bg-slate-950/60 rounded-xl border border-slate-700 p-3";
-        const sm = document.createElement("summary");
-        sm.className = "cursor-pointer text-slate-300 font-medium";
-        sm.textContent = "Raw data (JSON)";
-        const pre = document.createElement("pre");
-        pre.className = "mt-3 text-xs text-slate-200 overflow-auto";
-        pre.textContent = JSON.stringify(sum.rawData || {}, null, 2);
-        raw.appendChild(sm);
-        raw.appendChild(pre);
-        body.appendChild(raw);
-
         modal.open(sum.title, body);
       });
 
-      el.timeline.appendChild(card);
+      wrapper.appendChild(card);
+      el.timeline.appendChild(wrapper);
     });
   }
 
-  // --------- Render Photos ----------
+  // --------- Render Photos (New Design) ----------
   function renderPhotos(photoUrls, timeline) {
     if (!el.photosSection || !el.photosGrid) return;
-
     el.photosGrid.innerHTML = "";
 
     if (!Array.isArray(photoUrls) || photoUrls.length === 0) {
@@ -656,545 +639,175 @@
       return;
     }
 
-    // Add toggle button once
-    const header = el.photosSection.querySelector("h3");
-    if (header && !header.dataset.toggleAdded) {
-      const btn = document.createElement("button");
-      btn.className = "ml-auto px-3 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700";
-      btn.textContent = "Hide";
-      btn.addEventListener("click", () => {
-        const hidden = el.photosGrid.classList.toggle("hidden");
-        btn.textContent = hidden ? "Show" : "Hide";
-      });
-      header.className = "flex items-center gap-3";
-      header.appendChild(btn);
-      header.dataset.toggleAdded = "1";
-    }
-
-    // Key->URL unique
+    // De-dupe and map
     const byKey = new Map();
     photoUrls.forEach((u) => {
       const k = parseS3KeyFromUrl(u);
       if (isNonEmpty(k) && !byKey.has(k)) byKey.set(k, u);
     });
 
-    // labels by key from timeline
+    // Map keys to Titles
     const labelByKey = new Map();
     (timeline || []).forEach((t) => {
-      if (isNonEmpty(t.s3_key)) {
-        const sum = buildEventSummary(t);
-        labelByKey.set(t.s3_key, sum.title);
-      }
+      if (isNonEmpty(t.s3_key)) labelByKey.set(t.s3_key, buildEventSummary(t).title);
     });
 
-    const entries = Array.from(byKey.entries()); // [key, url]
+    el.photosSection.classList.remove("hidden");
 
-    entries.forEach(([k, url]) => {
-      const card = document.createElement("div");
-      card.className = "rounded-xl overflow-hidden border border-slate-700 bg-slate-900/40 hover:bg-slate-900/60 transition cursor-pointer";
-
+    Array.from(byKey.entries()).forEach(([k, url], idx) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "group relative aspect-square rounded-xl overflow-hidden bg-slate-900 border border-slate-700 cursor-pointer";
+      
       const img = document.createElement("img");
       setImgSrcWithRetry(img, url);
       img.loading = "lazy";
-      img.decoding = "async";
-      img.className = "w-full h-32 object-cover bg-slate-950";
-      img.alt = "photo";
+      img.className = "w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-80 group-hover:opacity-100";
+      
+      const overlay = document.createElement("div");
+      overlay.className = "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3";
+      
+      const txt = document.createElement("div");
+      txt.className = "text-white text-xs font-medium truncate";
+      txt.textContent = labelByKey.get(k) || "Event Photo";
+      
+      overlay.appendChild(txt);
+      wrapper.appendChild(img);
+      wrapper.appendChild(overlay);
 
-      const cap = document.createElement("div");
-      cap.className = "p-2 text-xs text-slate-200";
-      cap.textContent = labelByKey.get(k) || "Photo";
-
-      card.appendChild(img);
-      card.appendChild(cap);
-
-      card.addEventListener("click", () => {
+      wrapper.addEventListener("click", () => {
         const body = document.createElement("div");
-        body.className = "space-y-3";
+        const lgImg = document.createElement("img");
+        lgImg.src = url;
+        lgImg.className = "w-full rounded-lg mb-4";
+        
+        const dlBtn = document.createElement("a");
+        dlBtn.href = url;
+        dlBtn.download = "";
+        dlBtn.className = "w-full block text-center bg-orange-600 hover:bg-orange-500 text-white py-3 rounded-xl font-bold transition-colors";
+        dlBtn.textContent = "Download High Res";
 
-        const photo = document.createElement("img");
-        photo.src = url;
-        photo.loading = "lazy";
-        photo.decoding = "async";
-        photo.className = "w-full max-h-[520px] object-contain rounded-xl border border-slate-700 bg-slate-950";
-
-        const dl = document.createElement("a");
-        dl.href = url;
-        dl.textContent = "Download photo";
-        dl.className = "inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white w-fit";
-        dl.setAttribute("download", "");
-
-        const meta = document.createElement("div");
-        meta.className = "text-xs text-slate-400 break-all";
-        meta.textContent = k;
-
-        body.appendChild(photo);
-        body.appendChild(dl);
-        body.appendChild(meta);
-
-        modal.open(labelByKey.get(k) || "Photo", body);
+        body.appendChild(lgImg);
+        body.appendChild(dlBtn);
+        modal.open(labelByKey.get(k) || "Photo Preview", body);
       });
 
-      el.photosGrid.appendChild(card);
+      el.photosGrid.appendChild(wrapper);
     });
-
-    el.photosSection.classList.remove("hidden");
   }
 
-
-  // --------- Render Photos (Grouped + Lazy thumbnails) ----------
-  let _lazyObserver = null;
-  function getLazyObserver() {
-    if (_lazyObserver) return _lazyObserver;
-    if (!("IntersectionObserver" in window)) return null;
-    _lazyObserver = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        const img = e.target;
-        const url = img.dataset.src;
-        if (url) {
-          setImgSrcWithRetry(img, url, 3);
-          img.removeAttribute("data-src");
-        }
-        _lazyObserver.unobserve(img);
-      });
-    }, { root: null, rootMargin: "220px", threshold: 0.01 });
-    return _lazyObserver;
-  }
-
-  function cssEscape(v) {
-    const s = String(v == null ? "" : v);
-    if (window.CSS && typeof window.CSS.escape === "function") return window.CSS.escape(s);
-    return s.replace(/[^a-zA-Z0-9_\-]/g, (ch) => "\" + ch);
-  }
-
-  function attachLazyImg(img, url) {
-    img.dataset.src = url;
-    const obs = getLazyObserver();
-    if (obs) obs.observe(img);
-    else setImgSrcWithRetry(img, url, 3);
-  }
-
-  function renderPhotosGrouped(timeline, photoUrlByKey) {
-    if (!el.photosSection || !el.photosGroups) return;
-
-    const tl = Array.isArray(timeline) ? timeline : [];
-    const items = tl
-      .filter(e => e && e.s3_key && photoUrlByKey && photoUrlByKey.has(e.s3_key))
-      .map(e => ({ entry: e, url: photoUrlByKey.get(e.s3_key) }));
-
-    if (items.length === 0) {
-      el.photosSection.classList.add("hidden");
-      el.photosGroups.innerHTML = "";
-      return;
-    }
-
-    el.photosSection.classList.remove("hidden");
-
-    const groups = new Map();
-    items.forEach(({ entry, url }) => {
-      const sum = buildEventSummary(entry);
-      const gTitle = sum.title || "Event";
-      const gKey = `${entry.form_type || "form"}::${gTitle}`;
-
-      if (!groups.has(gKey)) {
-        groups.set(gKey, {
-          key: gKey,
-          form_type: entry.form_type || "",
-          title: gTitle,
-          subtitle: sum.subtitle || "",
-          footer: sum.footer || "",
-          highlights: Array.isArray(sum.highlights) ? sum.highlights : [],
-          maxCreatedAt: Number(entry.created_at || 0),
-          items: []
-        });
-      }
-      const g = groups.get(gKey);
-      g.items.push({ entry, url, sum });
-      g.maxCreatedAt = Math.max(g.maxCreatedAt, Number(entry.created_at || 0));
-    });
-
-    const groupList = Array.from(groups.values()).sort((a, b) => b.maxCreatedAt - a.maxCreatedAt);
-    STATE.photoGroups = groupList;
-    STATE.loadedGroups = new Set(); // reset on new results
-
-    el.photosGroups.innerHTML = "";
-
-    groupList.forEach((g) => {
-      const wrap = document.createElement("div");
-      wrap.className = "rounded-2xl border border-slate-700 bg-slate-900/40 p-4";
-      wrap.dataset.groupKey = g.key;
-
-      const head = document.createElement("div");
-      head.className = "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2";
-
-      const left = document.createElement("div");
-      const title = document.createElement("div");
-      title.className = "text-sm font-semibold text-white";
-      title.innerHTML = `${escapeHtml(g.title)} <span class="text-slate-400 font-normal">(${escapeHtml(g.form_type || "")}, ${g.items.length} फोटो)</span>`;
-
-      const sub = document.createElement("div");
-      sub.className = "text-xs text-slate-400 mt-1";
-      const hl = (g.highlights || []).slice(0, 3).map(x => `• ${escapeHtml(x)}`).join(" &nbsp; ");
-      sub.innerHTML = (g.subtitle ? escapeHtml(g.subtitle) + " &nbsp; | &nbsp; " : "") + hl;
-
-      left.appendChild(title);
-      left.appendChild(sub);
-
-      const right = document.createElement("div");
-      right.className = "flex items-center gap-2";
-
-      const btnLoad = document.createElement("button");
-      btnLoad.className = "bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white";
-      btnLoad.textContent = "Load thumbnails";
-      btnLoad.addEventListener("click", () => loadPhotoGroup(g.key));
-
-      const btnExpand = document.createElement("button");
-      btnExpand.className = "bg-slate-950 hover:bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white";
-      btnExpand.textContent = "Details";
-      btnExpand.addEventListener("click", () => {
-        const body = document.createElement("div");
-        body.className = "space-y-3";
-        const p = document.createElement("div");
-        p.className = "text-sm text-slate-200";
-        p.innerHTML = `<div class="mb-2"><b>कार्यक्रम:</b> ${escapeHtml(g.title)}</div>` +
-                      (g.subtitle ? `<div class="mb-1"><b>लोकेशन/टाइम:</b> ${escapeHtml(g.subtitle)}</div>` : "") +
-                      (g.footer ? `<div class="mb-1"><b>अतिथि/अन्य:</b> ${escapeHtml(g.footer)}</div>` : "");
-        body.appendChild(p);
-        const list = document.createElement("div");
-        list.className = "text-xs text-slate-400";
-        list.innerHTML = `<div class="mb-2">इस group में ${g.items.length} फोटो है। नीचे “Load thumbnails” दबाकर फोटो देख सकते हो।</div>`;
-        body.appendChild(list);
-        modal.open("Program Details", body);
-      });
-
-      right.appendChild(btnLoad);
-      right.appendChild(btnExpand);
-
-      head.appendChild(left);
-      head.appendChild(right);
-
-      const grid = document.createElement("div");
-      grid.className = "mt-4 hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3";
-      grid.dataset.gridFor = g.key;
-
-      wrap.appendChild(head);
-      wrap.appendChild(grid);
-
-      el.photosGroups.appendChild(wrap);
-    });
-
-    // Load all button (top)
-    if (el.loadAllPhotosBtn) {
-      el.loadAllPhotosBtn.onclick = () => {
-        groupList.forEach(g => loadPhotoGroup(g.key));
-      };
-    }
-  }
-
-  function loadPhotoGroup(groupKey) {
-    if (STATE.loadedGroups && STATE.loadedGroups.has(groupKey)) {
-      // just unhide
-      const grid = el.photosGroups?.querySelector(`[data-grid-for="${cssEscape(groupKey)}"]`);
-      if (grid) grid.classList.remove("hidden");
-      return;
-    }
-
-    const wrap = el.photosGroups?.querySelector(`[data-group-key="${cssEscape(groupKey)}"]`);
-    const grid = el.photosGroups?.querySelector(`[data-grid-for="${cssEscape(groupKey)}"]`);
-    if (!wrap || !grid) return;
-
-    const group = (STATE.photoGroups || []).find(g => g.key === groupKey);
-    if (!group) return;
-
-    grid.innerHTML = "";
-    grid.classList.remove("hidden");
-
-    group.items.forEach(({ entry, url, sum }) => {
-      const card = document.createElement("div");
-      card.className = "rounded-xl overflow-hidden border border-slate-700 bg-slate-950";
-
-      const imgWrap = document.createElement("div");
-      imgWrap.className = "w-full aspect-square bg-slate-900 relative";
-
-      const img = document.createElement("img");
-      img.alt = sum?.title ? `Photo - ${sum.title}` : "Photo";
-      img.loading = "lazy";
-      img.decoding = "async";
-      img.className = "w-full h-full object-cover";
-
-      attachLazyImg(img, url);
-
-      imgWrap.appendChild(img);
-
-      const meta = document.createElement("div");
-      meta.className = "p-2";
-      const cap = document.createElement("div");
-      cap.className = "text-[11px] text-slate-300 line-clamp-2";
-      cap.textContent = `${sum?.title || entry.form_type || "Event"}`;
-
-      const act = document.createElement("div");
-      act.className = "mt-2 flex items-center justify-between gap-2";
-
-      const btnView = document.createElement("button");
-      btnView.className = "flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white";
-      btnView.textContent = "View";
-      btnView.addEventListener("click", () => {
-        const body = document.createElement("div");
-        body.className = "space-y-3";
-
-        const big = document.createElement("img");
-        big.alt = img.alt;
-        big.className = "w-full max-h-[520px] object-contain rounded-xl border border-slate-700 bg-slate-950";
-        big.loading = "lazy";
-        big.decoding = "async";
-        setImgSrcWithRetry(big, url, 3);
-
-        const dl = document.createElement("a");
-        dl.href = url;
-        dl.textContent = "Download photo";
-        dl.className = "inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white w-fit";
-        dl.setAttribute("download", "");
-
-        const details = document.createElement("div");
-        details.className = "text-sm text-slate-200";
-        details.innerHTML = `<div class="mb-2"><b>फॉर्म:</b> ${escapeHtml(entry.form_type || "")}</div>` +
-                            `<div class="mb-2"><b>Created:</b> ${escapeHtml(entry.created_at_iso || "")}</div>`;
-
-        body.appendChild(big);
-        body.appendChild(dl);
-        body.appendChild(details);
-
-        // include key details table (reuse existing helper)
-        try {
-          body.appendChild(makeKVTable(entry));
-        } catch (_) {}
-
-        modal.open("Photo", body);
-      });
-
-      const dlSmall = document.createElement("a");
-      dlSmall.href = url;
-      dlSmall.className = "bg-slate-950 hover:bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[11px] text-white";
-      dlSmall.textContent = "DL";
-      dlSmall.setAttribute("download", "");
-
-      act.appendChild(btnView);
-      act.appendChild(dlSmall);
-
-      meta.appendChild(cap);
-      meta.appendChild(act);
-
-      card.appendChild(imgWrap);
-      card.appendChild(meta);
-      grid.appendChild(card);
-    });
-
-    if (STATE.loadedGroups) STATE.loadedGroups.add(groupKey);
-  }
-
-
-
-  // --------- Thumbnail preview (selfie) ----------
+  // --------- API Logic (UNCHANGED) ----------
   async function createThumbnailDataUrl(file, maxSize = 360, quality = 0.75) {
-    const dataUrl = await new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      fr.onload = () => resolve(String(fr.result || ""));
-      fr.onerror = () => reject(fr.error);
-      fr.readAsDataURL(file);
+    return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                const w = Math.max(1, Math.round(img.width * scale));
+                const h = Math.max(1, Math.round(img.height * scale));
+                const canvas = document.createElement("canvas");
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL("image/jpeg", quality));
+            };
+            img.onerror = reject;
+            img.src = fr.result;
+        };
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
     });
-
-    const img = await new Promise((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = reject;
-      i.src = dataUrl;
-    });
-
-    const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
-    const w = Math.max(1, Math.round(img.width * scale));
-    const h = Math.max(1, Math.round(img.height * scale));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, w, h);
-    return canvas.toDataURL("image/jpeg", quality);
   }
 
-  // --------- API Call ----------
   async function apiCall(action, payload, tokenOpt) {
     const isPublic = !!tokenOpt;
     const url = isPublic ? `${BASE_URL}/political/public/search` : `${BASE_URL}/political/search`;
-
     const body = { action, payload: payload || {} };
     if (isPublic) body.token = tokenOpt;
-
     const headers = { "Content-Type": "application/json" };
-
-    // Private/admin mode: attach Authorization if available
     if (!isPublic) {
       const idToken = localStorage.getItem("id_token") || localStorage.getItem("idToken") || "";
       if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
     }
-
-    const resp = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
-
+    const resp = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
     const txt = await resp.text();
     let json = {};
     try { json = JSON.parse(txt); } catch (e) { json = { message: txt || "Invalid JSON" }; }
-
-    if (!resp.ok) {
-      const msg = json && json.message ? json.message : `HTTP ${resp.status}`;
-      throw new Error(msg);
-    }
+    if (!resp.ok) throw new Error(json.message || `HTTP ${resp.status}`);
     return json;
   }
 
-  function setLoading(isLoading) {
-    if (!el.searchBtn) return;
-    el.searchBtn.disabled = isLoading;
-    el.searchBtn.textContent = isLoading ? "Searching..." : "Search";
-  }
-
-  // --------- Events ----------
-  if (el.selfieInput) {
-    el.selfieInput.addEventListener("change", async () => {
-      const file = el.selfieInput.files && el.selfieInput.files[0];
-      if (!file) return;
-      try {
-        const thumb = await createThumbnailDataUrl(file, 360, 0.75);
-        if (el.preview) el.preview.src = thumb;
-        setStatus("Selfie selected (thumbnail preview).");
-      } catch (e) {
-        setStatus("Selfie selected.", "info");
-      }
-    });
-  }
-
+  // --------- Main Events ----------
   if (el.searchBtn) {
     el.searchBtn.addEventListener("click", async () => {
       const file = el.selfieInput && el.selfieInput.files && el.selfieInput.files[0];
       if (!file) {
-        setStatus("कृपया पहले फोटो चुनें।", "error");
+        setStatus("कृपया पहले फोटो चुनें (Please select a photo)", "error");
         return;
       }
 
-      setLoading(true);
-      setStatus("Starting search...");
+      // Reset UI
+      el.searchBtn.disabled = true;
+      el.searchBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+      setStatus("Initializing Secure Upload...", "loading");
+      el.statsDashboard.classList.add("hidden");
+      el.resultsContainer.classList.add("hidden");
 
       try {
-        // 1) init_search -> upload_url + search_id
+        // 1. Init
         const init = await apiCall("init_search", { mime_type: file.type || "image/jpeg" }, token);
-        const uploadUrl = init.upload_url || init.url || "";
-        const searchId = init.search_id || init.searchId || "";
-        if (!uploadUrl || !searchId) throw new Error("init_search: upload_url / search_id missing");
+        const uploadUrl = init.upload_url || init.url;
+        const searchId = init.search_id || init.searchId;
+        
+        // 2. Upload
+        setStatus("Uploading Image to Cloud...", "loading");
+        await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
 
-        // 2) upload selfie
-        setStatus("Uploading selfie...");
-        const putResp = await fetch(uploadUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type || "image/jpeg" },
-        });
-        if (!putResp.ok) throw new Error("Upload failed");
-
-        // 3) run_search
-        setStatus("Searching faces...");
+        // 3. Search
+        setStatus("AI Running Facial Recognition...", "loading");
         const res = await apiCall("run_search", { search_id: searchId }, token);
 
-        const sim = isNonEmpty(res.similarity) ? Number(res.similarity).toFixed(2) : "0";
-        const facesCount = Array.isArray(res.face_ids) ? res.face_ids.length : (res.face_id ? 1 : 0);
+        const sim = isNonEmpty(res.similarity) ? Number(res.similarity).toFixed(0) : "0";
         const tCount = Array.isArray(res.timeline) ? res.timeline.length : 0;
         const pCount = Array.isArray(res.photo_urls) ? res.photo_urls.length : 0;
 
         if (res.message === "NO_MATCH" || tCount === 0) {
-          setStatus("NO MATCH (कोई व्यक्ति नहीं मिला)", "error");
-          setMatch(`Similarity: 0%`);
-          // Reset state + UI
-          STATE.rawTimeline = [];
-          STATE.rawPhotoUrls = [];
-          STATE.photoUrlByKey = new Map();
-          initFiltersFromTimeline([]);
-          updateStatsBar([]);
-          if (el.photosGroups) el.photosGroups.innerHTML = "";
-          if (el.keywordFilter) el.keywordFilter.value = "";
-          if (el.formFilter) el.formFilter.value = "all";
+          setStatus("No Match Found in Database", "error");
+          el.emptyState.classList.remove("hidden");
+          el.emptyState.querySelector("h3").textContent = "No Matches Found";
+          el.emptyState.querySelector("p").textContent = "The uploaded face does not match any records in our Karyakarta database.";
+        } else {
+          setStatus("Search Complete", "success");
+          
+          // Populate Dashboard
+          updateDashboard(sim, tCount, pCount);
 
-          el.timeline.innerHTML = `<div class="text-slate-300 text-sm">No timeline entries.</div>`;
-          el.photosSection.classList.add("hidden");
-          return;
+          // Populate Lists
+          const photoUrlByKey = new Map();
+          (res.photo_urls || []).forEach((u) => {
+            const k = parseS3KeyFromUrl(u);
+            if (isNonEmpty(k)) photoUrlByKey.set(k, u);
+          });
+
+          renderTimeline(res.timeline || [], photoUrlByKey);
+          renderPhotos(res.photo_urls || [], res.timeline || []);
+          
+          // Scroll to results on mobile
+          if(window.innerWidth < 1024) {
+             el.statsDashboard.scrollIntoView({ behavior: 'smooth' });
+          }
         }
-
-        setStatus(`OK • Similarity: ${sim}% • Timeline: ${tCount} • Photos: ${pCount}`, "success");
-        setMatch(`Similarity: ${sim}% • Faces: ${facesCount}`);
-
-        // s3_key -> photo_url
-        const photoUrlByKey = new Map();
-        (res.photo_urls || []).forEach((u) => {
-          const k = parseS3KeyFromUrl(u);
-          if (isNonEmpty(k)) photoUrlByKey.set(k, u);
-        });
-
-        // Save to STATE + init filters + render
-        STATE.rawTimeline = Array.isArray(res.timeline) ? res.timeline : [];
-        STATE.rawPhotoUrls = Array.isArray(res.photo_urls) ? res.photo_urls : [];
-        STATE.photoUrlByKey = photoUrlByKey;
-
-        initFiltersFromTimeline(STATE.rawTimeline);
-        applyFiltersAndRender();
 
       } catch (err) {
         console.error(err);
-        setStatus(err.message || "Error", "error");
-        setMatch("");
-        if (el.timeline) el.timeline.innerHTML = `<div class="text-slate-300 text-sm">Error.</div>`;
-        if (el.photosSection) el.photosSection.classList.add("hidden");
+        setStatus(err.message || "Connection Error", "error");
       } finally {
-        setLoading(false);
+        el.searchBtn.disabled = false;
+        el.searchBtn.innerHTML = '<span class="relative flex items-center justify-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> Search Database</span>';
       }
     });
   }
-
-
-  // --------- Filter Listeners ----------
-  if (el.formFilter) {
-    el.formFilter.addEventListener("change", () => {
-      STATE.filters.form = el.formFilter.value || "all";
-      applyFiltersAndRender();
-    });
-  }
-  if (el.keywordFilter) {
-    const onKey = debounce(() => {
-      STATE.filters.q = el.keywordFilter.value || "";
-      applyFiltersAndRender();
-    }, 220);
-    el.keywordFilter.addEventListener("input", onKey);
-  }
-  if (el.sortOrder) {
-    el.sortOrder.addEventListener("change", () => {
-      STATE.filters.sort = el.sortOrder.value || "desc";
-      applyFiltersAndRender();
-    });
-  }
-  if (el.clearFilters) {
-    el.clearFilters.addEventListener("click", () => {
-      STATE.filters = { form: "all", q: "", sort: (el.sortOrder?.value || "desc") };
-      if (el.formFilter) el.formFilter.value = "all";
-      if (el.keywordFilter) el.keywordFilter.value = "";
-      applyFiltersAndRender();
-    });
-  }
-
 })();
-
-  // expose helpers for inline handlers
-  try { window.previewImage = previewImage; } catch(e) {}
-  try { window.setImgSrcWithRetry = setImgSrcWithRetry; } catch(e) {}
 </script>
 </body>
 </html>

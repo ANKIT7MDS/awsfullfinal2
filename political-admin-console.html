@@ -4,18 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EventLens • Political Admin Console</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗳️</text></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    // Optional helper loader (your project uses chext_loader.js in some pages).
-    // This page works without it; if present, it will still run.
-    (function() {
-      const s = document.createElement('script');
-      s.src = './chext_loader.js';
-      s.async = true;
-      s.onerror = () => {};
-      document.head.appendChild(s);
-    })();
-  </script>
   <style>
     body { background: #0b1220; color: #e5e7eb; }
     .glass { background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
@@ -225,11 +215,7 @@
       { key: "visitor_form", label: "Visitor Form", icon: "🧾" },
       { key: "party_attendance", label: "Party Attendance", icon: "👤" },
       { key: "president_tour_form", label: "President Tour", icon: "🚩" },
-      { key: "mandal_reporting", label: "Mandal Reporting", icon: "📍" },
-      // Optional (only if your backend uses it)
-      { key: "program_info", label: "Program Info", icon: "🗓️" },
-      // Shows items whose form_type is not in the above list (requires All tab to load everything)
-      { key: "other", label: "Other", icon: "🧩" }
+      { key: "mandal_reporting", label: "Mandal Reporting", icon: "📍" }
     ];
 
     // ======= State =======
@@ -263,8 +249,7 @@
         visitor_form: "Visitor",
         party_attendance: "Attendance",
         president_tour_form: "President Tour",
-        mandal_reporting: "Mandal Report",
-        program_info: "Program Info"
+        mandal_reporting: "Mandal Report"
       };
       return map[ft] || ft || "-";
     }
@@ -475,39 +460,24 @@
       lastFetchAt = now;
 
       document.getElementById("subtitle").textContent = `Loading ${currentTab}…`;
-      const tabForFetch = (currentTab === "other") ? "all" : currentTab;
-      document.getElementById("subtitle").textContent = `Loading ${tabForFetch}…`;
       document.getElementById("btnLoadMore").style.display = "none";
 
       try {
         let merged = [];
 
-        if (tabForFetch === "all") {
-          // First try: backend supports "all" when form_type is empty
-          try {
-            const rAll = await fetchOneTab("all", { limit: 400 });
-            if (rAll.items && rAll.items.length) {
-              merged = rAll.items || [];
-              nextKeyByTab["all"] = rAll.next_key;
-            } else {
-              throw new Error("empty");
-            }
-          } catch (eAll) {
-            // Fallback: call each known tab and merge (works even if backend needs form_type)
-            const tabsToLoad = TABS
-              .filter(t => t.key !== "all" && t.key !== "other")
-              .map(t => t.key);
-            const results = await Promise.all(tabsToLoad.map(k => fetchOneTab(k, { limit: 200 })));
-            results.forEach((r, idx) => {
-              const tkey = tabsToLoad[idx];
-              nextKeyByTab[tkey] = r.next_key;
-              merged = merged.concat(r.items || []);
-            });
-          }
+        if (currentTab === "all") {
+          // To avoid backend dependency, call each type and merge
+          const tabsToLoad = TABS.filter(t => t.key !== "all").map(t => t.key);
+          const results = await Promise.all(tabsToLoad.map(k => fetchOneTab(k, { limit: 200 })));
+          results.forEach((r, idx) => {
+            const tkey = tabsToLoad[idx];
+            nextKeyByTab[tkey] = r.next_key;
+            merged = merged.concat(r.items || []);
+          });
         } else {
-          const nk = reset ? null : (nextKeyByTab[tabForFetch] || null);
-          const r = await fetchOneTab(tabForFetch, { limit: 200, next_key: nk });
-          nextKeyByTab[tabForFetch] = r.next_key;
+          const nk = reset ? null : (nextKeyByTab[currentTab] || null);
+          const r = await fetchOneTab(currentTab, { limit: 200, next_key: nk });
+          nextKeyByTab[currentTab] = r.next_key;
           merged = r.items || [];
           if (!reset) {
             // append to existing list (same tab)
@@ -531,17 +501,10 @@
         TABS.forEach(t => {
           const el = document.getElementById("cnt_" + t.key);
           if (!el) return;
-
-          const knownTypes = ["visitor_form","party_attendance","president_tour_form","mandal_reporting","program_info"];
-
           if (t.key === "all") {
             const total = allItems.length;
             const dupTotal = allItems.filter(x => x.duplicate).length;
             el.textContent = `${total} rows • ${dupTotal} dup`;
-          } else if (t.key === "other") {
-            const c = allItems.filter(x => !knownTypes.includes(x.form_type)).length;
-            const d = allItems.filter(x => !knownTypes.includes(x.form_type) && x.duplicate).length;
-            el.textContent = `${c} rows • ${d} dup`;
           } else {
             const c = counts[t.key] || 0;
             const d = dups[t.key] || 0;
@@ -550,7 +513,7 @@
         });
 
         // show load more if we have next key (only in specific tab)
-        if (currentTab !== "all" && currentTab !== "other" && nextKeyByTab[tabForFetch]) {
+        if (currentTab !== "all" && nextKeyByTab[currentTab]) {
           document.getElementById("btnLoadMore").style.display = "inline-flex";
         }
 
@@ -571,9 +534,7 @@
 
       const tabFiltered = (currentTab === "all")
         ? allItems
-        : (currentTab === "other"
-            ? allItems.filter(x => !["visitor_form","party_attendance","president_tour_form","mandal_reporting","program_info"].includes(x.form_type))
-            : allItems.filter(x => x.form_type === currentTab));
+        : allItems.filter(x => x.form_type === currentTab);
 
       filteredItems = tabFiltered.filter(item => {
         if (!matchesQuery(item, q)) return false;
@@ -674,7 +635,7 @@
         .replaceAll("&","&amp;")
         .replaceAll("<","&lt;")
         .replaceAll(">","&gt;")
-        .replaceAll(""","&quot;")
+        .replaceAll("\"","&quot;")
         .replaceAll("'","&#039;");
     }
 

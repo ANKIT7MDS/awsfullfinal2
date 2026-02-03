@@ -17,6 +17,7 @@
           animation: {
             'scan': 'scan 2s linear infinite',
             'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'shimmer': 'shimmer 1.5s infinite linear',
           },
           keyframes: {
             scan: {
@@ -24,6 +25,10 @@
               '10%': { opacity: '1' },
               '90%': { opacity: '1' },
               '100%': { top: '100%', opacity: '0' },
+            },
+            shimmer: {
+              '0%': { backgroundPosition: '-1000px 0' },
+              '100%': { backgroundPosition: '1000px 0' }
             }
           }
         }
@@ -87,6 +92,15 @@
     .tab-inactive:hover {
         color: #e2e8f0;
         border-bottom-color: #334155;
+    }
+
+    /* Skeleton Shimmer */
+    .skeleton {
+      background: #1e293b;
+      background-image: linear-gradient(to right, #1e293b 0%, #334155 20%, #1e293b 40%, #1e293b 100%);
+      background-repeat: no-repeat;
+      background-size: 1000px 100%;
+      animation: shimmer 2s infinite linear forwards;
     }
   </style>
 
@@ -153,6 +167,10 @@
           </div>
         </div>
         <div class="flex items-center gap-4">
+           <!-- Share/Copy Button -->
+           <button id="copySummaryBtn" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700 text-xs font-medium">
+             <i class="fa-regular fa-copy"></i> Copy Summary
+           </button>
            <div id="tokenDisplay" class="hidden md:block px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-xs font-mono text-slate-400">
              <i class="fa-solid fa-shield-halved mr-1 text-emerald-500"></i> Secure
            </div>
@@ -265,6 +283,29 @@
           </div>
         </div>
 
+        <!-- Skeleton Loader (New) -->
+        <div id="skeletonLoader" class="hidden space-y-6">
+           <div class="flex gap-4 mb-8">
+              <div class="w-24 h-8 rounded-lg skeleton"></div>
+              <div class="w-24 h-8 rounded-lg skeleton"></div>
+           </div>
+           <!-- Fake Items -->
+           <div class="pl-8 relative border-l-2 border-slate-800 space-y-8">
+              <div class="relative">
+                 <div class="absolute -left-[39px] top-4 w-4 h-4 rounded-full bg-slate-800 border-2 border-slate-700"></div>
+                 <div class="glass-card rounded-xl p-5 h-32 skeleton"></div>
+              </div>
+              <div class="relative">
+                 <div class="absolute -left-[39px] top-4 w-4 h-4 rounded-full bg-slate-800 border-2 border-slate-700"></div>
+                 <div class="glass-card rounded-xl p-5 h-32 skeleton"></div>
+              </div>
+              <div class="relative">
+                 <div class="absolute -left-[39px] top-4 w-4 h-4 rounded-full bg-slate-800 border-2 border-slate-700"></div>
+                 <div class="glass-card rounded-xl p-5 h-32 skeleton"></div>
+              </div>
+           </div>
+        </div>
+
         <!-- Main Content Area -->
         <div id="resultsContainer" class="hidden flex flex-col min-h-[500px]">
            
@@ -276,6 +317,14 @@
               <button id="btnTabPhotos" class="flex-1 lg:flex-none text-center lg:text-left font-medium border-b-2 pb-3 px-4 transition-all tab-inactive">
                   <i class="fa-regular fa-images mr-2"></i> Photos
               </button>
+           </div>
+
+           <!-- Timeline Filters (New) -->
+           <div id="timelineFilters" class="hidden flex-wrap gap-2 mb-6 animate-fade-in">
+              <button class="filter-btn active px-3 py-1.5 rounded-full text-xs font-medium border border-orange-500 bg-orange-500/20 text-orange-200 transition-all" data-filter="all">All</button>
+              <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="tour">Tours</button>
+              <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="report">Reports</button>
+              <button class="filter-btn px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700 bg-slate-800 text-slate-400 hover:text-white transition-all" data-filter="other">Others</button>
            </div>
 
            <!-- Timeline View -->
@@ -339,8 +388,11 @@
   const token = qs.get("token") || "";   
 
   // State
-  let galleryImages = []; // Array of { url, title, downloadUrl }
+  let galleryImages = []; 
   let currentGalleryIndex = 0;
+  let globalTimelineData = [];
+  let globalPhotoMap = new Map();
+  let currentFilter = 'all';
 
   const el = {
     selfieInput: document.getElementById("selfieInput"),
@@ -349,6 +401,7 @@
     emptyState: document.getElementById("emptyState"),
     statsDashboard: document.getElementById("statsDashboard"),
     resultsContainer: document.getElementById("resultsContainer"),
+    skeletonLoader: document.getElementById("skeletonLoader"),
     
     // Stats
     scoreVal: document.getElementById("scoreVal"),
@@ -362,19 +415,25 @@
     viewTimeline: document.getElementById("viewTimeline"),
     viewPhotos: document.getElementById("viewPhotos"),
     photosGrid: document.getElementById("photosGrid"),
+    timelineFilters: document.getElementById("timelineFilters"),
     
     searchBtn: document.getElementById("searchBtn"),
+    copySummaryBtn: document.getElementById("copySummaryBtn"),
   };
 
   // --------- Tab Logic ----------
   function switchTab(tab) {
     if (tab === 'timeline') {
         el.viewTimeline.classList.remove('hidden');
+        el.timelineFilters.classList.remove('hidden');
+        el.timelineFilters.classList.add('flex');
         el.viewPhotos.classList.add('hidden');
         el.btnTabTimeline.className = "flex-1 lg:flex-none text-center lg:text-left font-bold border-b-2 pb-3 px-4 transition-all tab-active";
         el.btnTabPhotos.className = "flex-1 lg:flex-none text-center lg:text-left font-medium border-b-2 pb-3 px-4 transition-all tab-inactive";
     } else {
         el.viewTimeline.classList.add('hidden');
+        el.timelineFilters.classList.add('hidden');
+        el.timelineFilters.classList.remove('flex');
         el.viewPhotos.classList.remove('hidden');
         el.btnTabTimeline.className = "flex-1 lg:flex-none text-center lg:text-left font-medium border-b-2 pb-3 px-4 transition-all tab-inactive";
         el.btnTabPhotos.className = "flex-1 lg:flex-none text-center lg:text-left font-bold border-b-2 pb-3 px-4 transition-all tab-active";
@@ -383,6 +442,62 @@
 
   el.btnTabTimeline.addEventListener('click', () => switchTab('timeline'));
   el.btnTabPhotos.addEventListener('click', () => switchTab('photos'));
+
+  // --------- Filter Logic ----------
+  function initFilters() {
+    const btns = el.timelineFilters.querySelectorAll('.filter-btn');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // UI
+        btns.forEach(b => {
+          b.classList.remove('border-orange-500', 'bg-orange-500/20', 'text-orange-200');
+          b.classList.add('border-slate-700', 'bg-slate-800', 'text-slate-400');
+        });
+        btn.classList.remove('border-slate-700', 'bg-slate-800', 'text-slate-400');
+        btn.classList.add('border-orange-500', 'bg-orange-500/20', 'text-orange-200');
+        
+        // Logic
+        currentFilter = btn.dataset.filter;
+        applyFilter();
+      });
+    });
+  }
+
+  function applyFilter() {
+    if (!globalTimelineData.length) return;
+    
+    let filtered = globalTimelineData;
+    if (currentFilter !== 'all') {
+      filtered = globalTimelineData.filter(item => {
+        const type = (item.form_type || "").toLowerCase();
+        const data = item.data || {};
+        const pType = (data.program_type || "").toLowerCase();
+
+        if (currentFilter === 'tour') return type.includes('tour') || pType.includes('tour');
+        if (currentFilter === 'report') return type.includes('mandal') || type.includes('report');
+        if (currentFilter === 'other') return !type.includes('tour') && !pType.includes('tour') && !type.includes('mandal') && !type.includes('report');
+        return true;
+      });
+    }
+    renderTimeline(filtered, globalPhotoMap);
+  }
+
+  // --------- Copy Logic ----------
+  if (el.copySummaryBtn) {
+    el.copySummaryBtn.addEventListener('click', () => {
+      const score = el.scoreVal.textContent;
+      const events = el.eventCountVal.textContent;
+      const photos = el.photoCountVal.textContent;
+      
+      const text = `*EventLens Search Result*\nSimilarity: ${score}\nEvents Found: ${events}\nPhotos Found: ${photos}\n\nGenerated by EventLens AI`;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        const originalHtml = el.copySummaryBtn.innerHTML;
+        el.copySummaryBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(() => el.copySummaryBtn.innerHTML = originalHtml, 2000);
+      });
+    });
+  }
 
   // --------- Modal & Carousel Logic ----------
   const modal = (() => {
@@ -476,7 +591,6 @@
         showGalleryImage(currentGalleryIndex + 1);
     });
 
-    // Keyboard support
     document.addEventListener('keydown', (e) => {
         if(wrap.classList.contains('hidden')) return;
         if(e.key === 'ArrowLeft') showGalleryImage(currentGalleryIndex - 1);
@@ -513,8 +627,15 @@
 
   function updateDashboard(sim, events, photos) {
     el.emptyState.classList.add("hidden");
+    el.skeletonLoader.classList.add("hidden");
     el.statsDashboard.classList.remove("hidden");
     el.resultsContainer.classList.remove("hidden");
+    el.copySummaryBtn.classList.remove("hidden"); // Show copy btn
+    
+    // Init filters
+    el.timelineFilters.classList.remove("hidden");
+    el.timelineFilters.classList.add("flex");
+    initFilters();
 
     el.scoreVal.textContent = sim + "%";
     el.scoreBar.style.width = sim + "%";
@@ -611,7 +732,7 @@
   function renderTimeline(timeline, photoUrlByKey) {
     el.viewTimeline.innerHTML = "";
     if (!Array.isArray(timeline) || timeline.length === 0) {
-      el.viewTimeline.innerHTML = `<div class="text-center py-10 text-slate-500">No events found in timeline.</div>`;
+      el.viewTimeline.innerHTML = `<div class="text-center py-10 text-slate-500">No events found for filter: ${currentFilter}.</div>`;
       return;
     }
 
@@ -624,7 +745,7 @@
 
       const wrapper = document.createElement("div");
       wrapper.className = "relative pl-8 group animate-[pulse-slow_0.5s_ease-out]";
-      wrapper.style.animationDelay = `${index * 100}ms`;
+      wrapper.style.animationDelay = `${index * 50}ms`; // faster stagger
 
       const dot = document.createElement("div");
       dot.className = "absolute left-[13px] top-6 w-4 h-4 rounded-full bg-slate-900 border-2 border-slate-600 group-hover:border-orange-500 group-hover:bg-orange-900 transition-colors z-10";
@@ -718,10 +839,8 @@
     });
 
     Array.from(byKey.entries()).forEach(([k, url], idx) => {
-      const title = labelByKey.get(k) || "Event Photo";
-      
       // Store for slideshow
-      galleryImages.push({ url, title, id: k });
+      galleryImages.push({ url, title: labelByKey.get(k) || "Event Photo", id: k });
 
       const wrapper = document.createElement("div");
       wrapper.className = "group relative aspect-square rounded-xl overflow-hidden bg-slate-900 border border-slate-700 cursor-pointer active:scale-95 transition-transform";
@@ -771,9 +890,13 @@
 
       el.searchBtn.disabled = true;
       el.searchBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
-      setStatus("Initializing...", "loading");
+      setStatus("Analyzing...", "loading");
+      
+      // Toggle views: Show skeleton, Hide others
+      el.emptyState.classList.add("hidden");
       el.statsDashboard.classList.add("hidden");
       el.resultsContainer.classList.add("hidden");
+      el.skeletonLoader.classList.remove("hidden");
 
       try {
         const init = await apiCall("init_search", { mime_type: file.type || "image/jpeg" }, token);
@@ -781,7 +904,7 @@
         const searchId = init.search_id || init.searchId;
         
         await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-        setStatus("AI Matching...", "loading");
+        setStatus("Searching...", "loading");
         const res = await apiCall("run_search", { search_id: searchId }, token);
 
         const sim = isNonEmpty(res.similarity) ? Number(res.similarity).toFixed(0) : "0";
@@ -790,20 +913,27 @@
 
         if (res.message === "NO_MATCH" || tCount === 0) {
           setStatus("No Match Found", "error");
+          el.skeletonLoader.classList.add("hidden");
           el.emptyState.classList.remove("hidden");
           el.emptyState.querySelector("h3").textContent = "No Matches Found";
           el.emptyState.querySelector("p").textContent = "The uploaded face does not match any records.";
         } else {
           setStatus("Success", "success");
-          updateDashboard(sim, tCount, pCount);
-
-          const photoUrlByKey = new Map();
+          
+          // Store global data for filters
+          globalTimelineData = res.timeline || [];
+          
+          // Process photos map
+          globalPhotoMap = new Map();
           (res.photo_urls || []).forEach((u) => {
             const k = parseS3KeyFromUrl(u);
-            if (isNonEmpty(k)) photoUrlByKey.set(k, u);
+            if (isNonEmpty(k)) globalPhotoMap.set(k, u);
           });
 
-          renderTimeline(res.timeline || [], photoUrlByKey);
+          // Render with default 'All' filter
+          currentFilter = 'all';
+          updateDashboard(sim, tCount, pCount);
+          applyFilter(); 
           renderPhotos(res.photo_urls || [], res.timeline || []);
           
           // Default to Timeline tab
@@ -817,6 +947,7 @@
       } catch (err) {
         console.error(err);
         setStatus(err.message || "Connection Error", "error");
+        el.skeletonLoader.classList.add("hidden"); // hide skeleton on error
       } finally {
         el.searchBtn.disabled = false;
         el.searchBtn.innerHTML = '<span class="relative flex items-center justify-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> Search Database</span>';

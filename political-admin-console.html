@@ -88,6 +88,9 @@
     </nav>
     
     <div class="p-4 border-t border-slate-800 space-y-3">
+        <button onclick="checkDbStats()" class="w-full bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-medium py-2 rounded-lg transition border border-cyan-600">
+            <i class="fa-solid fa-stethoscope mr-1"></i> Check DB Status
+        </button>
         <button onclick="createTestEntry()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium py-2 rounded-lg transition border border-indigo-500/50 shadow-lg shadow-indigo-500/20">
             <i class="fa-solid fa-flask mr-1"></i> Create Test Record
         </button>
@@ -129,6 +132,27 @@
         
         <!-- DATA VIEW (Tables) -->
         <div id="dataView" class="absolute inset-0 p-6 overflow-auto custom-scrollbar">
+            
+            <!-- Diagnostic Panel (Hidden by default) -->
+            <div id="diagnosticPanel" class="hidden mb-6 p-4 bg-slate-900 border border-slate-700 rounded-xl relative">
+                <button onclick="document.getElementById('diagnosticPanel').classList.add('hidden')" class="absolute top-2 right-2 text-slate-500 hover:text-white"><i class="fa-solid fa-times"></i></button>
+                <h4 class="text-orange-400 text-sm font-bold mb-2"><i class="fa-solid fa-bug"></i> DB Diagnostics</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                    <div class="bg-slate-800 p-2 rounded">
+                        <span class="block text-slate-500">Total Entries (Stats)</span>
+                        <span class="block text-white text-lg font-bold" id="diagTotal">Checking...</span>
+                    </div>
+                    <div class="bg-slate-800 p-2 rounded">
+                        <span class="block text-slate-500">Forms Found</span>
+                        <span class="block text-white" id="diagForms">...</span>
+                    </div>
+                    <div class="bg-slate-800 p-2 rounded col-span-2">
+                        <span class="block text-slate-500">Status Message</span>
+                        <span class="block text-white font-mono" id="diagMsg">Waiting...</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="glass rounded-xl overflow-hidden shadow-2xl min-h-[300px]">
                 <table class="w-full text-left border-collapse">
                 <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold sticky top-0 z-10 shadow-lg">
@@ -146,11 +170,16 @@
                     </div>
                     <h3 class="text-slate-400 font-medium">No Records Found</h3>
                     <p class="text-slate-500 text-xs mt-2 max-w-md mx-auto">
-                        We checked the database for CID <span class="font-mono bg-slate-800 px-1 rounded text-orange-400" id="emptyStateCid">...</span> but found 0 entries.
+                        API returned 0 items. Ensure you are using the exact CID: <span class="font-mono bg-slate-800 px-1 rounded text-orange-400" id="emptyStateCid">...</span>
                     </p>
-                    <button onclick="createTestEntry()" class="mt-6 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg transition">
-                        Create Test Record to Verify System
-                    </button>
+                    <div class="flex justify-center gap-3 mt-6">
+                        <button onclick="checkDbStats()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition">
+                            Run Diagnostics
+                        </button>
+                        <button onclick="createTestEntry()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg transition">
+                            Create Test Record
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="mt-4 text-xs text-slate-500 flex justify-between items-center">
@@ -587,6 +616,44 @@
           console.error(err);
           tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-red-400">Error loading data. <br><span class="text-xs">${err.message}</span></td></tr>`; 
       }
+    }
+
+    // --- Diagnostic Function ---
+    async function checkDbStats() {
+        if(!collectionId) return;
+        const panel = document.getElementById('diagnosticPanel');
+        panel.classList.remove('hidden');
+        document.getElementById('diagMsg').innerText = "Querying Stats API...";
+        document.getElementById('diagTotal').innerText = "...";
+        document.getElementById('diagForms').innerText = "...";
+
+        try {
+            const res = await apiCall('/political/public/forms', {
+                action: "admin_stats",
+                payload: {
+                    collection_id: collectionId,
+                    start_ms: "0"
+                }
+            });
+            
+            document.getElementById('diagTotal').innerText = res.total || 0;
+            document.getElementById('diagMsg').innerText = res.message;
+            
+            if(res.counts) {
+                document.getElementById('diagForms').innerText = Object.keys(res.counts).join(", ") || "None";
+            } else {
+                document.getElementById('diagForms').innerText = "No counts returned";
+            }
+            
+            if((res.total || 0) > 0) {
+                showToast(`Diagnostics found ${res.total} records! List view might be filtering them out.`, "success");
+            } else {
+                showToast("Diagnostics confirms 0 records in DB.", "info");
+            }
+
+        } catch(e) {
+            document.getElementById('diagMsg').innerText = "Error: " + e.message;
+        }
     }
 
     // --- Rendering & Filtering ---

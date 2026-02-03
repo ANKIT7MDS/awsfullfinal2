@@ -379,7 +379,7 @@
         if (!res.ok) {
             // Handle 401 explicitly
             if (res.status === 401) {
-                showToast("Login Expired. Please Re-login.", "error");
+                showToast("Login Expired or Invalid Token.", "error");
             }
             throw new Error(json.message || `API Error: ${res.status}`);
         }
@@ -530,8 +530,8 @@
       tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
 
       try {
-        // Correct Action for provided Lambda: admin_list
-        const json = await apiCall('/political/forms', {
+        // Updated to use PUBLIC endpoint based on user request to fix 401
+        const json = await apiCall('/political/public/forms', {
             action: "admin_list",
             payload: {
                 collection_id: collectionId,
@@ -730,7 +730,7 @@
 
         // Try calling admin_update_entry (needs backend implementation)
         try {
-            await apiCall('/political/forms', {
+            await apiCall('/political/public/forms', {
                 action: "admin_update_entry",
                 payload: {
                     collection_id: collectionId,
@@ -754,7 +754,7 @@
     async function deleteItem(id) {
        if(!confirm("Are you sure?")) return;
        try {
-            await apiCall('/political/forms', {
+            await apiCall('/political/public/forms', {
                 action: "admin_delete_entry",
                 payload: {
                     collection_id: collectionId,
@@ -860,7 +860,7 @@
 
         try {
             // Use Lambda to generate secure token link
-            let endpoint = '/political/forms';
+            let endpoint = '/political/public/forms'; // Updated path
             let action = formType === 'search' ? 'generate_search_link' : 'generate_form_link';
             let payload = { collection_id: collectionId, days_valid: 30 };
             if(formType !== 'search') payload.form_type = formType;

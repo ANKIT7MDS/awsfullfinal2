@@ -88,7 +88,7 @@
     </nav>
     
     <div class="p-4 border-t border-slate-800">
-        <button onclick="loadData()" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 text-sm font-medium py-2 rounded-lg transition"><i class="fa-solid fa-sync mr-1"></i> Refresh Data</button>
+        <button onclick="loadData(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 text-sm font-medium py-2 rounded-lg transition"><i class="fa-solid fa-sync mr-1"></i> Refresh Data</button>
     </div>
   </aside>
 
@@ -143,9 +143,12 @@
                     <p class="text-slate-500 text-xs mt-1">Try refreshing or changing the filter.</p>
                 </div>
             </div>
-            <div class="mt-4 text-xs text-slate-500 flex justify-between">
+            <div class="mt-4 text-xs text-slate-500 flex justify-between items-center">
                 <span id="recordCount">0 Records</span>
-                <span>Last Updated: <span id="lastUpdated">Just now</span></span>
+                <div class="flex flex-col items-end">
+                    <span>Last Updated: <span id="lastUpdated">Just now</span></span>
+                    <span id="debugTypes" class="text-[10px] text-slate-600 mt-1"></span>
+                </div>
             </div>
         </div>
 
@@ -500,46 +503,55 @@
         document.getElementById('settingsView').classList.add('hidden');
         document.getElementById('dataView').classList.remove('hidden');
         document.getElementById('dataControls').classList.remove('hidden');
-        loadData();
+        loadData(true);
       }
     }
 
-    // --- Data Loading ---
-    async function loadData() {
+    // --- Data Loading (FIXED: Fetch ALL and filter client side) ---
+    async function loadData(showLoading = true) {
       if(!collectionId) return;
       const tbody = document.getElementById('tableBody');
       const thead = document.getElementById('tableHeaderRow');
       const schema = SCHEMAS[currentTab];
       
+      // Render Header
       thead.innerHTML = schema.headers.map((h, index) => 
         `<th class="p-4 border-b border-slate-700 whitespace-nowrap" onclick="sortTable(${index}, '${h}')">
             ${h} <i class="fa-solid fa-sort text-slate-600 text-[10px] ml-1"></i>
          </th>`
       ).join('');
 
-      tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
-
-      // Map tab ID to actual DB form_type
-      let dbFormType = currentTab;
-      if(currentTab === 'program_info') dbFormType = 'program_info_form';
-      if(currentTab === 'coordinator_entry') dbFormType = 'coordinator_entry_form';
-      if(currentTab === 'president_tour') dbFormType = 'president_tour_form';
+      if(showLoading) {
+          tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
+      }
 
       try {
-        // Updated to use PUBLIC endpoint based on user request to fix 401
+        // STRATEGY: Fetch "all" to avoid strict filtering on backend if naming is mismatched
         const json = await apiCall('/political/public/forms', {
             action: "admin_list",
             payload: {
                 collection_id: collectionId,
-                form_type: dbFormType, 
-                limit: 100,
+                form_type: "all", // Fetch everything, filter later
+                limit: 500, // Fetch more to ensure we catch relevant items
                 start_ms: "0" // Fetch all history
             }
         });
         
-        rawData = (json.items || []);
-        filteredData = [...rawData];
+        const allItems = (json.items || []);
         
+        // Debug info about types found
+        const typesFound = [...new Set(allItems.map(i => i.form_type || i.ft || 'unknown'))];
+        document.getElementById('debugTypes').textContent = `DB Types: ${typesFound.join(', ')}`;
+
+        // Client-side filtering to match current tab flexibly
+        // Match either "program_info" OR "program_info_form"
+        rawData = allItems.filter(item => {
+            const ft = (item.form_type || item.ft || '').toLowerCase();
+            const tab = currentTab.toLowerCase();
+            return ft === tab || ft === `${tab}_form` || ft === tab.replace('_form', '');
+        });
+
+        filteredData = [...rawData];
         renderTable();
         document.getElementById('lastUpdated').innerText = new Date().toLocaleTimeString();
       } catch(err) { 
@@ -738,7 +750,7 @@
             });
             showToast("Updated Successfully!");
             closeModal();
-            loadData();
+            loadData(false);
         } catch(e) {
             console.error(e);
             showToast("Update Failed: " + e.message, "error");
@@ -760,7 +772,7 @@
                 }
             });
             showToast("Deleted Successfully!");
-            loadData();
+            loadData(false);
        } catch(e) {
             console.error(e);
             showToast("Delete Failed: " + e.message, "error");

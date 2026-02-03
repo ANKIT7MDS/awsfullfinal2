@@ -40,6 +40,7 @@
     #toast.show { transform: translateX(0); }
     #toast.success { border-color: #22c55e; }
     #toast.error { border-color: #ef4444; }
+    #toast.info { border-color: #3b82f6; }
   </style>
 </head>
 <body class="h-screen flex overflow-hidden">
@@ -205,35 +206,35 @@
                             </div>
 
                             <button onclick="saveSettings()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition w-full mt-2 shadow-lg shadow-orange-500/20">
-                                <i class="fa-solid fa-save mr-1"></i> Save Configuration
+                                <i class="fa-solid fa-floppy-disk mr-1"></i> Save Configuration
                             </button>
-                            <p class="text-[10px] text-slate-500 text-center mt-1">Settings are saved locally for this Collection ID.</p>
+                            <p class="text-[10px] text-slate-500 text-center mt-1">Settings are saved locally (Browser) for this CID.</p>
                         </div>
                     </div>
 
                     <!-- Links Generator -->
                     <div class="glass rounded-xl p-6">
-                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Public Form Links</h3>
+                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Public Form Links (Token Based)</h3>
                         <div class="space-y-3">
                             <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
                                 <span class="text-sm text-slate-300"><i class="fa-solid fa-calendar-days w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Event Details</span>
-                                <button onclick="copyLink('political_program_info_form.html', 'program_info')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                                <button onclick="copyLink('political_program_info_form.html', 'program_info')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
                             </div>
                             <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
                                 <span class="text-sm text-slate-300"><i class="fa-solid fa-users-gear w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Coordinator</span>
-                                <button onclick="copyLink('political_coordinator_entry_form.html', 'coordinator_entry')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                                <button onclick="copyLink('political_coordinator_entry_form.html', 'coordinator_entry')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
                             </div>
                             <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
                                 <span class="text-sm text-slate-300"><i class="fa-solid fa-clipboard-check w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Reporting</span>
-                                <button onclick="copyLink('political_mandal_reporting_form.html', 'mandal_reporting')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                                <button onclick="copyLink('political_mandal_reporting_form.html', 'mandal_reporting')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
                             </div>
                             <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
                                 <span class="text-sm text-slate-300"><i class="fa-solid fa-plane-departure w-6 text-center text-slate-500 group-hover:text-orange-400"></i> President Tour</span>
-                                <button onclick="copyLink('political_president_tour_form.html', 'president_tour')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                                <button onclick="copyLink('political_president_tour_form.html', 'president_tour')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
                             </div>
                             <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
                                 <span class="text-sm text-slate-300"><i class="fa-solid fa-user-group w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Visitor Form</span>
-                                <button onclick="copyLink('political_visitor_form.html', 'visitor_form')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
+                                <button onclick="copyLink('political_visitor_form.html', 'visitor_form')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
                             </div>
                             <!-- Search Link -->
                             <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group border-t border-slate-800 mt-2 pt-3">
@@ -303,14 +304,14 @@
   <div id="editModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
     <div class="modal-content glass w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-        <h3 class="font-bold text-lg text-white">Edit Entry</h3>
+        <h3 class="font-bold text-lg text-white">Edit Entry (Preview)</h3>
         <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
       </div>
       <div class="p-6 overflow-y-auto space-y-4" id="modalForm"></div>
       <div class="p-5 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
         <button onclick="closeModal()" class="px-5 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Cancel</button>
         <button onclick="saveChanges()" id="btnSave" class="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-lg shadow-orange-500/20 transition flex items-center gap-2">
-            <span>Save Changes</span>
+            <span>Simulate Save</span>
         </button>
       </div>
     </div>
@@ -336,7 +337,7 @@
         document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
     } else {
         document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
-        loadSettings(); // Load Branding from Local/API
+        loadSettings(); // Load Branding from Local
         loadData();
     }
 
@@ -344,10 +345,14 @@
     function showToast(msg, type = 'success') {
       const t = document.getElementById('toast');
       t.className = `show ${type}`;
+      let icon = 'fa-circle-check text-green-500';
+      if(type === 'error') icon = 'fa-circle-exclamation text-red-500';
+      if(type === 'info') icon = 'fa-circle-info text-blue-500';
+      
       t.innerHTML = `
-        <i class="fa-solid ${type === 'success' ? 'fa-circle-check text-green-500' : 'fa-circle-exclamation text-red-500'} text-xl"></i>
+        <i class="fa-solid ${icon} text-xl"></i>
         <div>
-          <h4 class="font-bold text-sm">${type === 'success' ? 'Success' : 'Error'}</h4>
+          <h4 class="font-bold text-sm">${type === 'success' ? 'Success' : (type==='error'?'Error':'Info')}</h4>
           <p class="text-xs text-slate-300">${msg}</p>
         </div>
       `;
@@ -369,7 +374,7 @@
       }
     }
 
-    // --- Data Schemas ---
+    // --- Data Schemas (Updated Keys) ---
     const SCHEMAS = {
       'program_info': {
         title: 'Event Details',
@@ -510,7 +515,7 @@
       tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
 
       try {
-        // Use the 'action' wrapper pattern expected by the lambda
+        // Correct Action for provided Lambda: admin_list
         const json = await apiCall('/political/forms', {
             action: "admin_list",
             payload: {
@@ -569,8 +574,8 @@
                     <button onclick="openEdit('${item.entry_id}')" class="text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition mr-2">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </button>
-                    <!-- Delete not yet supported by Lambda but UI prepared -->
-                    <button onclick="deleteItem('${item.entry_id}')" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition cursor-not-allowed opacity-50" title="Delete coming soon">
+                    <!-- Delete not supported by Backend, showing toast on click -->
+                    <button onclick="deleteItem('${item.entry_id}')" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition" title="Delete Entry">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </td>
@@ -628,7 +633,7 @@
         showToast("Export Started");
     }
 
-    // --- Branding Logic (Local Only for now as per lambda) ---
+    // --- Branding Logic (Local Only) ---
     async function saveSettings() {
         const btn = document.querySelector('button[onclick="saveSettings()"]');
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...';
@@ -642,16 +647,15 @@
             header_bg: document.getElementById('previewHeaderBg').style.backgroundImage.slice(5, -2) || ''
         };
 
-        // Note: Lambda doesn't have explicit update_settings, so we use local storage as fallback/primary
+        // Saving locally because backend update_settings is missing
         localStorage.setItem(`political_branding_${collectionId}`, JSON.stringify(settings));
         showToast("Settings Saved Locally!");
         
-        btn.innerHTML = '<i class="fa-solid fa-save mr-1"></i> Save Configuration';
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Save Configuration';
         btn.disabled = false;
     }
 
     async function loadSettings() {
-        // Fallback to local storage since no API endpoint for settings in provided lambda
         const saved = localStorage.getItem(`political_branding_${collectionId}`);
         if(saved) applySettings(JSON.parse(saved));
     }
@@ -672,7 +676,7 @@
         updatePreview();
     }
 
-    // --- CRUD Operations ---
+    // --- CRUD Operations (Read-Only Warning) ---
     function openEdit(id) {
         const item = rawData.find(i => i.entry_id === id); if(!item) return; editingId = id;
         const formContainer = document.getElementById('modalForm'); formContainer.innerHTML = '';
@@ -681,9 +685,7 @@
         
         fields.forEach(field => {
             if(field.readonly) return;
-            // Lookup value in data, fallback to item root
             const val = (data[field.key] !== undefined) ? data[field.key] : (item[field.key] || '');
-            
             let inputHtml = `<input type="${field.type || 'text'}" id="edit_${field.key}" value="${val}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-orange-500" />`;
             
             if(field.type === 'select') {
@@ -700,7 +702,6 @@
     
     async function saveChanges() {
         const btn = document.getElementById('btnSave');
-        const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
         btn.disabled = true;
 
@@ -712,33 +713,26 @@
             if(el) updatedFields[f.key] = el.value;
         });
 
-        // NOTE: The provided Lambda does not strictly have an 'update' action exposed publicly.
-        // It relies on 'create_entry' logic (put_item) which effectively overwrites if ID exists.
-        // However, 'create_entry' generates NEW ID. 
-        // Real-world: needs 'admin_update_entry' action in lambda.
-        // For now, we simulate success to keep UI working, or attempt 'create_entry' if applicable.
-        
-        // Simulating update via local cache update to reflect changes immediately
+        // Backend Update is missing in lambda, so we simulate UI update
         const itemIndex = rawData.findIndex(i => i.entry_id === editingId);
         if(itemIndex > -1) {
              const d = rawData[itemIndex].data || rawData[itemIndex].payload || {};
              Object.assign(d, updatedFields);
-             // Ensure data/payload sync
              rawData[itemIndex].data = d;
              rawData[itemIndex].payload = d;
              Object.assign(rawData[itemIndex], updatedFields);
         }
 
-        showToast("Local Update Simulated (Lambda Update action required)");
+        showToast("Update Simulated (Backend Read-Only)", "info");
         closeModal();
         renderTable(); 
         
-        btn.innerHTML = originalText;
+        btn.innerHTML = '<span>Simulate Save</span>';
         btn.disabled = false;
     }
 
     async function deleteItem(id) {
-       showToast("Delete functionality requires backend update.", "info");
+       showToast("Backend does not support Delete action yet.", "info");
     }
 
     // --- Image Preview Utils ---

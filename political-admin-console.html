@@ -88,8 +88,8 @@
     </nav>
     
     <div class="p-4 border-t border-slate-800 space-y-3">
-        <button onclick="checkDbStats()" class="w-full bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-medium py-2 rounded-lg transition border border-cyan-600">
-            <i class="fa-solid fa-stethoscope mr-1"></i> Check DB Status
+        <button onclick="runDeepDiagnostics()" class="w-full bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-medium py-2 rounded-lg transition border border-cyan-600">
+            <i class="fa-solid fa-microscope mr-1"></i> Run Deep Diagnostics
         </button>
         <button onclick="createTestEntry()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium py-2 rounded-lg transition border border-indigo-500/50 shadow-lg shadow-indigo-500/20">
             <i class="fa-solid fa-flask mr-1"></i> Create Test Record
@@ -134,21 +134,30 @@
         <div id="dataView" class="absolute inset-0 p-6 overflow-auto custom-scrollbar">
             
             <!-- Diagnostic Panel (Hidden by default) -->
-            <div id="diagnosticPanel" class="hidden mb-6 p-4 bg-slate-900 border border-slate-700 rounded-xl relative">
+            <div id="diagnosticPanel" class="hidden mb-6 p-4 bg-slate-900 border border-slate-700 rounded-xl relative shadow-2xl">
                 <button onclick="document.getElementById('diagnosticPanel').classList.add('hidden')" class="absolute top-2 right-2 text-slate-500 hover:text-white"><i class="fa-solid fa-times"></i></button>
-                <h4 class="text-orange-400 text-sm font-bold mb-2"><i class="fa-solid fa-bug"></i> DB Diagnostics</h4>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                    <div class="bg-slate-800 p-2 rounded">
-                        <span class="block text-slate-500">Total Entries (Stats)</span>
-                        <span class="block text-white text-lg font-bold" id="diagTotal">Checking...</span>
+                <h4 class="text-orange-400 text-sm font-bold mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-bug"></i> Deep Diagnostics Report
+                </h4>
+                <div class="space-y-3 text-xs text-slate-300">
+                    <div class="flex justify-between border-b border-slate-800 pb-1">
+                        <span>Collection ID:</span>
+                        <span class="font-mono text-orange-300" id="diagCid">...</span>
                     </div>
-                    <div class="bg-slate-800 p-2 rounded">
-                        <span class="block text-slate-500">Forms Found</span>
-                        <span class="block text-white" id="diagForms">...</span>
+                    <div class="flex justify-between border-b border-slate-800 pb-1">
+                        <span>API Connection:</span>
+                        <span class="font-bold" id="diagApiStatus">Testing...</span>
                     </div>
-                    <div class="bg-slate-800 p-2 rounded col-span-2">
-                        <span class="block text-slate-500">Status Message</span>
-                        <span class="block text-white font-mono" id="diagMsg">Waiting...</span>
+                    <div class="flex justify-between border-b border-slate-800 pb-1">
+                        <span>Write Permission (Test Entry):</span>
+                        <span class="font-bold" id="diagWriteStatus">Pending...</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1">
+                        <span>Read Verification:</span>
+                        <span class="font-bold" id="diagReadStatus">Pending...</span>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded text-slate-400 font-mono text-[10px] break-all" id="diagRawOutput">
+                        Waiting for results...
                     </div>
                 </div>
             </div>
@@ -173,7 +182,7 @@
                         API returned 0 items. Ensure you are using the exact CID: <span class="font-mono bg-slate-800 px-1 rounded text-orange-400" id="emptyStateCid">...</span>
                     </p>
                     <div class="flex justify-center gap-3 mt-6">
-                        <button onclick="checkDbStats()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition">
+                        <button onclick="runDeepDiagnostics()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition">
                             Run Diagnostics
                         </button>
                         <button onclick="createTestEntry()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg transition">
@@ -619,41 +628,95 @@
     }
 
     // --- Diagnostic Function ---
-    async function checkDbStats() {
+    async function runDeepDiagnostics() {
         if(!collectionId) return;
         const panel = document.getElementById('diagnosticPanel');
         panel.classList.remove('hidden');
-        document.getElementById('diagMsg').innerText = "Querying Stats API...";
-        document.getElementById('diagTotal').innerText = "...";
-        document.getElementById('diagForms').innerText = "...";
+        
+        // Updates status helper
+        const updateStatus = (id, text, colorClass) => {
+            const el = document.getElementById(id);
+            el.innerText = text;
+            if(colorClass) el.className = `font-bold ${colorClass}`;
+        }
+
+        document.getElementById('diagCid').innerText = collectionId;
+        updateStatus('diagApiStatus', 'Testing Connection...', 'text-yellow-400');
+        updateStatus('diagWriteStatus', 'Pending...', 'text-slate-400');
+        updateStatus('diagReadStatus', 'Pending...', 'text-slate-400');
+        document.getElementById('diagRawOutput').innerText = 'Initializing diagnostics...';
 
         try {
-            const res = await apiCall('/political/public/forms', {
+            // Step 1: Check Stats (Read Check)
+            const resStats = await apiCall('/political/public/forms', {
                 action: "admin_stats",
-                payload: {
-                    collection_id: collectionId,
-                    start_ms: "0"
-                }
+                payload: { collection_id: collectionId, start_ms: "0" }
             });
             
-            document.getElementById('diagTotal').innerText = res.total || 0;
-            document.getElementById('diagMsg').innerText = res.message;
+            updateStatus('diagApiStatus', 'Connected (200 OK)', 'text-green-400');
+            document.getElementById('diagRawOutput').innerText += `\n> Stats Check: Total ${resStats.total} entries found.`;
+
+            // Step 2: Create Test Entry (Write Check)
+            updateStatus('diagWriteStatus', 'Attempting Write...', 'text-yellow-400');
+            const testPayload = { name: "Diagnostics Bot", reason: "System Check", created_at: new Date().toISOString() };
             
-            if(res.counts) {
-                document.getElementById('diagForms').innerText = Object.keys(res.counts).join(", ") || "None";
+            const createRes = await apiCall('/political/public/forms', {
+                action: "public_create_entry",
+                payload: {
+                    collection_id: collectionId,
+                    form_type: "visitor_form", // Ensure exact form type
+                    file_name: "diag_test.jpg",
+                    mime_type: "image/jpeg",
+                    payload: testPayload
+                }
+            });
+
+            if(createRes.entry_id) {
+                updateStatus('diagWriteStatus', `Success (ID: ${createRes.entry_id.substring(0,6)}...)`, 'text-green-400');
+                document.getElementById('diagRawOutput').innerText += `\n> Write Success. Entry ID: ${createRes.entry_id}`;
+                
+                // Finalize it
+                await apiCall('/political/public/forms', {
+                    action: "public_finalize_entry",
+                    payload: { finalize_token: createRes.finalize_token, entry_id: createRes.entry_id }
+                });
+                document.getElementById('diagRawOutput').innerText += `\n> Finalized Entry.`;
             } else {
-                document.getElementById('diagForms').innerText = "No counts returned";
+                throw new Error("Create response missing entry_id");
             }
+
+            // Step 3: Verify Read of New Entry
+            updateStatus('diagReadStatus', 'Verifying Read...', 'text-yellow-400');
+            // Slight delay for eventual consistency
+            await new Promise(r => setTimeout(r, 2000));
             
-            if((res.total || 0) > 0) {
-                showToast(`Diagnostics found ${res.total} records! List view might be filtering them out.`, "success");
+            // Fetch list again specifically for visitor_form
+            const listRes = await apiCall('/political/public/forms', {
+                action: "admin_list",
+                payload: { collection_id: collectionId, form_type: "visitor_form", limit: 10, start_ms: "0" }
+            });
+            
+            const found = (listRes.items || []).find(i => i.entry_id === createRes.entry_id);
+            if(found) {
+                updateStatus('diagReadStatus', 'Verified! Data is flowing.', 'text-green-400');
+                document.getElementById('diagRawOutput').innerText += `\n> Read Verification Successful. New entry found in list.`;
+                showToast("Diagnostics Passed! System is healthy.", "success");
+                loadData(true); // Refresh main table
             } else {
-                showToast("Diagnostics confirms 0 records in DB.", "info");
+                updateStatus('diagReadStatus', 'Entry Created but Not Listed yet (Eventual Consistency?)', 'text-orange-400');
+                document.getElementById('diagRawOutput').innerText += `\n> Read Warning: Created entry not yet in list. Check index latency.`;
             }
 
         } catch(e) {
-            document.getElementById('diagMsg').innerText = "Error: " + e.message;
+            console.error(e);
+            updateStatus('diagApiStatus', 'Failed', 'text-red-500');
+            document.getElementById('diagRawOutput').innerText += `\n> ERROR: ${e.message}`;
         }
+    }
+
+    // Kept the old simple check for backward compat if needed
+    async function checkDbStats() {
+       runDeepDiagnostics();
     }
 
     // --- Rendering & Filtering ---
@@ -876,54 +939,9 @@
        }
     }
 
+    // Deprecated simple create
     async function createTestEntry() {
-        if(!collectionId) return showToast("No CID to create test entry", "error");
-        
-        try {
-            showToast("Creating Test Entry...", "info");
-            
-            // This replicates the 'visitor_form' submission
-            const testPayload = {
-                name: "Test Visitor",
-                mobile: "9999999999",
-                district: "Test District",
-                reason: "Diagnostics Check",
-                created_at: new Date().toISOString()
-            };
-
-            // 1. Create Entry
-            const createRes = await apiCall('/political/public/forms', {
-                action: "public_create_entry",
-                payload: {
-                    collection_id: collectionId,
-                    form_type: "visitor_form",
-                    file_name: "test.jpg",
-                    mime_type: "image/jpeg",
-                    payload: testPayload
-                }
-            });
-
-            // 2. Finalize Entry (Assuming no S3 upload for simple text test or just skipping it)
-            if(createRes.entry_id) {
-                await apiCall('/political/public/forms', {
-                    action: "public_finalize_entry",
-                    payload: {
-                        finalize_token: createRes.finalize_token,
-                        entry_id: createRes.entry_id
-                    }
-                });
-                showToast("Test Entry Created! Refreshing...", "success");
-                
-                // Switch to visitor form tab to see it
-                const visitorTab = document.querySelector('.sidebar-link:nth-child(6)'); // Approx index
-                if(visitorTab) visitorTab.click();
-                else loadData(true);
-            }
-
-        } catch(e) {
-            console.error(e);
-            showToast("Test Creation Failed: " + e.message, "error");
-        }
+       runDeepDiagnostics(); // Redirect to the better diagnostics
     }
 
     // --- Image Preview Utils ---

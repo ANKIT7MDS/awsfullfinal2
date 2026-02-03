@@ -304,14 +304,14 @@
   <div id="editModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
     <div class="modal-content glass w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-        <h3 class="font-bold text-lg text-white">Edit Entry (Preview)</h3>
+        <h3 class="font-bold text-lg text-white">Edit Entry</h3>
         <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
       </div>
       <div class="p-6 overflow-y-auto space-y-4" id="modalForm"></div>
       <div class="p-5 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
         <button onclick="closeModal()" class="px-5 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Cancel</button>
         <button onclick="saveChanges()" id="btnSave" class="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-lg shadow-orange-500/20 transition flex items-center gap-2">
-            <span>Simulate Save</span>
+            <span>Save Changes</span>
         </button>
       </div>
     </div>
@@ -361,13 +361,28 @@
 
     async function apiCall(endpoint, body) {
       try {
+        const headers = { 'Content-Type': 'application/json' };
+        
+        // 401 FIX: Add Authorization header from localStorage
+        const token = localStorage.getItem('id_token') || localStorage.getItem('idToken');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const res = await fetch(`${BASE_URL}${endpoint}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: headers,
           body: JSON.stringify(body)
         });
+        
         const json = await res.json();
-        if (!res.ok) throw new Error(json.message || `API Error: ${res.status}`);
+        if (!res.ok) {
+            // Handle 401 explicitly
+            if (res.status === 401) {
+                showToast("Login Expired. Please Re-login.", "error");
+            }
+            throw new Error(json.message || `API Error: ${res.status}`);
+        }
         return json;
       } catch (err) {
         throw err;
@@ -574,7 +589,7 @@
                     <button onclick="openEdit('${item.entry_id}')" class="text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition mr-2">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </button>
-                    <!-- Delete not supported by Backend, showing toast on click -->
+                    <!-- Trigger new API actions -->
                     <button onclick="deleteItem('${item.entry_id}')" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition" title="Delete Entry">
                         <i class="fa-solid fa-trash"></i>
                     </button>
@@ -676,7 +691,7 @@
         updatePreview();
     }
 
-    // --- CRUD Operations (Read-Only Warning) ---
+    // --- CRUD Operations (Calling Admin Actions) ---
     function openEdit(id) {
         const item = rawData.find(i => i.entry_id === id); if(!item) return; editingId = id;
         const formContainer = document.getElementById('modalForm'); formContainer.innerHTML = '';
@@ -713,26 +728,46 @@
             if(el) updatedFields[f.key] = el.value;
         });
 
-        // Backend Update is missing in lambda, so we simulate UI update
-        const itemIndex = rawData.findIndex(i => i.entry_id === editingId);
-        if(itemIndex > -1) {
-             const d = rawData[itemIndex].data || rawData[itemIndex].payload || {};
-             Object.assign(d, updatedFields);
-             rawData[itemIndex].data = d;
-             rawData[itemIndex].payload = d;
-             Object.assign(rawData[itemIndex], updatedFields);
+        // Try calling admin_update_entry (needs backend implementation)
+        try {
+            await apiCall('/political/forms', {
+                action: "admin_update_entry",
+                payload: {
+                    collection_id: collectionId,
+                    entry_id: editingId,
+                    form_type: currentTab,
+                    updates: updatedFields
+                }
+            });
+            showToast("Updated Successfully!");
+            closeModal();
+            loadData();
+        } catch(e) {
+            console.error(e);
+            showToast("Update Failed: " + e.message, "error");
+        } finally {
+            btn.innerHTML = '<span>Save Changes</span>';
+            btn.disabled = false;
         }
-
-        showToast("Update Simulated (Backend Read-Only)", "info");
-        closeModal();
-        renderTable(); 
-        
-        btn.innerHTML = '<span>Simulate Save</span>';
-        btn.disabled = false;
     }
 
     async function deleteItem(id) {
-       showToast("Backend does not support Delete action yet.", "info");
+       if(!confirm("Are you sure?")) return;
+       try {
+            await apiCall('/political/forms', {
+                action: "admin_delete_entry",
+                payload: {
+                    collection_id: collectionId,
+                    entry_id: id,
+                    form_type: currentTab
+                }
+            });
+            showToast("Deleted Successfully!");
+            loadData();
+       } catch(e) {
+            console.error(e);
+            showToast("Delete Failed: " + e.message, "error");
+       }
     }
 
     // --- Image Preview Utils ---

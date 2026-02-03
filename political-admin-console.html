@@ -55,7 +55,7 @@
         <i class="fa-solid fa-user-shield text-2xl"></i>
         <div>
             <span class="font-bold text-lg text-white block leading-tight">Admin Console</span>
-            <span class="text-[10px] text-slate-500" id="sidebarCidDisplay">CID: Loading...</span>
+            <span class="text-[10px] text-slate-500 font-mono" id="sidebarCidDisplay">Loading CID...</span>
         </div>
       </div>
     </div>
@@ -87,8 +87,13 @@
       </div>
     </nav>
     
-    <div class="p-4 border-t border-slate-800">
-        <button onclick="loadData(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 text-sm font-medium py-2 rounded-lg transition"><i class="fa-solid fa-sync mr-1"></i> Refresh Data</button>
+    <div class="p-4 border-t border-slate-800 space-y-3">
+        <button onclick="createTestEntry()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium py-2 rounded-lg transition border border-indigo-500/50 shadow-lg shadow-indigo-500/20">
+            <i class="fa-solid fa-flask mr-1"></i> Create Test Record
+        </button>
+        <button onclick="loadData(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 text-xs font-medium py-2 rounded-lg transition border border-slate-700">
+            <i class="fa-solid fa-sync mr-1"></i> Force Refresh
+        </button>
     </div>
   </aside>
 
@@ -99,7 +104,7 @@
       <h2 id="pageTitle" class="text-lg font-semibold text-white">Event Details</h2>
       <div class="flex items-center gap-4">
         <div id="cidWarning" class="hidden px-3 py-1 rounded bg-red-500/10 text-red-400 text-xs border border-red-500/20">
-            <i class="fa-solid fa-circle-exclamation mr-1"></i> No CID
+            <i class="fa-solid fa-circle-exclamation mr-1"></i> No CID Found
         </div>
         
         <!-- Controls for Data View -->
@@ -132,21 +137,26 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody" class="text-sm text-slate-300 divide-y divide-slate-800">
-                    <tr><td class="p-8 text-center text-slate-500">Select a tab to view data...</td></tr>
+                    <tr><td class="p-8 text-center text-slate-500">Initializing...</td></tr>
                 </tbody>
                 </table>
                 <div id="emptyState" class="hidden p-12 text-center">
                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-800 text-slate-600 mb-4">
                         <i class="fa-solid fa-database text-2xl"></i>
                     </div>
-                    <h3 class="text-slate-400 font-medium">No Data Found</h3>
-                    <p class="text-slate-500 text-xs mt-1">Make sure you have finalized entries in your forms.</p>
+                    <h3 class="text-slate-400 font-medium">No Records Found</h3>
+                    <p class="text-slate-500 text-xs mt-2 max-w-md mx-auto">
+                        We checked the database for CID <span class="font-mono bg-slate-800 px-1 rounded text-orange-400" id="emptyStateCid">...</span> but found 0 entries.
+                    </p>
+                    <button onclick="createTestEntry()" class="mt-6 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg transition">
+                        Create Test Record to Verify System
+                    </button>
                 </div>
             </div>
             <div class="mt-4 text-xs text-slate-500 flex justify-between items-center">
                 <span id="recordCount">0 Records</span>
                 <div class="flex flex-col items-end">
-                    <span>Last Updated: <span id="lastUpdated">Just now</span></span>
+                    <span>Last Updated: <span id="lastUpdated">--:--</span></span>
                     <span id="debugInfo" class="text-[10px] text-slate-600 mt-1"></span>
                 </div>
             </div>
@@ -559,6 +569,7 @@
 
         if (allItems.length === 0) {
              console.warn("API returned 0 items. Check if collection_id matches where data was submitted.");
+             document.getElementById('emptyStateCid').textContent = collectionId.substring(0,8) + '...';
         }
 
         // Client-side filtering to match current tab flexibly
@@ -796,6 +807,56 @@
             console.error(e);
             showToast("Delete Failed: " + e.message, "error");
        }
+    }
+
+    async function createTestEntry() {
+        if(!collectionId) return showToast("No CID to create test entry", "error");
+        
+        try {
+            showToast("Creating Test Entry...", "info");
+            
+            // This replicates the 'visitor_form' submission
+            const testPayload = {
+                name: "Test Visitor",
+                mobile: "9999999999",
+                district: "Test District",
+                reason: "Diagnostics Check",
+                created_at: new Date().toISOString()
+            };
+
+            // 1. Create Entry
+            const createRes = await apiCall('/political/public/forms', {
+                action: "public_create_entry",
+                payload: {
+                    collection_id: collectionId,
+                    form_type: "visitor_form",
+                    file_name: "test.jpg",
+                    mime_type: "image/jpeg",
+                    payload: testPayload
+                }
+            });
+
+            // 2. Finalize Entry (Assuming no S3 upload for simple text test or just skipping it)
+            if(createRes.entry_id) {
+                await apiCall('/political/public/forms', {
+                    action: "public_finalize_entry",
+                    payload: {
+                        finalize_token: createRes.finalize_token,
+                        entry_id: createRes.entry_id
+                    }
+                });
+                showToast("Test Entry Created! Refreshing...", "success");
+                
+                // Switch to visitor form tab to see it
+                const visitorTab = document.querySelector('.sidebar-link:nth-child(6)'); // Approx index
+                if(visitorTab) visitorTab.click();
+                else loadData(true);
+            }
+
+        } catch(e) {
+            console.error(e);
+            showToast("Test Creation Failed: " + e.message, "error");
+        }
     }
 
     // --- Image Preview Utils ---

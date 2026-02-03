@@ -477,19 +477,6 @@
       }
     };
 
-    // Init Logic Moved Here to Ensure SCHEMAS is defined
-    if(!collectionId) {
-        document.getElementById('cidWarning').classList.remove('hidden');
-        document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
-    } else {
-        document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
-        // Delay slighty to ensure DOM is ready if needed, though script is at end of body
-        setTimeout(() => {
-            loadSettings(); 
-            loadData();
-        }, 100);
-    }
-
     // --- Tab Switching ---
     function switchTab(tab, el) {
       currentTab = tab;
@@ -897,6 +884,20 @@
             btn.disabled = false;
             setTimeout(() => btn.innerText = origText, 2000);
         }
+    }
+    
+    // --- Initial Load Logic ---
+    // Moved to the end to ensure SCHEMAS and functions are defined
+    if(!collectionId) {
+        document.getElementById('cidWarning').classList.remove('hidden');
+        document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
+    } else {
+        document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
+        // Delay slightly to ensure DOM is ready if needed, though script is at end of body
+        setTimeout(() => {
+            loadSettings(); 
+            loadData();
+        }, 100);
     }
   </script>
 </body>

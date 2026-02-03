@@ -140,14 +140,14 @@
                         <i class="fa-solid fa-database text-2xl"></i>
                     </div>
                     <h3 class="text-slate-400 font-medium">No Data Found</h3>
-                    <p class="text-slate-500 text-xs mt-1">Try refreshing or changing the filter.</p>
+                    <p class="text-slate-500 text-xs mt-1">Make sure you have finalized entries in your forms.</p>
                 </div>
             </div>
             <div class="mt-4 text-xs text-slate-500 flex justify-between items-center">
                 <span id="recordCount">0 Records</span>
                 <div class="flex flex-col items-end">
                     <span>Last Updated: <span id="lastUpdated">Just now</span></span>
-                    <span id="debugTypes" class="text-[10px] text-slate-600 mt-1"></span>
+                    <span id="debugInfo" class="text-[10px] text-slate-600 mt-1"></span>
                 </div>
             </div>
         </div>
@@ -480,6 +480,19 @@
       }
     };
 
+    // Init Logic Moved Here to Ensure SCHEMAS is defined
+    if(!collectionId) {
+        document.getElementById('cidWarning').classList.remove('hidden');
+        document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
+    } else {
+        document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
+        // Delay slightly to ensure DOM is ready if needed, though script is at end of body
+        setTimeout(() => {
+            loadSettings(); 
+            loadData();
+        }, 100);
+    }
+
     // --- Tab Switching ---
     function switchTab(tab, el) {
       currentTab = tab;
@@ -541,7 +554,12 @@
         
         // Debug info about types found
         const typesFound = [...new Set(allItems.map(i => i.form_type || i.ft || 'unknown'))];
-        document.getElementById('debugTypes').textContent = `DB Types: ${typesFound.join(', ')}`;
+        const debugText = typesFound.length ? `DB Types found: ${typesFound.join(', ')}` : 'No data found in DB for this CID.';
+        document.getElementById('debugInfo').textContent = debugText;
+
+        if (allItems.length === 0) {
+             console.warn("API returned 0 items. Check if collection_id matches where data was submitted.");
+        }
 
         // Client-side filtering to match current tab flexibly
         // Match either "program_info" OR "program_info_form"
@@ -575,6 +593,7 @@
 
         filteredData.forEach(item => {
             // Data is inside 'data' key based on lambda response, but let's check both levels
+            // The lambda stores form payload in 'payload' attribute usually.
             const d = item.data || item.payload || item;
             let tds = '';
             

@@ -532,14 +532,21 @@
 
       tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
 
+      // Map tab ID to actual DB form_type
+      let dbFormType = currentTab;
+      if(currentTab === 'program_info') dbFormType = 'program_info_form';
+      if(currentTab === 'coordinator_entry') dbFormType = 'coordinator_entry_form';
+      if(currentTab === 'president_tour') dbFormType = 'president_tour_form';
+
       try {
         // Updated to use PUBLIC endpoint based on user request to fix 401
         const json = await apiCall('/political/public/forms', {
             action: "admin_list",
             payload: {
                 collection_id: collectionId,
-                form_type: currentTab,
-                limit: 100
+                form_type: dbFormType, 
+                limit: 100,
+                start_ms: "0" // Fetch all history
             }
         });
         

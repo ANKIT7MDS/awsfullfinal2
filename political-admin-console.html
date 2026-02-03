@@ -611,13 +611,15 @@
 
       try {
         // STRATEGY: Fetch "all" to avoid strict filtering on backend if naming is mismatched
+        // NEW: Try with scan=true to bypass index if needed, assuming backend supports it or we rely on all fetch
         const json = await apiCall('/political/public/forms', {
             action: "admin_list",
             payload: {
                 collection_id: collectionId,
                 form_type: "all", // Fetch everything, filter later
                 limit: 500, // Fetch more to ensure we catch relevant items
-                start_ms: "0" // Fetch all history
+                start_ms: "0", // Fetch all history
+                scan: true // Hint to backend if supported to use Scan instead of Query
             }
         });
         

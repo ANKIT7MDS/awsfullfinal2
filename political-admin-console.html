@@ -153,8 +153,12 @@
                         <span class="font-bold" id="diagWriteStatus">Pending...</span>
                     </div>
                     <div class="flex justify-between border-b border-slate-800 pb-1">
-                        <span>Read Verification:</span>
+                        <span>Read Verification (Direct):</span>
                         <span class="font-bold" id="diagReadStatus">Pending...</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1">
+                        <span>Read Verification (List):</span>
+                        <span class="font-bold" id="diagListStatus">Pending...</span>
                     </div>
                     <div class="bg-slate-950 p-3 rounded text-slate-400 font-mono text-[10px] break-all" id="diagRawOutput">
                         Waiting for results...
@@ -664,6 +668,7 @@
         updateStatus('diagApiStatus', 'Testing Connection...', 'text-yellow-400');
         updateStatus('diagWriteStatus', 'Pending...', 'text-slate-400');
         updateStatus('diagReadStatus', 'Pending...', 'text-slate-400');
+        updateStatus('diagListStatus', 'Pending...', 'text-slate-400');
         document.getElementById('diagRawOutput').innerText = 'Initializing diagnostics...';
 
         try {
@@ -701,14 +706,33 @@
                     payload: { finalize_token: createRes.finalize_token, entry_id: createRes.entry_id }
                 });
                 document.getElementById('diagRawOutput').innerText += `\n> Finalized Entry.`;
+                
+                // Step 2.5: Verify via Direct Get (Checks if item exists without index latency)
+                updateStatus('diagReadStatus', 'Verifying Direct Get...', 'text-yellow-400');
+                try {
+                    const getRes = await apiCall('/political/public/forms', {
+                        action: "admin_get_entry",
+                        payload: { entry_id: createRes.entry_id }
+                    });
+                    if (getRes && getRes.item) {
+                        updateStatus('diagReadStatus', 'Verified! Item exists.', 'text-green-400');
+                        document.getElementById('diagRawOutput').innerText += `\n> Direct Get Success. Item is in DB.`;
+                    } else {
+                        throw new Error("GetItem returned empty");
+                    }
+                } catch(e) {
+                    updateStatus('diagReadStatus', 'Direct Get Failed', 'text-red-400');
+                    document.getElementById('diagRawOutput').innerText += `\n> Direct Get Error: ${e.message}`;
+                }
+
             } else {
                 throw new Error("Create response missing entry_id");
             }
 
-            // Step 3: Verify Read of New Entry
-            updateStatus('diagReadStatus', 'Verifying Read...', 'text-yellow-400');
+            // Step 3: Verify Read via List (Checks Index Latency)
+            updateStatus('diagListStatus', 'Checking Index...', 'text-yellow-400');
             // Slight delay for eventual consistency
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 5000)); // Increased wait time
             
             // Fetch list again specifically for visitor_form
             const listRes = await apiCall('/political/public/forms', {
@@ -719,13 +743,13 @@
             // Check if our new entry is in the raw response, handling DDB format
             const found = (listRes.items || []).find(i => safeVal(i, 'entry_id') === createRes.entry_id);
             if(found) {
-                updateStatus('diagReadStatus', 'Verified! Data is flowing.', 'text-green-400');
-                document.getElementById('diagRawOutput').innerText += `\n> Read Verification Successful. New entry found in list.`;
+                updateStatus('diagListStatus', 'Verified! Index Active.', 'text-green-400');
+                document.getElementById('diagRawOutput').innerText += `\n> List Verification Successful. New entry found in list.`;
                 showToast("Diagnostics Passed! System is healthy.", "success");
                 loadData(true); // Refresh main table
             } else {
-                updateStatus('diagReadStatus', 'Entry Created but Not Listed yet (Eventual Consistency?)', 'text-orange-400');
-                document.getElementById('diagRawOutput').innerText += `\n> Read Warning: Created entry not yet in list. Check index latency.`;
+                updateStatus('diagListStatus', 'Index Lag Detected', 'text-orange-400');
+                document.getElementById('diagRawOutput').innerText += `\n> Warning: Item exists (Direct Get) but not in List. This usually means DynamoDB GSI Index is lagging or broken.`;
             }
 
         } catch(e) {

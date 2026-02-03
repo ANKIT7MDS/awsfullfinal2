@@ -430,6 +430,25 @@
       }
     }
 
+    // --- Helper to safely extract values from potential DDB formats ---
+    function safeVal(obj, key) {
+        if (!obj) return '';
+        let val = obj[key];
+        
+        // Handle DynamoDB JSON format { S: "value" } or { N: "123" }
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+            if ('S' in val) return val.S;
+            if ('N' in val) return val.N;
+            if ('BOOL' in val) return val.BOOL;
+            if ('M' in val) return val.M; // Recursively handle maps? Usually top-level is enough
+        }
+        
+        // Handle undefined/null
+        if (val === undefined || val === null) return '';
+        
+        return val;
+    }
+
     // --- Data Schemas (Updated Keys) ---
     const SCHEMAS = {
       'program_info': {
@@ -601,7 +620,8 @@
         const allItems = (json.items || []);
         
         // Debug info about types found
-        const typesFound = [...new Set(allItems.map(i => i.form_type || i.ft || 'unknown'))];
+        // Need to handle potentially wrapped values like {S: "visitor_form"} in form_type
+        const typesFound = [...new Set(allItems.map(i => safeVal(i, 'form_type') || safeVal(i, 'ft') || 'unknown'))];
         const debugText = typesFound.length ? `DB Types found: ${typesFound.join(', ')}` : 'No data found in DB for this CID.';
         document.getElementById('debugInfo').textContent = debugText;
 
@@ -613,7 +633,7 @@
         // Client-side filtering to match current tab flexibly
         // Match either "program_info" OR "program_info_form"
         rawData = allItems.filter(item => {
-            const ft = (item.form_type || item.ft || '').toLowerCase();
+            const ft = (safeVal(item, 'form_type') || safeVal(item, 'ft') || '').toLowerCase();
             const tab = currentTab.toLowerCase();
             return ft === tab || ft === `${tab}_form` || ft === tab.replace('_form', '');
         });
@@ -696,7 +716,8 @@
                 payload: { collection_id: collectionId, form_type: "visitor_form", limit: 10, start_ms: "0" }
             });
             
-            const found = (listRes.items || []).find(i => i.entry_id === createRes.entry_id);
+            // Check if our new entry is in the raw response, handling DDB format
+            const found = (listRes.items || []).find(i => safeVal(i, 'entry_id') === createRes.entry_id);
             if(found) {
                 updateStatus('diagReadStatus', 'Verified! Data is flowing.', 'text-green-400');
                 document.getElementById('diagRawOutput').innerText += `\n> Read Verification Successful. New entry found in list.`;
@@ -735,13 +756,26 @@
         filteredData.forEach(item => {
             // Data is inside 'data' key based on lambda response, but let's check both levels
             // The lambda stores form payload in 'payload' attribute usually.
-            const d = item.data || item.payload || item;
+            // Also handle DDB format for payload if it's a Map {M: ...}
+            
+            let d = item.data || item.payload || item;
+            
+            // If payload is a DynamoDB map structure, unwrap it
+            if (d && d.M) {
+                // It's a raw DDB map, we need to treat it as the source for fields
+                // But fields inside M are also DDB typed values e.g. {S: "val"}
+                // We handle this inside safeVal for top-level props, but need a helper for nested payload M
+                // Simple trick: pass d.M as source to safeVal, safeVal handles {S: val}
+                d = d.M;
+            }
+
             let tds = '';
             
             schema.fields.forEach(f => { 
-                let val = d[f.key];
-                // Fallback to top level if not in payload
-                if(val === undefined) val = item[f.key];
+                // Try getting value from payload first, then item root
+                // Use safeVal to handle {S: "val"} structures
+                let val = safeVal(d, f.key);
+                if (val === '') val = safeVal(item, f.key);
                 
                 if(!val) val = '-';
                 
@@ -751,15 +785,17 @@
                 tds += `<td class="p-4 text-slate-300 border-b border-slate-800/50 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]">${val}</td>`; 
             });
             
+            const entryId = safeVal(item, 'entry_id');
+            
             tbody.innerHTML += `
             <tr class="table-row transition">
                 ${tds}
                 <td class="p-4 text-right border-b border-slate-800/50">
-                    <button onclick="openEdit('${item.entry_id}')" class="text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition mr-2">
+                    <button onclick="openEdit('${entryId}')" class="text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition mr-2">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </button>
                     <!-- Trigger new API actions -->
-                    <button onclick="deleteItem('${item.entry_id}')" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition" title="Delete Entry">
+                    <button onclick="deleteItem('${entryId}')" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition" title="Delete Entry">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </td>
@@ -772,8 +808,14 @@
         const schema = SCHEMAS[currentTab];
         
         filteredData = rawData.filter(item => {
-            const d = item.data || item.payload || item;
-            return schema.fields.some(f => String(d[f.key] || item[f.key] || '').toLowerCase().includes(term));
+            let d = item.data || item.payload || item;
+            if (d && d.M) d = d.M; // Handle DDB Map
+            
+            return schema.fields.some(f => {
+                let val = safeVal(d, f.key);
+                if (val === '') val = safeVal(item, f.key);
+                return String(val || '').toLowerCase().includes(term);
+            });
         });
         renderTable();
     }
@@ -783,11 +825,20 @@
         const key = SCHEMAS[currentTab].fields[colIndex].key;
         
         filteredData.sort((a, b) => {
-            const dA = a.data || a.payload || a;
-            const dB = b.data || b.payload || b;
+            let dA = a.data || a.payload || a;
+            if (dA && dA.M) dA = dA.M;
             
-            const valA = String(dA[key] || a[key] || '').toLowerCase();
-            const valB = String(dB[key] || b[key] || '').toLowerCase();
+            let dB = b.data || b.payload || b;
+            if (dB && dB.M) dB = dB.M;
+            
+            let valA = safeVal(dA, key);
+            if (valA === '') valA = safeVal(a, key);
+            
+            let valB = safeVal(dB, key);
+            if (valB === '') valB = safeVal(b, key);
+            
+            valA = String(valA || '').toLowerCase();
+            valB = String(valB || '').toLowerCase();
             
             if (valA < valB) return -1 * sortDir;
             if (valA > valB) return 1 * sortDir;
@@ -802,8 +853,14 @@
         const schema = SCHEMAS[currentTab];
         const headers = schema.fields.map(f => f.label).join(',');
         const rows = filteredData.map(item => {
-            const d = item.data || item.payload || item;
-            return schema.fields.map(f => `"${String(d[f.key] || item[f.key] || '').replace(/"/g, '""')}"`).join(',');
+            let d = item.data || item.payload || item;
+            if (d && d.M) d = d.M;
+
+            return schema.fields.map(f => {
+                let val = safeVal(d, f.key);
+                if (val === '') val = safeVal(item, f.key);
+                return `"${String(val || '').replace(/"/g, '""')}"`;
+            }).join(',');
         }).join('\n');
         
         const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
@@ -862,14 +919,19 @@
 
     // --- CRUD Operations (Calling Admin Actions) ---
     function openEdit(id) {
-        const item = rawData.find(i => i.entry_id === id); if(!item) return; editingId = id;
+        const item = rawData.find(i => safeVal(i, 'entry_id') === id); if(!item) return; editingId = id;
         const formContainer = document.getElementById('modalForm'); formContainer.innerHTML = '';
         const fields = SCHEMAS[currentTab].fields || []; 
-        const data = item.data || item.payload || item;
+        
+        let data = item.data || item.payload || item;
+        if (data && data.M) data = data.M;
         
         fields.forEach(field => {
             if(field.readonly) return;
-            const val = (data[field.key] !== undefined) ? data[field.key] : (item[field.key] || '');
+            
+            let val = safeVal(data, field.key);
+            if (val === '') val = safeVal(item, field.key);
+            
             let inputHtml = `<input type="${field.type || 'text'}" id="edit_${field.key}" value="${val}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-orange-500" />`;
             
             if(field.type === 'select') {

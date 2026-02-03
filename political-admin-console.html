@@ -1,707 +1,846 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Political Admin Console - EventLens</title>
+  <title>EventLens • Political Admin Console</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] } } } }</script>
+  <script>
+    // Optional helper loader (your project uses chext_loader.js in some pages).
+    // This page works without it; if present, it will still run.
+    (function() {
+      const s = document.createElement('script');
+      s.src = './chext_loader.js';
+      s.async = true;
+      s.onerror = () => {};
+      document.head.appendChild(s);
+    })();
+  </script>
   <style>
-    body { background: #0f172a; color: #fff; }
-    .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; transition: all 0.2s; color: #94a3b8; cursor: pointer; }
-    .sidebar-link:hover { background: rgba(255,255,255,0.05); color: #fff; }
-    .sidebar-link.active { background: linear-gradient(135deg, #f97316, #ea580c); color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
-    .table-row:hover { background: rgba(255,255,255,0.03); }
-    th { cursor: pointer; user-select: none; }
-    th:hover { color: #fb923c; }
-    
-    /* Modal Animation */
-    .modal { transition: opacity 0.3s ease-in-out, visibility 0.3s; opacity: 0; visibility: hidden; }
-    .modal.open { opacity: 1; visibility: visible; }
-    .modal-content { transform: scale(0.95); transition: transform 0.3s; }
-    .modal.open .modal-content { transform: scale(1); }
-
-    /* Mobile Preview Container */
-    .mobile-frame { border: 8px solid #1e293b; border-radius: 30px; overflow: hidden; height: 600px; width: 320px; position: relative; background: #0f172a; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); margin: 0 auto; }
-    .mobile-screen { height: 100%; width: 100%; overflow-y: auto; background-size: cover; background-position: center; position: relative; }
-    .mobile-screen::-webkit-scrollbar { width: 4px; }
-    .mobile-screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-    
-    .preview-glass { background: rgba(30, 41, 59, 0.90); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 20px; margin-top: -40px; position: relative; z-index: 10; margin-left: 10px; margin-right: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-    
-    .header-bg-preview { height: 150px; width: 100%; background-size: cover; background-position: center; position: relative; }
-    .header-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(15, 23, 42, 1)); }
+    body { background: #0b1220; color: #e5e7eb; }
+    .glass { background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-link { display:flex; align-items:center; gap:10px; padding: 12px 14px; border-radius: 12px; transition: all .2s; cursor:pointer; color:#94a3b8; }
+    .sidebar-link:hover { background: rgba(255,255,255,0.06); color:#fff; }
+    .sidebar-link.active { background: linear-gradient(135deg, #fb923c, #ea580c); color:white; box-shadow: 0 8px 24px rgba(249,115,22,0.25); }
+    .pill { border:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); border-radius:999px; padding: 6px 10px; }
+    .btn { border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); padding: 10px 12px; border-radius: 12px; }
+    .btn:hover { background: rgba(255,255,255,0.09); }
+    .btnPrimary { background: linear-gradient(135deg, #22c55e, #16a34a); border: 0; color:white; }
+    .btnPrimary:hover { filter: brightness(1.05); }
+    .btnDanger { background: linear-gradient(135deg, #ef4444, #b91c1c); border: 0; color:white; }
+    .btnDanger:hover { filter: brightness(1.05); }
+    .input { width:100%; border-radius: 12px; border:1px solid rgba(255,255,255,0.12); background: rgba(2,6,23,0.55); padding: 10px 12px; outline:none; }
+    .input:focus { border-color: rgba(249,115,22,0.7); box-shadow: 0 0 0 4px rgba(249,115,22,0.15); }
+    .table { width:100%; border-collapse: separate; border-spacing:0; }
+    .th { text-align:left; font-weight:600; color:#cbd5e1; font-size: 12px; letter-spacing:.04em; text-transform: uppercase; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; }
+    .row:hover { background: rgba(255,255,255,0.03); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .modalBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; padding: 18px; z-index: 50; }
+    .modal { width: min(1000px, 96vw); max-height: 90vh; overflow: auto; border-radius: 16px; }
+    .drawerBackdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display:none; z-index: 45; }
+    .drawer { position: fixed; top: 0; right: 0; height: 100vh; width: min(520px, 95vw); transform: translateX(100%); transition: transform .2s ease; z-index: 46; }
+    .drawer.open { transform: translateX(0); }
+    .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(2,6,23,0.9); border:1px solid rgba(255,255,255,0.12); padding: 10px 14px; border-radius: 999px; display:none; z-index: 60; }
+    img.thumb { width: 44px; height: 44px; border-radius: 12px; object-fit: cover; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); }
+    .kv { display:grid; grid-template-columns: 140px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .kv:last-child { border-bottom: 0; }
   </style>
 </head>
-<body class="h-screen flex overflow-hidden">
+<body>
+  <div class="min-h-screen flex">
+    <!-- Sidebar -->
+    <aside class="w-[290px] hidden lg:block p-4">
+      <div class="glass rounded-2xl p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xl font-bold">Political Admin</div>
+            <div class="text-sm text-slate-400">Forms • Timeline • Photos</div>
+          </div>
+          <div class="pill text-xs text-slate-200"><span id="pillMode">API</span></div>
+        </div>
 
-  <!-- Sidebar -->
-  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-20">
-    <div class="p-6 border-b border-slate-800">
-      <div class="flex items-center gap-3 text-orange-500">
-        <i class="fa-solid fa-user-shield text-2xl"></i>
-        <div>
-            <span class="font-bold text-lg text-white block leading-tight">Admin Console</span>
-            <span class="text-[10px] text-slate-500" id="sidebarCidDisplay">CID: Loading...</span>
+        <div class="mt-4 space-y-2" id="tabList"></div>
+
+        <div class="mt-5 p-3 rounded-2xl border border-white/10 bg-white/5">
+          <div class="text-xs text-slate-300">Collection ID</div>
+          <div class="mt-2 flex gap-2">
+            <input id="cidInput" class="input mono" placeholder="collection_id (cid)" />
+            <button id="btnUseCid" class="btn">Use</button>
+          </div>
+          <div class="mt-2 text-xs text-slate-400">
+            Tip: link me token/cid aata hai to auto-fill ho jayega.
+          </div>
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button id="btnRefresh" class="btn btnPrimary w-full">Refresh</button>
+          <button id="btnClear" class="btn w-full">Clear</button>
         </div>
       </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 p-4 lg:p-6">
+      <div class="glass rounded-2xl p-4 lg:p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div>
+            <div class="text-2xl font-bold">Forms Data</div>
+            <div class="text-sm text-slate-400" id="subtitle">Loading…</div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <div class="pill text-xs text-slate-200 flex gap-2">
+              <span>Rows:</span><span id="countLabel" class="font-semibold">0</span>
+            </div>
+            <div class="pill text-xs text-slate-200 flex gap-2">
+              <span>Duplicates:</span><span id="dupLabel" class="font-semibold">0</span>
+            </div>
+            <button id="btnExport" class="btn">Export CSV</button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-6 gap-3">
+          <div class="lg:col-span-2">
+            <div class="text-xs text-slate-300 mb-1">Search (name/mobile/district/anything)</div>
+            <input id="qInput" class="input" placeholder="type to filter…" />
+          </div>
+          <div>
+            <div class="text-xs text-slate-300 mb-1">From</div>
+            <input id="fromInput" class="input" type="date" />
+          </div>
+          <div>
+            <div class="text-xs text-slate-300 mb-1">To</div>
+            <input id="toInput" class="input" type="date" />
+          </div>
+          <div>
+            <div class="text-xs text-slate-300 mb-1">Only duplicates</div>
+            <select id="dupOnly" class="input">
+              <option value="">All</option>
+              <option value="1">Duplicates only</option>
+              <option value="0">Non-duplicates only</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="btnApply" class="btn btnPrimary w-full">Apply</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="mt-4 overflow-auto rounded-2xl border border-white/10">
+          <table class="table">
+            <thead>
+              <tr class="bg-white/5">
+                <th class="th">Photo</th>
+                <th class="th">Type</th>
+                <th class="th">When</th>
+                <th class="th">Name / Mobile</th>
+                <th class="th">District / Vidhansabha / Mandal</th>
+                <th class="th">Program / Guests</th>
+                <th class="th">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+          <div class="text-xs text-slate-400" id="pageInfo"></div>
+          <div class="flex gap-2">
+            <button id="btnLoadMore" class="btn" style="display:none;">Load more</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Drawer: details -->
+  <div id="drawerBackdrop" class="drawerBackdrop"></div>
+  <div id="drawer" class="drawer glass p-4 lg:p-5">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <div class="text-lg font-bold" id="dTitle">Entry</div>
+        <div class="text-xs text-slate-400 mono" id="dSub"></div>
+      </div>
+      <button id="btnCloseDrawer" class="btn">Close</button>
     </div>
-    
-    <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
-      <div class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-2">Data Management</div>
-      <div class="sidebar-link active" onclick="switchTab('program_info', this)">
-        <i class="fa-solid fa-calendar-days w-5"></i> Events
-      </div>
-      <div class="sidebar-link" onclick="switchTab('coordinator_entry', this)">
-        <i class="fa-solid fa-users-gear w-5"></i> Coordinators
-      </div>
-      <div class="sidebar-link" onclick="switchTab('mandal_reporting', this)">
-        <i class="fa-solid fa-clipboard-check w-5"></i> Reporting
-      </div>
-      <div class="sidebar-link" onclick="switchTab('president_tour', this)">
-        <i class="fa-solid fa-plane-departure w-5"></i> President Tour
-      </div>
-      <div class="sidebar-link" onclick="switchTab('visitor_form', this)">
-        <i class="fa-solid fa-user-group w-5"></i> Visitors
-      </div>
 
-      <div class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Settings</div>
-      <div class="sidebar-link" onclick="switchTab('settings', this)">
-        <i class="fa-solid fa-paintbrush w-5"></i> Branding & Links
-      </div>
-    </nav>
-    
-    <div class="p-4 border-t border-slate-800">
-        <button onclick="loadData()" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 text-sm font-medium py-2 rounded-lg transition"><i class="fa-solid fa-sync mr-1"></i> Refresh Data</button>
-    </div>
-  </aside>
-
-  <!-- Main Content -->
-  <main class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
-    <!-- Header -->
-    <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-sm shrink-0 z-10">
-      <h2 id="pageTitle" class="text-lg font-semibold text-white">Event Details</h2>
-      <div class="flex items-center gap-4">
-        <div id="cidWarning" class="hidden px-3 py-1 rounded bg-red-500/10 text-red-400 text-xs border border-red-500/20">
-            <i class="fa-solid fa-circle-exclamation mr-1"></i> No CID
+    <div class="mt-4">
+      <div class="flex items-center gap-3">
+        <img id="dImg" class="thumb" alt="thumb"/>
+        <div class="min-w-0">
+          <div class="text-sm text-slate-200" id="dName"></div>
+          <div class="text-xs text-slate-400" id="dMeta"></div>
         </div>
-        
-        <!-- Controls for Data View -->
-        <div id="dataControls" class="flex items-center gap-3">
-            <div class="relative">
-                <input type="text" id="searchInput" placeholder="Search data..." onkeyup="filterTable()" class="bg-slate-800 text-sm text-white rounded-lg pl-9 pr-3 py-1.5 border border-slate-700 focus:border-orange-500 outline-none w-64">
-                <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
-            </div>
-            <button onclick="exportCSV()" class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-sm transition">
-                <i class="fa-solid fa-file-csv mr-1"></i> Export
-            </button>
-        </div>
-
-        <button onclick="window.close()" class="text-slate-400 hover:text-white transition text-sm flex items-center gap-2 border-l border-slate-700 pl-4 ml-2">
-            <i class="fa-solid fa-xmark"></i> Close
-        </button>
       </div>
-    </header>
 
-    <!-- Content Area -->
-    <div class="flex-1 overflow-hidden relative">
-        
-        <!-- DATA VIEW (Tables) -->
-        <div id="dataView" class="absolute inset-0 p-6 overflow-auto custom-scrollbar">
-            <div class="glass rounded-xl overflow-hidden shadow-2xl min-h-[300px]">
-                <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold sticky top-0 z-10 shadow-lg">
-                    <tr id="tableHeaderRow">
-                    <!-- Dynamic Headers -->
-                    </tr>
-                </thead>
-                <tbody id="tableBody" class="text-sm text-slate-300 divide-y divide-slate-800">
-                    <tr><td class="p-8 text-center text-slate-500">Select a tab to view data...</td></tr>
-                </tbody>
-                </table>
-                <div id="emptyState" class="hidden p-12 text-center">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-800 text-slate-600 mb-4">
-                        <i class="fa-solid fa-database text-2xl"></i>
-                    </div>
-                    <h3 class="text-slate-400 font-medium">No Data Found</h3>
-                    <p class="text-slate-500 text-xs mt-1">Try refreshing or changing the filter.</p>
-                </div>
-            </div>
-            <div class="mt-4 text-xs text-slate-500 flex justify-between">
-                <span id="recordCount">0 Records</span>
-                <span>Last Updated: <span id="lastUpdated">Just now</span></span>
-            </div>
-        </div>
-
-        <!-- SETTINGS VIEW (Branding & Links) -->
-        <div id="settingsView" class="absolute inset-0 p-6 overflow-auto hidden custom-scrollbar">
-            <div class="flex flex-col lg:flex-row gap-8 h-full">
-                
-                <!-- Left: Controls -->
-                <div class="flex-1 space-y-6 overflow-y-auto pr-2 pb-10">
-                    
-                    <!-- Branding Form -->
-                    <div class="glass rounded-xl p-6 border-l-4 border-orange-500">
-                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2 flex justify-between">
-                            <span>Admin Branding</span>
-                            <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-1 rounded">Local Settings</span>
-                        </h3>
-                        <div class="space-y-4">
-                            <!-- Logo Upload -->
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Organization Logo (URL or Upload)</label>
-                                <div class="flex items-center gap-3">
-                                    <div class="h-12 w-12 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center relative group">
-                                        <img id="logoPreviewSmall" class="h-full w-full object-cover hidden">
-                                        <i id="logoPlaceholder" class="fa-solid fa-image text-slate-600"></i>
-                                    </div>
-                                    <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'previewLogo', 'logoPreviewSmall')">
-                                    <button onclick="document.getElementById('logoInput').click()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded transition">Upload File</button>
-                                </div>
-                            </div>
-
-                            <!-- Header BG Upload -->
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Header Background</label>
-                                <div class="flex gap-2">
-                                    <input type="file" id="headerInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-blue-400 hover:file:bg-slate-700 cursor-pointer" onchange="handleImageUpload(this, 'previewHeaderBg')">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Organization Name</label>
-                                    <input type="text" id="brandName" value="EventLens Political" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" oninput="updatePreview()">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Theme Color</label>
-                                    <select id="brandTheme" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" onchange="updatePreview()">
-                                        <option value="orange">Orange (Saffron)</option>
-                                        <option value="blue">Blue (Corporate)</option>
-                                        <option value="green">Green (Nature)</option>
-                                        <option value="red">Red (Urgent)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Footer Text</label>
-                                <input type="text" id="brandFooter" value="Powered by EventLens" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" oninput="updatePreview()">
-                            </div>
-
-                            <button onclick="saveSettings()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition w-full mt-2 shadow-lg shadow-orange-500/20">
-                                <i class="fa-solid fa-save mr-1"></i> Save Configuration
-                            </button>
-                            <p class="text-[10px] text-slate-500 text-center mt-1">Settings are saved locally for this Collection ID.</p>
-                        </div>
-                    </div>
-
-                    <!-- Links Generator -->
-                    <div class="glass rounded-xl p-6">
-                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Public Form Links</h3>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-calendar-days w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Event Details</span>
-                                <button onclick="copyLink('political_program_info_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
-                            </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-users-gear w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Coordinator</span>
-                                <button onclick="copyLink('political_coordinator_entry_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
-                            </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-clipboard-check w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Reporting</span>
-                                <button onclick="copyLink('political_mandal_reporting_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
-                            </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-plane-departure w-6 text-center text-slate-500 group-hover:text-orange-400"></i> President Tour</span>
-                                <button onclick="copyLink('political_president_tour_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
-                            </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-user-group w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Visitor Form</span>
-                                <button onclick="copyLink('political_visitor_form.html')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Copy Link</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Preview -->
-                <div class="w-full lg:w-[360px] flex flex-col items-center justify-start shrink-0">
-                    <div class="w-full flex justify-between items-center mb-4 px-2">
-                        <div class="text-slate-400 text-xs uppercase tracking-widest font-semibold">Live Preview</div>
-                        <select id="previewFormSelector" onchange="updatePreview()" class="bg-slate-800 text-white text-xs border border-slate-700 rounded px-2 py-1 outline-none focus:border-orange-500 cursor-pointer">
-                            <option value="program_info">Event Details Form</option>
-                            <option value="coordinator_entry">Coordinator Form</option>
-                            <option value="mandal_reporting">Reporting Form</option>
-                            <option value="president_tour">President Tour Form</option>
-                            <option value="visitor_form">Visitor Form</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mobile-frame shadow-2xl relative">
-                        <!-- Simulated Mobile Screen -->
-                        <div class="mobile-screen" id="mobileScreen">
-                            
-                            <!-- Header BG -->
-                            <div id="previewHeaderBg" class="header-bg-preview" style="background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1000&auto=format&fit=crop');">
-                                <div class="header-overlay"></div>
-                            </div>
-
-                            <!-- Main Card -->
-                            <div class="preview-glass">
-                                <!-- Logo & Title -->
-                                <div class="text-center mb-6">
-                                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 mb-3 overflow-hidden shadow-lg relative -mt-12 z-20">
-                                        <img id="previewLogo" src="https://cdn-icons-png.flaticon.com/512/9313/9313234.png" class="w-full h-full object-cover">
-                                    </div>
-                                    <h1 id="prevHeader" class="text-xl font-bold text-white leading-tight">EventLens Political</h1>
-                                    <p id="prevSubHeader" class="text-slate-400 text-xs mt-1">Form Name Here</p>
-                                </div>
-
-                                <!-- Dynamic Form Fields (Preview) -->
-                                <div id="previewFields" class="space-y-3">
-                                    <!-- Populated by JS -->
-                                </div>
-
-                                <!-- Button -->
-                                <div id="prevBtn" class="h-12 bg-gradient-to-r rounded-xl w-full mt-5 shadow-lg flex items-center justify-center text-white font-bold text-sm cursor-pointer">
-                                    Submit
-                                </div>
-                            </div>
-
-                            <div id="prevFooter" class="text-[10px] text-slate-500 text-center mt-6 pb-4">Powered by EventLens</div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-  </main>
-
-  <!-- Edit Modal -->
-  <div id="editModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-    <div class="modal-content glass w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-        <h3 class="font-bold text-lg text-white">Edit Entry</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+      <div class="mt-3 flex gap-2">
+        <button id="btnOpenPhoto" class="btn w-full">Open Photo</button>
+        <button id="btnDownloadPhoto" class="btn w-full">Download</button>
       </div>
-      <div class="p-6 overflow-y-auto space-y-4" id="modalForm"></div>
-      <div class="p-5 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
-        <button onclick="closeModal()" class="px-5 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Cancel</button>
-        <button onclick="saveChanges()" class="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-lg shadow-orange-500/20 transition">Save Changes</button>
+
+      <div class="mt-4 text-sm font-semibold text-slate-200">Details</div>
+      <div class="mt-2" id="dDetails"></div>
+
+      <div class="mt-4 text-sm font-semibold text-slate-200">Raw JSON</div>
+      <pre id="dJson" class="mt-2 p-3 rounded-2xl border border-white/10 bg-black/30 text-xs overflow-auto"></pre>
+
+      <div class="mt-3">
+        <button id="btnCopyS3" class="btn w-full">Copy s3_key</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal: image preview -->
+  <div id="imgModal" class="modalBackdrop">
+    <div class="glass modal p-4">
+      <div class="flex items-center justify-between gap-2">
+        <div class="text-lg font-bold">Photo Preview</div>
+        <button id="btnCloseImg" class="btn">Close</button>
+      </div>
+      <div class="mt-3">
+        <img id="imgPreview" alt="preview" class="w-full rounded-2xl border border-white/10 bg-white/5" />
+      </div>
+      <div class="mt-3 flex gap-2">
+        <button id="btnOpenImgNew" class="btn w-full">Open in new tab</button>
+        <button id="btnDownloadImg" class="btn btnPrimary w-full">Download</button>
+      </div>
+      <div class="mt-2 text-xs text-slate-400 mono break-all" id="imgUrlLabel"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
   <script>
-    const API_ID = 'vxid0yoovj';
-    const REGION = 'ap-south-1';
-    let currentTab = 'program_info';
-    let rawData = []; // Stores all data fetched
-    let filteredData = []; // Stores data after search/filter
-    let editingId = null;
-    let collectionId = '';
-    let sortDir = 1; // 1 for asc, -1 for desc
+    // ======= Config (same API ID you used in other pages) =======
+    const API_ID = "vxid0yoovj"; // keep same
+    const REGION = "ap-south-1";
+    const STAGE = "prod";
+    const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/${STAGE}`;
 
-    const qs = (name) => (new URL(window.location.href)).searchParams.get(name) || '';
-    collectionId = qs('cid') || qs('collection_id');
-    const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+    // ======= Tabs (match your DynamoDB form_type values) =======
+    const TABS = [
+      { key: "all", label: "All Forms", icon: "📋" },
+      { key: "visitor_form", label: "Visitor Form", icon: "🧾" },
+      { key: "party_attendance", label: "Party Attendance", icon: "👤" },
+      { key: "president_tour_form", label: "President Tour", icon: "🚩" },
+      { key: "mandal_reporting", label: "Mandal Reporting", icon: "📍" },
+      // Optional (only if your backend uses it)
+      { key: "program_info", label: "Program Info", icon: "🗓️" },
+      // Shows items whose form_type is not in the above list (requires All tab to load everything)
+      { key: "other", label: "Other", icon: "🧩" }
+    ];
 
-    // Init
-    if(!collectionId) {
-        document.getElementById('cidWarning').classList.remove('hidden');
-        document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
-    } else {
-        document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
-        loadSettings(); // Load Branding Logic
-        loadData();
+    // ======= State =======
+    let currentTab = "all";
+    let cid = "";
+    let allItems = [];
+    let filteredItems = [];
+    let nextKeyByTab = {}; // tabKey -> next_key (if backend supports)
+    let lastFetchAt = 0;
+
+    // ======= Helpers =======
+    function qs(name) {
+      const u = new URL(location.href);
+      return u.searchParams.get(name);
     }
 
-    // --- Data Schemas (Matching your forms) ---
-    const SCHEMAS = {
-      'program_info': {
-        title: 'Event Details',
-        headers: ['Program Title', 'Date', 'Time', 'Location', 'District', 'Action'],
-        fields: [
-            { key: 'program_title', label: 'Program Title' }, 
-            { key: 'program_date', label: 'Date', type: 'date' },
-            { key: 'program_time', label: 'Time', type: 'time' },
-            { key: 'program_location', label: 'Location' }, 
-            { key: 'district', label: 'District' },
-            { key: 'expected_people', label: 'Expected People', type: 'number' }
-        ],
-        previewFields: [
-            { icon: 'fa-heading', ph: 'Program Title' }, { icon: 'fa-map-location-dot', ph: 'District' },
-            { icon: 'fa-map-pin', ph: 'Location' }, { icon: 'fa-calendar-day', ph: 'Date & Time' },
-            { icon: 'fa-users', ph: 'Expected Attendance' }
-        ]
-      },
-      'coordinator_entry': {
-        title: 'Coordinator Management',
-        headers: ['Name', 'Role', 'Mobile', 'Area', 'Type', 'Action'],
-        fields: [
-            { key: 'convenor_name', label: 'Name' }, 
-            { key: 'coordinator_role', label: 'Role', type: 'select', options: ['Vidhan Sabha Sanyojak', 'Mandal Adhyaksh', 'Ward Sanyojak'] },
-            { key: 'convenor_mobile', label: 'Mobile' }, 
-            { key: 'area', label: 'Area/Ward' },
-            { key: 'designation_type', label: 'Type' }
-        ],
-        previewFields: [
-            { icon: 'fa-bullhorn', ph: 'Program Name' }, { icon: 'fa-map-location-dot', ph: 'District' },
-            { icon: 'fa-user', ph: 'Convenor Name' }, { icon: 'fa-phone', ph: 'Convenor Mobile' },
-            { icon: 'fa-user-plus', ph: 'Co-Convenor Details' }
-        ]
-      },
-      'mandal_reporting': {
-        title: 'Mandal Reporting',
-        headers: ['Program', 'Level', 'Attendance', 'Issues', 'Action'],
-        fields: [
-            { key: 'program_name', label: 'Program' }, 
-            { key: 'report_level', label: 'Level', type: 'select', options:['Mandal','District','Vidhan Sabha'] },
-            { key: 'total_attendance', label: 'Attendance' },
-            { key: 'issues', label: 'Issues/Feedback' }
-        ],
-        previewFields: [
-            { icon: 'fa-heading', ph: 'Program Name' }, { icon: 'fa-layer-group', ph: 'Level (Mandal/Dist)' },
-            { icon: 'fa-users', ph: 'Total Attendance' }, { icon: 'fa-comment-dots', ph: 'Key Issues' },
-            { icon: 'fa-camera', ph: 'Upload Photos' }
-        ]
-      },
-      'president_tour': {
-        title: 'President Tour',
-        headers: ['Tour Place', 'Date', 'VIP', 'Stay Location', 'Action'],
-        fields: [
-            { key: 'tour_place', label: 'Place' }, 
-            { key: 'tour_date', label: 'Date', type: 'date' },
-            { key: 'vip_person', label: 'VIP' },
-            { key: 'stay_arrangement', label: 'Stay' }
-        ],
-        previewFields: [
-            { icon: 'fa-user', ph: 'Your Name' }, { icon: 'fa-calendar-day', ph: 'Tour Date' },
-            { icon: 'fa-location-arrow', ph: 'Tour Place' }, { icon: 'fa-user-tie', ph: 'VIP Name' },
-            { icon: 'fa-bed', ph: 'Stay Arrangement' }
-        ]
-      },
-      'visitor_form': {
-        title: 'Visitor Entry',
-        headers: ['Name', 'Mobile', 'District', 'Reason', 'Date', 'Action'],
-        fields: [
-            { key: 'name', label: 'Name' }, 
-            { key: 'mobile', label: 'Mobile' },
-            { key: 'district', label: 'District' }, 
-            { key: 'reason', label: 'Reason' },
-            { key: 'created_at', label: 'Date', type: 'date', readonly: true }
-        ],
-        previewFields: [
-            { icon: 'fa-user', ph: 'Visitor Name' }, { icon: 'fa-phone', ph: 'Mobile Number' },
-            { icon: 'fa-map-location-dot', ph: 'District' }, { icon: 'fa-sitemap', ph: 'Mandal' },
-            { icon: 'fa-comment-dots', ph: 'Reason for Visit' }, { icon: 'fa-camera', ph: 'Selfie' }
-        ]
-      }
-    };
+    function safeJsonParse(str) {
+      try { return JSON.parse(str); } catch { return null; }
+    }
 
-    // --- Tab Switching ---
-    function switchTab(tab, el) {
-      currentTab = tab;
-      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-      el.classList.add('active');
-      
-      const titles = { 
-          'program_info': 'Event Details', 'coordinator_entry': 'Coordinator Management', 
-          'mandal_reporting': 'Mandal Reports', 'president_tour': 'President Tour Logs', 
-          'visitor_form': 'Visitor Entries', 'settings': 'Dashboard Settings' 
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => t.style.display = "none", 2200);
+    }
+
+    function humanType(ft) {
+      const map = {
+        visitor_form: "Visitor",
+        party_attendance: "Attendance",
+        president_tour_form: "President Tour",
+        mandal_reporting: "Mandal Report",
+        program_info: "Program Info"
       };
-      document.getElementById('pageTitle').textContent = titles[tab];
-
-      if(tab === 'settings') {
-        document.getElementById('dataView').classList.add('hidden');
-        document.getElementById('dataControls').classList.add('hidden');
-        document.getElementById('settingsView').classList.remove('hidden');
-        updatePreview();
-      } else {
-        document.getElementById('settingsView').classList.add('hidden');
-        document.getElementById('dataView').classList.remove('hidden');
-        document.getElementById('dataControls').classList.remove('hidden');
-        loadData();
-      }
+      return map[ft] || ft || "-";
     }
 
-    // --- Data Loading & Mocking ---
-    async function loadData() {
-      if(!collectionId) return;
-      const tbody = document.getElementById('tableBody');
-      const thead = document.getElementById('tableHeaderRow');
-      const schema = SCHEMAS[currentTab];
-      
-      // Setup Headers
-      thead.innerHTML = schema.headers.map((h, index) => 
-        `<th class="p-4 border-b border-slate-700 whitespace-nowrap" onclick="sortTable(${index}, '${h}')">
-            ${h} <i class="fa-solid fa-sort text-slate-600 text-[10px] ml-1"></i>
-         </th>`
-      ).join('');
+    function pick(obj, keys) {
+      for (const k of keys) {
+        if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
+      }
+      return "";
+    }
 
-      tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
+    function epochToIso(ms) {
+      const n = Number(ms);
+      if (!isFinite(n) || n <= 0) return "";
+      try { return new Date(n).toISOString(); } catch { return ""; }
+    }
+
+    function parseIsoToDate(iso) {
+      if (!iso) return null;
+      const d = new Date(iso);
+      return isFinite(d.getTime()) ? d : null;
+    }
+
+    function matchesQuery(item, q) {
+      if (!q) return true;
+      const hay = JSON.stringify(item).toLowerCase();
+      return hay.includes(q.toLowerCase());
+    }
+
+    function withinDateRange(item, fromStr, toStr) {
+      if (!fromStr && !toStr) return true;
+      const iso = item.created_at_iso || epochToIso(item.created_at) || "";
+      const d = parseIsoToDate(iso);
+      if (!d) return true;
+
+      const from = fromStr ? new Date(fromStr + "T00:00:00") : null;
+      const to = toStr ? new Date(toStr + "T23:59:59") : null;
+
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    }
+
+    function setImgSrcWithRetry(imgEl, url, opts = {}) {
+      const max = opts.maxRetries ?? 2;
+      const baseDelay = opts.baseDelay ?? 350;
+      let attempt = 0;
+
+      const load = () => {
+        if (!url) {
+          imgEl.removeAttribute("src");
+          imgEl.style.visibility = "hidden";
+          return;
+        }
+        imgEl.style.visibility = "visible";
+        imgEl.src = url;
+      };
+
+      imgEl.onerror = () => {
+        if (attempt >= max) return;
+        attempt++;
+        const delay = baseDelay * Math.pow(2, attempt);
+        setTimeout(() => {
+          // Retry without cache (best-effort)
+          try {
+            const u = new URL(url);
+            u.searchParams.set("r", String(Date.now()));
+            url = u.toString();
+          } catch {}
+          load();
+        }, delay);
+      };
+
+      load();
+    }
+
+    function downloadUrl(url, filename = "photo.jpg") {
+      if (!url) return;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function copyToClipboard(txt) {
+      if (!txt) return;
+      navigator.clipboard.writeText(txt).then(() => showToast("Copied")).catch(() => showToast("Copy failed"));
+    }
+
+    function normalizeItem(raw) {
+      // Backend variations: item.payload OR item.data OR flattened
+      const payload = raw.payload || raw.data || raw.form_data || raw || {};
+      const created_at = raw.created_at || payload.created_at || "";
+      const created_at_iso = raw.created_at_iso || payload.created_at_iso || epochToIso(created_at);
+      const form_type = raw.form_type || payload.form_type || "";
+      const duplicate = (raw.duplicate !== undefined) ? raw.duplicate : (payload.duplicate !== undefined ? payload.duplicate : false);
+      const s3_key = raw.s3_key || payload.s3_key || "";
+      const face_id = raw.face_id || payload.face_id || "";
+      const face_ids = raw.face_ids || payload.face_ids || [];
+
+      // Single photo or multiple photos
+      const photo_url = pick(raw, ["photo_url", "photoUrl"]) || pick(payload, ["photo_url", "photoUrl"]) || (raw.photo_urls && raw.photo_urls[0]) || (payload.photo_urls && payload.photo_urls[0]) || "";
+      const thumb_url = pick(raw, ["thumb_url", "thumbUrl"]) || pick(payload, ["thumb_url", "thumbUrl"]) || "";
+
+      // Common identity fields
+      const name = pick(payload, ["name", "full_name", "visitor_name", "karyakarta_name"]) || "";
+      const mobile = pick(payload, ["mobile", "phone", "visitor_mobile", "karyakarta_mobile"]) || "";
+      const district = pick(payload, ["district"]) || "";
+      const vidhansabha = pick(payload, ["vidhansabha", "assembly", "vidhan_sabha"]) || "";
+      const mandal = pick(payload, ["mandal"]) || "";
+
+      // Event-ish fields
+      const program_name = pick(payload, ["program_name", "program", "tour_program", "meeting_name"]) || "";
+      const guests = pick(payload, ["guests", "guest", "atithi"]) || "";
+      const venue = pick(payload, ["tour_venue", "venue", "place", "location"]) || "";
+      const date = pick(payload, ["tour_date", "event_date", "date"]) || "";
+      const time = pick(payload, ["tour_time", "event_time", "time"]) || "";
+      const program_type = pick(payload, ["program_type", "type"]) || "";
+
+      return {
+        raw,
+        payload,
+        entry_id: raw.entry_id || payload.entry_id || "",
+        form_type,
+        created_at,
+        created_at_iso,
+        duplicate: !!duplicate,
+        s3_key,
+        face_id,
+        face_ids,
+        photo_url,
+        thumb_url,
+        name, mobile, district, vidhansabha, mandal,
+        program_name, guests, venue, date, time, program_type
+      };
+    }
+
+    function buildTabList() {
+      const el = document.getElementById("tabList");
+      el.innerHTML = "";
+      TABS.forEach(t => {
+        const div = document.createElement("div");
+        div.className = "sidebar-link" + (t.key === currentTab ? " active" : "");
+        div.innerHTML = `<div class="text-lg">${t.icon}</div><div class="flex-1"><div class="font-semibold">${t.label}</div><div class="text-xs text-slate-300/80 mono" id="cnt_${t.key}">0</div></div>`;
+        div.onclick = () => {
+          currentTab = t.key;
+          buildTabList();
+          applyFiltersAndRender(true);
+        };
+        el.appendChild(div);
+      });
+    }
+
+    async function postJson(path, body) {
+      const url = BASE_URL + path;
+      const headers = { "Content-Type": "application/json" };
+
+      // If token is present in URL, pass it as Bearer too (safe for your API gateway custom auth if any)
+      const token = qs("token");
+      if (token) headers["Authorization"] = "Bearer " + token;
+
+      const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+      const txt = await res.text();
+      let json = safeJsonParse(txt);
+      if (!res.ok) {
+        const msg = (json && (json.message || json.error)) ? (json.message || json.error) : txt;
+        throw new Error(msg || ("HTTP " + res.status));
+      }
+      return json || {};
+    }
+
+    async function fetchOneTab(tabKey, opts = {}) {
+      const limit = opts.limit ?? 200;
+      const next_key = opts.next_key ?? null;
+
+      const payload = {
+        cid: cid,
+        collection_id: cid,
+        form_type: tabKey,
+        limit,
+        next_key
+      };
+
+      // Some backends want empty to mean "all"
+      if (tabKey === "all") {
+        payload.form_type = "";
+      }
+
+      const data = await postJson("/political/admin/list", payload);
+
+      // Backend variations: {items:[]}, {Items:[]}, {data:[]}
+      const items = data.items || data.Items || data.data || [];
+      const nk = data.next_key || data.nextKey || data.LastEvaluatedKey || null;
+
+      return { items, next_key: nk, raw: data };
+    }
+
+    async function loadData({ reset = true } = {}) {
+      if (!cid) {
+        showToast("Collection ID missing");
+        return;
+      }
+      const now = Date.now();
+      if (!reset && now - lastFetchAt < 600) return; // tiny throttle
+      lastFetchAt = now;
+
+      document.getElementById("subtitle").textContent = `Loading ${currentTab}…`;
+      const tabForFetch = (currentTab === "other") ? "all" : currentTab;
+      document.getElementById("subtitle").textContent = `Loading ${tabForFetch}…`;
+      document.getElementById("btnLoadMore").style.display = "none";
 
       try {
-        // ACTUAL API CALL
-        const res = await fetch(`${BASE_URL}/political/admin/list`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                collection_id: collectionId,
-                form_type: currentTab
-            })
+        let merged = [];
+
+        if (tabForFetch === "all") {
+          // First try: backend supports "all" when form_type is empty
+          try {
+            const rAll = await fetchOneTab("all", { limit: 400 });
+            if (rAll.items && rAll.items.length) {
+              merged = rAll.items || [];
+              nextKeyByTab["all"] = rAll.next_key;
+            } else {
+              throw new Error("empty");
+            }
+          } catch (eAll) {
+            // Fallback: call each known tab and merge (works even if backend needs form_type)
+            const tabsToLoad = TABS
+              .filter(t => t.key !== "all" && t.key !== "other")
+              .map(t => t.key);
+            const results = await Promise.all(tabsToLoad.map(k => fetchOneTab(k, { limit: 200 })));
+            results.forEach((r, idx) => {
+              const tkey = tabsToLoad[idx];
+              nextKeyByTab[tkey] = r.next_key;
+              merged = merged.concat(r.items || []);
+            });
+          }
+        } else {
+          const nk = reset ? null : (nextKeyByTab[tabForFetch] || null);
+          const r = await fetchOneTab(tabForFetch, { limit: 200, next_key: nk });
+          nextKeyByTab[tabForFetch] = r.next_key;
+          merged = r.items || [];
+          if (!reset) {
+            // append to existing list (same tab)
+            const existingRaw = allItems.map(x => x.raw);
+            merged = existingRaw.concat(merged);
+          }
+        }
+
+        // normalize
+        allItems = merged.map(normalizeItem).filter(x => x.entry_id || x.created_at || x.s3_key);
+        // sort newest first
+        allItems.sort((a,b) => (Number(b.created_at)||0) - (Number(a.created_at)||0));
+
+        // counts per tab (from already loaded data only)
+        const counts = {};
+        const dups = {};
+        allItems.forEach(x => {
+          counts[x.form_type] = (counts[x.form_type] || 0) + 1;
+          if (x.duplicate) dups[x.form_type] = (dups[x.form_type] || 0) + 1;
+        });
+        TABS.forEach(t => {
+          const el = document.getElementById("cnt_" + t.key);
+          if (!el) return;
+
+          const knownTypes = ["visitor_form","party_attendance","president_tour_form","mandal_reporting","program_info"];
+
+          if (t.key === "all") {
+            const total = allItems.length;
+            const dupTotal = allItems.filter(x => x.duplicate).length;
+            el.textContent = `${total} rows • ${dupTotal} dup`;
+          } else if (t.key === "other") {
+            const c = allItems.filter(x => !knownTypes.includes(x.form_type)).length;
+            const d = allItems.filter(x => !knownTypes.includes(x.form_type) && x.duplicate).length;
+            el.textContent = `${c} rows • ${d} dup`;
+          } else {
+            const c = counts[t.key] || 0;
+            const d = dups[t.key] || 0;
+            el.textContent = `${c} rows • ${d} dup`;
+          }
         });
 
-        if(!res.ok) throw new Error(`API Error: ${res.status}`);
-        const json = await res.json();
-        
-        // Adapt response: API might return { data: [...] } or just [...]
-        rawData = Array.isArray(json) ? json : (json.data || json.items || []);
-        
-        filteredData = [...rawData];
-        
-        renderTable();
-        document.getElementById('lastUpdated').innerText = new Date().toLocaleTimeString();
-      } catch(err) { 
-          tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-red-400">Error loading data.</td></tr>`; 
+        // show load more if we have next key (only in specific tab)
+        if (currentTab !== "all" && currentTab !== "other" && nextKeyByTab[tabForFetch]) {
+          document.getElementById("btnLoadMore").style.display = "inline-flex";
+        }
+
+        applyFiltersAndRender(false);
+        showToast("Loaded");
+      } catch (e) {
+        console.error(e);
+        document.getElementById("subtitle").textContent = "Error: " + (e.message || e);
+        showToast("Load failed");
       }
     }
 
-    // --- Rendering & Filtering ---
-    function renderTable() {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        const schema = SCHEMAS[currentTab];
-        document.getElementById('recordCount').innerText = `${filteredData.length} Records`;
+    function applyFiltersAndRender(scrollTop = false) {
+      const q = document.getElementById("qInput").value.trim();
+      const fromStr = document.getElementById("fromInput").value;
+      const toStr = document.getElementById("toInput").value;
+      const dupOnly = document.getElementById("dupOnly").value;
 
-        if(filteredData.length === 0) {
-            document.getElementById('emptyState').classList.remove('hidden');
-            return;
-        }
-        document.getElementById('emptyState').classList.add('hidden');
+      const tabFiltered = (currentTab === "all")
+        ? allItems
+        : (currentTab === "other"
+            ? allItems.filter(x => !["visitor_form","party_attendance","president_tour_form","mandal_reporting","program_info"].includes(x.form_type))
+            : allItems.filter(x => x.form_type === currentTab));
 
-        filteredData.forEach(item => {
-            const d = item.payload || {};
-            let tds = '';
-            schema.fields.forEach(f => { 
-                let val = d[f.key] || '-';
-                if(f.type === 'date' && val !== '-') { /* basic format if needed */ }
-                tds += `<td class="p-4 text-slate-300 border-b border-slate-800/50">${val}</td>`; 
-            });
-            tbody.innerHTML += `
-            <tr class="table-row transition">
-                ${tds}
-                <td class="p-4 text-right border-b border-slate-800/50">
-                    <button onclick="openEdit('${item.entry_id}')" class="text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-3 py-1.5 rounded-lg text-xs font-medium transition">
-                        <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
-                    </button>
-                </td>
-            </tr>`;
-        });
+      filteredItems = tabFiltered.filter(item => {
+        if (!matchesQuery(item, q)) return false;
+        if (!withinDateRange(item, fromStr, toStr)) return false;
+        if (dupOnly === "1" && !item.duplicate) return false;
+        if (dupOnly === "0" && item.duplicate) return false;
+        return true;
+      });
+
+      // UI stats
+      document.getElementById("countLabel").textContent = String(filteredItems.length);
+      document.getElementById("dupLabel").textContent = String(filteredItems.filter(x => x.duplicate).length);
+      document.getElementById("subtitle").textContent = `CID: ${cid || "-"} • Tab: ${currentTab} • Updated: ${new Date().toLocaleString()}`;
+      document.getElementById("pageInfo").textContent = `Showing ${filteredItems.length} rows`;
+
+      renderTable(filteredItems);
+
+      if (scrollTop) {
+        try { document.querySelector("main").scrollTop = 0; } catch {}
+      }
     }
 
-    function filterTable() {
-        const term = document.getElementById('searchInput').value.toLowerCase();
-        const schema = SCHEMAS[currentTab];
-        
-        filteredData = rawData.filter(item => {
-            const d = item.payload || {};
-            return schema.fields.some(f => String(d[f.key] || '').toLowerCase().includes(term));
-        });
-        renderTable();
+    function renderTable(items) {
+      const tb = document.getElementById("tbody");
+      tb.innerHTML = "";
+
+      if (!items.length) {
+        tb.innerHTML = `<tr><td class="td text-slate-400" colspan="7">No rows</td></tr>`;
+        return;
+      }
+
+      // Render
+      items.forEach((it) => {
+        const tr = document.createElement("tr");
+        tr.className = "row";
+
+        const when = it.created_at_iso ? new Date(it.created_at_iso).toLocaleString() : (it.created_at || "");
+        const who = `${(it.name || "-")}\n${(it.mobile || "-")}`;
+        const loc = `${it.district || "-"}\n${it.vidhansabha || "-"}\n${it.mandal || "-"}`;
+
+        const prog = [
+          it.program_type ? `Type: ${it.program_type}` : "",
+          it.program_name ? `Program: ${it.program_name}` : "",
+          it.venue ? `Venue: ${it.venue}` : "",
+          it.date ? `Date: ${it.date}` : "",
+          it.time ? `Time: ${it.time}` : "",
+          it.guests ? `Guests: ${it.guests}` : ""
+        ].filter(Boolean).slice(0, 3).join("\n") || "-";
+
+        const thumb = it.thumb_url || it.photo_url;
+
+        tr.innerHTML = `
+          <td class="td">
+            <div class="flex items-center gap-2">
+              <img class="thumb" alt="photo"/>
+              <div class="text-xs text-slate-400">${it.duplicate ? "dup" : ""}</div>
+            </div>
+          </td>
+          <td class="td">
+            <div class="font-semibold">${humanType(it.form_type)}</div>
+            <div class="text-xs text-slate-400 mono break-all">${it.entry_id || ""}</div>
+          </td>
+          <td class="td text-sm text-slate-200">${when}</td>
+          <td class="td text-sm whitespace-pre-line">${who}</td>
+          <td class="td text-sm whitespace-pre-line">${loc}</td>
+          <td class="td text-sm whitespace-pre-line">${prog}</td>
+          <td class="td">
+            <div class="flex flex-col gap-2">
+              <button class="btn btnPrimary">Open</button>
+              <button class="btn">Preview</button>
+              <button class="btn">Copy Face ID</button>
+            </div>
+          </td>
+        `;
+
+        const img = tr.querySelector("img.thumb");
+        setImgSrcWithRetry(img, thumb, { maxRetries: 2 });
+
+        const btnOpen = tr.querySelectorAll("button")[0];
+        const btnPrev = tr.querySelectorAll("button")[1];
+        const btnFace = tr.querySelectorAll("button")[2];
+
+        btnOpen.onclick = () => openDrawer(it);
+        btnPrev.onclick = () => openImgModal(it.photo_url || it.thumb_url || "");
+        btnFace.onclick = () => copyToClipboard(it.face_id || "");
+
+        tb.appendChild(tr);
+      });
     }
 
-    function sortTable(colIndex, headerName) {
-        sortDir = sortDir * -1;
-        const key = SCHEMAS[currentTab].fields[colIndex].key;
-        
-        filteredData.sort((a, b) => {
-            const valA = String(a.payload[key] || '').toLowerCase();
-            const valB = String(b.payload[key] || '').toLowerCase();
-            if (valA < valB) return -1 * sortDir;
-            if (valA > valB) return 1 * sortDir;
-            return 0;
-        });
-        renderTable();
+    function kvRow(k, v) {
+      const safeV = (v === null || v === undefined || v === "") ? "-" : String(v);
+      return `<div class="kv"><div class="text-xs text-slate-400">${k}</div><div class="text-sm text-slate-100 break-words">${escapeHtml(safeV)}</div></div>`;
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll(""","&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function openDrawer(it) {
+      document.getElementById("drawerBackdrop").style.display = "block";
+      const drawer = document.getElementById("drawer");
+      drawer.classList.add("open");
+
+      document.getElementById("dTitle").textContent = `${humanType(it.form_type)} • ${it.duplicate ? "DUP" : "NEW"}`;
+      document.getElementById("dSub").textContent = it.entry_id || "";
+      document.getElementById("dName").textContent = (it.name || "-") + (it.mobile ? ` • ${it.mobile}` : "");
+      document.getElementById("dMeta").textContent = `${it.district || "-"} • ${it.vidhansabha || "-"} • ${it.mandal || "-"}`;
+
+      const img = document.getElementById("dImg");
+      setImgSrcWithRetry(img, it.thumb_url || it.photo_url, { maxRetries: 2 });
+
+      // Details block
+      const details = [];
+      details.push(kvRow("created_at", it.created_at_iso || epochToIso(it.created_at) || it.created_at));
+      details.push(kvRow("form_type", it.form_type));
+      details.push(kvRow("face_id", it.face_id));
+      details.push(kvRow("s3_key", it.s3_key));
+      if (it.program_type) details.push(kvRow("program_type", it.program_type));
+      if (it.program_name) details.push(kvRow("program_name", it.program_name));
+      if (it.venue) details.push(kvRow("venue", it.venue));
+      if (it.date) details.push(kvRow("date", it.date));
+      if (it.time) details.push(kvRow("time", it.time));
+      if (it.guests) details.push(kvRow("guests", it.guests));
+      if (it.payload && it.payload.attendance) details.push(kvRow("attendance", it.payload.attendance));
+      if (it.payload && it.payload.reason) details.push(kvRow("reason", it.payload.reason));
+      if (it.payload && it.payload.designation) details.push(kvRow("designation", it.payload.designation));
+      document.getElementById("dDetails").innerHTML = details.join("");
+
+      // JSON
+      document.getElementById("dJson").textContent = JSON.stringify(it.payload || it.raw || it, null, 2);
+
+      // Photo buttons
+      const photo = it.photo_url || it.thumb_url || "";
+      document.getElementById("btnOpenPhoto").onclick = () => {
+        if (!photo) return showToast("No photo url");
+        openImgModal(photo);
+      };
+      document.getElementById("btnDownloadPhoto").onclick = () => {
+        if (!photo) return showToast("No photo url");
+        downloadUrl(photo, `${it.form_type || "photo"}_${it.entry_id || "entry"}.jpg`);
+      };
+
+      document.getElementById("btnCopyS3").onclick = () => copyToClipboard(it.s3_key || "");
+    }
+
+    function closeDrawer() {
+      document.getElementById("drawerBackdrop").style.display = "none";
+      document.getElementById("drawer").classList.remove("open");
+    }
+
+    function openImgModal(url) {
+      if (!url) {
+        showToast("No image URL");
+        return;
+      }
+      document.getElementById("imgModal").style.display = "flex";
+      const img = document.getElementById("imgPreview");
+      document.getElementById("imgUrlLabel").textContent = url;
+      setImgSrcWithRetry(img, url, { maxRetries: 2 });
+      document.getElementById("btnOpenImgNew").onclick = () => window.open(url, "_blank");
+      document.getElementById("btnDownloadImg").onclick = () => downloadUrl(url, "photo.jpg");
+    }
+
+    function closeImgModal() {
+      document.getElementById("imgModal").style.display = "none";
+      document.getElementById("imgPreview").removeAttribute("src");
     }
 
     function exportCSV() {
-        if(filteredData.length === 0) return alert("No data to export");
-        
-        const schema = SCHEMAS[currentTab];
-        const headers = schema.fields.map(f => f.label).join(',');
-        const rows = filteredData.map(item => {
-            return schema.fields.map(f => `"${item.payload[f.key] || ''}"`).join(',');
-        }).join('\n');
-        
-        const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `${currentTab}_export_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      const rows = filteredItems;
+      if (!rows.length) return showToast("No rows");
+
+      const cols = [
+        "form_type","created_at_iso","entry_id","duplicate",
+        "name","mobile","district","vidhansabha","mandal",
+        "program_type","program_name","venue","date","time","guests",
+        "face_id","s3_key","photo_url"
+      ];
+      const escape = (v) => {
+        const s = (v === null || v === undefined) ? "" : String(v);
+        const t = s.replaceAll('"','""');
+        return `"${t}"`;
+      };
+
+      const lines = [];
+      lines.push(cols.join(","));
+      rows.forEach(r => {
+        lines.push(cols.map(c => escape(r[c] || "")).join(","));
+      });
+
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `political_admin_${cid}_${currentTab}_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast("CSV downloaded");
     }
 
-    // --- Branding Logic (LocalStorage) ---
-    function saveSettings() {
-        const settings = {
-            name: document.getElementById('brandName').value,
-            theme: document.getElementById('brandTheme').value,
-            footer: document.getElementById('brandFooter').value,
-            // Images are not saved in localStorage in this simplified version to avoid quota limits, 
-            // but we save text preferences.
-        };
-        localStorage.setItem(`political_branding_${collectionId}`, JSON.stringify(settings));
-        alert("Branding Settings Saved Locally!");
-        updatePreview();
+    function init() {
+      // Auto CID from token payload (if JWT-like) or from URL params
+      const urlCid = qs("cid") || qs("collection_id") || qs("collectionId");
+      const token = qs("token");
+
+      if (urlCid) cid = urlCid;
+
+      // Try decode token payload (your tokens are JWT-like: header.payload.signature)
+      if (!cid && token && token.split(".").length >= 2) {
+        try {
+          const payloadB64 = token.split(".")[1];
+          const payloadJson = JSON.parse(atob(payloadB64.replaceAll("-","+").replaceAll("_","/")));
+          cid = payloadJson.collection_id || payloadJson.cid || payloadJson.collectionId || "";
+        } catch {}
+      }
+
+      document.getElementById("cidInput").value = cid || "";
+      document.getElementById("pillMode").textContent = "API: " + API_ID;
+
+      buildTabList();
+
+      // Events
+      document.getElementById("btnUseCid").onclick = () => {
+        cid = document.getElementById("cidInput").value.trim();
+        if (!cid) return showToast("CID missing");
+        nextKeyByTab = {};
+        loadData({ reset: true });
+      };
+
+      document.getElementById("btnRefresh").onclick = () => loadData({ reset: true });
+      document.getElementById("btnClear").onclick = () => {
+        document.getElementById("qInput").value = "";
+        document.getElementById("fromInput").value = "";
+        document.getElementById("toInput").value = "";
+        document.getElementById("dupOnly").value = "";
+        applyFiltersAndRender(false);
+      };
+      document.getElementById("btnApply").onclick = () => applyFiltersAndRender(false);
+      document.getElementById("btnExport").onclick = exportCSV;
+
+      document.getElementById("qInput").addEventListener("input", () => applyFiltersAndRender(false));
+      document.getElementById("btnLoadMore").onclick = () => loadData({ reset: false });
+
+      document.getElementById("drawerBackdrop").onclick = closeDrawer;
+      document.getElementById("btnCloseDrawer").onclick = closeDrawer;
+
+      document.getElementById("btnCloseImg").onclick = closeImgModal;
+      document.getElementById("imgModal").onclick = (e) => { if (e.target.id === "imgModal") closeImgModal(); };
+
+      // First load if cid exists
+      if (cid) {
+        loadData({ reset: true });
+      } else {
+        document.getElementById("subtitle").textContent = "CID missing • left sidebar me collection_id set karo";
+        showToast("Set Collection ID");
+      }
     }
 
-    function loadSettings() {
-        const saved = localStorage.getItem(`political_branding_${collectionId}`);
-        if(saved) {
-            const s = JSON.parse(saved);
-            if(s.name) document.getElementById('brandName').value = s.name;
-            if(s.theme) document.getElementById('brandTheme').value = s.theme;
-            if(s.footer) document.getElementById('brandFooter').value = s.footer;
-            // Trigger update to apply styles
-            updatePreview();
-        }
-    }
-
-    // --- Editor Modal & Images ---
-    function openEdit(id) {
-        const item = rawData.find(i => i.entry_id === id); if(!item) return; editingId = id;
-        const formContainer = document.getElementById('modalForm'); formContainer.innerHTML = '';
-        const fields = SCHEMAS[currentTab].fields || []; const data = item.payload || {};
-        
-        fields.forEach(field => {
-            if(field.readonly) return;
-            const val = data[field.key] || '';
-            let inputHtml = `<input type="${field.type || 'text'}" id="edit_${field.key}" value="${val}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-orange-500" />`;
-            
-            if(field.type === 'select') {
-                inputHtml = `<select id="edit_${field.key}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:border-orange-500">
-                    ${field.options.map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}
-                </select>`;
-            }
-            formContainer.innerHTML += `<div><label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase">${field.label}</label>${inputHtml}</div>`;
-        });
-        document.getElementById('editModal').classList.add('open');
-    }
-
-    function closeModal() { document.getElementById('editModal').classList.remove('open'); }
-    
-    function saveChanges() {
-        // Mock update logic
-        const item = rawData.find(i => i.entry_id === editingId);
-        const fields = SCHEMAS[currentTab].fields;
-        fields.forEach(f => {
-            if(f.readonly) return;
-            const el = document.getElementById(`edit_${f.key}`);
-            if(el) item.payload[f.key] = el.value;
-        });
-        filterTable(); // Re-render
-        closeModal();
-    }
-
-    // --- Image Preview Utils ---
-    function handleImageUpload(input, targetImgId, smallPreviewId = null) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = document.getElementById(targetImgId);
-                if(targetImgId === 'previewHeaderBg') {
-                    img.style.backgroundImage = `url('${e.target.result}')`;
-                } else {
-                    img.src = e.target.result;
-                    img.classList.remove('hidden');
-                }
-                if (smallPreviewId) {
-                    const small = document.getElementById(smallPreviewId);
-                    small.src = e.target.result;
-                    small.classList.remove('hidden');
-                    document.getElementById('logoPlaceholder').classList.add('hidden');
-                }
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function updatePreview() {
-        const name = document.getElementById('brandName').value;
-        const footer = document.getElementById('brandFooter').value;
-        const theme = document.getElementById('brandTheme').value;
-        const selectedForm = document.getElementById('previewFormSelector').value;
-
-        // Texts
-        document.getElementById('prevHeader').textContent = name;
-        document.getElementById('prevFooter').textContent = footer;
-        document.getElementById('prevSubHeader').textContent = SCHEMAS[selectedForm].title;
-
-        // Theme Colors
-        const btn = document.getElementById('prevBtn');
-        const screen = document.getElementById('mobileScreen');
-        let bgGrad, btnGrad;
-
-        if(theme === 'blue') {
-            bgGrad = 'radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 50%), #0f172a';
-            btnGrad = 'from-blue-600 to-indigo-600';
-        } else if(theme === 'green') {
-            bgGrad = 'radial-gradient(circle at top left, rgba(16,185,129,0.15), transparent 50%), #0f172a';
-            btnGrad = 'from-emerald-600 to-teal-600';
-        } else if(theme === 'red') {
-            bgGrad = 'radial-gradient(circle at top left, rgba(239,68,68,0.15), transparent 50%), #0f172a';
-            btnGrad = 'from-red-600 to-rose-600';
-        } else { // Orange
-            bgGrad = 'radial-gradient(circle at top left, rgba(249,115,22,0.15), transparent 50%), #0f172a';
-            btnGrad = 'from-orange-500 to-red-500';
-        }
-
-        screen.style.background = bgGrad;
-        btn.className = `h-12 bg-gradient-to-r rounded-xl w-full mt-5 shadow-lg flex items-center justify-center text-white font-bold text-sm ${btnGrad}`;
-
-        // Render Form Fields
-        const fieldsContainer = document.getElementById('previewFields');
-        fieldsContainer.innerHTML = '';
-        const previewSchema = SCHEMAS[selectedForm].previewFields || [];
-
-        previewSchema.forEach(f => {
-            let innerContent = '';
-            if(f.icon === 'fa-camera') {
-                innerContent = `
-                <div class="border-2 border-dashed border-slate-600/50 rounded-xl h-24 flex flex-col items-center justify-center bg-slate-800/30">
-                    <i class="fa-solid fa-camera text-slate-500 mb-1"></i>
-                    <span class="text-[10px] text-slate-500">${f.ph}</span>
-                </div>`;
-            } else {
-                innerContent = `
-                <div class="relative">
-                    <input disabled type="text" placeholder="${f.ph}" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg py-3 pl-10 pr-3 text-xs text-slate-400">
-                    <i class="fa-solid ${f.icon} absolute left-3 top-3.5 text-slate-500 text-xs"></i>
-                </div>`;
-            }
-            fieldsContainer.innerHTML += innerContent;
-        });
-    }
-
-    function copyLink(filename) {
-        if(!collectionId) { alert("Collection ID Missing!"); return; }
-        const base = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
-        const link = `${base}/${filename}?cid=${collectionId}`;
-        navigator.clipboard.writeText(link);
-        // Simple Toast
-        const btn = event.currentTarget;
-        const orig = btn.innerText;
-        btn.innerText = "Copied!";
-        setTimeout(() => btn.innerText = orig, 1500);
-    }
+    init();
   </script>
 </body>
 </html>

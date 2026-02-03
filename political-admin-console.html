@@ -592,7 +592,7 @@
     }
 
     // --- Data Loading (FIXED: Fetch ALL and filter client side) ---
-    async function loadData(showLoading = true) {
+    async function loadData(showLoading = true, forceScan = false) {
       if(!collectionId) return;
       const tbody = document.getElementById('tableBody');
       const thead = document.getElementById('tableHeaderRow');
@@ -612,18 +612,33 @@
       try {
         // STRATEGY: Fetch "all" to avoid strict filtering on backend if naming is mismatched
         // NEW: Try with scan=true to bypass index if needed, assuming backend supports it or we rely on all fetch
+        let payload = {
+            collection_id: collectionId,
+            form_type: "all", // Fetch everything, filter later
+            limit: 500, // Fetch more to ensure we catch relevant items
+            start_ms: "0" // Fetch all history
+        };
+        
+        // If force scan enabled manually or previous attempt failed implicitely
+        if(forceScan) payload.scan = true;
+
         const json = await apiCall('/political/public/forms', {
             action: "admin_list",
-            payload: {
-                collection_id: collectionId,
-                form_type: "all", // Fetch everything, filter later
-                limit: 500, // Fetch more to ensure we catch relevant items
-                start_ms: "0", // Fetch all history
-                scan: true // Hint to backend if supported to use Scan instead of Query
-            }
+            payload: payload
         });
         
-        const allItems = (json.items || []);
+        let allItems = (json.items || []);
+        
+        // Fallback: If 0 items returned on standard query and NOT a force scan, try forceful scan immediately
+        if (allItems.length === 0 && !forceScan) {
+             console.warn("Index query returned 0. Retrying with full Scan...");
+             payload.scan = true;
+             const retryJson = await apiCall('/political/public/forms', {
+                action: "admin_list",
+                payload: payload
+             });
+             allItems = (retryJson.items || []);
+        }
         
         // Debug info about types found
         // Need to handle potentially wrapped values like {S: "visitor_form"} in form_type

@@ -331,16 +331,6 @@
     collectionId = qs('cid') || qs('collection_id');
     const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
 
-    // Init
-    if(!collectionId) {
-        document.getElementById('cidWarning').classList.remove('hidden');
-        document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
-    } else {
-        document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
-        loadSettings(); // Load Branding from Local
-        loadData();
-    }
-
     // --- Helpers ---
     function showToast(msg, type = 'success') {
       const t = document.getElementById('toast');
@@ -486,6 +476,19 @@
         ]
       }
     };
+
+    // Init Logic Moved Here to Ensure SCHEMAS is defined
+    if(!collectionId) {
+        document.getElementById('cidWarning').classList.remove('hidden');
+        document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
+    } else {
+        document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
+        // Delay slighty to ensure DOM is ready if needed, though script is at end of body
+        setTimeout(() => {
+            loadSettings(); 
+            loadData();
+        }, 100);
+    }
 
     // --- Tab Switching ---
     function switchTab(tab, el) {

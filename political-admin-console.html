@@ -7,62 +7,65 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
-          colors: { brand: { 500: '#f97316', 600: '#ea580c' } }
+          colors: { brand: { 500: '#f97316', 600: '#ea580c' }, slate2: { 950: '#020617' } }
         }
       }
     }
   </script>
   <style>
-    body {
+    body{
       background:
         radial-gradient(circle at top left, rgba(249, 115, 22, 0.14), transparent 50%),
         radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.10), transparent 50%),
         #020617;
-      color: #e2e8f0;
+      color:#e2e8f0;
     }
-    .glass {
-      background: rgba(15, 23, 42, 0.6);
+    .glass{
+      background: rgba(15,23,42,.62);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255,255,255,.08);
       box-shadow: 0 20px 60px rgba(0,0,0,.35);
     }
-    .card {
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.75) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+    .card{
+      background: linear-gradient(145deg, rgba(30,41,59,.65) 0%, rgba(15,23,42,.78) 100%);
+      border: 1px solid rgba(255,255,255,.07);
     }
-    .input {
-      background: rgba(2, 6, 23, 0.55);
-      border: 1px solid rgba(255,255,255,0.10);
-      color: #fff;
+    .input{
+      background: rgba(2,6,23,.55);
+      border: 1px solid rgba(255,255,255,.10);
+      color:#fff;
     }
-    .input:focus {
-      outline: none;
-      border-color: rgba(249,115,22,.8);
-      box-shadow: 0 0 0 2px rgba(249,115,22,.18);
-    }
-    .pill { border: 1px solid rgba(255,255,255,0.10); }
+    .input:focus{ outline:none; border-color: rgba(249,115,22,.85); box-shadow: 0 0 0 2px rgba(249,115,22,.18); }
+    .pill{ border: 1px solid rgba(255,255,255,.10); }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
     ::-webkit-scrollbar { width: 7px; }
     ::-webkit-scrollbar-track { background: #020617; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .table-scroll::-webkit-scrollbar{ height: 8px; }
+    .table-scroll::-webkit-scrollbar-thumb{ background: #475569; border-radius: 10px; }
   </style>
 </head>
+
 <body class="min-h-screen font-sans">
-  <div class="sticky top-0 z-40 border-b border-white/5 glass">
+  <!-- Top bar -->
+  <div class="sticky top-0 z-50 border-b border-white/5 glass">
     <div class="max-w-7xl mx-auto px-4">
-      <div class="h-16 flex items-center justify-between">
-        <div class="flex items-center gap-3">
+      <div class="h-16 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
             <i class="fa-solid fa-screwdriver-wrench"></i>
           </div>
-          <div>
-            <div class="text-white font-extrabold tracking-tight">EventLens <span class="text-orange-400">Political</span> Admin</div>
-            <div class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Branding • Programs • Level Locks • Preview</div>
+          <div class="min-w-0">
+            <div class="text-white font-extrabold tracking-tight truncate">EventLens <span class="text-orange-400">Political</span> Admin Console</div>
+            <div class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider truncate">Per-Form Branding • Programs • Data • Analytics • Preview</div>
           </div>
         </div>
 
@@ -71,327 +74,582 @@
             <i class="fa-solid fa-layer-group text-orange-400"></i>
             <span id="cidVal"></span>
           </div>
+
           <button id="btnReload" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold">
             <i class="fa-solid fa-rotate-right mr-1"></i> Reload
           </button>
+
           <button id="btnSave" class="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-xs font-extrabold shadow-lg shadow-orange-500/20">
-            <i class="fa-solid fa-floppy-disk mr-1"></i> Save Changes
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Save
           </button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Body -->
   <div class="max-w-7xl mx-auto px-4 py-6">
     <div class="grid lg:grid-cols-12 gap-6">
 
+      <!-- Left -->
       <div class="lg:col-span-3 space-y-4">
+        <div class="glass rounded-2xl p-4">
+          <div class="text-xs text-slate-400 font-semibold mb-3 uppercase tracking-wider">Admin Scope</div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs font-bold text-slate-300">Collection ID (CID)</label>
+              <div class="mt-1 flex gap-2">
+                <input id="cidInput" class="input w-full rounded-xl px-3 py-2 text-sm kbd" placeholder="CID auto from URL" />
+                <button id="btnApplyCid" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">
+                  Apply
+                </button>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-2">URL में <span class="kbd">?cid=</span> हो तो auto fill हो जाता है।</div>
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300">Target Form</label>
+              <select id="targetFormSel" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1">
+                <option value="__defaults__">Defaults (All Forms)</option>
+                <option value="visitor_form">Visitor Form</option>
+                <option value="party_attendance">Party Attendance</option>
+                <option value="president_tour">President Tour</option>
+                <option value="mandal_reporting">कार्यक्रम रिपोर्टिंग</option>
+                <option value="coordinator">संयोजक / Coordinator</option>
+                <option value="program_info">Program Info</option>
+              </select>
+              <div class="text-[11px] text-slate-500 mt-2">अब branding/logo/header **हर form के लिए अलग** save होगा।</div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950/20 p-3">
+              <div>
+                <div class="text-xs font-extrabold text-white">Live Preview</div>
+                <div class="text-[11px] text-slate-500">Branding tab में same समय preview</div>
+              </div>
+              <label class="inline-flex items-center cursor-pointer">
+                <input id="livePreviewToggle" type="checkbox" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-orange-600 relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+              </label>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-white/5">
+            <div id="status" class="hidden text-xs"></div>
+
+            <div class="mt-3 text-[11px] text-slate-500 leading-relaxed">
+              <div class="font-bold text-slate-300 mb-1"><i class="fa-solid fa-circle-info text-sky-400 mr-1"></i> Note</div>
+              <div>Backend admin APIs न हों तो यह console <b>localStorage fallback</b> पर save करेगा।</div>
+            </div>
+          </div>
+        </div>
+
         <div class="glass rounded-2xl p-4">
           <div class="text-xs text-slate-400 font-semibold mb-3 uppercase tracking-wider">Sections</div>
           <div class="space-y-2">
             <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/50 hover:bg-slate-800 border border-slate-700 text-slate-200 text-sm font-bold" data-tab="branding">
-              <i class="fa-solid fa-palette mr-2 text-orange-400"></i> Branding & Theme
+              <i class="fa-solid fa-palette mr-2 text-orange-400"></i> Branding & Preview
             </button>
             <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="programs">
               <i class="fa-solid fa-list-check mr-2 text-orange-400"></i> Program Names
             </button>
             <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="levels">
-              <i class="fa-solid fa-lock mr-2 text-orange-400"></i> Level Lock
+              <i class="fa-solid fa-lock mr-2 text-orange-400"></i> Level Locks
             </button>
-            <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="preview">
-              <i class="fa-solid fa-eye mr-2 text-orange-400"></i> Live Preview
+            <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="data">
+              <i class="fa-solid fa-table mr-2 text-orange-400"></i> Data Management
             </button>
-          </div>
-
-          <div class="mt-4 pt-4 border-t border-white/5">
-            <div id="status" class="hidden text-xs"></div>
-            <div class="mt-3 text-[11px] text-slate-500 leading-relaxed">
-              <div class="font-bold text-slate-300 mb-1"><i class="fa-solid fa-circle-info text-sky-400 mr-1"></i> Note</div>
-              <div>यह console <b>CID based</b> config सेव करता है। अगर backend में admin APIs नहीं हैं तो यह localStorage में save करके चलेगा।</div>
-            </div>
+            <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="analytics">
+              <i class="fa-solid fa-chart-column mr-2 text-orange-400"></i> Analytics
+            </button>
+            <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="backend">
+              <i class="fa-solid fa-plug mr-2 text-orange-400"></i> Backend APIs
+            </button>
           </div>
         </div>
       </div>
 
+      <!-- Main -->
       <div class="lg:col-span-9 space-y-6">
 
+        <!-- Branding + Preview -->
         <section id="tab-branding" class="tab card rounded-2xl p-5 lg:p-6">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <div class="text-lg font-extrabold text-white">Branding & Theme</div>
-              <div class="text-xs text-slate-400 mt-1">Logo / Header Image / Background Image को <b>URL नहीं</b>, सीधे upload करके set करें।</div>
-            </div>
-            <div class="text-xs text-slate-400">Preview नीचे दिखेगा</div>
-          </div>
-
-          <div class="mt-6 grid md:grid-cols-2 gap-4">
-            <div>
-              <label class="text-xs font-bold text-slate-300">Title (Header)</label>
-              <input id="b_title" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. भाजपा कार्यालय मंदसौर" />
-            </div>
-            <div>
-              <label class="text-xs font-bold text-slate-300">Subtitle</label>
-              <input id="b_subtitle" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. स्वागत" />
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-xs font-bold text-slate-300">Tagline</label>
-              <input id="b_tagline" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. सेवा • संगठन • समर्पण" />
-            </div>
-
-            <div>
-              <label class="text-xs font-bold text-slate-300">Theme Color 1</label>
-              <input id="b_c1" type="color" class="w-full mt-2 h-10 rounded-xl bg-slate-900/40 border border-slate-700" />
-            </div>
-            <div>
-              <label class="text-xs font-bold text-slate-300">Theme Color 2</label>
-              <input id="b_c2" type="color" class="w-full mt-2 h-10 rounded-xl bg-slate-900/40 border border-slate-700" />
+              <div class="text-lg font-extrabold text-white">Branding & Preview</div>
+              <div class="text-xs text-slate-400 mt-1">हर form की branding अलग-अलग save होगी। Right side पर live preview (card + iframe)।</div>
             </div>
           </div>
 
-          <div class="mt-6 grid lg:grid-cols-3 gap-4">
-            <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
-              <div class="flex items-center justify-between">
-                <div class="text-sm font-extrabold text-white">Logo</div>
-                <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="logo">
-                  <i class="fa-solid fa-trash-can mr-1"></i> Remove
-                </button>
+          <div class="mt-6 grid lg:grid-cols-12 gap-5">
+            <!-- Controls -->
+            <div class="lg:col-span-6 space-y-5">
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-xs font-bold text-slate-300">Title (Header)</label>
+                  <input id="b_title" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. भाजपा कार्यालय मंदसौर" />
+                </div>
+                <div>
+                  <label class="text-xs font-bold text-slate-300">Subtitle</label>
+                  <input id="b_subtitle" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. स्वागत" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="text-xs font-bold text-slate-300">Tagline</label>
+                  <input id="b_tagline" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. सेवा • संगठन • समर्पण" />
+                </div>
+
+                <div>
+                  <label class="text-xs font-bold text-slate-300">Theme Color 1</label>
+                  <input id="b_c1" type="color" class="w-full mt-2 h-10 rounded-xl bg-slate-900/40 border border-slate-700" />
+                </div>
+                <div>
+                  <label class="text-xs font-bold text-slate-300">Theme Color 2</label>
+                  <input id="b_c2" type="color" class="w-full mt-2 h-10 rounded-xl bg-slate-900/40 border border-slate-700" />
+                </div>
               </div>
-              <div class="mt-3 flex items-center gap-3">
-                <div class="w-14 h-14 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
-                  <img id="prev_logo" class="w-full h-full object-cover hidden" />
-                  <i id="icon_logo" class="fa-solid fa-image text-slate-500"></i>
-                </div>
-                <div class="flex-1">
-                  <input id="file_logo" type="file" accept="image/*" class="hidden" />
-                  <button id="btn_logo" class="w-full px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
-                    <i class="fa-solid fa-upload mr-1"></i> Upload Logo
-                  </button>
-                  <div id="name_logo" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
-                </div>
-              </div>
-            </div>
 
-            <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
-              <div class="flex items-center justify-between">
-                <div class="text-sm font-extrabold text-white">Header Image</div>
-                <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="header">
-                  <i class="fa-solid fa-trash-can mr-1"></i> Remove
-                </button>
-              </div>
-              <div class="mt-3">
-                <div class="w-full h-24 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
-                  <img id="prev_header" class="w-full h-full object-cover hidden" />
-                  <i id="icon_header" class="fa-solid fa-panorama text-slate-500"></i>
-                </div>
-                <div class="mt-3 flex items-center gap-2">
-                  <input id="file_header" type="file" accept="image/*" class="hidden" />
-                  <button id="btn_header" class="flex-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
-                    <i class="fa-solid fa-upload mr-1"></i> Upload Header
-                  </button>
-                </div>
-                <div id="name_header" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
-              </div>
-            </div>
-
-            <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
-              <div class="flex items-center justify-between">
-                <div class="text-sm font-extrabold text-white">Background Image</div>
-                <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="bg">
-                  <i class="fa-solid fa-trash-can mr-1"></i> Remove
-                </button>
-              </div>
-              <div class="mt-3">
-                <div class="w-full h-24 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
-                  <img id="prev_bg" class="w-full h-full object-cover hidden" />
-                  <i id="icon_bg" class="fa-solid fa-mountain-sun text-slate-500"></i>
-                </div>
-                <div class="mt-3 flex items-center gap-2">
-                  <input id="file_bg" type="file" accept="image/*" class="hidden" />
-                  <button id="btn_bg" class="flex-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
-                    <i class="fa-solid fa-upload mr-1"></i> Upload Background
-                  </button>
-                </div>
-                <div id="name_bg" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-6">
-            <div class="text-sm font-extrabold text-white mb-3"><i class="fa-solid fa-eye mr-2 text-orange-400"></i> Live Branding Preview</div>
-
-            <div id="previewCard" class="rounded-2xl overflow-hidden border border-slate-800 relative">
-              <div id="previewBg" class="absolute inset-0 opacity-30 bg-cover bg-center"></div>
-              <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/60"></div>
-
-              <div id="previewHeaderBar" class="absolute top-0 left-0 w-full h-1"></div>
-
-              <div class="relative p-6">
-                <div id="previewHeaderImgWrap" class="hidden w-full h-28 rounded-2xl overflow-hidden border border-white/10 mb-5">
-                  <img id="previewHeaderImg" class="w-full h-full object-cover" />
-                </div>
-
-                <div class="flex items-center gap-4">
-                  <div class="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
-                    <img id="previewLogo" class="w-full h-full object-cover hidden" />
-                    <i id="previewLogoIcon" class="fa-solid fa-bolt text-orange-400 text-2xl"></i>
+              <!-- Upload blocks -->
+              <div class="grid md:grid-cols-3 gap-4">
+                <!-- Logo -->
+                <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm font-extrabold text-white">Logo</div>
+                    <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="logo">
+                      <i class="fa-solid fa-trash-can mr-1"></i> Remove
+                    </button>
                   </div>
-                  <div class="min-w-0">
-                    <div id="previewTitle" class="text-2xl font-extrabold text-white leading-tight"></div>
-                    <div id="previewSubtitle" class="text-sm text-slate-300 mt-1"></div>
-                    <div id="previewTagline" class="text-xs text-slate-400 mt-2"></div>
-                  </div>
-                </div>
-
-                <div class="mt-6 grid grid-cols-2 gap-3">
-                  <div class="rounded-xl bg-white/5 border border-white/10 p-3">
-                    <div class="text-[10px] uppercase text-slate-400 font-bold">Theme Color 1</div>
-                    <div class="mt-2 flex items-center gap-2">
-                      <div id="sw1" class="w-6 h-6 rounded-lg border border-white/20"></div>
-                      <div id="txt1" class="text-xs text-slate-300 font-mono"></div>
+                  <div class="mt-3 flex items-center gap-3">
+                    <div class="w-14 h-14 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
+                      <img id="prev_logo" class="w-full h-full object-cover hidden" />
+                      <i id="icon_logo" class="fa-solid fa-image text-slate-500"></i>
                     </div>
-                  </div>
-                  <div class="rounded-xl bg-white/5 border border-white/10 p-3">
-                    <div class="text-[10px] uppercase text-slate-400 font-bold">Theme Color 2</div>
-                    <div class="mt-2 flex items-center gap-2">
-                      <div id="sw2" class="w-6 h-6 rounded-lg border border-white/20"></div>
-                      <div id="txt2" class="text-xs text-slate-300 font-mono"></div>
+                    <div class="flex-1 min-w-0">
+                      <input id="file_logo" type="file" accept="image/*" class="hidden" />
+                      <button id="btn_logo" class="w-full px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
+                        <i class="fa-solid fa-upload mr-1"></i> Upload
+                      </button>
+                      <div id="name_logo" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
                     </div>
                   </div>
                 </div>
-
-                <div class="mt-5 text-[11px] text-slate-400">
-                  ⚡ यह preview <b>admin console में live</b> है। Save के बाद forms में वही branding apply होगी (यदि forms backend config पढ़ रहे हों)।
+                <!-- Header -->
+                <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm font-extrabold text-white">Header</div>
+                    <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="header">
+                      <i class="fa-solid fa-trash-can mr-1"></i> Remove
+                    </button>
+                  </div>
+                  <div class="mt-3">
+                    <div class="w-full h-20 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
+                      <img id="prev_header" class="w-full h-full object-cover hidden" />
+                      <i id="icon_header" class="fa-solid fa-panorama text-slate-500"></i>
+                    </div>
+                    <div class="mt-3">
+                      <input id="file_header" type="file" accept="image/*" class="hidden" />
+                      <button id="btn_header" class="w-full px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
+                        <i class="fa-solid fa-upload mr-1"></i> Upload
+                      </button>
+                      <div id="name_header" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
+                    </div>
+                  </div>
                 </div>
+                <!-- Background -->
+                <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm font-extrabold text-white">Background</div>
+                    <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="bg">
+                      <i class="fa-solid fa-trash-can mr-1"></i> Remove
+                    </button>
+                  </div>
+                  <div class="mt-3">
+                    <div class="w-full h-20 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
+                      <img id="prev_bg" class="w-full h-full object-cover hidden" />
+                      <i id="icon_bg" class="fa-solid fa-mountain-sun text-slate-500"></i>
+                    </div>
+                    <div class="mt-3">
+                      <input id="file_bg" type="file" accept="image/*" class="hidden" />
+                      <button id="btn_bg" class="w-full px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
+                        <i class="fa-solid fa-upload mr-1"></i> Upload
+                      </button>
+                      <div id="name_bg" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick actions -->
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div class="text-sm font-extrabold text-white">Quick</div>
+                    <div class="text-[11px] text-slate-500">Current form branding को defaults में copy / reset</div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button id="btnCopyToDefaults" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">
+                      <i class="fa-solid fa-clone mr-1"></i> Copy → Defaults
+                    </button>
+                    <button id="btnResetBrand" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">
+                      <i class="fa-solid fa-arrow-rotate-left mr-1"></i> Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Live preview area -->
+            <div class="lg:col-span-6 space-y-4">
+              <!-- Branding preview card -->
+              <div class="rounded-2xl overflow-hidden border border-slate-800 relative">
+                <div id="previewBg" class="absolute inset-0 opacity-30 bg-cover bg-center"></div>
+                <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/60"></div>
+                <div id="previewHeaderBar" class="absolute top-0 left-0 w-full h-1"></div>
+
+                <div class="relative p-5">
+                  <div id="previewHeaderImgWrap" class="hidden w-full h-24 rounded-2xl overflow-hidden border border-white/10 mb-4">
+                    <img id="previewHeaderImg" class="w-full h-full object-cover" />
+                  </div>
+
+                  <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
+                      <img id="previewLogo" class="w-full h-full object-cover hidden" />
+                      <i id="previewLogoIcon" class="fa-solid fa-bolt text-orange-400 text-2xl"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <div id="previewTitle" class="text-2xl font-extrabold text-white leading-tight"></div>
+                      <div id="previewSubtitle" class="text-sm text-slate-300 mt-1"></div>
+                      <div id="previewTagline" class="text-xs text-slate-400 mt-2"></div>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 grid grid-cols-2 gap-3">
+                    <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+                      <div class="text-[10px] uppercase text-slate-400 font-bold">Color 1</div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <div id="sw1" class="w-6 h-6 rounded-lg border border-white/20"></div>
+                        <div id="txt1" class="text-xs text-slate-300 font-mono"></div>
+                      </div>
+                    </div>
+                    <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+                      <div class="text-[10px] uppercase text-slate-400 font-bold">Color 2</div>
+                      <div class="mt-2 flex items-center gap-2">
+                        <div id="sw2" class="w-6 h-6 rounded-lg border border-white/20"></div>
+                        <div id="txt2" class="text-xs text-slate-300 font-mono"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 text-[11px] text-slate-400">
+                    ⚡ यह preview admin console में live है।
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form iframe preview -->
+              <div class="rounded-2xl overflow-hidden border border-slate-800 bg-slate-950/20">
+                <div class="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                  <div class="text-xs text-slate-300 font-extrabold">
+                    <i class="fa-solid fa-display mr-2 text-orange-400"></i> Form Preview (Same Tab)
+                  </div>
+                  <div class="flex gap-2">
+                    <button id="btnOpenFormPreview" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">
+                      <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Open
+                    </button>
+                    <button id="btnLoadFormPreview" class="px-3 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-xs font-extrabold">
+                      <i class="fa-solid fa-eye mr-1"></i> Load
+                    </button>
+                  </div>
+                </div>
+                <div class="px-4 py-2 text-[11px] text-slate-500 border-b border-slate-800">
+                  Preview URL: <span id="formPreviewUrlTxt" class="kbd text-slate-300"></span>
+                </div>
+                <iframe id="formPreviewIframe" class="w-full h-[520px] bg-white"></iframe>
               </div>
             </div>
           </div>
         </section>
 
+        <!-- Programs -->
         <section id="tab-programs" class="tab hidden card rounded-2xl p-5 lg:p-6">
           <div class="flex items-start justify-between gap-4">
             <div>
               <div class="text-lg font-extrabold text-white">Program Names (Dropdown)</div>
-              <div class="text-xs text-slate-400 mt-1">Party Attendance / Reporting / Coordinator / Program Info में “कार्यक्रम का नाम” dropdown इसी list से भरेंगे।</div>
+              <div class="text-xs text-slate-400 mt-1">“कार्यक्रम का नाम” list यहीं से manage होगी।</div>
             </div>
           </div>
 
-          <div class="mt-5 grid md:grid-cols-3 gap-3">
+          <div class="mt-5 grid md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-7">
+              <label class="text-xs font-bold text-slate-300">Add Program</label>
+              <input id="progInput" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="नया कार्यक्रम नाम (e.g. मंडल बैठक)" />
+            </div>
+            <div class="md:col-span-3">
+              <label class="text-xs font-bold text-slate-300">Apply To</label>
+              <select id="progScopeSel" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1">
+                <option value="current">Current Target Form</option>
+                <option value="defaults">Defaults (All)</option>
+              </select>
+            </div>
             <div class="md:col-span-2">
-              <input id="progInput" class="input w-full rounded-xl px-3 py-2.5 text-sm" placeholder="नया कार्यक्रम नाम लिखें (e.g. मंडल बैठक)" />
+              <button id="btnAddProg" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-extrabold">
+                <i class="fa-solid fa-plus mr-1"></i> Add
+              </button>
             </div>
-            <button id="btnAddProg" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-extrabold">
-              <i class="fa-solid fa-plus mr-1"></i> Add
-            </button>
           </div>
 
-          <div class="mt-5">
-            <div class="text-xs font-bold text-slate-300 mb-2">Current Programs</div>
-            <div id="progList" class="space-y-2"></div>
-            <div class="text-[11px] text-slate-500 mt-3">Tip: duplicates auto रोक दिए हैं।</div>
+          <div class="mt-5 grid md:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-xs font-bold text-slate-300 mb-2">Current List</div>
+              <div id="progList" class="space-y-2"></div>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Forms field</div>
+              <div class="text-xs text-slate-400 mt-2">Suggested payload key: <span class="kbd">program_name</span></div>
+            </div>
           </div>
         </section>
 
+        <!-- Level locks -->
         <section id="tab-levels" class="tab hidden card rounded-2xl p-5 lg:p-6">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <div class="text-lg font-extrabold text-white">Level Lock</div>
-              <div class="text-xs text-slate-400 mt-1">कुछ forms में Level fixed रखना है (Admin से या link के साथ)।</div>
-            </div>
-          </div>
+          <div class="text-lg font-extrabold text-white">Level Locks</div>
+          <div class="text-xs text-slate-400 mt-1">Defaults या per-form lock कर सकते हो।</div>
 
-          <div class="mt-6 grid md:grid-cols-2 gap-4">
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
-              <div class="text-sm font-extrabold text-white">Karyakram Reporting</div>
-              <div class="text-[11px] text-slate-500 mt-1">Form: mandal_reporting</div>
-              <select id="lvl_mandal_reporting" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
-                <option value="">(Not fixed)</option>
-                <option value="district">District (जिला)</option>
-                <option value="vidhansabha">Vidhan Sabha (विधानसभा)</option>
-                <option value="mandal">Mandal (मंडल)</option>
+          <div class="mt-6 grid md:grid-cols-12 gap-4">
+            <div class="md:col-span-5 rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Scope</div>
+              <select id="levelScopeSel" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
+                <option value="current">Current Target Form</option>
+                <option value="defaults">Defaults (All)</option>
               </select>
             </div>
 
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
-              <div class="text-sm font-extrabold text-white">Coordinator</div>
-              <div class="text-[11px] text-slate-500 mt-1">Form: coordinator</div>
-              <select id="lvl_coordinator" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
-                <option value="">(Not fixed)</option>
-                <option value="district">District (जिला)</option>
-                <option value="vidhansabha">Vidhan Sabha (विधानसभा)</option>
-                <option value="mandal">Mandal (मंडल)</option>
-              </select>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
-              <div class="text-sm font-extrabold text-white">Program Info</div>
-              <div class="text-[11px] text-slate-500 mt-1">Form: program_info</div>
-              <select id="lvl_program_info" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
-                <option value="">(Not fixed)</option>
-                <option value="district">District (जिला)</option>
-                <option value="vidhansabha">Vidhan Sabha (विधानसभा)</option>
-                <option value="mandal">Mandal (मंडल)</option>
-              </select>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
-              <div class="text-sm font-extrabold text-white">Link Lock (Optional)</div>
-              <div class="text-xs text-slate-400 mt-2 leading-relaxed">
-                अगर link में <span class="font-mono">level=mandal</span> दिया हो तो form उसी level पर lock हो सकता है (forms में code चाहिए)।
+            <div class="md:col-span-7 grid sm:grid-cols-2 gap-4">
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+                <div class="text-sm font-extrabold text-white">कार्यक्रम रिपोर्टिंग</div>
+                <select id="lvl_mandal_reporting" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
+                  <option value="">(Not fixed)</option>
+                  <option value="district">District</option>
+                  <option value="vidhansabha">Vidhan Sabha</option>
+                  <option value="mandal">Mandal</option>
+                </select>
               </div>
-              <div class="mt-3 text-[11px] text-slate-500">
-                Example: <span class="font-mono">...?cid=XXX&level=mandal</span>
+
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+                <div class="text-sm font-extrabold text-white">Coordinator</div>
+                <select id="lvl_coordinator" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
+                  <option value="">(Not fixed)</option>
+                  <option value="district">District</option>
+                  <option value="vidhansabha">Vidhan Sabha</option>
+                  <option value="mandal">Mandal</option>
+                </select>
+              </div>
+
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+                <div class="text-sm font-extrabold text-white">Program Info</div>
+                <select id="lvl_program_info" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
+                  <option value="">(Not fixed)</option>
+                  <option value="district">District</option>
+                  <option value="vidhansabha">Vidhan Sabha</option>
+                  <option value="mandal">Mandal</option>
+                </select>
+              </div>
+
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+                <div class="text-sm font-extrabold text-white">Link Lock</div>
+                <div class="text-xs text-slate-400 mt-2">Example: <span class="kbd">...?cid=CID&level=mandal</span></div>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="tab-preview" class="tab hidden card rounded-2xl p-5 lg:p-6">
+        <!-- Data management -->
+        <section id="tab-data" class="tab hidden card rounded-2xl p-5 lg:p-6">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <div class="text-lg font-extrabold text-white">Preview Form (How it will look)</div>
-              <div class="text-xs text-slate-400 mt-1">Saved config के साथ forms preview करने के लिए नीचे select करके iframe में देखें।</div>
+              <div class="text-lg font-extrabold text-white">Data Management</div>
+              <div class="text-xs text-slate-400 mt-1">All forms data देखो, filter/sort करो, export करो।</div>
+            </div>
+            <div class="flex gap-2">
+              <button id="btnLoadData" class="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-xs font-extrabold">
+                <i class="fa-solid fa-download mr-1"></i> Load Data
+              </button>
+              <button id="btnExportCsv" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">
+                <i class="fa-solid fa-file-csv mr-1"></i> CSV
+              </button>
+              <button id="btnExportJson" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">
+                <i class="fa-solid fa-file-code mr-1"></i> JSON
+              </button>
             </div>
           </div>
 
           <div class="mt-6 grid md:grid-cols-12 gap-3 items-end">
-            <div class="md:col-span-5">
-              <label class="text-xs font-bold text-slate-300">Select Form</label>
-              <select id="previewFormSel" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1">
-                <option value="political_visitor_form.html">Visitor Form</option>
-                <option value="political_party_attendance_form.html">Party Attendance</option>
-                <option value="political_president_tour_form.html">President Tour</option>
-                <option value="political_mandal_reporting_form.html">Karyakram Reporting</option>
-                <option value="political_coordinator_form.html">Coordinator</option>
-                <option value="political_program_info_form.html">Program Info</option>
+            <div class="md:col-span-3">
+              <label class="text-xs font-bold text-slate-300">Form</label>
+              <select id="dataFormSel" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1">
+                <option value="__all__">All Forms</option>
+                <option value="visitor_form">Visitor</option>
+                <option value="party_attendance">Party Attendance</option>
+                <option value="president_tour">President Tour</option>
+                <option value="mandal_reporting">Reporting</option>
+                <option value="coordinator">Coordinator</option>
+                <option value="program_info">Program Info</option>
               </select>
             </div>
-            <div class="md:col-span-4">
-              <label class="text-xs font-bold text-slate-300">Mode</label>
-              <select id="previewModeSel" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1">
-                <option value="cid">CID Mode (Dashboard)</option>
-                <option value="token">Token Mode (Public) — if token exists</option>
-              </select>
+
+            <div class="md:col-span-3">
+              <label class="text-xs font-bold text-slate-300">Search</label>
+              <input id="dataSearch" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="name / mobile / district / program" />
             </div>
-            <div class="md:col-span-3 flex gap-2">
-              <button id="btnOpenNew" class="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-extrabold">
-                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Open
-              </button>
-              <button id="btnLoadIframe" class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-sm font-extrabold">
-                <i class="fa-solid fa-eye mr-1"></i> Load
+
+            <div class="md:col-span-2">
+              <label class="text-xs font-bold text-slate-300">From</label>
+              <input id="dateFrom" type="date" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-xs font-bold text-slate-300">To</label>
+              <input id="dateTo" type="date" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" />
+            </div>
+
+            <div class="md:col-span-2">
+              <button id="btnApplyFilter" class="w-full px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-extrabold">
+                <i class="fa-solid fa-filter mr-1"></i> Apply
               </button>
             </div>
           </div>
 
-          <div class="mt-5 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950/20">
-            <div class="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
-              <div class="text-xs text-slate-400 font-bold"><i class="fa-solid fa-display mr-2 text-orange-400"></i> Embedded Preview</div>
-              <div class="text-[11px] text-slate-500 truncate" id="iframeUrlTxt"></div>
+          <div class="mt-6 grid sm:grid-cols-4 gap-3">
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-[11px] uppercase text-slate-500 font-bold">Total</div>
+              <div id="kpiTotal" class="text-2xl font-extrabold text-white mt-2">0</div>
             </div>
-            <iframe id="previewIframe" class="w-full h-[740px] bg-white"></iframe>
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-[11px] uppercase text-slate-500 font-bold">Today</div>
+              <div id="kpiToday" class="text-2xl font-extrabold text-white mt-2">0</div>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-[11px] uppercase text-slate-500 font-bold">Unique Mobiles</div>
+              <div id="kpiUnique" class="text-2xl font-extrabold text-white mt-2">0</div>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-[11px] uppercase text-slate-500 font-bold">Forms</div>
+              <div id="kpiForms" class="text-2xl font-extrabold text-white mt-2">0</div>
+            </div>
+          </div>
+
+          <div class="mt-6 rounded-2xl overflow-hidden border border-slate-800">
+            <div class="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-950/20">
+              <div class="text-xs text-slate-300 font-extrabold"><i class="fa-solid fa-table mr-2 text-orange-400"></i> Entries</div>
+              <div class="text-[11px] text-slate-500">Header click = sort</div>
+            </div>
+
+            <div class="table-scroll overflow-auto">
+              <table class="min-w-[920px] w-full text-sm">
+                <thead class="bg-slate-950/40 text-slate-300">
+                  <tr>
+                    <th class="text-left px-4 py-3 cursor-pointer" data-sort="created_at">Time <i class="fa-solid fa-sort text-[10px] ml-1 text-slate-500"></i></th>
+                    <th class="text-left px-4 py-3 cursor-pointer" data-sort="form_type">Form <i class="fa-solid fa-sort text-[10px] ml-1 text-slate-500"></i></th>
+                    <th class="text-left px-4 py-3 cursor-pointer" data-sort="mobile">Mobile <i class="fa-solid fa-sort text-[10px] ml-1 text-slate-500"></i></th>
+                    <th class="text-left px-4 py-3 cursor-pointer" data-sort="name">Name <i class="fa-solid fa-sort text-[10px] ml-1 text-slate-500"></i></th>
+                    <th class="text-left px-4 py-3 cursor-pointer" data-sort="district">District <i class="fa-solid fa-sort text-[10px] ml-1 text-slate-500"></i></th>
+                    <th class="text-left px-4 py-3 cursor-pointer" data-sort="program_name">Program <i class="fa-solid fa-sort text-[10px] ml-1 text-slate-500"></i></th>
+                    <th class="text-left px-4 py-3">Details</th>
+                  </tr>
+                </thead>
+                <tbody id="dataTbody" class="bg-slate-950/20"></tbody>
+              </table>
+            </div>
+
+            <div class="px-4 py-3 border-t border-slate-800 bg-slate-950/20 flex flex-wrap items-center justify-between gap-2">
+              <div class="text-[11px] text-slate-500">Loaded: <span id="loadedCount" class="text-slate-300 font-bold">0</span></div>
+              <div class="flex gap-2">
+                <button id="btnPrevPage" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">Prev</button>
+                <button id="btnNextPage" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">Next</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="modal" class="fixed inset-0 hidden items-center justify-center z-50">
+            <div class="absolute inset-0 bg-black/60"></div>
+            <div class="relative max-w-3xl w-[92%] rounded-2xl border border-slate-700 bg-slate-950/90 p-5">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="text-lg font-extrabold text-white">Entry Details</div>
+                  <div id="modalMeta" class="text-[11px] text-slate-400 mt-1"></div>
+                </div>
+                <button id="btnCloseModal" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              <pre id="modalJson" class="mt-4 text-xs text-slate-200 bg-black/30 border border-slate-800 rounded-2xl p-4 overflow-auto max-h-[60vh]"></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- Analytics -->
+        <section id="tab-analytics" class="tab hidden card rounded-2xl p-5 lg:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="text-lg font-extrabold text-white">Analytics</div>
+              <div class="text-xs text-slate-400 mt-1">Loaded data के basis पर charts।</div>
+            </div>
+            <button id="btnRefreshCharts" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold">
+              <i class="fa-solid fa-rotate mr-1"></i> Refresh Charts
+            </button>
+          </div>
+
+          <div class="mt-6 grid md:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-xs font-bold text-slate-300 mb-2">Entries by Form</div>
+              <canvas id="chartByForm" height="180"></canvas>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-xs font-bold text-slate-300 mb-2">Entries by Day (Last 14)</div>
+              <canvas id="chartByDay" height="180"></canvas>
+            </div>
+            <div class="md:col-span-2 rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-xs font-bold text-slate-300 mb-2">Top Districts</div>
+              <canvas id="chartDistrict" height="140"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- Backend -->
+        <section id="tab-backend" class="tab hidden card rounded-2xl p-5 lg:p-6">
+          <div class="text-lg font-extrabold text-white">Backend APIs needed</div>
+          <div class="text-xs text-slate-400 mt-2">
+            Private endpoint: <span class="kbd">POST /prod/political/forms</span> + Authorization <span class="kbd">Bearer id_token</span>
+          </div>
+
+          <div class="mt-5 grid md:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Config</div>
+              <div class="text-xs text-slate-400 mt-2">
+                <div class="kbd">admin_get_config</div>
+                <div class="kbd mt-2">admin_save_config</div>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Assets upload</div>
+              <div class="text-xs text-slate-400 mt-2">
+                <div class="kbd">admin_init_asset_upload</div>
+              </div>
+            </div>
+
+            <div class="md:col-span-2 rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Data</div>
+              <div class="text-xs text-slate-400 mt-2">
+                <div class="kbd">admin_list_entries</div>
+                <div class="text-[11px] text-slate-500 mt-2">
+                  payload: { collection_id, form_type, filters, limit, next_token } → response: { items, next_token }
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="mt-4 text-[11px] text-slate-500">
-            अगर form preview में branding नहीं बदल रही, इसका मतलब form backend से config fetch नहीं कर रहा। (next step में forms में 10 लाइन का config loader जोड़ेंगे)
+            अगर आप बोलो तो मैं आपकी existing lambda में ये actions add करने वाला exact code भी दे दूँ (logic बदले बिना)।
           </div>
         </section>
 
@@ -406,8 +664,18 @@
   const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
   const FORMS_URL = `${BASE_URL}/political/forms`;
 
+  const FORM_META = {
+    __defaults__: { label: "Defaults (All)", file: "political_visitor_form.html", form_type: "__defaults__" },
+    visitor_form: { label: "Visitor Form", file: "political_visitor_form.html", form_type: "visitor_form" },
+    party_attendance: { label: "Party Attendance", file: "political_party_attendance_form.html", form_type: "party_attendance" },
+    president_tour: { label: "President Tour", file: "political_president_tour_form.html", form_type: "president_tour" },
+    mandal_reporting: { label: "कार्यक्रम रिपोर्टिंग", file: "political_mandal_reporting_form.html", form_type: "mandal_reporting" },
+    coordinator: { label: "Coordinator", file: "political_coordinator_form.html", form_type: "coordinator" },
+    program_info: { label: "Program Info", file: "political_program_info_form.html", form_type: "program_info" },
+  };
+
   const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch(e){ return ""; } };
-  const cid = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+  const urlCid = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
   const token = (qs("token") || "").trim();
   const $ = (id) => document.getElementById(id);
 
@@ -415,6 +683,10 @@
     status: $("status"),
     cidPill: $("cidPill"),
     cidVal: $("cidVal"),
+    cidInput: $("cidInput"),
+    btnApplyCid: $("btnApplyCid"),
+    targetFormSel: $("targetFormSel"),
+    livePreviewToggle: $("livePreviewToggle"),
     btnSave: $("btnSave"),
     btnReload: $("btnReload"),
 
@@ -454,33 +726,96 @@
     txt1: $("txt1"),
     txt2: $("txt2"),
 
+    btnOpenFormPreview: $("btnOpenFormPreview"),
+    btnLoadFormPreview: $("btnLoadFormPreview"),
+    formPreviewUrlTxt: $("formPreviewUrlTxt"),
+    formPreviewIframe: $("formPreviewIframe"),
+
+    btnCopyToDefaults: $("btnCopyToDefaults"),
+    btnResetBrand: $("btnResetBrand"),
+
     progInput: $("progInput"),
+    progScopeSel: $("progScopeSel"),
     btnAddProg: $("btnAddProg"),
     progList: $("progList"),
 
+    levelScopeSel: $("levelScopeSel"),
     lvl_mandal_reporting: $("lvl_mandal_reporting"),
     lvl_coordinator: $("lvl_coordinator"),
     lvl_program_info: $("lvl_program_info"),
 
-    previewFormSel: $("previewFormSel"),
-    previewModeSel: $("previewModeSel"),
-    btnOpenNew: $("btnOpenNew"),
-    btnLoadIframe: $("btnLoadIframe"),
-    previewIframe: $("previewIframe"),
-    iframeUrlTxt: $("iframeUrlTxt"),
+    btnLoadData: $("btnLoadData"),
+    btnExportCsv: $("btnExportCsv"),
+    btnExportJson: $("btnExportJson"),
+    dataFormSel: $("dataFormSel"),
+    dataSearch: $("dataSearch"),
+    dateFrom: $("dateFrom"),
+    dateTo: $("dateTo"),
+    btnApplyFilter: $("btnApplyFilter"),
+    dataTbody: $("dataTbody"),
+    loadedCount: $("loadedCount"),
+    btnPrevPage: $("btnPrevPage"),
+    btnNextPage: $("btnNextPage"),
+    kpiTotal: $("kpiTotal"),
+    kpiToday: $("kpiToday"),
+    kpiUnique: $("kpiUnique"),
+    kpiForms: $("kpiForms"),
+    modal: $("modal"),
+    btnCloseModal: $("btnCloseModal"),
+    modalJson: $("modalJson"),
+    modalMeta: $("modalMeta"),
+
+    btnRefreshCharts: $("btnRefreshCharts"),
+    chartByForm: $("chartByForm"),
+    chartByDay: $("chartByDay"),
+    chartDistrict: $("chartDistrict"),
   };
 
-  if (els.cidVal && cid) { els.cidPill.classList.remove("hidden"); els.cidVal.textContent = cid; }
+  const DEFAULT_CONFIG = {
+    defaults: {
+      branding: {
+        title: "Political Forms",
+        subtitle: "Visitor Entry System",
+        tagline: "",
+        color1: "#f97316",
+        color2: "#ef4444",
+        logo: { kind: "none", value: "" },
+        header: { kind: "none", value: "" },
+        background: { kind: "none", value: "" },
+      },
+      programs: ["मंडल बैठक","कार्यकर्ता सम्मेलन","जनसंपर्क","बूथ मीटिंग"],
+      fixed_levels: { mandal_reporting: "", coordinator: "", program_info: "" }
+    },
+    forms: { visitor_form: {}, party_attendance: {}, president_tour: {}, mandal_reporting: {}, coordinator: {}, program_info: {} }
+  };
 
-  function setStatus(msg, type = "info") {
-    if (!els.status) return;
+  let state = {
+    cid: urlCid,
+    target: "__defaults__",
+    config: JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
+    pendingAssets: {
+      __defaults__: { logo: null, header: null, background: null },
+      visitor_form: { logo: null, header: null, background: null },
+      party_attendance: { logo: null, header: null, background: null },
+      president_tour: { logo: null, header: null, background: null },
+      mandal_reporting: { logo: null, header: null, background: null },
+      coordinator: { logo: null, header: null, background: null },
+      program_info: { logo: null, header: null, background: null },
+    },
+    allItems: [],
+    viewItems: [],
+    nextToken: null,
+    prevStack: [],
+    sort: { key: "created_at", dir: "desc" },
+    charts: { byForm: null, byDay: null, byDistrict: null }
+  };
+
+  function setStatus(msg, type="info"){
     els.status.classList.remove("hidden");
     const cls = type === "error"
       ? "bg-red-500/10 border-red-500/20 text-red-300"
       : type === "success"
       ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
-      : type === "loading"
-      ? "bg-slate-900/60 border-slate-700 text-slate-200"
       : "bg-slate-900/60 border-slate-700 text-slate-200";
     els.status.innerHTML = `<div class="px-3 py-2 rounded-xl border ${cls}">
       ${type === "loading" ? '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>' : ""}
@@ -488,28 +823,12 @@
     </div>`;
   }
 
-  const DEFAULT_CONFIG = {
-    branding: {
-      title: "Political Forms",
-      subtitle: "Admin Config",
-      tagline: "",
-      color1: "#f97316",
-      color2: "#ef4444",
-      logo: { kind: "none", value: "" },
-      header: { kind: "none", value: "" },
-      background: { kind: "none", value: "" },
-    },
-    programs: ["मंडल बैठक","कार्यकर्ता सम्मेलन","जनसंपर्क","बूथ मीटिंग"],
-    fixed_levels: { mandal_reporting: "", coordinator: "", program_info: "" }
-  };
+  function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, (m)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m])); }
+  function getIdToken(){ return localStorage.getItem("id_token") || localStorage.getItem("idToken") || ""; }
 
-  let state = { config: JSON.parse(JSON.stringify(DEFAULT_CONFIG)), pending: { logo: null, header: null, background: null } };
-
-  function getIdToken() { return localStorage.getItem("id_token") || localStorage.getItem("idToken") || ""; }
-
-  async function apiCall(action, payload) {
+  async function apiCall(action, payload){
     const idToken = getIdToken();
-    if (!idToken) throw new Error("id_token missing in localStorage. Please login first.");
+    if (!idToken) throw new Error("id_token missing in localStorage (login required)");
     const resp = await fetch(FORMS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
@@ -521,50 +840,190 @@
     if (!resp.ok) throw new Error(json.message || `HTTP ${resp.status}`);
     return json;
   }
-
-  function extFromMime(m) { if (!m) return "jpg"; if (m.includes("png")) return "png"; if (m.includes("webp")) return "webp"; return "jpg"; }
-
-  async function sha256Hex(file) {
-    const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,"0")).join("");
+  async function apiCallCandidates(actions, payload){
+    let lastErr = null;
+    for (const a of actions){
+      try { return await apiCall(a, payload); } catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error("API call failed");
   }
 
-  function fileToDataUrl(file) {
-    return new Promise((resolve, reject) => {
+  function lsKey(){ return `EL_POLITICAL_ADMIN2::${state.cid || "default"}`; }
+  function deepMerge(base, override){
+    if (!override || typeof override !== "object") return base;
+    const out = Array.isArray(base) ? [...base] : { ...base };
+    Object.keys(override).forEach(k=>{
+      const bv = out[k], ov = override[k];
+      if (Array.isArray(ov)) out[k] = ov;
+      else if (ov && typeof ov === "object" && bv && typeof bv === "object" && !Array.isArray(bv)) out[k] = deepMerge(bv, ov);
+      else out[k] = ov;
+    });
+    return out;
+  }
+
+  function ensureFormObj(ft){ if (!state.config.forms[ft]) state.config.forms[ft] = {}; }
+  function getEffectiveBranding(ft){
+    const d = state.config.defaults.branding;
+    const o = (ft && ft !== "__defaults__") ? (state.config.forms[ft]?.branding || {}) : {};
+    return { ...d, ...o };
+  }
+  function setBranding(ft, branding){
+    if (ft === "__defaults__"){ state.config.defaults.branding = { ...state.config.defaults.branding, ...branding }; return; }
+    ensureFormObj(ft);
+    state.config.forms[ft].branding = { ...(state.config.forms[ft].branding || {}), ...branding };
+  }
+  function getPrograms(ft){
+    const d = state.config.defaults.programs || [];
+    const o = (ft && ft !== "__defaults__") ? (state.config.forms[ft]?.programs || null) : null;
+    return Array.isArray(o) ? o : d;
+  }
+  function setPrograms(ft, programs, scope){
+    if (scope === "defaults" || ft === "__defaults__"){ state.config.defaults.programs = programs; return; }
+    ensureFormObj(ft); state.config.forms[ft].programs = programs;
+  }
+  function getFixedLevels(ft){
+    const d = state.config.defaults.fixed_levels || {};
+    const o = (ft && ft !== "__defaults__") ? (state.config.forms[ft]?.fixed_levels || {}) : {};
+    return { ...d, ...o };
+  }
+  function setFixedLevels(ft, fixed, scope){
+    if (scope === "defaults" || ft === "__defaults__"){ state.config.defaults.fixed_levels = { ...state.config.defaults.fixed_levels, ...fixed }; return; }
+    ensureFormObj(ft); state.config.forms[ft].fixed_levels = { ...(state.config.forms[ft].fixed_levels || {}), ...fixed };
+  }
+
+  function extFromMime(m){ if(!m) return "jpg"; if(m.includes("png")) return "png"; if(m.includes("webp")) return "webp"; return "jpg"; }
+  async function sha256Hex(file){
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  function fileToDataUrl(file){
+    return new Promise((resolve,reject)=>{
       const r = new FileReader();
-      r.onload = () => resolve(String(r.result || ""));
+      r.onload = ()=>resolve(String(r.result||""));
       r.onerror = reject;
       r.readAsDataURL(file);
     });
   }
 
-  async function tryUploadAsset(kind, file) {
+  async function initAssetUpload(assetKind, ft, file){
     const sha = await sha256Hex(file);
     const fileName = `${crypto.randomUUID()}.${extFromMime(file.type)}`;
-    const actionCandidates = ["admin_init_asset_upload", "init_asset_upload", "admin_init_upload_asset"];
-    let initRes = null;
-    for (const a of actionCandidates) {
-      try {
-        initRes = await apiCall(a, { collection_id: cid, asset_kind: kind, sha256: sha, file_name: fileName, mime_type: file.type });
-        break;
-      } catch (e) {}
-    }
-    if (!initRes || !(initRes.upload_url || initRes.url)) return null;
-    const uploadUrl = initRes.upload_url || initRes.url;
-    await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-    const assetUrl = initRes.public_url || initRes.asset_url || initRes.url_public || "";
-    const assetKey = initRes.s3_key || initRes.asset_key || initRes.key || "";
-    return { kind: "s3", value: assetUrl || assetKey || "" };
+    const payload = { collection_id: state.cid, form_type: ft === "__defaults__" ? "" : ft, asset_kind: assetKind, sha256: sha, file_name: fileName, mime_type: file.type };
+    const res = await apiCallCandidates(["admin_init_asset_upload","admin_init_upload_asset","init_asset_upload"], payload);
+    const uploadUrl = res.upload_url || res.url;
+    if (!uploadUrl) return null;
+    await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": file.type } });
+    const publicUrl = res.public_url || res.asset_url || res.url_public || "";
+    const key = res.s3_key || res.asset_key || res.key || "";
+    return { kind: "s3", value: publicUrl || key || "" };
   }
 
-  function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m])); }
+  function getAssetValueFromBranding(ft, key){
+    const eff = getEffectiveBranding(ft);
+    const obj = eff[key] || { kind:"none", value:"" };
+    return obj.value || "";
+  }
+  function getPending(ft, key){ return state.pendingAssets[ft]?.[key] || null; }
+  function setPending(ft, key, file){
+    const url = URL.createObjectURL(file);
+    state.pendingAssets[ft][key] = { file, previewUrl: url };
+    if (key === "logo") els.name_logo.textContent = file.name;
+    if (key === "header") els.name_header.textContent = file.name;
+    if (key === "background") els.name_bg.textContent = file.name;
+    renderAssetPreviews(); renderBrandPreview();
+  }
+  function setPreview(imgEl, iconEl, url){
+    if (url){ imgEl.src = url; imgEl.classList.remove("hidden"); iconEl.classList.add("hidden"); }
+    else { imgEl.src = ""; imgEl.classList.add("hidden"); iconEl.classList.remove("hidden"); }
+  }
+  function renderAssetPreviews(){
+    const ft = state.target;
+    const logo = (getPending(ft,"logo")?.previewUrl) || getAssetValueFromBranding(ft,"logo");
+    const header = (getPending(ft,"header")?.previewUrl) || getAssetValueFromBranding(ft,"header");
+    const bg = (getPending(ft,"background")?.previewUrl) || getAssetValueFromBranding(ft,"background");
+    setPreview(els.prev_logo, els.icon_logo, logo);
+    setPreview(els.prev_header, els.icon_header, header);
+    setPreview(els.prev_bg, els.icon_bg, bg);
+  }
+  function clearAsset(ft, key){
+    state.pendingAssets[ft][key] = null;
+    if (ft === "__defaults__"){ state.config.defaults.branding[key] = { kind:"none", value:"" }; }
+    else { ensureFormObj(ft); state.config.forms[ft].branding = state.config.forms[ft].branding || {}; state.config.forms[ft].branding[key] = { kind:"none", value:"" }; }
 
-  function renderPrograms() {
-    const arr = Array.isArray(state.config.programs) ? state.config.programs : [];
+    if (key === "logo"){ els.name_logo.textContent = "No file selected"; els.file_logo.value = ""; }
+    if (key === "header"){ els.name_header.textContent = "No file selected"; els.file_header.value = ""; }
+    if (key === "background"){ els.name_bg.textContent = "No file selected"; els.file_bg.value = ""; }
+    renderAssetPreviews(); renderBrandPreview();
+  }
+
+  function renderBrandPreview(){
+    const ft = state.target;
+    const c1 = els.b_c1.value || "#f97316";
+    const c2 = els.b_c2.value || "#ef4444";
+    els.previewHeaderBar.style.backgroundImage = `linear-gradient(to right, ${c1}, ${c2})`;
+    els.sw1.style.background = c1; els.sw2.style.background = c2;
+    els.txt1.textContent = c1; els.txt2.textContent = c2;
+    els.previewTitle.textContent = els.b_title.value || "—";
+    els.previewSubtitle.textContent = els.b_subtitle.value || "";
+    els.previewTagline.textContent = els.b_tagline.value || "";
+
+    const bgUrl = (getPending(ft,"background")?.previewUrl) || getAssetValueFromBranding(ft,"background");
+    els.previewBg.style.backgroundImage = bgUrl ? `url('${bgUrl}')` : "";
+
+    const headerUrl = (getPending(ft,"header")?.previewUrl) || getAssetValueFromBranding(ft,"header");
+    if (headerUrl){ els.previewHeaderImgWrap.classList.remove("hidden"); els.previewHeaderImg.src = headerUrl; }
+    else { els.previewHeaderImgWrap.classList.add("hidden"); els.previewHeaderImg.src = ""; }
+
+    const logoUrl = (getPending(ft,"logo")?.previewUrl) || getAssetValueFromBranding(ft,"logo");
+    if (logoUrl){ els.previewLogo.src = logoUrl; els.previewLogo.classList.remove("hidden"); els.previewLogoIcon.classList.add("hidden"); }
+    else { els.previewLogo.src = ""; els.previewLogo.classList.add("hidden"); els.previewLogoIcon.classList.remove("hidden"); }
+  }
+
+  function renderFormPreviewUrl(){
+    const ft = state.target === "__defaults__" ? "visitor_form" : state.target;
+    const file = FORM_META[ft]?.file || FORM_META.visitor_form.file;
+    const params = new URLSearchParams();
+    if (state.cid) params.set("cid", state.cid);
+    if (token) params.set("token", token);
+    params.set("preview","1");
+    params.set("form_type", ft);
+    const url = `${file}?${params.toString()}`;
+    els.formPreviewUrlTxt.textContent = url;
+    return url;
+  }
+
+  function renderBrandingFields(){
+    const b = getEffectiveBranding(state.target);
+    els.b_title.value = b.title || "";
+    els.b_subtitle.value = b.subtitle || "";
+    els.b_tagline.value = b.tagline || "";
+    els.b_c1.value = b.color1 || "#f97316";
+    els.b_c2.value = b.color2 || "#ef4444";
+    renderAssetPreviews(); renderBrandPreview(); renderFormPreviewUrl();
+  }
+
+  function showTab(name){
+    document.querySelectorAll(".tab").forEach(t=>t.classList.add("hidden"));
+    const target = document.getElementById("tab-"+name);
+    if (target) target.classList.remove("hidden");
+    document.querySelectorAll(".navBtn").forEach(b=>{
+      const isActive = (b.getAttribute("data-tab") === name);
+      b.className = isActive
+        ? "navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/50 hover:bg-slate-800 border border-slate-700 text-slate-200 text-sm font-bold"
+        : "navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold";
+    });
+  }
+  document.querySelectorAll(".navBtn").forEach(b=>b.addEventListener("click", ()=>showTab(b.getAttribute("data-tab"))));
+
+  function renderPrograms(){
+    const list = getPrograms(state.target === "__defaults__" ? "__defaults__" : state.target);
     els.progList.innerHTML = "";
-    if (arr.length === 0) { els.progList.innerHTML = `<div class="text-slate-500 text-sm">No programs yet.</div>`; return; }
-    arr.forEach((name, idx) => {
+    if (!list || list.length === 0){
+      els.progList.innerHTML = `<div class="text-slate-500 text-sm">No programs yet.</div>`;
+      return;
+    }
+    list.forEach((name, idx)=>{
       const row = document.createElement("div");
       row.className = "flex items-center gap-2 bg-slate-950/20 border border-slate-800 rounded-xl px-3 py-2";
       row.innerHTML = `
@@ -574,224 +1033,408 @@
         </button>`;
       els.progList.appendChild(row);
     });
-    els.progList.querySelectorAll("[data-prog-del]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const i = parseInt(btn.getAttribute("data-prog-del"), 10);
-        const a = [...(state.config.programs || [])];
-        a.splice(i, 1);
-        state.config.programs = a;
+    els.progList.querySelectorAll("[data-prog-del]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const i = parseInt(btn.getAttribute("data-prog-del"),10);
+        const a = [...(list||[])]; a.splice(i,1);
+        const scope = els.progScopeSel.value;
+        const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
+        setPrograms(ft, a, scope === "defaults" ? "defaults" : "current");
         renderPrograms();
       });
     });
   }
 
-  function getAssetUrl(assetObj) { return (assetObj && assetObj.value) ? assetObj.value : ""; }
-
-  function setPreview(imgEl, iconEl, url) {
-    if (url) { imgEl.src = url; imgEl.classList.remove("hidden"); iconEl.classList.add("hidden"); }
-    else { imgEl.src = ""; imgEl.classList.add("hidden"); iconEl.classList.remove("hidden"); }
+  function renderLevels(){
+    const scope = els.levelScopeSel.value;
+    const ft = (scope === "defaults") ? "__defaults__" : (state.target === "__defaults__" ? "__defaults__" : state.target);
+    const fl = getFixedLevels(ft);
+    els.lvl_mandal_reporting.value = fl.mandal_reporting || "";
+    els.lvl_coordinator.value = fl.coordinator || "";
+    els.lvl_program_info.value = fl.program_info || "";
   }
 
-  function renderAssetPreviews() {
-    const b = state.config.branding;
-    const logoVal = (state.pending.logo && state.pending.logo.previewUrl) || getAssetUrl(b.logo);
-    setPreview(els.prev_logo, els.icon_logo, logoVal);
-    const headerVal = (state.pending.header && state.pending.header.previewUrl) || getAssetUrl(b.header);
-    setPreview(els.prev_header, els.icon_header, headerVal);
-    const bgVal = (state.pending.background && state.pending.background.previewUrl) || getAssetUrl(b.background);
-    setPreview(els.prev_bg, els.icon_bg, bgVal);
-  }
-
-  function renderBrandPreview() {
-    const b = state.config.branding;
-    const c1 = els.b_c1.value || "#f97316";
-    const c2 = els.b_c2.value || "#ef4444";
-    els.previewHeaderBar.style.backgroundImage = `linear-gradient(to right, ${c1}, ${c2})`;
-    els.sw1.style.background = c1; els.sw2.style.background = c2;
-    els.txt1.textContent = c1; els.txt2.textContent = c2;
-    els.previewTitle.textContent = els.b_title.value || "—";
-    els.previewSubtitle.textContent = els.b_subtitle.value || "";
-    els.previewTagline.textContent = els.b_tagline.value || "";
-    const bgUrl = (state.pending.background && state.pending.background.previewUrl) || getAssetUrl(b.background);
-    els.previewBg.style.backgroundImage = bgUrl ? `url('${bgUrl}')` : "";
-    const headerUrl = (state.pending.header && state.pending.header.previewUrl) || getAssetUrl(b.header);
-    if (headerUrl) { els.previewHeaderImgWrap.classList.remove("hidden"); els.previewHeaderImg.src = headerUrl; }
-    else { els.previewHeaderImgWrap.classList.add("hidden"); els.previewHeaderImg.src = ""; }
-    const logoUrl = (state.pending.logo && state.pending.logo.previewUrl) || getAssetUrl(b.logo);
-    if (logoUrl) { els.previewLogo.src = logoUrl; els.previewLogo.classList.remove("hidden"); els.previewLogoIcon.classList.add("hidden"); }
-    else { els.previewLogo.src = ""; els.previewLogo.classList.add("hidden"); els.previewLogoIcon.classList.remove("hidden"); }
-  }
-
-  function applyFormValuesFromState() {
-    const b = state.config.branding || DEFAULT_CONFIG.branding;
-    els.b_title.value = b.title || "";
-    els.b_subtitle.value = b.subtitle || "";
-    els.b_tagline.value = b.tagline || "";
-    els.b_c1.value = b.color1 || "#f97316";
-    els.b_c2.value = b.color2 || "#ef4444";
-    els.lvl_mandal_reporting.value = state.config.fixed_levels?.mandal_reporting || "";
-    els.lvl_coordinator.value = state.config.fixed_levels?.coordinator || "";
-    els.lvl_program_info.value = state.config.fixed_levels?.program_info || "";
-    renderPrograms();
-    renderAssetPreviews();
-    renderBrandPreview();
-  }
-
-  function bindLiveBranding() {
-    ["input","change"].forEach(ev => {
-      els.b_title.addEventListener(ev, () => { state.config.branding.title = (els.b_title.value||"").trim(); renderBrandPreview(); });
-      els.b_subtitle.addEventListener(ev, () => { state.config.branding.subtitle = (els.b_subtitle.value||"").trim(); renderBrandPreview(); });
-      els.b_tagline.addEventListener(ev, () => { state.config.branding.tagline = (els.b_tagline.value||"").trim(); renderBrandPreview(); });
-      els.b_c1.addEventListener(ev, () => { state.config.branding.color1 = els.b_c1.value; renderBrandPreview(); });
-      els.b_c2.addEventListener(ev, () => { state.config.branding.color2 = els.b_c2.value; renderBrandPreview(); });
-      els.lvl_mandal_reporting.addEventListener(ev, () => { state.config.fixed_levels.mandal_reporting = els.lvl_mandal_reporting.value; });
-      els.lvl_coordinator.addEventListener(ev, () => { state.config.fixed_levels.coordinator = els.lvl_coordinator.value; });
-      els.lvl_program_info.addEventListener(ev, () => { state.config.fixed_levels.program_info = els.lvl_program_info.value; });
-    });
-  }
-
-  function showTab(name) {
-    document.querySelectorAll(".tab").forEach(t => t.classList.add("hidden"));
-    const target = document.getElementById("tab-" + name);
-    if (target) target.classList.remove("hidden");
-    document.querySelectorAll(".navBtn").forEach(b => {
-      const isActive = (b.getAttribute("data-tab") === name);
-      b.className = isActive
-        ? "navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/50 hover:bg-slate-800 border border-slate-700 text-slate-200 text-sm font-bold"
-        : "navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold";
-    });
-  }
-  document.querySelectorAll(".navBtn").forEach(b => b.addEventListener("click", () => showTab(b.getAttribute("data-tab"))));
-
-  function setPendingAsset(kind, file) {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    state.pending[kind] = { file, previewUrl: url };
-    if (kind === "logo") els.name_logo.textContent = file.name;
-    if (kind === "header") els.name_header.textContent = file.name;
-    if (kind === "background") els.name_bg.textContent = file.name;
-    renderAssetPreviews(); renderBrandPreview();
-  }
-
-  els.btn_logo.addEventListener("click", () => els.file_logo.click());
-  els.btn_header.addEventListener("click", () => els.file_header.click());
-  els.btn_bg.addEventListener("click", () => els.file_bg.click());
-  els.file_logo.addEventListener("change", () => setPendingAsset("logo", els.file_logo.files[0]));
-  els.file_header.addEventListener("change", () => setPendingAsset("header", els.file_header.files[0]));
-  els.file_bg.addEventListener("change", () => setPendingAsset("background", els.file_bg.files[0]));
-
-  document.querySelectorAll("[data-clear]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const k = btn.getAttribute("data-clear");
-      if (k === "logo") { state.pending.logo=null; state.config.branding.logo={kind:"none",value:""}; els.name_logo.textContent="No file selected"; els.file_logo.value=""; }
-      if (k === "header") { state.pending.header=null; state.config.branding.header={kind:"none",value:""}; els.name_header.textContent="No file selected"; els.file_header.value=""; }
-      if (k === "bg") { state.pending.background=null; state.config.branding.background={kind:"none",value:""}; els.name_bg.textContent="No file selected"; els.file_bg.value=""; }
-      renderAssetPreviews(); renderBrandPreview();
-    });
-  });
-
-  els.btnAddProg.addEventListener("click", () => {
-    const v = (els.progInput.value || "").trim();
-    if (!v) return;
-    const a = Array.isArray(state.config.programs) ? [...state.config.programs] : [];
-    if (a.includes(v)) { els.progInput.value = ""; return; }
-    a.unshift(v);
-    state.config.programs = a.slice(0, 200);
-    els.progInput.value = "";
-    renderPrograms();
-  });
-
-  function lsKey() { return `EL_POLITICAL_ADMIN_CONFIG::${cid || "default"}`; }
-  function deepMerge(base, override) {
-    if (!override || typeof override !== "object") return base;
-    const out = Array.isArray(base) ? [...base] : { ...base };
-    Object.keys(override).forEach(k => {
-      const bv = out[k];
-      const ov = override[k];
-      if (Array.isArray(ov)) out[k] = ov;
-      else if (ov && typeof ov === "object" && bv && typeof bv === "object" && !Array.isArray(bv)) out[k] = deepMerge(bv, ov);
-      else out[k] = ov;
-    });
-    return out;
-  }
-
-  async function loadConfig() {
-    if (!cid) { setStatus("CID missing in URL. Still you can edit preview, but save needs CID.", "error"); state.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); applyFormValuesFromState(); return; }
+  async function loadConfig(){
+    if (!state.cid){
+      setStatus("CID missing. URL में ?cid=COLLECTION_ID लगाओ.", "error");
+      state.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      renderAll();
+      return;
+    }
     setStatus("Loading config...", "loading");
     let cfg = null;
-    try { const res = await apiCall("admin_get_config", { collection_id: cid }); cfg = res.config || res.data || res.item || null; } catch (e) {}
-    if (!cfg) { try { const raw = localStorage.getItem(lsKey()); if (raw) cfg = JSON.parse(raw); } catch (e) {} }
+    try{
+      const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { collection_id: state.cid });
+      cfg = res.config || res.data || res.item || null;
+    }catch(e){}
+    if (!cfg){
+      try{ const raw = localStorage.getItem(lsKey()); if (raw) cfg = JSON.parse(raw); }catch(e){}
+    }
     if (!cfg) cfg = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
     state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
-    applyFormValuesFromState();
     setStatus("Config loaded", "success");
+    renderAll();
   }
 
-  async function saveConfig() {
-    if (!cid) { setStatus("CID missing: cannot save to backend.", "error"); return; }
-    els.btnSave.disabled = true;
-    const oldTxt = els.btnSave.innerHTML;
-    els.btnSave.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Saving...';
-    setStatus("Saving... (uploading assets if any)", "loading");
-    try {
-      state.config.branding.title = (els.b_title.value || "").trim();
-      state.config.branding.subtitle = (els.b_subtitle.value || "").trim();
-      state.config.branding.tagline = (els.b_tagline.value || "").trim();
-      state.config.branding.color1 = els.b_c1.value || "#f97316";
-      state.config.branding.color2 = els.b_c2.value || "#ef4444";
-      state.config.fixed_levels.mandal_reporting = els.lvl_mandal_reporting.value || "";
-      state.config.fixed_levels.coordinator = els.lvl_coordinator.value || "";
-      state.config.fixed_levels.program_info = els.lvl_program_info.value || "";
+  async function saveConfig(){
+    if (!state.cid){ setStatus("CID missing: cannot save.", "error"); return; }
 
-      const assetMap = [["logo","logo"],["header","header"],["background","background"]];
-      for (const [pendingKey, brandingKey] of assetMap) {
-        const p = state.pending[pendingKey];
+    const old = els.btnSave.innerHTML;
+    els.btnSave.disabled = true;
+    els.btnSave.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Saving...';
+    setStatus("Saving... (assets upload if any)", "loading");
+
+    try{
+      const ft = state.target;
+      setBranding(ft, {
+        title: (els.b_title.value||"").trim(),
+        subtitle: (els.b_subtitle.value||"").trim(),
+        tagline: (els.b_tagline.value||"").trim(),
+        color1: els.b_c1.value || "#f97316",
+        color2: els.b_c2.value || "#ef4444",
+      });
+
+      const pend = state.pendingAssets[ft] || {};
+      const map = [["logo","logo"],["header","header"],["background","background"]];
+      for (const [k, kind] of map){
+        const p = pend[k];
         if (!p || !p.file) continue;
         let uploaded = null;
-        try { uploaded = await tryUploadAsset(brandingKey, p.file); } catch (e) { uploaded = null; }
-        if (uploaded && uploaded.value) state.config.branding[brandingKey] = { kind: uploaded.kind, value: uploaded.value };
-        else state.config.branding[brandingKey] = { kind: "data", value: await fileToDataUrl(p.file) };
-        state.pending[pendingKey] = null;
+        try{ uploaded = await initAssetUpload(kind, ft, p.file); }catch(e){ uploaded = null; }
+        if (uploaded && uploaded.value){
+          setBranding(ft, { [k]: { kind: uploaded.kind, value: uploaded.value } });
+        } else {
+          const dataUrl = await fileToDataUrl(p.file);
+          setBranding(ft, { [k]: { kind: "data", value: dataUrl } });
+        }
+        state.pendingAssets[ft][k] = null;
       }
 
       let backendSaved = false;
-      try { await apiCall("admin_save_config", { collection_id: cid, config: state.config }); backendSaved = true; } catch (e) { backendSaved = false; }
+      try{
+        await apiCallCandidates(["admin_save_config","admin_save_settings","save_admin_config"], { collection_id: state.cid, config: state.config });
+        backendSaved = true;
+      }catch(e){ backendSaved = false; }
+
       localStorage.setItem(lsKey(), JSON.stringify(state.config));
-      applyFormValuesFromState();
+      renderAll();
       setStatus(backendSaved ? "Saved to backend + local cache" : "Backend save failed. Saved to local cache only.", backendSaved ? "success" : "error");
-    } catch (e) {
-      console.error(e);
+    }catch(e){
       setStatus(e.message || "Save failed", "error");
-    } finally {
+    }finally{
       els.btnSave.disabled = false;
-      els.btnSave.innerHTML = oldTxt;
+      els.btnSave.innerHTML = old;
     }
   }
 
-  els.btnSave.addEventListener("click", saveConfig);
+  function resetBranding(){
+    const ft = state.target;
+    if (ft === "__defaults__") state.config.defaults.branding = JSON.parse(JSON.stringify(DEFAULT_CONFIG.defaults.branding));
+    else { ensureFormObj(ft); delete state.config.forms[ft].branding; }
+    state.pendingAssets[ft] = { logo:null, header:null, background:null };
+    els.name_logo.textContent = "No file selected"; els.name_header.textContent = "No file selected"; els.name_bg.textContent = "No file selected";
+    els.file_logo.value = ""; els.file_header.value = ""; els.file_bg.value = "";
+    renderBrandingFields();
+  }
+  function copyToDefaults(){
+    const ft = state.target;
+    if (ft === "__defaults__") return;
+    state.config.defaults.branding = JSON.parse(JSON.stringify(getEffectiveBranding(ft)));
+    setStatus("Copied current branding → Defaults. (अब Save दबाओ)", "success");
+  }
+
+  // ---- Data ----
+  function normalizeItem(it){
+    const payload = it.payload || it.data || it.fields || {};
+    const createdAt = it.created_at || it.createdAt || it.ts || 0;
+    const ft = it.form_type || it.formType || payload.form_type || "";
+    return {
+      entry_id: it.entry_id || it.id || "",
+      created_at: createdAt,
+      form_type: ft,
+      payload,
+      mobile: payload.mobile || payload.phone || "",
+      name: payload.name || payload.full_name || "",
+      district: payload.district || "",
+      program_name: payload.program_name || payload.program || payload.karyakram || ""
+    };
+  }
+  function fmtTime(ms){
+    if (!ms) return "";
+    try{ return new Date(Number(ms)).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }); }catch(e){ return String(ms); }
+  }
+  function dateKeyFromMs(ms){
+    if (!ms) return "";
+    const x = new Date(Number(ms));
+    return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
+  }
+  function todayKey(){
+    const d = new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Kolkata"}));
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+
+  function applyFilters(){
+    const form = els.dataFormSel.value;
+    const q = (els.dataSearch.value || "").trim().toLowerCase();
+    const df = els.dateFrom.value || "";
+    const dt = els.dateTo.value || "";
+    let items = [...state.allItems];
+
+    if (form !== "__all__") items = items.filter(x => x.form_type === form);
+    if (df) items = items.filter(x => dateKeyFromMs(x.created_at) >= df);
+    if (dt) items = items.filter(x => dateKeyFromMs(x.created_at) <= dt);
+    if (q){
+      items = items.filter(x => ([x.mobile,x.name,x.district,x.program_name,x.form_type,x.entry_id].join(" ").toLowerCase()).includes(q));
+    }
+
+    const { key, dir } = state.sort;
+    items.sort((a,b)=>{
+      const av = (a[key] ?? ""), bv = (b[key] ?? "");
+      if (typeof av === "number" && typeof bv === "number") return dir === "asc" ? (av - bv) : (bv - av);
+      return dir === "asc" ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+
+    state.viewItems = items;
+    renderTable();
+    renderKpis();
+  }
+
+  function renderKpis(){
+    const items = state.viewItems;
+    els.kpiTotal.textContent = String(items.length);
+    const t = todayKey();
+    els.kpiToday.textContent = String(items.filter(x=>dateKeyFromMs(x.created_at) === t).length);
+    els.kpiUnique.textContent = String(new Set(items.map(x=>String(x.mobile||"").trim()).filter(Boolean)).size);
+    els.kpiForms.textContent = String(new Set(items.map(x=>x.form_type).filter(Boolean)).size);
+  }
+
+  function renderTable(){
+    const items = state.viewItems;
+    els.loadedCount.textContent = String(items.length);
+    els.dataTbody.innerHTML = "";
+    if (items.length === 0){
+      els.dataTbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">No data. Load Data दबाओ.</td></tr>`;
+      return;
+    }
+    items.slice(0,200).forEach((x)=>{
+      const tr = document.createElement("tr");
+      tr.className = "border-t border-slate-900/60 hover:bg-slate-800/20";
+      tr.innerHTML = `
+        <td class="px-4 py-3 text-slate-200">${escapeHtml(fmtTime(x.created_at))}</td>
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded-lg text-xs bg-slate-800 border border-slate-700 text-slate-200">${escapeHtml(x.form_type||"")}</span></td>
+        <td class="px-4 py-3 text-slate-200 kbd">${escapeHtml(x.mobile||"")}</td>
+        <td class="px-4 py-3 text-slate-200">${escapeHtml(x.name||"")}</td>
+        <td class="px-4 py-3 text-slate-200">${escapeHtml(x.district||"")}</td>
+        <td class="px-4 py-3 text-slate-200">${escapeHtml(x.program_name||"")}</td>
+        <td class="px-4 py-3">
+          <button class="btnDetails px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-extrabold" data-entry="${escapeHtml(x.entry_id)}">
+            <i class="fa-solid fa-eye mr-1"></i> View
+          </button>
+        </td>
+      `;
+      els.dataTbody.appendChild(tr);
+    });
+
+    els.dataTbody.querySelectorAll(".btnDetails").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id = btn.getAttribute("data-entry");
+        const it = state.viewItems.find(z=>String(z.entry_id)===String(id)) || state.allItems.find(z=>String(z.entry_id)===String(id));
+        if (!it) return;
+        els.modal.classList.remove("hidden"); els.modal.classList.add("flex");
+        els.modalMeta.textContent = `${it.form_type||""} • ${fmtTime(it.created_at)} • ${it.entry_id||""}`;
+        els.modalJson.textContent = JSON.stringify(it, null, 2);
+      });
+    });
+  }
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  }
+  function toCsv(items){
+    const cols = ["created_at","form_type","entry_id","mobile","name","district","program_name"];
+    const header = cols.join(",");
+    const lines = items.map(x=>{
+      const row = cols.map(c=>{
+        let v = x[c];
+        if (c === "created_at") v = fmtTime(x.created_at);
+        v = (v===undefined || v===null) ? "" : String(v);
+        v = v.replace(/"/g,'""');
+        return `"${v}"`;
+      }).join(",");
+      return row;
+    });
+    return [header, ...lines].join("\n");
+  }
+
+  async function loadData(direction="fresh"){
+    if (!state.cid){ setStatus("CID missing. Data load नहीं होगा.", "error"); return; }
+    setStatus("Loading data...", "loading");
+    let next_token = null;
+    if (direction === "next") next_token = state.nextToken || null;
+    if (direction === "prev"){ const prev = state.prevStack.pop() || null; next_token = prev; }
+
+    const payload = {
+      collection_id: state.cid,
+      form_type: els.dataFormSel.value,
+      filters: { q: (els.dataSearch.value||"").trim(), date_from: els.dateFrom.value||"", date_to: els.dateTo.value||"" },
+      limit: 200,
+      next_token
+    };
+
+    let res = null;
+    try{
+      res = await apiCallCandidates(["admin_list_entries","admin_query_entries","list_entries_admin","admin_list_data"], payload);
+    }catch(e){
+      try{
+        const raw = localStorage.getItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`);
+        if (raw){
+          state.allItems = JSON.parse(raw).map(normalizeItem);
+          state.nextToken = null;
+          setStatus("Backend data API missing. Loaded from local cache.", "error");
+          applyFilters(); return;
+        }
+      }catch(_){}
+      setStatus("Backend data API नहीं मिला. (admin_list_entries action add करना होगा)", "error");
+      return;
+    }
+
+    state.allItems = (res.items || res.data || res.rows || []).map(normalizeItem);
+    state.nextToken = res.next_token || res.nextToken || null;
+
+    try{ localStorage.setItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`, JSON.stringify(state.allItems)); }catch(_){}
+    setStatus(`Loaded ${state.allItems.length} items`, "success");
+    applyFilters();
+  }
+
+  function buildCharts(){
+    const items = state.viewItems.length ? state.viewItems : state.allItems;
+
+    const byForm = {}; items.forEach(x=>{ const k=x.form_type||"unknown"; byForm[k]=(byForm[k]||0)+1; });
+    const formLabels = Object.keys(byForm); const formVals = formLabels.map(k=>byForm[k]);
+
+    const dayMap = {}; items.forEach(x=>{ const k=dateKeyFromMs(x.created_at); if(!k) return; dayMap[k]=(dayMap[k]||0)+1; });
+    const days = Object.keys(dayMap).sort(); const last14 = days.slice(-14); const dayVals = last14.map(k=>dayMap[k]);
+
+    const dist = {}; items.forEach(x=>{ const k=(x.district||"").trim()||"Unknown"; dist[k]=(dist[k]||0)+1; });
+    const distPairs = Object.entries(dist).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    const distLabels = distPairs.map(p=>p[0]); const distVals = distPairs.map(p=>p[1]);
+
+    if (state.charts.byForm) state.charts.byForm.destroy();
+    if (state.charts.byDay) state.charts.byDay.destroy();
+    if (state.charts.byDistrict) state.charts.byDistrict.destroy();
+
+    const common = {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { enabled: true } },
+      scales: {
+        x: { ticks: { color: "#cbd5e1" }, grid: { color: "rgba(148,163,184,.12)" } },
+        y: { ticks: { color: "#cbd5e1" }, grid: { color: "rgba(148,163,184,.12)" } }
+      }
+    };
+
+    state.charts.byForm = new Chart(els.chartByForm, { type:"bar", data:{ labels:formLabels, datasets:[{ label:"Entries", data:formVals }] }, options: common });
+    state.charts.byDay = new Chart(els.chartByDay, { type:"line", data:{ labels:last14, datasets:[{ label:"Entries", data:dayVals, tension:0.25 }] }, options: common });
+    state.charts.byDistrict = new Chart(els.chartDistrict, { type:"bar", data:{ labels:distLabels, datasets:[{ label:"Entries", data:distVals }] }, options: common });
+  }
+
+  function renderAll(){
+    els.cidInput.value = state.cid || "";
+    if (state.cid){ els.cidPill.classList.remove("hidden"); els.cidVal.textContent = state.cid; }
+    else { els.cidPill.classList.add("hidden"); els.cidVal.textContent = ""; }
+    els.targetFormSel.value = state.target;
+    renderBrandingFields();
+    renderPrograms();
+    renderLevels();
+    applyFilters();
+  }
+
+  // bindings
   els.btnReload.addEventListener("click", loadConfig);
+  els.btnSave.addEventListener("click", saveConfig);
 
-  function buildPreviewUrl() {
-    const file = els.previewFormSel.value;
-    const mode = els.previewModeSel.value;
-    const params = new URLSearchParams();
-    if (mode === "token") {
-      if (!token) { alert("Token missing in admin console URL. Add ?token=XXXX to use token preview."); return ""; }
-      params.set("token", token);
-    } else {
-      if (!cid) { alert("CID missing. Add ?cid=COLLECTION_ID to preview in CID mode."); return ""; }
-      params.set("cid", cid);
-    }
-    params.set("preview", "1");
-    return `${file}?${params.toString()}`;
-  }
+  els.btnApplyCid.addEventListener("click", ()=>{ state.cid = (els.cidInput.value||"").trim(); setStatus("CID applied. अब Reload करो.", "success"); renderAll(); });
+  els.targetFormSel.addEventListener("change", ()=>{ state.target = els.targetFormSel.value; renderAll(); });
 
-  els.btnOpenNew.addEventListener("click", () => { const u = buildPreviewUrl(); if (!u) return; window.open(u, "_blank"); });
-  els.btnLoadIframe.addEventListener("click", () => { const u = buildPreviewUrl(); if (!u) return; els.previewIframe.src = u; els.iframeUrlTxt.textContent = u; });
+  ["input","change"].forEach(ev=>{
+    els.b_title.addEventListener(ev, ()=>{ if(els.livePreviewToggle.checked) renderBrandPreview(); });
+    els.b_subtitle.addEventListener(ev, ()=>{ if(els.livePreviewToggle.checked) renderBrandPreview(); });
+    els.b_tagline.addEventListener(ev, ()=>{ if(els.livePreviewToggle.checked) renderBrandPreview(); });
+    els.b_c1.addEventListener(ev, ()=>{ if(els.livePreviewToggle.checked) renderBrandPreview(); });
+    els.b_c2.addEventListener(ev, ()=>{ if(els.livePreviewToggle.checked) renderBrandPreview(); });
+  });
 
-  bindLiveBranding();
+  els.btn_logo.addEventListener("click", ()=>els.file_logo.click());
+  els.btn_header.addEventListener("click", ()=>els.file_header.click());
+  els.btn_bg.addEventListener("click", ()=>els.file_bg.click());
+  els.file_logo.addEventListener("change", ()=>{ const f=els.file_logo.files[0]; if(f) setPending(state.target,"logo",f); });
+  els.file_header.addEventListener("change", ()=>{ const f=els.file_header.files[0]; if(f) setPending(state.target,"header",f); });
+  els.file_bg.addEventListener("change", ()=>{ const f=els.file_bg.files[0]; if(f) setPending(state.target,"background",f); });
+
+  document.querySelectorAll("[data-clear]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const k = btn.getAttribute("data-clear");
+      if (k === "logo") clearAsset(state.target, "logo");
+      if (k === "header") clearAsset(state.target, "header");
+      if (k === "bg") clearAsset(state.target, "background");
+    });
+  });
+
+  els.btnLoadFormPreview.addEventListener("click", ()=>{ els.formPreviewIframe.src = renderFormPreviewUrl(); });
+  els.btnOpenFormPreview.addEventListener("click", ()=>{ window.open(renderFormPreviewUrl(), "_blank"); });
+
+  els.btnResetBrand.addEventListener("click", resetBranding);
+  els.btnCopyToDefaults.addEventListener("click", copyToDefaults);
+
+  els.btnAddProg.addEventListener("click", ()=>{
+    const v = (els.progInput.value||"").trim();
+    if (!v) return;
+    const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
+    const scope = els.progScopeSel.value;
+    const list = [...(getPrograms(ft) || [])];
+    if (!list.includes(v)) list.unshift(v);
+    setPrograms(ft, list.slice(0, 300), scope === "defaults" ? "defaults" : "current");
+    els.progInput.value = "";
+    renderPrograms();
+    setStatus("Program added. Save दबाओ.", "success");
+  });
+
+  els.levelScopeSel.addEventListener("change", renderLevels);
+  ["change"].forEach(ev=>{
+    els.lvl_mandal_reporting.addEventListener(ev, ()=>{ const scope=els.levelScopeSel.value; const ft=(scope==="defaults")?"__defaults__":(state.target==="__defaults__"?"__defaults__":state.target); setFixedLevels(ft,{mandal_reporting:els.lvl_mandal_reporting.value},scope); setStatus("Level updated. Save दबाओ.", "success"); });
+    els.lvl_coordinator.addEventListener(ev, ()=>{ const scope=els.levelScopeSel.value; const ft=(scope==="defaults")?"__defaults__":(state.target==="__defaults__"?"__defaults__":state.target); setFixedLevels(ft,{coordinator:els.lvl_coordinator.value},scope); setStatus("Level updated. Save दबाओ.", "success"); });
+    els.lvl_program_info.addEventListener(ev, ()=>{ const scope=els.levelScopeSel.value; const ft=(scope==="defaults")?"__defaults__":(state.target==="__defaults__"?"__defaults__":state.target); setFixedLevels(ft,{program_info:els.lvl_program_info.value},scope); setStatus("Level updated. Save दबाओ.", "success"); });
+  });
+
+  els.btnLoadData.addEventListener("click", ()=>loadData("fresh"));
+  els.btnApplyFilter.addEventListener("click", applyFilters);
+  els.dataFormSel.addEventListener("change", ()=>loadData("fresh"));
+  els.btnNextPage.addEventListener("click", ()=>loadData("next"));
+  els.btnPrevPage.addEventListener("click", ()=>loadData("prev"));
+
+  document.querySelectorAll("[data-sort]").forEach(th=>{
+    th.addEventListener("click", ()=>{
+      const key = th.getAttribute("data-sort");
+      if (state.sort.key === key) state.sort.dir = (state.sort.dir === "asc") ? "desc" : "asc";
+      else { state.sort.key = key; state.sort.dir = "desc"; }
+      applyFilters();
+    });
+  });
+
+  els.btnExportCsv.addEventListener("click", ()=>downloadText(`political_data_${state.cid||"cid"}_${Date.now()}.csv`, toCsv(state.viewItems.length?state.viewItems:state.allItems)));
+  els.btnExportJson.addEventListener("click", ()=>downloadText(`political_data_${state.cid||"cid"}_${Date.now()}.json`, JSON.stringify(state.viewItems.length?state.viewItems:state.allItems, null, 2)));
+
+  els.btnCloseModal.addEventListener("click", ()=>{ els.modal.classList.add("hidden"); els.modal.classList.remove("flex"); });
+  els.btnRefreshCharts.addEventListener("click", ()=>{ buildCharts(); setStatus("Charts refreshed", "success"); });
+
+  // init
   showTab("branding");
-  loadConfig();
+  loadConfig().catch(()=>renderAll());
 })();
 </script>
 </body>

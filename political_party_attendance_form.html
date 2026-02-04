@@ -5,503 +5,617 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Party Attendance - EventLens</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] } } } }</script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
   <style>
-    body { background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.15), transparent 50%), radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.1), transparent 50%), #0f172a; color: #fff; }
-    .glass { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); }
-    .input-field { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: white; transition: all 0.3s ease; }
-    .input-field:focus { border-color: #f97316; box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); outline: none; }
-    .input-field:disabled { opacity: 0.6; cursor: not-allowed; background: rgba(15, 23, 42, 0.4); }
-    /* Hide scrollbar for cleaner UI */
+    :root {
+      --c1: #f97316; /* primary */
+      --c2: #ef4444; /* secondary */
+      --bgimg: none;
+    }
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(249, 115, 22, 0.14), transparent 50%),
+        radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 50%),
+        linear-gradient(180deg, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.98)),
+        var(--bgimg);
+      background-size: cover;
+      background-attachment: fixed;
+      color: #fff;
+    }
+    .glass {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.40);
+    }
+    .input-field {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      color: white;
+      transition: all 0.25s ease;
+    }
+    .input-field:focus {
+      border-color: var(--c1);
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.18);
+      outline: none;
+    }
+    .input-field:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: rgba(15, 23, 42, 0.35);
+    }
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    
-    /* Dynamic Branding Classes (Default) */
-    .brand-text { background-clip: text; -webkit-background-clip: text; color: transparent; background-image: linear-gradient(to right, #fb923c, #f87171); }
-    .brand-border { border-color: #f97316; }
-    .brand-bg { background-image: linear-gradient(to right, #f97316, #ef4444); }
+
+    .brand-text {
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      background-image: linear-gradient(to right, var(--c1), var(--c2));
+    }
+    .brand-bg { background-image: linear-gradient(to right, var(--c1), var(--c2)); }
+    .brand-ring { box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.16); }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+    <body class="min-h-screen flex items-center justify-center p-4 font-sans">
 
-<div id="main-container" class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500">
-    <!-- Decorative Header (Configurable) -->
-    <div id="header-bar" class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
+    <div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
+    <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
+
+    <div id="header-image" class="hidden w-full h-24 rounded-xl mb-4 bg-slate-800/40 border border-white/5 overflow-hidden bg-cover bg-center"></div>
 
     <div class="text-center mb-6" id="form-header">
-        <div id="logo-container" class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/10 text-orange-500 mb-3 overflow-hidden">
-             <!-- Default Icon -->
-             <i id="default-icon" class="fa-solid fa-users-viewfinder text-2xl"></i>
-             <!-- Image Logo (Hidden by default) -->
-             <img id="custom-logo" src="" class="w-full h-full object-cover hidden">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 text-orange-500 mb-3 overflow-hidden border border-white/10">
+            <i id="default-icon" class="fa-solid fa-people-group text-2xl"></i>
+            <img id="custom-logo" src="" class="w-full h-full object-cover hidden" alt="logo">
         </div>
-        <h1 id="org-name" class="text-2xl font-bold brand-text">Party Attendance</h1>
-        <p id="org-subtitle" class="text-slate-400 text-xs mt-1">Karyakarta Upasthiti</p>
+        <h1 id="org-name" class="text-2xl font-extrabold brand-text">पार्टी उपस्थिति फॉर्म</h1>
+        <p id="org-subtitle" class="text-slate-300/80 text-xs mt-1">Party Attendance</p>
+        <p id="org-tagline" class="text-slate-400 text-[11px] mt-2 hidden"></p>
     </div>
 
-    <form id="f" class="space-y-4">
-        
-        <!-- Selfie Upload Section -->
-        <div class="space-y-2">
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider">Selfie (Required)</label>
-            <div class="relative group">
-                <input type="file" id="selfie" accept="image/*" capture="user" class="hidden" onchange="previewImage(event)">
-                <label for="selfie" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-orange-500 hover:bg-slate-800/50 transition-all group-hover:shadow-lg group-hover:shadow-orange-500/10 overflow-hidden" id="dropzone">
-                    <div id="preview-container" class="hidden w-full h-full relative">
-                        <img id="preview" class="w-full h-full object-cover">
-                        <button type="button" onclick="clearImage(event)" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center shadow-lg hover:scale-110 transition"><i class="fa-solid fa-times text-xs"></i></button>
-                    </div>
-                    <div id="upload-placeholder" class="text-center p-4">
-                        <i class="fa-solid fa-camera text-2xl text-slate-400 mb-2 group-hover:text-orange-400 transition"></i>
-                        <p class="text-xs text-slate-400">Tap to Capture / Upload</p>
-                    </div>
-                </label>
-            </div>
-        </div>
-
-        <!-- Mobile First (For Auto-fill) -->
+      <form id="f" class="space-y-4">
         <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Mobile</label>
-            <div class="relative">
-                <input type="tel" id="mobile" class="w-full rounded-lg px-3 py-2.5 text-sm input-field pl-10" placeholder="10-digit Number" pattern="[0-9]{10}" required>
-                <i class="fa-solid fa-phone absolute left-3 top-3 text-slate-500 text-xs"></i>
-                <!-- Loader for lookup -->
-                <div id="mobile-loader" class="absolute right-3 top-3 hidden">
-                    <i class="fa-solid fa-circle-notch fa-spin text-orange-500"></i>
-                </div>
+          <label class="block text-xs font-medium text-slate-300/80 mb-1">मोबाइल नंबर (Mobile)</label>
+          <div class="relative">
+            <input type="tel" id="mobile" class="w-full rounded-lg px-3 py-2.5 text-sm input-field pl-10" placeholder="10-digit Number" inputmode="numeric" pattern="[0-9]{10}" required>
+            <i class="fa-solid fa-phone absolute left-3 top-3 text-slate-500 text-xs"></i>
+            <div id="mobile-loader" class="absolute right-3 top-3 hidden">
+              <i class="fa-solid fa-circle-notch fa-spin text-orange-400"></i>
             </div>
-            <p id="user-found-msg" class="text-[10px] text-green-400 mt-1 hidden"><i class="fa-solid fa-check-circle"></i> डेटा मिला! विवरण भर दिया गया है।</p>
+          </div>
+          <p id="user-found-msg" class="text-[10px] text-emerald-400 mt-1 hidden">
+            <i class="fa-solid fa-check-circle mr-1"></i> डेटा मिला! विवरण भर दिया गया है।
+          </p>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Name</label>
-                <input type="text" id="name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Full Name" required>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Designation / Pad</label>
-                <input type="text" id="designation" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="e.g. Mandal Adhyaksh">
-            </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">नाम</label>
+            <input type="text" id="name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Name" required>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">पद</label>
+            <input type="text" id="designation" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Designation">
+          </div>
         </div>
 
-        <!-- NEW DROPDOWNS -->
         <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">District (जिला)</label>
-            <select id="district" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
-                <option value="">— Select District —</option>
+          <label class="block text-xs font-medium text-slate-300/80 mb-1">कार्यक्रम का नाम</label>
+          <div class="relative">
+            <select id="program_name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field appearance-none" required>
+              <option value="">— कार्यक्रम चुनें —</option>
+              <option value="कार्यक्रम-1">कार्यक्रम-1</option>
             </select>
+            <i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-1">नये कार्यक्रम का नाम एडमिन कंसोल से सेट होगा।</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300/80 mb-1">जिला</label>
+          <select id="district" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
+            <option value="">— जिला चुनें —</option>
+          </select>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Vidhan Sabha</label>
-                <select id="vidhansabha" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
-                    <option value="">— Select District First —</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Mandal</label>
-                <select id="mandal" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
-                    <option value="">— Select Vidhan Sabha First —</option>
-                </select>
-            </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">विधानसभा</label>
+            <select id="vidhansabha" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
+              <option value="">— पहले जिला चुनें —</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">मंडल</label>
+            <select id="mandal" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
+              <option value="">— पहले विधानसभा चुनें —</option>
+            </select>
+          </div>
         </div>
 
-        <button type="submit" id="submitBtn" class="w-full brand-bg text-white font-bold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition-all transform active:scale-95 flex items-center justify-center gap-2 hover:opacity-90">
-            <span>Mark Attendance</span>
-            <i class="fa-solid fa-paper-plane text-xs"></i>
-        </button>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">तारीख</label>
+            <input type="date" id="attendance_date" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">समय</label>
+            <input type="time" id="attendance_time" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
+          </div>
+        </div>
 
-    </form>
+        <div>
+          <label class="block text-xs font-medium text-slate-300/80 mb-1">टिप्पणी</label>
+          <textarea id="remarks" rows="3" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Remarks / Notes"></textarea>
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full brand-bg text-white font-extrabold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 hover:opacity-95">
+          <span>सुरक्षित करें (Save)</span><i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
+      </form>
+
     <div id="status" class="mt-4 text-center text-xs font-medium hidden"></div>
+    <div class="mt-4 text-center text-[11px] text-slate-400/80">
+      <span id="footer-text"></span>
+    </div>
 </div>
 
-<!-- SUCCESS SCREEN (Hidden by default) -->
-<div id="success-screen" class="hidden w-full max-w-lg glass rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
-    <div class="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mb-6 text-4xl shadow-lg shadow-green-500/20">
+    <!-- SUCCESS SCREEN -->
+<div id="success-screen" class="hidden w-full max-w-lg glass rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[420px]">
+    <div class="w-20 h-20 bg-emerald-500/15 text-emerald-400 rounded-full flex items-center justify-center mb-6 text-4xl shadow-lg shadow-emerald-500/10 border border-emerald-500/20">
         <i class="fa-solid fa-check"></i>
     </div>
-    <h2 class="text-2xl font-bold text-white mb-2">उपस्थिति दर्ज!</h2>
-    <p id="success-msg" class="text-slate-300 mb-8 leading-relaxed">
-        आपकी उपस्थिति सफलतापूर्वक दर्ज कर ली गई है।
-    </p>
-    <button onclick="window.location.reload()" class="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white transition">
-        <i class="fa-solid fa-user-plus mr-2"></i> नई एंट्री करें
+    <h2 class="text-2xl font-extrabold text-white mb-2">धन्यवाद!</h2>
+    <p id="success-msg" class="text-slate-200/90 mb-8 leading-relaxed">उपस्थिति की जानकारी सेव कर ली गई है।</p>
+    <button onclick="window.location.reload()" class="px-6 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-lg text-sm text-white transition">
+        <i class="fa-solid fa-rotate-right mr-2"></i> नया फॉर्म
     </button>
 </div>
 
-<script>
-    // ==========================================
-    // CONFIGURATION - API & BRANDING
-    // ==========================================
-    
-    const API_ID = "vxid0yoovj"; 
-    const AWS_REGION = "ap-south-1";
-    
-    const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
+    <script>
+    // ===============================
+// COMMON CONFIG & UTILS
+// ===============================
+const API_ID = "vxid0yoovj";
+const AWS_REGION = "ap-south-1";
+const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
 
-    // ROUTES Logic matched to your WORKING CODE:
-    // Public Form:  .../prod/political/public/forms
-    // Private Form: .../prod/political/forms
-    // Timeline:     .../prod/political/timeline
+const $ = (id) => document.getElementById(id);
+const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
+const token = (qs("token") || "").trim();
+const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
+const debug = (qs("debug") || "").trim() === "1";
 
-    const TIMELINE_API = `${BASE_URL}/political/timeline`; 
+function isPublicMode() { return !!token; }
 
-    // This object can be updated via Admin Console in future (stored in S3 or DB)
-    const BRANDING_CONFIG = {
-        default: {
-            title: "Party Attendance",
-            subtitle: "Karyakarta Upasthiti",
-            themeColor: "from-orange-500 to-red-500", // Tailwind Gradient
-            successMsg: "आपकी उपस्थिति सफलतापूर्वक दर्ज कर ली गई है। जय हिंद!"
-        },
-        // Example for a specific collection ID
-        bjpmandsaur: {
-            title: "कार्यकर्ता सम्मेलन - मंदसौर",
-            subtitle: "उपस्थिति पंजी",
-            successMsg: "सम्मेलन में पधारने के लिए धन्यवाद।",
-            // logoUrl: "https://example.com/logo.png" 
-        }
-    };
+function setThemeVars(c1, c2) {
+  if (c1) document.documentElement.style.setProperty("--c1", c1);
+  if (c2) document.documentElement.style.setProperty("--c2", c2);
+}
+function setBackgroundImage(url) {
+  if (!url) return;
+  document.documentElement.style.setProperty("--bgimg", `url('${url}')`);
+}
 
-    // ==========================================
-    // DATA SOURCE: DISTRICT -> VIDHAN -> MANDAL
-    // ==========================================
+function showStatus(msg, isError) {
+  const el = $("status");
+  if (!el) return;
+  el.classList.remove("hidden","text-green-400","text-red-400");
+  el.classList.add(isError ? "text-red-400" : "text-green-400");
+  el.textContent = msg || "";
+  if (!msg) el.classList.add("hidden");
+}
+
+async function apiCall(action, payload) {
+  const path = isPublicMode() ? "/political/public/forms" : "/political/forms";
+  const url = `${BASE_URL}${path}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, payload: payload || {} })
+  });
+  const text = await res.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch(e) { data = { message: text || "Invalid JSON" }; }
+  if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+function safeStr(v) { return (v === null || v === undefined) ? "" : String(v); }
+
+async function sha256Hex(file) {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function uploadToS3(url, file) {
+  await fetch(url, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+}
+
+function mergeObj(a, b) {
+  const out = Object.assign({}, a || {});
+  Object.keys(b || {}).forEach(k => {
+    if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k])) out[k] = mergeObj(out[k], b[k]);
+    else out[k] = b[k];
+  });
+  return out;
+}
+
+// ===============================
+// BRANDING + PROGRAMS + FIXED LEVEL
+// ===============================
+async function loadRemoteConfig(formType) {
+  // Returns { branding, programs, fixed_level } or null
+  try {
+    const payload = isPublicMode()
+      ? { token, form_type: formType }
+      : { collection_id: cidParam, form_type: formType };
+
+    const action = isPublicMode() ? "public_get_config" : "admin_get_config";
+    const res = await apiCall(action, payload);
+    return res && (res.config || res.data || res);
+  } catch (e) {
+    if (debug) console.log("config load failed", e);
+    return null;
+  }
+}
+
+function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
+  const globalBrand = (cfg && cfg.branding && cfg.branding.global) ? cfg.branding.global : {};
+  const perForm = (cfg && cfg.branding && cfg.branding.forms && cfg.branding.forms[formType]) ? cfg.branding.forms[formType] : {};
+  const brand = mergeObj(globalBrand, perForm);
+
+  const title = brand.title || fallbackTitle || "EventLens Form";
+  const subtitle = brand.subtitle || fallbackSubtitle || "";
+  const tagline = brand.tagline || fallbackTagline || "";
+  const logoUrl = brand.logo_url || "";
+  const headerImg = brand.header_image_url || "";
+  const footerText = brand.footer_text || "";
+  const bgImg = brand.background_image_url || "";
+
+  if ($("org-name")) $("org-name").textContent = title;
+  if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
+  if ($("org-tagline")) $("org-tagline").textContent = tagline;
+
+  if ($("footer-text")) $("footer-text").textContent = footerText;
+
+  // Theme
+  setThemeVars(brand.theme_primary, brand.theme_secondary);
+  setBackgroundImage(bgImg);
+
+  // Logo
+  if (logoUrl && $("custom-logo")) {
+    $("custom-logo").src = logoUrl;
+    $("custom-logo").classList.remove("hidden");
+    if ($(defaultIconId)) $(defaultIconId).classList.add("hidden");
+  }
+
+  // Header Image
+  if (headerImg && $("header-image")) {
+    $("header-image").style.backgroundImage = `url('${headerImg}')`;
+    $("header-image").classList.remove("hidden");
+  }
+}
+
+function fillProgramNames(cfg, selectId) {
+  const sel = $(selectId);
+  if (!sel) return;
+  const list = (cfg && (cfg.programs || (cfg.data && cfg.data.programs))) || [];
+  const programs = Array.isArray(list) ? list : [];
+  if (!programs.length) return;
+
+  sel.innerHTML = '<option value="">— कार्यक्रम चुनें —</option>';
+  programs.forEach((p) => {
+    const v = safeStr(p).trim();
+    if (!v) return;
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+function getFixedLevel(cfg, formType) {
+  const fixed = (cfg && cfg.fixed_levels) ? cfg.fixed_levels : (cfg && cfg.data && cfg.data.fixed_levels) ? cfg.data.fixed_levels : {};
+  if (fixed && fixed[formType]) return String(fixed[formType]).toLowerCase();
+  return "";
+}
+    const FORM_TYPE = "party_attendance";
+    const FIELD_IDS = ["mobile","name","designation","program_name","district","vidhansabha","mandal","attendance_date","attendance_time","remarks"];
+
     const DISTRICT_DATA = {
-    "मंदसौर": {
-        "मंदसौर": ["मंदसौर नगर उत्तर", "मंदसौर नगर दक्षिण", "मंदसौर ग्रामीण"],
-        "सुवासरा": ["सीतामऊ", "सुवासरा", "शामगढ़"],
-        "गरोठ": ["गरोठ", "भानपुरा", "मेलखेड़ा"],
-        "मल्हारगढ़": ["मल्हारगढ़", "नारायणगढ़", "पिपलियामंडी"]
-    },
-    "रतलाम": {
-        "रतलाम सिटी": ["दीनदयाल नगर", "अम्बेडकर नगर", "श्यामा प्रसाद मुखर्जी नगर"],
-        "रतलाम ग्रामीण": ["धराड़", "बांगरोद", "नामली"],
-        "सैलाना": ["सैलाना", "बाजना", "रावटी"],
-        "जावरा": ["जावरा नगर", "जावरा ग्रामीण", "पिप्लौदा"],
-        "आलोट": ["आलोट", "बड़ावदा", "ताल"]
-    },
-    "नीमच": {
-        "नीमच": ["नीमच उत्तर", "नीमच दक्षिण", "नीमच पश्चिम", "जीरन"],
-        "मनासा": ["मनासा", "रामपुरा", "कुकाड़ेश्वर"],
-        "जावद": ["जावद", "सिंगोली", "रतनगढ़"]
-    },
-    "उज्जैन": {
-        "उज्जैन उत्तर": ["दौलतगंज", "नई सड़क", "फ्रीगंज"],
-        "उज्जैन दक्षिण": ["महानंदा", "नानाखेड़ा", "कोठी रोड"],
-        "घट्टिया": ["घट्टिया", "उन्हेल", "पानबिहार"],
-        "तराना": ["तराना", "माकड़ोन", "कायथा"],
-        "महिदपुर": ["महिदपुर नगर", "महिदपुर ग्रामीण", "झारड़ा"],
-        "नागदा-खाचरौद": ["नागदा", "खाचरौद", "बिरलाग्राम"],
-        "बड़नगर": ["बड़नगर", "इंगोरिया", "खरसौद"]
-    },
-    "आगर-मालवा": {
-        "आगर": ["आगर नगर", "आगर ग्रामीण", "बड़ौद"],
-        "सुसनेर": ["सुसनेर", "नलखेड़ा", "सोयत"]
-    },
-    "शाजापुर": {
-        "शाजापुर": ["शाजापुर नगर", "शाजापुर ग्रामीण", "मो. बड़ोदिया"],
-        "शुजालपुर": ["शुजालपुर मंडी", "शुजालपुर सिटी", "अकोदिया"],
-        "कालापीपल": ["कालापीपल", "पोलायकलां", "खोकराकलां"]
-    },
-    "देवास": {
-        "देवास": ["देवास उत्तर", "देवास दक्षिण", "देवास पश्चिम"],
-        "सोनकच्छ": ["सोनकच्छ", "टोंकखुर्द", "पीपलरावां"],
-        "हाटपिपल्या": ["हाटपिपल्या", "नेवरी", "करनावाद"],
-        "खातेगांव": ["खातेगांव", "कन्नौद", "हरणगांव"],
-        "बागली": ["बागली", "उदयनगर", "सतवास"]
-    },
-    "इंदौर": {
-        "इंदौर-1": ["वार्ड 1-5", "वार्ड 6-10", "वार्ड 11-15"],
-        "इंदौर-2": ["वार्ड 16-20", "वार्ड 21-25", "वार्ड 26-30"],
-        "इंदौर-3": ["वार्ड 31-35", "वार्ड 36-40", "वार्ड 41-45"],
-        "इंदौर-4": ["वार्ड 46-50", "वार्ड 51-55", "वार्ड 56-60"],
-        "इंदौर-5": ["वार्ड 61-65", "वार्ड 66-70", "वार्ड 71-75"],
-        "राऊ": ["राऊ नगर", "तेजाजी नगर", "दत्तौदा"],
-        "महू": ["महू नगर", "महू ग्रामीण", "मानपुर"],
-        "देपालपुर": ["देपालपुर", "गौतमपुरा", "बेटमा"],
-        "सांवेर": ["सांवेर", "चंद्रावतीगंज", "क्षिप्रा"]
-    },
-    "धार": {
-        "धार": ["धार नगर", "धार ग्रामीण", "तिरला"],
-        "पीथमपुर": ["पीथमपुर", "सागौर", "नालछा"],
-        "बदनावर": ["बदनावर", "कानवन", "मुलथान"],
-        "सरदारपुर": ["सरदारपुर", "राजगढ़", "अमझेरा"],
-        "गंधवानी": ["गंधवानी", "बाग", "टांडा"],
-        "कुक्षी": ["कुक्षी", "डही", "निसरपुर"],
-        "मनावर": ["मनावर", "उमरबन", "सिंघाना"],
-        "धरमपुरी": ["धरमपुरी", "धामनोद", "मांडू"]
-    },
-    "झाबुआ": {
-        "झाबुआ": ["झाबुआ नगर", "झाबुआ ग्रामीण", "रामा"],
-        "थांदला": ["थांदला", "खवासा", "मेघनगर"],
-        "पेटलावद": ["पेटलावद", "रायपुरिया", "सारंगी"]
-    },
-    "अलीराजपुर": {
-        "अलीराजपुर": ["अलीराजपुर नगर", "अलीराजपुर ग्रामीण", "सोंडवा"],
-        "जोबट": ["जोबट", "उदयगढ़", "भाबरा"]
-    },
-    "खरगोन": {
-        "खरगोन": ["खरगोन नगर", "खरगोन ग्रामीण", "सनावद"],
-        "भीकनगांव": ["भीकनगांव", "झिरन्या", "गोगावां"],
-        "बड़वाह": ["बड़वाह", "महेश्वर", "करही"],
-        "महेश्वर": ["महेश्वर", "मंडलेश्वर", "धामनोद"],
-        "कसरावद": ["कसरावद", "पिपलगोन", "बालकवाड़ा"],
-        "भगवानपुरा": ["भगवानपुरा", "सेगांव", "बिस्टान"]
-    },
-    "बड़वानी": {
-        "बड़वानी": ["बड़वानी नगर", "बड़वानी ग्रामीण", "पाटी"],
-        "सेंधवा": ["सेंधवा नगर", "सेंधवा ग्रामीण", "चाचरीया"],
-        "राजपुर": ["राजपुर", "ठीकरी", "अंजड़"],
-        "पानसेमल": ["पानसेमल", "खेतिया", "निवाली"]
-    },
-    "खंडवा": {
-        "खंडवा": ["खंडवा नगर", "खंडवा ग्रामीण", "छैगांवमाखन"],
-        "पंधाना": ["पंधाना", "सिंघोट", "आरुद"],
-        "मांधाता": ["मांधाता", "पुनासा", "मूंदी"],
-        "हरसूद": ["हरसूद", "खालवा", "किillod"]
-    },
-    "बुरहानपुर": {
-        "बुरहानपुर": ["बुरहानपुर नगर", "बुरहानपुर ग्रामीण", "शाहपुर"],
-        "नेपानगर": ["नेपानगर", "धुलकोट", "खकनार"]
-    }
+"मंदसौर": {
+    "मंदसौर": ["मंदसौर नगर उत्तर", "मंदसौर नगर दक्षिण", "मंदसौर ग्रामीण"],
+    "सुवासरा": ["सीतामऊ", "सुवासरा", "शामगढ़"],
+    "गरोठ": ["गरोठ", "भानपुरा", "मेलखेड़ा"],
+    "मल्हारगढ़": ["मल्हारगढ़", "नारायणगढ़", "पिपलियामंडी"]
+},
+"रतलाम": {
+    "रतलाम सिटी": ["दीनदयाल नगर", "अम्बेडकर नगर", "श्यामा प्रसाद मुखर्जी नगर"],
+    "रतलाम ग्रामीण": ["धराड़", "बांगरोद", "नामली"],
+    "सैलाना": ["सैलाना", "बाजना", "रावटी"],
+    "जावरा": ["जावरा नगर", "जावरा ग्रामीण", "पिप्लौदा"],
+    "आलोट": ["आलोट", "बड़ावदा", "ताल"]
+},
+"नीमच": {
+    "नीमच": ["नीमच उत्तर", "नीमच दक्षिण", "नीमच पश्चिम", "जीरन"],
+    "मनासा": ["मनासा", "रामपुरा", "कुकाड़ेश्वर"],
+    "जावद": ["जावद", "सिंगोली", "रतनगढ़"]
+},
+"उज्जैन": {
+    "उज्जैन उत्तर": ["दौलतगंज", "नई सड़क", "फ्रीगंज"],
+    "उज्जैन दक्षिण": ["महानंदा", "नानाखेड़ा", "कोठी रोड"],
+    "घट्टिया": ["घट्टिया", "उन्हेल", "पानबिहार"],
+    "तराना": ["तराना", "माकड़ोन", "कायथा"],
+    "महिदपुर": ["महिदपुर नगर", "महिदपुर ग्रामीण", "झारड़ा"],
+    "नागदा-खाचरौद": ["नागदा", "खाचरौद", "बिरलाग्राम"],
+    "बड़नगर": ["बड़नगर", "इंगोरिया", "खरसौद"]
+},
+"आगर-मालवा": {
+    "आगर": ["आगर नगर", "आगर ग्रामीण", "बड़ौद"],
+    "सुसनेर": ["सुसनेर", "नलखेड़ा", "सोयत"]
+},
+"शाजापुर": {
+    "शाजापुर": ["शाजापुर नगर", "शाजापुर ग्रामीण", "मो. बड़ोदिया"],
+    "शुजालपुर": ["शुजालपुर मंडी", "शुजालपुर सिटी", "अकोदिया"],
+    "कालापीपल": ["कालापीपल", "पोलायकलां", "खोकराकलां"]
+},
+"देवास": {
+    "देवास": ["देवास उत्तर", "देवास दक्षिण", "देवास पश्चिम"],
+    "सोनकच्छ": ["सोनकच्छ", "टोंकखुर्द", "पीपलरावां"],
+    "हाटपिपल्या": ["हाटपिपल्या", "नेवरी", "करनावाद"],
+    "खातेगांव": ["खातेगांव", "कन्नौद", "हरणगांव"],
+    "बागली": ["बागली", "उदयनगर", "सतवास"]
+},
+"इंदौर": {
+    "इंदौर-1": ["वार्ड 1-5", "वार्ड 6-10", "वार्ड 11-15"],
+    "इंदौर-2": ["वार्ड 16-20", "वार्ड 21-25", "वार्ड 26-30"],
+    "इंदौर-3": ["वार्ड 31-35", "वार्ड 36-40", "वार्ड 41-45"],
+    "इंदौर-4": ["वार्ड 46-50", "वार्ड 51-55", "वार्ड 56-60"],
+    "इंदौर-5": ["वार्ड 61-65", "वार्ड 66-70", "वार्ड 71-75"],
+    "राऊ": ["राऊ नगर", "तेजाजी नगर", "दत्तौदा"],
+    "महू": ["महू नगर", "महू ग्रामीण", "मानपुर"],
+    "देपालपुर": ["देपालपुर", "गौतमपुरा", "बेटमा"],
+    "सांवेर": ["सांवेर", "चंद्रावतीगंज", "क्षिप्रा"]
+},
+"धार": {
+    "धार": ["धार नगर", "धार ग्रामीण", "तिरला"],
+    "पीथमपुर": ["पीथमपुर", "सागौर", "नालछा"],
+    "बदनावर": ["बदनावर", "कानवन", "मुलथान"],
+    "सरदारपुर": ["सरदारपुर", "राजगढ़", "अमझेरा"],
+    "गंधवानी": ["गंधवानी", "बाग", "टांडा"],
+    "कुक्षी": ["कुक्षी", "डही", "निसरपुर"],
+    "मनावर": ["मनावर", "उमरबन", "सिंघाना"],
+    "धरमपुरी": ["धरमपुरी", "धामनोद", "मांडू"]
+},
+"झाबुआ": {
+    "झाबुआ": ["झाबुआ नगर", "झाबुआ ग्रामीण", "रामा"],
+    "थांदला": ["थांदला", "खवासा", "मेघनगर"],
+    "पेटलावद": ["पेटलावद", "रायपुरिया", "सारंगी"]
+},
+"अलीराजपुर": {
+    "अलीराजपुर": ["अलीराजपुर नगर", "अलीराजपुर ग्रामीण", "सोंडवा"],
+    "जोबट": ["जोबट", "उदयगढ़", "भाबरा"]
+},
+"खरगोन": {
+    "खरगोन": ["खरगोन नगर", "खरगोन ग्रामीण", "सनावद"],
+    "भीकनगांव": ["भीकनगांव", "झिरन्या", "गोगावां"],
+    "बड़वाह": ["बड़वाह", "महेश्वर", "करही"],
+    "महेश्वर": ["महेश्वर", "मंडलेश्वर", "धामनोद"],
+    "कसरावद": ["कसरावद", "पिपलगोन", "बालकवाड़ा"],
+    "भगवानपुरा": ["भगवानपुरा", "सेगांव", "बिस्टान"]
+},
+"बड़वानी": {
+    "बड़वानी": ["बड़वानी नगर", "बड़वानी ग्रामीण", "पाटी"],
+    "सेंधवा": ["सेंधवा नगर", "सेंधवा ग्रामीण", "चाचरीया"],
+    "राजपुर": ["राजपुर", "ठीकरी", "अंजड़"],
+    "पानसेमल": ["पानसेमल", "खेतिया", "निवाली"]
+},
+"खंडवा": {
+    "खंडवा": ["खंडवा नगर", "खंडवा ग्रामीण", "छैगांवमाखन"],
+    "पंधाना": ["पंधाना", "सिंघोट", "आरुद"],
+    "मांधाता": ["मांधाता", "पुनासा", "मूंदी"],
+    "हरसूद": ["हरसूद", "खालवा", "किल्लोद"]
+},
+"बुरहानपुर": {
+    "बुरहानपुर": ["बुरहानपुर नगर", "बुरहानपुर ग्रामीण", "शाहपुर"],
+    "नेपानगर": ["नेपानगर", "धुलकोट", "खकनार"]
+}
 };
+    // ===============================
+// LOCATION HELPERS (district -> vidhansabha -> mandal)
+// ===============================
+function initDistrictCascade() {
+  const dEl = $("district");
+  const vEl = $("vidhansabha");
+  const mEl = $("mandal");
+  if (!dEl || !vEl || !mEl) return;
 
-    // ==========================================
-    // UTILITIES
-    // ==========================================
-    const $ = (id) => document.getElementById(id);
-    const FIELD_IDS = ['mobile','name','designation','district','vidhansabha','mandal'];
-    const FORM_TYPE = 'party_attendance';
+  // Populate Districts
+  dEl.innerHTML = '<option value="">— जिला चुनें —</option>';
+  Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach((d) => {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    dEl.appendChild(opt);
+  });
 
-    // Better query param parsing
-    const qs = (n) => { try{ return (new URL(window.location.href)).searchParams.get(n)||''; }catch(e){ return ''; } };
-    const token = qs('token'); 
-    const cidParam = (qs('cid') || qs('collection_id') || qs('id')).trim(); 
-    
-    function isPublicMode() { return !!token; }
+  dEl.addEventListener("change", () => {
+    const dVal = dEl.value;
+    vEl.innerHTML = '<option value="">— विधानसभा चुनें —</option>';
+    mEl.innerHTML = '<option value="">— पहले विधानसभा चुनें —</option>';
+    vEl.disabled = !dVal;
+    mEl.disabled = true;
 
-    function showStatus(msg, isError) {
-        const el = $('status'); el.classList.remove('hidden','text-green-400','text-red-400');
-        el.classList.add(isError ? 'text-red-400' : 'text-green-400');
-        el.innerText = msg; el.classList.remove('hidden');
+    if (dVal && DISTRICT_DATA[dVal]) {
+      Object.keys(DISTRICT_DATA[dVal]).sort((a,b)=>a.localeCompare(b,"hi")).forEach((v) => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        vEl.appendChild(opt);
+      });
+    }
+  });
+
+  vEl.addEventListener("change", () => {
+    const dVal = dEl.value;
+    const vVal = vEl.value;
+    mEl.innerHTML = '<option value="">— मंडल चुनें —</option>';
+    mEl.disabled = !vVal;
+
+    if (dVal && vVal && DISTRICT_DATA[dVal] && DISTRICT_DATA[dVal][vVal]) {
+      DISTRICT_DATA[dVal][vVal].slice().sort((a,b)=>a.localeCompare(b,"hi")).forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        mEl.appendChild(opt);
+      });
+    }
+  });
+}
+
+function applyLocationAutofill(info) {
+  // info: {district, vidhansabha, mandal}
+  if (!info) return;
+  const d = safeStr(info.district).trim();
+  const v = safeStr(info.vidhansabha).trim();
+  const m = safeStr(info.mandal).trim();
+
+  if (d && $("district")) {
+    $("district").value = d;
+    $("district").dispatchEvent(new Event("change"));
+    setTimeout(() => {
+      if (v && $("vidhansabha")) {
+        $("vidhansabha").value = v;
+        $("vidhansabha").dispatchEvent(new Event("change"));
+        setTimeout(() => {
+          if (m && $("mandal")) $("mandal").value = m;
+        }, 120);
+      }
+    }, 120);
+  }
+}
+
+    let remoteCfg = null;
+
+    async function initAll() {
+      initDistrictCascade();
+
+      remoteCfg = await loadRemoteConfig(FORM_TYPE);
+      applyBrandingFromConfig(remoteCfg, FORM_TYPE, "पार्टी उपस्थिति फॉर्म", "Party Attendance", "", "default-icon");
+
+      if ($("org-tagline") && $("org-tagline").textContent.trim()) $("org-tagline").classList.remove("hidden");
+      if ($("footer-text") && $("footer-text").textContent.trim() === "") $("footer-text").textContent = "Powered by EventLens";
+
+      fillProgramNames(remoteCfg, "program_name");
     }
 
-    // ==========================================
-    // INITIALIZATION & BRANDING
-    // ==========================================
-    function applyBranding() {
-        const config = (cidParam && BRANDING_CONFIG[cidParam]) ? BRANDING_CONFIG[cidParam] : BRANDING_CONFIG['default'];
-        
-        $('org-name').textContent = config.title;
-        $('org-subtitle').textContent = config.subtitle;
-        $('success-msg').textContent = config.successMsg;
+    document.addEventListener("DOMContentLoaded", initAll);
 
-        if(config.logoUrl) {
-            $('custom-logo').src = config.logoUrl;
-            $('custom-logo').classList.remove('hidden');
-            $('default-icon').classList.add('hidden');
+    // Mobile Auto-fill
+    let mobileTimer = null;
+    async function tryLookupMobile() {
+      const mobile = ($("mobile").value || "").trim();
+      if (mobile.length !== 10) return;
+
+      $("mobile-loader").classList.remove("hidden");
+      $("user-found-msg").classList.add("hidden");
+
+      try {
+        const payload = isPublicMode()
+          ? { token, form_type: FORM_TYPE, mobile }
+          : { collection_id: cidParam, form_type: FORM_TYPE, mobile };
+        const action = isPublicMode() ? "public_lookup_mobile" : "lookup_mobile";
+        const res = await apiCall(action, payload);
+
+        const info = res && (res.profile || res.data || res);
+        if (info && (info.name || info.designation || info.district || info.vidhansabha || info.mandal)) {
+          if (info.name) $("name").value = info.name;
+          if (info.designation) $("designation").value = info.designation;
+          applyLocationAutofill(info);
+          $("user-found-msg").classList.remove("hidden");
         }
+      } catch (e) {
+        if (debug) console.log("lookup failed", e);
+      } finally {
+        $("mobile-loader").classList.add("hidden");
+      }
     }
 
-    function initLocations() {
-        applyBranding();
-        const dEl = $('district'); const vEl = $('vidhansabha'); const mEl = $('mandal');
-        
-        // Populate District
-        const districts = Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b, "hi"));
-        districts.forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d; opt.textContent = d;
-            dEl.appendChild(opt);
-        });
-
-        dEl.addEventListener('change', () => {
-            const dVal = dEl.value;
-            vEl.innerHTML = '<option value="">— Vidhan Sabha —</option>';
-            mEl.innerHTML = '<option value="">— Mandal —</option>';
-            vEl.disabled = !dVal; mEl.disabled = true;
-
-            if(dVal && DISTRICT_DATA[dVal]) {
-                const vidhans = Object.keys(DISTRICT_DATA[dVal]).sort((a,b)=>a.localeCompare(b, "hi"));
-                vidhans.forEach(v => {
-                    const opt = document.createElement('option');
-                    opt.value = v; opt.textContent = v;
-                    vEl.appendChild(opt);
-                });
-            }
-        });
-
-        vEl.addEventListener('change', () => {
-            const dVal = dEl.value; const vVal = vEl.value;
-            mEl.innerHTML = '<option value="">— Mandal —</option>';
-            mEl.disabled = !vVal;
-
-            if(dVal && vVal && DISTRICT_DATA[dVal][vVal]) {
-                const mandals = DISTRICT_DATA[dVal][vVal].sort((a,b)=>a.localeCompare(b, "hi"));
-                mandals.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m; opt.textContent = m;
-                    mEl.appendChild(opt);
-                });
-            }
-        });
-    }
-
-    // ==========================================
-    // AUTO-FILL LOGIC (MOBILE LOOKUP)
-    // ==========================================
-    const mobileInput = $('mobile');
-    mobileInput.addEventListener('blur', async () => {
-        const val = mobileInput.value.trim();
-        if(val.length !== 10) return;
-
-        $('mobile-loader').classList.remove('hidden');
-        
-        try {
-            // Using Timeline API to fetch user history/metadata
-            const res = await fetch(TIMELINE_API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mobile: val }) // Sending mobile to API
-            });
-            
-            if(!res.ok) throw new Error(`API Error: ${res.status}`);
-            const data = await res.json();
-            
-            if(data && (data.visitor_details || (data.events && data.events.length > 0))) {
-                const info = data.visitor_details || (data.events[0]); // Fallback to first event data
-                
-                if(info) {
-                    // Auto-fill fields if they exist
-                    if(info.name) $('name').value = info.name;
-                    if(info.designation) $('designation').value = info.designation;
-                    
-                    // Trigger Cascading Dropdowns
-                    if(info.district && DISTRICT_DATA[info.district]) {
-                        $('district').value = info.district;
-                        $('district').dispatchEvent(new Event('change')); // Load Vidhansabhas
-                        
-                        setTimeout(() => {
-                            if(info.vidhansabha) {
-                                $('vidhansabha').value = info.vidhansabha;
-                                $('vidhansabha').dispatchEvent(new Event('change')); // Load Mandals
-                                
-                                setTimeout(() => {
-                                    if(info.mandal) $('mandal').value = info.mandal;
-                                }, 100);
-                            }
-                        }, 100);
-                    }
-                    
-                    $('user-found-msg').classList.remove('hidden');
-                }
-            }
-        } catch(e) {
-            console.log("User lookup failed or new user", e);
-        } finally {
-            $('mobile-loader').classList.add('hidden');
-        }
+    $("mobile").addEventListener("input", () => {
+      clearTimeout(mobileTimer);
+      $("user-found-msg").classList.add("hidden");
+      const m = ($("mobile").value || "").trim();
+      if (m.length === 10) mobileTimer = setTimeout(tryLookupMobile, 500);
+    });
+    $("mobile").addEventListener("blur", () => {
+      clearTimeout(mobileTimer);
+      tryLookupMobile();
     });
 
-    document.addEventListener('DOMContentLoaded', initLocations);
+    // Submit (NO PHOTO)
+    $("f").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = $("submitBtn");
+      const old = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+      showStatus("", false);
 
-    // ==========================================
-    // IMAGE HANDLING
-    // ==========================================
-    function previewImage(event) {
-        const file = event.target.files[0];
-        if(file){
-            const src = URL.createObjectURL(file);
-            $('preview').src = src; $('preview-container').classList.remove('hidden');
-            $('dropzone').classList.add('border-orange-500'); $('upload-placeholder').classList.add('hidden');
+      try {
+        const data = {};
+        FIELD_IDS.forEach((id) => {
+          const el = $(id);
+          if (el) data[id] = (el.value || "").trim();
+        });
+
+        if (!data.program_name) throw new Error("कृपया कार्यक्रम चुनें");
+        if (!data.district) throw new Error("कृपया जिला चुनें");
+        if (!data.vidhansabha) throw new Error("कृपया विधानसभा चुनें");
+
+        let res;
+        if (isPublicMode()) {
+          res = await apiCall("public_create_entry", {
+            token,
+            form_type: FORM_TYPE,
+            file_kind: "none",
+            payload: data
+          });
+        } else {
+          if (!cidParam) throw new Error("Missing Collection ID (cid)");
+          res = await apiCall("create_entry", {
+            collection_id: cidParam,
+            form_type: FORM_TYPE,
+            file_kind: "none",
+            payload: data
+          });
         }
-    }
-    function clearImage(e) {
-        if(e) e.stopPropagation();
-        $('selfie').value = ''; $('preview').src = '';
-        $('preview-container').classList.add('hidden');
-        $('dropzone').classList.remove('border-orange-500'); $('upload-placeholder').classList.remove('hidden');
-    }
 
-    async function sha256Hex(file) {
-        const buffer = await file.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
-    }
+        const finalizeAction = isPublicMode() ? "public_finalize_entry" : "finalize_entry";
+        await apiCall(finalizeAction, { finalize_token: res.finalize_token, entry_id: res.entry_id });
 
-    // ==========================================
-    // API & SUBMIT
-    // ==========================================
-    async function apiCall(action, payload, useAuth=false) {
-        try {
-            // EXACT PATH LOGIC FROM YOUR WORKING CODE
-            const path = isPublicMode() ? '/political/public/forms' : '/political/forms';
-            const url = `${BASE_URL}${path}`;
-
-            // Using nested object structure exactly like working code
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action, payload })
-            });
-            
-            if(!res.ok) {
-                // Try to parse error message if possible
-                const text = await res.text();
-                let errData;
-                try { errData = JSON.parse(text); } catch(e) {}
-                throw new Error((errData && (errData.message || errData.error)) || `API Error: ${res.status} (Check Connection)`);
-            }
-            return await res.json();
-        } catch(e) {
-            if(e.name === 'TypeError' && e.message === 'Failed to fetch') {
-                throw new Error("API Server Unreachable. Please check API_ID configuration.");
-            }
-            throw e;
-        }
-    }
-
-    async function uploadToS3(url, file) {
-        await fetch(url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-    }
-
-    $('f').addEventListener('submit', async (e)=>{
-        e.preventDefault();
-        const btn = $('submitBtn'); const ot = btn.innerHTML; 
-        btn.disabled=true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...'; 
-        showStatus('');
-        try {
-            const file = $('selfie').files[0]; if(!file) throw new Error('Selfie required');
-            const data = {}; for(const id of FIELD_IDS) data[id] = $(id).value.trim();
-            const sha = await sha256Hex(file); const fileName = `${crypto.randomUUID()}.jpg`;
-            
-            let res;
-            if(isPublicMode()){ 
-                res = await apiCall('public_create_entry', { token, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }); 
-            } else { 
-                if(!cidParam) throw new Error('Missing Collection ID'); 
-                res = await apiCall('create_entry', { collection_id: cidParam, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: file.type, payload: data }, true); 
-            }
-
-            if(res.upload_url) await uploadToS3(res.upload_url, file);
-            
-            const af = isPublicMode() ? 'public_finalize_entry' : 'finalize_entry';
-            await apiCall(af, { finalize_token: res.finalize_token, entry_id: res.entry_id }, !isPublicMode());
-            
-            // Show Success Screen instead of just text
-            $('main-container').classList.add('hidden');
-            $('success-screen').classList.remove('hidden');
-            
-            $('f').reset(); clearImage(e);
-        } catch(err) { 
-            showStatus('❌ ' + err.message, true); 
-            btn.disabled=false; btn.innerHTML = ot; 
-        }
+        $("main-container").classList.add("hidden");
+        $("success-screen").classList.remove("hidden");
+      } catch (err) {
+        showStatus("❌ " + (err.message || "Error"), true);
+        btn.disabled = false;
+        btn.innerHTML = old;
+      }
     });
-</script>
-</body>
-</html>
+    </script>
+    </body>
+    </html>

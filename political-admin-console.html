@@ -5,1063 +5,794 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Political Admin Console - EventLens</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] } } } }</script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: { brand: { 500: '#f97316', 600: '#ea580c' } }
+        }
+      }
+    }
+  </script>
   <style>
-    body { background: #0f172a; color: #fff; }
-    .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; transition: all 0.2s; color: #94a3b8; cursor: pointer; }
-    .sidebar-link:hover { background: rgba(255,255,255,0.05); color: #fff; }
-    .sidebar-link.active { background: linear-gradient(135deg, #f97316, #ea580c); color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
-    .table-row:hover { background: rgba(255,255,255,0.03); }
-    th { cursor: pointer; user-select: none; }
-    th:hover { color: #fb923c; }
-   
-    /* Modal Animation */
-    .modal { transition: opacity 0.3s ease-in-out, visibility 0.3s; opacity: 0; visibility: hidden; }
-    .modal.open { opacity: 1; visibility: visible; }
-    .modal-content { transform: scale(0.95); transition: transform 0.3s; }
-    .modal.open .modal-content { transform: scale(1); }
-    /* Mobile Preview Container */
-    .mobile-frame { border: 8px solid #1e293b; border-radius: 30px; overflow: hidden; height: 600px; width: 320px; position: relative; background: #0f172a; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); margin: 0 auto; }
-    .mobile-screen { height: 100%; width: 100%; overflow-y: auto; background-size: cover; background-position: center; position: relative; }
-    .mobile-screen::-webkit-scrollbar { width: 4px; }
-    .mobile-screen::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-   
-    .preview-glass { background: rgba(30, 41, 59, 0.90); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 20px; margin-top: -40px; position: relative; z-index: 10; margin-left: 10px; margin-right: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-   
-    .header-bg-preview { height: 150px; width: 100%; background-size: cover; background-position: center; position: relative; }
-    .header-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(15, 23, 42, 1)); }
-    /* Toast */
-    #toast { position: fixed; top: 24px; right: 24px; background: #1a1a1a; color: #fff; padding: 16px 24px; border-radius: 12px; z-index: 9999; transform: translateX(150%); transition: 0.4s; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    #toast.show { transform: translateX(0); }
-    #toast.success { border-color: #22c55e; }
-    #toast.error { border-color: #ef4444; }
-    #toast.info { border-color: #3b82f6; }
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(249, 115, 22, 0.14), transparent 50%),
+        radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.10), transparent 50%),
+        #020617;
+      color: #e2e8f0;
+    }
+    .glass {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.75) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .input {
+      background: rgba(2, 6, 23, 0.55);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: #fff;
+    }
+    .input:focus {
+      outline: none;
+      border-color: rgba(249,115,22,.8);
+      box-shadow: 0 0 0 2px rgba(249,115,22,.18);
+    }
+    .pill { border: 1px solid rgba(255,255,255,0.10); }
+    ::-webkit-scrollbar { width: 7px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
   </style>
 </head>
-<body class="h-screen flex overflow-hidden">
-  <!-- Toast Container -->
-  <div id="toast"></div>
-  <!-- Sidebar -->
-  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-20">
-    <div class="p-6 border-b border-slate-800">
-      <div class="flex items-center gap-3 text-orange-500">
-        <i class="fa-solid fa-user-shield text-2xl"></i>
-        <div>
-            <span class="font-bold text-lg text-white block leading-tight">Admin Console</span>
-            <span class="text-[10px] text-slate-500 font-mono" id="sidebarCidDisplay">Loading CID...</span>
+<body class="min-h-screen font-sans">
+  <div class="sticky top-0 z-40 border-b border-white/5 glass">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+          </div>
+          <div>
+            <div class="text-white font-extrabold tracking-tight">EventLens <span class="text-orange-400">Political</span> Admin</div>
+            <div class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Branding • Programs • Level Locks • Preview</div>
+          </div>
         </div>
-      </div>
-    </div>
-   
-    <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
-      <div class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-2">Data Management</div>
-      <div class="sidebar-link active" onclick="switchTab('program_info', this)">
-        <i class="fa-solid fa-calendar-days w-5"></i> Events
-      </div>
-      <div class="sidebar-link" onclick="switchTab('coordinator_entry', this)">
-        <i class="fa-solid fa-users-gear w-5"></i> Coordinators
-      </div>
-      <div class="sidebar-link" onclick="switchTab('mandal_reporting', this)">
-        <i class="fa-solid fa-clipboard-check w-5"></i> Reporting
-      </div>
-      <div class="sidebar-link" onclick="switchTab('president_tour', this)">
-        <i class="fa-solid fa-plane-departure w-5"></i> President Tour
-      </div>
-      <div class="sidebar-link" onclick="switchTab('visitor_form', this)">
-        <i class="fa-solid fa-user-group w-5"></i> Visitors
-      </div>
-      <div class="sidebar-link" onclick="switchTab('party_attendance', this)">
-        <i class="fa-solid fa-list-check w-5"></i> Attendance
-      </div>
-      <div class="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-6">Settings</div>
-      <div class="sidebar-link" onclick="switchTab('settings', this)">
-        <i class="fa-solid fa-paintbrush w-5"></i> Branding & Links
-      </div>
-    </nav>
-   
-    <div class="p-4 border-t border-slate-800 space-y-3">
-        <button onclick="runDeepDiagnostics()" class="w-full bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-medium py-2 rounded-lg transition border border-cyan-600">
-            <i class="fa-solid fa-microscope mr-1"></i> Run Deep Diagnostics
-        </button>
-        <button onclick="createTestEntry()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium py-2 rounded-lg transition border border-indigo-500/50 shadow-lg shadow-indigo-500/20">
-            <i class="fa-solid fa-flask mr-1"></i> Create Test Record
-        </button>
-        <button onclick="loadData(true, true)" class="w-full bg-slate-800 hover:bg-slate-700 text-orange-400 text-xs font-medium py-2 rounded-lg transition border border-slate-700">
-            <i class="fa-solid fa-sync mr-1"></i> Force Full Scan
-        </button>
-    </div>
-  </aside>
-  <!-- Main Content -->
-  <main class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
-    <!-- Header -->
-    <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-sm shrink-0 z-10">
-      <h2 id="pageTitle" class="text-lg font-semibold text-white">Event Details</h2>
-      <div class="flex items-center gap-4">
-        <div id="cidWarning" class="hidden px-3 py-1 rounded bg-red-500/10 text-red-400 text-xs border border-red-500/20">
-            <i class="fa-solid fa-circle-exclamation mr-1"></i> No CID Found
+
+        <div class="flex items-center gap-2">
+          <div id="cidPill" class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full pill bg-slate-900/40 text-xs font-mono text-slate-300">
+            <i class="fa-solid fa-layer-group text-orange-400"></i>
+            <span id="cidVal"></span>
+          </div>
+          <button id="btnReload" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold">
+            <i class="fa-solid fa-rotate-right mr-1"></i> Reload
+          </button>
+          <button id="btnSave" class="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-xs font-extrabold shadow-lg shadow-orange-500/20">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> Save Changes
+          </button>
         </div>
-       
-        <!-- Controls for Data View -->
-        <div id="dataControls" class="flex items-center gap-3">
-            <div class="relative">
-                <input type="text" id="searchInput" placeholder="Search data..." onkeyup="filterTable()" class="bg-slate-800 text-sm text-white rounded-lg pl-9 pr-3 py-1.5 border border-slate-700 focus:border-orange-500 outline-none w-64">
-                <i class="fa-solid fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
-            </div>
-            <button onclick="exportCSV()" class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-sm transition">
-                <i class="fa-solid fa-file-csv mr-1"></i> Export
-            </button>
-        </div>
-        <button onclick="window.close()" class="text-slate-400 hover:text-white transition text-sm flex items-center gap-2 border-l border-slate-700 pl-4 ml-2">
-            <i class="fa-solid fa-xmark"></i> Close
-        </button>
-      </div>
-    </header>
-    <!-- Content Area -->
-    <div class="flex-1 overflow-hidden relative">
-       
-        <!-- DATA VIEW (Tables) -->
-        <div id="dataView" class="absolute inset-0 p-6 overflow-auto custom-scrollbar">
-           
-            <!-- Diagnostic Panel (Hidden by default) -->
-            <div id="diagnosticPanel" class="hidden mb-6 p-4 bg-slate-900 border border-slate-700 rounded-xl relative shadow-2xl">
-                <button onclick="document.getElementById('diagnosticPanel').classList.add('hidden')" class="absolute top-2 right-2 text-slate-500 hover:text-white"><i class="fa-solid fa-times"></i></button>
-                <h4 class="text-orange-400 text-sm font-bold mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-bug"></i> Deep Diagnostics Report
-                </h4>
-                <div class="space-y-3 text-xs text-slate-300">
-                    <div class="flex justify-between border-b border-slate-800 pb-1">
-                        <span>Collection ID:</span>
-                        <span class="font-mono text-orange-300" id="diagCid">...</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-800 pb-1">
-                        <span>API Connection:</span>
-                        <span class="font-bold" id="diagApiStatus">Testing...</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-800 pb-1">
-                        <span>Write Permission (Test Entry):</span>
-                        <span class="font-bold" id="diagWriteStatus">Pending...</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-800 pb-1">
-                        <span>Read Verification (Direct):</span>
-                        <span class="font-bold" id="diagReadStatus">Pending...</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-800 pb-1">
-                        <span>Read Verification (List):</span>
-                        <span class="font-bold" id="diagListStatus">Pending...</span>
-                    </div>
-                    <div class="bg-slate-950 p-3 rounded text-slate-400 font-mono text-[10px] break-all" id="diagRawOutput">
-                        Waiting for results...
-                    </div>
-                </div>
-            </div>
-            <div class="glass rounded-xl overflow-hidden shadow-2xl min-h-[300px]">
-                <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-800 text-slate-400 text-xs uppercase font-semibold sticky top-0 z-10 shadow-lg">
-                    <tr id="tableHeaderRow">
-                    <!-- Dynamic Headers -->
-                    </tr>
-                </thead>
-                <tbody id="tableBody" class="text-sm text-slate-300 divide-y divide-slate-800">
-                    <tr><td class="p-8 text-center text-slate-500">Initializing...</td></tr>
-                </tbody>
-                </table>
-                <div id="emptyState" class="hidden p-12 text-center">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-800 text-slate-600 mb-4">
-                        <i class="fa-solid fa-database text-2xl"></i>
-                    </div>
-                    <h3 class="text-slate-400 font-medium">No Records Found</h3>
-                    <p class="text-slate-500 text-xs mt-2 max-w-md mx-auto">
-                        API returned 0 items. Ensure you are using the exact CID: <span class="font-mono bg-slate-800 px-1 rounded text-orange-400" id="emptyStateCid">...</span>
-                    </p>
-                    <div class="flex justify-center gap-3 mt-6">
-                        <button onclick="runDeepDiagnostics()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition">
-                            Run Diagnostics
-                        </button>
-                        <button onclick="loadData(true, true)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg transition">
-                            Force Scan (Bypass Index)
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-4 text-xs text-slate-500 flex justify-between items-center">
-                <span id="recordCount">0 Records</span>
-                <div class="flex flex-col items-end">
-                    <span>Last Updated: <span id="lastUpdated">--:--</span></span>
-                    <span id="debugInfo" class="text-[10px] text-slate-600 mt-1"></span>
-                </div>
-            </div>
-        </div>
-        <!-- SETTINGS VIEW (Branding & Links) -->
-        <div id="settingsView" class="absolute inset-0 p-6 overflow-auto hidden custom-scrollbar">
-            <div class="flex flex-col lg:flex-row gap-8 h-full">
-               
-                <!-- Left: Controls -->
-                <div class="flex-1 space-y-6 overflow-y-auto pr-2 pb-10">
-                   
-                    <!-- Branding Form -->
-                    <div class="glass rounded-xl p-6 border-l-4 border-orange-500">
-                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2 flex justify-between">
-                            <span>Admin Branding</span>
-                            <span class="text-xs font-normal text-slate-400 bg-slate-800 px-2 py-1 rounded">Local Settings</span>
-                        </h3>
-                        <div class="space-y-4">
-                            <!-- Logo Upload -->
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Organization Logo (URL or Upload)</label>
-                                <div class="flex items-center gap-3">
-                                    <div class="h-12 w-12 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center relative group">
-                                        <img id="logoPreviewSmall" class="h-full w-full object-cover hidden">
-                                        <i id="logoPlaceholder" class="fa-solid fa-image text-slate-600"></i>
-                                    </div>
-                                    <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'previewLogo', 'logoPreviewSmall')">
-                                    <button onclick="document.getElementById('logoInput').click()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded transition">Upload File</button>
-                                </div>
-                            </div>
-                            <!-- Header BG Upload -->
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Header Background</label>
-                                <div class="flex gap-2">
-                                    <input type="file" id="headerInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-blue-400 hover:file:bg-slate-700 cursor-pointer" onchange="handleImageUpload(this, 'previewHeaderBg')">
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Organization Name</label>
-                                    <input type="text" id="brandName" value="EventLens Political" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" oninput="updatePreview()">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-400 mb-1">Theme Color</label>
-                                    <select id="brandTheme" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" onchange="updatePreview()">
-                                        <option value="orange">Orange (Saffron)</option>
-                                        <option value="blue">Blue (Corporate)</option>
-                                        <option value="green">Green (Nature)</option>
-                                        <option value="red">Red (Urgent)</option>
-                                    </select>
-                                </div>
-                            </div>
-                           
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Footer Text</label>
-                                <input type="text" id="brandFooter" value="Powered by EventLens" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-orange-500" oninput="updatePreview()">
-                            </div>
-                            <button onclick="saveSettings()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition w-full mt-2 shadow-lg shadow-orange-500/20">
-                                <i class="fa-solid fa-floppy-disk mr-1"></i> Save Configuration
-                            </button>
-                            <p class="text-[10px] text-slate-500 text-center mt-1">Settings are saved locally (Browser) for this CID.</p>
-                        </div>
-                    </div>
-                    <!-- Links Generator -->
-                    <div class="glass rounded-xl p-6">
-                        <h3 class="text-lg font-bold text-white mb-4 border-b border-slate-700 pb-2">Public Form Links (Token Based)</h3>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-calendar-days w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Event Details</span>
-                                <button onclick="copyLink('political_program_info_form.html', 'program_info')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
-                            </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-users-gear w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Coordinator</span>
-                                <button onclick="copyLink('political_coordinator_entry_form.html', 'coordinator_entry')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
-                            </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-clipboard-check w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Reporting</span>
-                                <button onclick="copyLink('political_mandal_reporting_form.html', 'mandal_reporting')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
-                            </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-plane-departure w-6 text-center text-slate-500 group-hover:text-orange-400"></i> President Tour</span>
-                                <button onclick="copyLink('political_president_tour_form.html', 'president_tour')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
-                            </div>
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-user-group w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Visitor Form</span>
-                                <button onclick="copyLink('political_visitor_form.html', 'visitor_form')" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-white border border-slate-600">Generate</button>
-                            </div>
-                            <!-- Search Link -->
-                            <div class="flex justify-between items-center p-2 hover:bg-slate-800 rounded transition group border-t border-slate-800 mt-2 pt-3">
-                                <span class="text-sm text-slate-300"><i class="fa-solid fa-magnifying-glass w-6 text-center text-slate-500 group-hover:text-orange-400"></i> Karyakarta Search</span>
-                                <button onclick="copyLink('political-search.html', 'search')" class="text-xs bg-orange-700 hover:bg-orange-600 px-3 py-1.5 rounded text-white border border-orange-600">Generate Search</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Right: Preview -->
-                <div class="w-full lg:w-[360px] flex flex-col items-center justify-start shrink-0">
-                    <div class="w-full flex justify-between items-center mb-4 px-2">
-                        <div class="text-slate-400 text-xs uppercase tracking-widest font-semibold">Live Preview</div>
-                        <select id="previewFormSelector" onchange="updatePreview()" class="bg-slate-800 text-white text-xs border border-slate-700 rounded px-2 py-1 outline-none focus:border-orange-500 cursor-pointer">
-                            <option value="program_info">Event Details Form</option>
-                            <option value="coordinator_entry">Coordinator Form</option>
-                            <option value="mandal_reporting">Reporting Form</option>
-                            <option value="president_tour">President Tour Form</option>
-                            <option value="visitor_form">Visitor Form</option>
-                        </select>
-                    </div>
-                   
-                    <div class="mobile-frame shadow-2xl relative">
-                        <!-- Simulated Mobile Screen -->
-                        <div class="mobile-screen" id="mobileScreen">
-                           
-                            <!-- Header BG -->
-                            <div id="previewHeaderBg" class="header-bg-preview" style="background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1000&auto=format&fit=crop');">
-                                <div class="header-overlay"></div>
-                            </div>
-                            <!-- Main Card -->
-                            <div class="preview-glass">
-                                <!-- Logo & Title -->
-                                <div class="text-center mb-6">
-                                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 mb-3 overflow-hidden shadow-lg relative -mt-12 z-20">
-                                        <img id="previewLogo" src="https://cdn-icons-png.flaticon.com/512/9313/9313234.png" class="w-full h-full object-cover">
-                                    </div>
-                                    <h1 id="prevHeader" class="text-xl font-bold text-white leading-tight">EventLens Political</h1>
-                                    <p id="prevSubHeader" class="text-slate-400 text-xs mt-1">Form Name Here</p>
-                                </div>
-                                <!-- Dynamic Form Fields (Preview) -->
-                                <div id="previewFields" class="space-y-3">
-                                    <!-- Populated by JS -->
-                                </div>
-                                <!-- Button -->
-                                <div id="prevBtn" class="h-12 bg-gradient-to-r rounded-xl w-full mt-5 shadow-lg flex items-center justify-center text-white font-bold text-sm cursor-pointer">
-                                    Submit
-                                </div>
-                            </div>
-                            <div id="prevFooter" class="text-[10px] text-slate-500 text-center mt-6 pb-4">Powered by EventLens</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-  </main>
-  <!-- Edit Modal -->
-  <div id="editModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-    <div class="modal-content glass w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-        <h3 class="font-bold text-lg text-white">Edit Entry</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-      </div>
-      <div class="p-6 overflow-y-auto space-y-4" id="modalForm"></div>
-      <div class="p-5 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
-        <button onclick="closeModal()" class="px-5 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Cancel</button>
-        <button onclick="saveChanges()" id="btnSave" class="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium shadow-lg shadow-orange-500/20 transition flex items-center gap-2">
-            <span>Save Changes</span>
-        </button>
       </div>
     </div>
   </div>
 
-  <script>
-    const API_ID = 'vxid0yoovj';
-    const REGION = 'ap-south-1';
-    let currentTab = 'program_info';
-    let rawData = [];
-    let filteredData = [];
-    let editingId = null;
-    let collectionId = '';
-    let sortDir = 1;
-    const qs = (name) => (new URL(window.location.href)).searchParams.get(name) || '';
-    collectionId = qs('cid') || qs('collection_id');
-    const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="grid lg:grid-cols-12 gap-6">
 
-    function showToast(msg, type = 'success') {
-      const t = document.getElementById('toast');
-      t.className = `show ${type}`;
-      let icon = 'fa-circle-check text-green-500';
-      if(type === 'error') icon = 'fa-circle-exclamation text-red-500';
-      if(type === 'info') icon = 'fa-circle-info text-blue-500';
-     
-      t.innerHTML = `
-        <i class="fa-solid ${icon} text-xl"></i>
-        <div>
-          <h4 class="font-bold text-sm">${type === 'success' ? 'Success' : (type==='error'?'Error':'Info')}</h4>
-          <p class="text-xs text-slate-300">${msg}</p>
+      <div class="lg:col-span-3 space-y-4">
+        <div class="glass rounded-2xl p-4">
+          <div class="text-xs text-slate-400 font-semibold mb-3 uppercase tracking-wider">Sections</div>
+          <div class="space-y-2">
+            <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/50 hover:bg-slate-800 border border-slate-700 text-slate-200 text-sm font-bold" data-tab="branding">
+              <i class="fa-solid fa-palette mr-2 text-orange-400"></i> Branding & Theme
+            </button>
+            <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="programs">
+              <i class="fa-solid fa-list-check mr-2 text-orange-400"></i> Program Names
+            </button>
+            <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="levels">
+              <i class="fa-solid fa-lock mr-2 text-orange-400"></i> Level Lock
+            </button>
+            <button class="navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold" data-tab="preview">
+              <i class="fa-solid fa-eye mr-2 text-orange-400"></i> Live Preview
+            </button>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-white/5">
+            <div id="status" class="hidden text-xs"></div>
+            <div class="mt-3 text-[11px] text-slate-500 leading-relaxed">
+              <div class="font-bold text-slate-300 mb-1"><i class="fa-solid fa-circle-info text-sky-400 mr-1"></i> Note</div>
+              <div>यह console <b>CID based</b> config सेव करता है। अगर backend में admin APIs नहीं हैं तो यह localStorage में save करके चलेगा।</div>
+            </div>
+          </div>
         </div>
-      `;
-      setTimeout(() => t.className = '', 3000);
-    }
+      </div>
 
-    async function apiCall(endpoint, body) {
+      <div class="lg:col-span-9 space-y-6">
+
+        <section id="tab-branding" class="tab card rounded-2xl p-5 lg:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="text-lg font-extrabold text-white">Branding & Theme</div>
+              <div class="text-xs text-slate-400 mt-1">Logo / Header Image / Background Image को <b>URL नहीं</b>, सीधे upload करके set करें।</div>
+            </div>
+            <div class="text-xs text-slate-400">Preview नीचे दिखेगा</div>
+          </div>
+
+          <div class="mt-6 grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold text-slate-300">Title (Header)</label>
+              <input id="b_title" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. भाजपा कार्यालय मंदसौर" />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-300">Subtitle</label>
+              <input id="b_subtitle" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. स्वागत" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-xs font-bold text-slate-300">Tagline</label>
+              <input id="b_tagline" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1" placeholder="e.g. सेवा • संगठन • समर्पण" />
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-slate-300">Theme Color 1</label>
+              <input id="b_c1" type="color" class="w-full mt-2 h-10 rounded-xl bg-slate-900/40 border border-slate-700" />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-slate-300">Theme Color 2</label>
+              <input id="b_c2" type="color" class="w-full mt-2 h-10 rounded-xl bg-slate-900/40 border border-slate-700" />
+            </div>
+          </div>
+
+          <div class="mt-6 grid lg:grid-cols-3 gap-4">
+            <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-extrabold text-white">Logo</div>
+                <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="logo">
+                  <i class="fa-solid fa-trash-can mr-1"></i> Remove
+                </button>
+              </div>
+              <div class="mt-3 flex items-center gap-3">
+                <div class="w-14 h-14 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
+                  <img id="prev_logo" class="w-full h-full object-cover hidden" />
+                  <i id="icon_logo" class="fa-solid fa-image text-slate-500"></i>
+                </div>
+                <div class="flex-1">
+                  <input id="file_logo" type="file" accept="image/*" class="hidden" />
+                  <button id="btn_logo" class="w-full px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
+                    <i class="fa-solid fa-upload mr-1"></i> Upload Logo
+                  </button>
+                  <div id="name_logo" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-extrabold text-white">Header Image</div>
+                <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="header">
+                  <i class="fa-solid fa-trash-can mr-1"></i> Remove
+                </button>
+              </div>
+              <div class="mt-3">
+                <div class="w-full h-24 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
+                  <img id="prev_header" class="w-full h-full object-cover hidden" />
+                  <i id="icon_header" class="fa-solid fa-panorama text-slate-500"></i>
+                </div>
+                <div class="mt-3 flex items-center gap-2">
+                  <input id="file_header" type="file" accept="image/*" class="hidden" />
+                  <button id="btn_header" class="flex-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
+                    <i class="fa-solid fa-upload mr-1"></i> Upload Header
+                  </button>
+                </div>
+                <div id="name_header" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/30 rounded-2xl border border-slate-800 p-4">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-extrabold text-white">Background Image</div>
+                <button class="text-xs px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700" data-clear="bg">
+                  <i class="fa-solid fa-trash-can mr-1"></i> Remove
+                </button>
+              </div>
+              <div class="mt-3">
+                <div class="w-full h-24 rounded-xl bg-slate-900/60 border border-slate-700 overflow-hidden flex items-center justify-center">
+                  <img id="prev_bg" class="w-full h-full object-cover hidden" />
+                  <i id="icon_bg" class="fa-solid fa-mountain-sun text-slate-500"></i>
+                </div>
+                <div class="mt-3 flex items-center gap-2">
+                  <input id="file_bg" type="file" accept="image/*" class="hidden" />
+                  <button id="btn_bg" class="flex-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">
+                    <i class="fa-solid fa-upload mr-1"></i> Upload Background
+                  </button>
+                </div>
+                <div id="name_bg" class="text-[11px] text-slate-500 mt-2 truncate">No file selected</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <div class="text-sm font-extrabold text-white mb-3"><i class="fa-solid fa-eye mr-2 text-orange-400"></i> Live Branding Preview</div>
+
+            <div id="previewCard" class="rounded-2xl overflow-hidden border border-slate-800 relative">
+              <div id="previewBg" class="absolute inset-0 opacity-30 bg-cover bg-center"></div>
+              <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/30 to-black/60"></div>
+
+              <div id="previewHeaderBar" class="absolute top-0 left-0 w-full h-1"></div>
+
+              <div class="relative p-6">
+                <div id="previewHeaderImgWrap" class="hidden w-full h-28 rounded-2xl overflow-hidden border border-white/10 mb-5">
+                  <img id="previewHeaderImg" class="w-full h-full object-cover" />
+                </div>
+
+                <div class="flex items-center gap-4">
+                  <div class="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
+                    <img id="previewLogo" class="w-full h-full object-cover hidden" />
+                    <i id="previewLogoIcon" class="fa-solid fa-bolt text-orange-400 text-2xl"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <div id="previewTitle" class="text-2xl font-extrabold text-white leading-tight"></div>
+                    <div id="previewSubtitle" class="text-sm text-slate-300 mt-1"></div>
+                    <div id="previewTagline" class="text-xs text-slate-400 mt-2"></div>
+                  </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-2 gap-3">
+                  <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Theme Color 1</div>
+                    <div class="mt-2 flex items-center gap-2">
+                      <div id="sw1" class="w-6 h-6 rounded-lg border border-white/20"></div>
+                      <div id="txt1" class="text-xs text-slate-300 font-mono"></div>
+                    </div>
+                  </div>
+                  <div class="rounded-xl bg-white/5 border border-white/10 p-3">
+                    <div class="text-[10px] uppercase text-slate-400 font-bold">Theme Color 2</div>
+                    <div class="mt-2 flex items-center gap-2">
+                      <div id="sw2" class="w-6 h-6 rounded-lg border border-white/20"></div>
+                      <div id="txt2" class="text-xs text-slate-300 font-mono"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-5 text-[11px] text-slate-400">
+                  ⚡ यह preview <b>admin console में live</b> है। Save के बाद forms में वही branding apply होगी (यदि forms backend config पढ़ रहे हों)।
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-programs" class="tab hidden card rounded-2xl p-5 lg:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="text-lg font-extrabold text-white">Program Names (Dropdown)</div>
+              <div class="text-xs text-slate-400 mt-1">Party Attendance / Reporting / Coordinator / Program Info में “कार्यक्रम का नाम” dropdown इसी list से भरेंगे।</div>
+            </div>
+          </div>
+
+          <div class="mt-5 grid md:grid-cols-3 gap-3">
+            <div class="md:col-span-2">
+              <input id="progInput" class="input w-full rounded-xl px-3 py-2.5 text-sm" placeholder="नया कार्यक्रम नाम लिखें (e.g. मंडल बैठक)" />
+            </div>
+            <button id="btnAddProg" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-extrabold">
+              <i class="fa-solid fa-plus mr-1"></i> Add
+            </button>
+          </div>
+
+          <div class="mt-5">
+            <div class="text-xs font-bold text-slate-300 mb-2">Current Programs</div>
+            <div id="progList" class="space-y-2"></div>
+            <div class="text-[11px] text-slate-500 mt-3">Tip: duplicates auto रोक दिए हैं।</div>
+          </div>
+        </section>
+
+        <section id="tab-levels" class="tab hidden card rounded-2xl p-5 lg:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="text-lg font-extrabold text-white">Level Lock</div>
+              <div class="text-xs text-slate-400 mt-1">कुछ forms में Level fixed रखना है (Admin से या link के साथ)।</div>
+            </div>
+          </div>
+
+          <div class="mt-6 grid md:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Karyakram Reporting</div>
+              <div class="text-[11px] text-slate-500 mt-1">Form: mandal_reporting</div>
+              <select id="lvl_mandal_reporting" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
+                <option value="">(Not fixed)</option>
+                <option value="district">District (जिला)</option>
+                <option value="vidhansabha">Vidhan Sabha (विधानसभा)</option>
+                <option value="mandal">Mandal (मंडल)</option>
+              </select>
+            </div>
+
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Coordinator</div>
+              <div class="text-[11px] text-slate-500 mt-1">Form: coordinator</div>
+              <select id="lvl_coordinator" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
+                <option value="">(Not fixed)</option>
+                <option value="district">District (जिला)</option>
+                <option value="vidhansabha">Vidhan Sabha (विधानसभा)</option>
+                <option value="mandal">Mandal (मंडल)</option>
+              </select>
+            </div>
+
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Program Info</div>
+              <div class="text-[11px] text-slate-500 mt-1">Form: program_info</div>
+              <select id="lvl_program_info" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-3">
+                <option value="">(Not fixed)</option>
+                <option value="district">District (जिला)</option>
+                <option value="vidhansabha">Vidhan Sabha (विधानसभा)</option>
+                <option value="mandal">Mandal (मंडल)</option>
+              </select>
+            </div>
+
+            <div class="rounded-2xl border border-slate-800 bg-slate-950/20 p-4">
+              <div class="text-sm font-extrabold text-white">Link Lock (Optional)</div>
+              <div class="text-xs text-slate-400 mt-2 leading-relaxed">
+                अगर link में <span class="font-mono">level=mandal</span> दिया हो तो form उसी level पर lock हो सकता है (forms में code चाहिए)।
+              </div>
+              <div class="mt-3 text-[11px] text-slate-500">
+                Example: <span class="font-mono">...?cid=XXX&level=mandal</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-preview" class="tab hidden card rounded-2xl p-5 lg:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="text-lg font-extrabold text-white">Preview Form (How it will look)</div>
+              <div class="text-xs text-slate-400 mt-1">Saved config के साथ forms preview करने के लिए नीचे select करके iframe में देखें।</div>
+            </div>
+          </div>
+
+          <div class="mt-6 grid md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-5">
+              <label class="text-xs font-bold text-slate-300">Select Form</label>
+              <select id="previewFormSel" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1">
+                <option value="political_visitor_form.html">Visitor Form</option>
+                <option value="political_party_attendance_form.html">Party Attendance</option>
+                <option value="political_president_tour_form.html">President Tour</option>
+                <option value="political_mandal_reporting_form.html">Karyakram Reporting</option>
+                <option value="political_coordinator_form.html">Coordinator</option>
+                <option value="political_program_info_form.html">Program Info</option>
+              </select>
+            </div>
+            <div class="md:col-span-4">
+              <label class="text-xs font-bold text-slate-300">Mode</label>
+              <select id="previewModeSel" class="input w-full rounded-xl px-3 py-2.5 text-sm mt-1">
+                <option value="cid">CID Mode (Dashboard)</option>
+                <option value="token">Token Mode (Public) — if token exists</option>
+              </select>
+            </div>
+            <div class="md:col-span-3 flex gap-2">
+              <button id="btnOpenNew" class="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-extrabold">
+                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Open
+              </button>
+              <button id="btnLoadIframe" class="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-sm font-extrabold">
+                <i class="fa-solid fa-eye mr-1"></i> Load
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950/20">
+            <div class="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+              <div class="text-xs text-slate-400 font-bold"><i class="fa-solid fa-display mr-2 text-orange-400"></i> Embedded Preview</div>
+              <div class="text-[11px] text-slate-500 truncate" id="iframeUrlTxt"></div>
+            </div>
+            <iframe id="previewIframe" class="w-full h-[740px] bg-white"></iframe>
+          </div>
+
+          <div class="mt-4 text-[11px] text-slate-500">
+            अगर form preview में branding नहीं बदल रही, इसका मतलब form backend से config fetch नहीं कर रहा। (next step में forms में 10 लाइन का config loader जोड़ेंगे)
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const API_ID = "vxid0yoovj";
+  const REGION = "ap-south-1";
+  const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+  const FORMS_URL = `${BASE_URL}/political/forms`;
+
+  const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch(e){ return ""; } };
+  const cid = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+  const token = (qs("token") || "").trim();
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    status: $("status"),
+    cidPill: $("cidPill"),
+    cidVal: $("cidVal"),
+    btnSave: $("btnSave"),
+    btnReload: $("btnReload"),
+
+    b_title: $("b_title"),
+    b_subtitle: $("b_subtitle"),
+    b_tagline: $("b_tagline"),
+    b_c1: $("b_c1"),
+    b_c2: $("b_c2"),
+
+    file_logo: $("file_logo"),
+    file_header: $("file_header"),
+    file_bg: $("file_bg"),
+    btn_logo: $("btn_logo"),
+    btn_header: $("btn_header"),
+    btn_bg: $("btn_bg"),
+    name_logo: $("name_logo"),
+    name_header: $("name_header"),
+    name_bg: $("name_bg"),
+    prev_logo: $("prev_logo"),
+    prev_header: $("prev_header"),
+    prev_bg: $("prev_bg"),
+    icon_logo: $("icon_logo"),
+    icon_header: $("icon_header"),
+    icon_bg: $("icon_bg"),
+
+    previewBg: $("previewBg"),
+    previewHeaderBar: $("previewHeaderBar"),
+    previewHeaderImgWrap: $("previewHeaderImgWrap"),
+    previewHeaderImg: $("previewHeaderImg"),
+    previewLogo: $("previewLogo"),
+    previewLogoIcon: $("previewLogoIcon"),
+    previewTitle: $("previewTitle"),
+    previewSubtitle: $("previewSubtitle"),
+    previewTagline: $("previewTagline"),
+    sw1: $("sw1"),
+    sw2: $("sw2"),
+    txt1: $("txt1"),
+    txt2: $("txt2"),
+
+    progInput: $("progInput"),
+    btnAddProg: $("btnAddProg"),
+    progList: $("progList"),
+
+    lvl_mandal_reporting: $("lvl_mandal_reporting"),
+    lvl_coordinator: $("lvl_coordinator"),
+    lvl_program_info: $("lvl_program_info"),
+
+    previewFormSel: $("previewFormSel"),
+    previewModeSel: $("previewModeSel"),
+    btnOpenNew: $("btnOpenNew"),
+    btnLoadIframe: $("btnLoadIframe"),
+    previewIframe: $("previewIframe"),
+    iframeUrlTxt: $("iframeUrlTxt"),
+  };
+
+  if (els.cidVal && cid) { els.cidPill.classList.remove("hidden"); els.cidVal.textContent = cid; }
+
+  function setStatus(msg, type = "info") {
+    if (!els.status) return;
+    els.status.classList.remove("hidden");
+    const cls = type === "error"
+      ? "bg-red-500/10 border-red-500/20 text-red-300"
+      : type === "success"
+      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
+      : type === "loading"
+      ? "bg-slate-900/60 border-slate-700 text-slate-200"
+      : "bg-slate-900/60 border-slate-700 text-slate-200";
+    els.status.innerHTML = `<div class="px-3 py-2 rounded-xl border ${cls}">
+      ${type === "loading" ? '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>' : ""}
+      ${msg}
+    </div>`;
+  }
+
+  const DEFAULT_CONFIG = {
+    branding: {
+      title: "Political Forms",
+      subtitle: "Admin Config",
+      tagline: "",
+      color1: "#f97316",
+      color2: "#ef4444",
+      logo: { kind: "none", value: "" },
+      header: { kind: "none", value: "" },
+      background: { kind: "none", value: "" },
+    },
+    programs: ["मंडल बैठक","कार्यकर्ता सम्मेलन","जनसंपर्क","बूथ मीटिंग"],
+    fixed_levels: { mandal_reporting: "", coordinator: "", program_info: "" }
+  };
+
+  let state = { config: JSON.parse(JSON.stringify(DEFAULT_CONFIG)), pending: { logo: null, header: null, background: null } };
+
+  function getIdToken() { return localStorage.getItem("id_token") || localStorage.getItem("idToken") || ""; }
+
+  async function apiCall(action, payload) {
+    const idToken = getIdToken();
+    if (!idToken) throw new Error("id_token missing in localStorage. Please login first.");
+    const resp = await fetch(FORMS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+      body: JSON.stringify({ action, payload })
+    });
+    const txt = await resp.text();
+    let json = {};
+    try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
+    if (!resp.ok) throw new Error(json.message || `HTTP ${resp.status}`);
+    return json;
+  }
+
+  function extFromMime(m) { if (!m) return "jpg"; if (m.includes("png")) return "png"; if (m.includes("webp")) return "webp"; return "jpg"; }
+
+  async function sha256Hex(file) {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result || ""));
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function tryUploadAsset(kind, file) {
+    const sha = await sha256Hex(file);
+    const fileName = `${crypto.randomUUID()}.${extFromMime(file.type)}`;
+    const actionCandidates = ["admin_init_asset_upload", "init_asset_upload", "admin_init_upload_asset"];
+    let initRes = null;
+    for (const a of actionCandidates) {
       try {
-        const headers = { 'Content-Type': 'application/json' };
-        const token = localStorage.getItem('id_token') || localStorage.getItem('idToken');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        const res = await fetch(`${BASE_URL}${endpoint}`, {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(body)
-        });
-       
-        const json = await res.json();
-        if (!res.ok) {
-            if (res.status === 401) {
-                showToast("Login Expired or Invalid Token.", "error");
-            }
-            throw new Error(json.message || `API Error: ${res.status}`);
-        }
-        return json;
-      } catch (err) {
-        throw err;
-      }
+        initRes = await apiCall(a, { collection_id: cid, asset_kind: kind, sha256: sha, file_name: fileName, mime_type: file.type });
+        break;
+      } catch (e) {}
     }
+    if (!initRes || !(initRes.upload_url || initRes.url)) return null;
+    const uploadUrl = initRes.upload_url || initRes.url;
+    await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+    const assetUrl = initRes.public_url || initRes.asset_url || initRes.url_public || "";
+    const assetKey = initRes.s3_key || initRes.asset_key || initRes.key || "";
+    return { kind: "s3", value: assetUrl || assetKey || "" };
+  }
 
-    function safeVal(obj, key) {
-        if (!obj) return '';
-        let val = obj[key];
-       
-        if (val && typeof val === 'object' && !Array.isArray(val)) {
-            if ('S' in val) return val.S || '';
-            if ('N' in val) return val.N || '';
-            if ('BOOL' in val) return val.BOOL;
-            if ('M' in val) return val.M;
-        }
-       
-        if (val === undefined || val === null) return '';
-        return val;
-    }
+  function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m])); }
 
-    const SCHEMAS = {
-      'program_info': {
-        title: 'Event Details',
-        headers: ['Program Title', 'Date', 'Time', 'Location', 'District', 'Action'],
-        fields: [
-            { key: 'program_title', label: 'Program Title' },
-            { key: 'program_date', label: 'Date', type: 'date' },
-            { key: 'program_time', label: 'Time', type: 'time' },
-            { key: 'program_location', label: 'Location' },
-            { key: 'district', label: 'District' },
-            { key: 'expected_people', label: 'Expected People', type: 'number' }
-        ],
-        previewFields: [
-            { icon: 'fa-heading', ph: 'Program Title' }, { icon: 'fa-map-location-dot', ph: 'District' },
-            { icon: 'fa-map-pin', ph: 'Location' }, { icon: 'fa-calendar-day', ph: 'Date & Time' },
-            { icon: 'fa-users', ph: 'Expected Attendance' }
-        ]
-      },
-      'coordinator_entry': {
-        title: 'Coordinator Management',
-        headers: ['Name', 'Role', 'Mobile', 'Area', 'Type', 'Action'],
-        fields: [
-            { key: 'coord_name', label: 'Name' },
-            { key: 'coordinator_role', label: 'Role', type: 'select', options: ['Vidhan Sabha Sanyojak', 'Mandal Adhyaksh', 'Ward Sanyojak'] },
-            { key: 'coord_mobile', label: 'Mobile' },
-            { key: 'area', label: 'Area/Ward' },
-            { key: 'designation_type', label: 'Type' }
-        ],
-        previewFields: [
-            { icon: 'fa-bullhorn', ph: 'Program Name' }, { icon: 'fa-map-location-dot', ph: 'District' },
-            { icon: 'fa-user', ph: 'Convenor Name' }, { icon: 'fa-phone', ph: 'Convenor Mobile' },
-            { icon: 'fa-user-plus', ph: 'Co-Convenor Details' }
-        ]
-      },
-      'mandal_reporting': {
-        title: 'Mandal Reporting',
-        headers: ['Venue', 'Date', 'Level', 'Attendance', 'Action'],
-        fields: [
-            { key: 'venue', label: 'Venue' },
-            { key: 'event_date', label: 'Date', type: 'date' },
-            { key: 'level', label: 'Level', type: 'select', options:['mandal','district','vidhansabha'] },
-            { key: 'attendance', label: 'Attendance' },
-            { key: 'guests', label: 'Guests' }
-        ],
-        previewFields: [
-            { icon: 'fa-heading', ph: 'Program Name' }, { icon: 'fa-layer-group', ph: 'Level (Mandal/Dist)' },
-            { icon: 'fa-users', ph: 'Total Attendance' }, { icon: 'fa-comment-dots', ph: 'Key Issues' },
-            { icon: 'fa-camera', ph: 'Upload Photos' }
-        ]
-      },
-      'president_tour': {
-        title: 'President Tour',
-        headers: ['Place', 'Date', 'Type', 'Attendance', 'Action'],
-        fields: [
-            { key: 'tour_venue', label: 'Place' },
-            { key: 'tour_date', label: 'Date', type: 'date' },
-            { key: 'program_type', label: 'Type' },
-            { key: 'attendance', label: 'Attendance' }
-        ],
-        previewFields: [
-            { icon: 'fa-user', ph: 'Your Name' }, { icon: 'fa-calendar-day', ph: 'Tour Date' },
-            { icon: 'fa-location-arrow', ph: 'Tour Place' }, { icon: 'fa-user-tie', ph: 'VIP Name' },
-            { icon: 'fa-bed', ph: 'Stay Arrangement' }
-        ]
-      },
-      'visitor_form': {
-        title: 'Visitor Entry',
-        headers: ['Name', 'Mobile', 'District', 'Reason', 'Date', 'Action'],
-        fields: [
-            { key: 'name', label: 'Name' },
-            { key: 'mobile', label: 'Mobile' },
-            { key: 'district', label: 'District' },
-            { key: 'reason', label: 'Reason' },
-            { key: 'created_at', label: 'Date', type: 'date', readonly: true }
-        ],
-        previewFields: [
-            { icon: 'fa-user', ph: 'Visitor Name' }, { icon: 'fa-phone', ph: 'Mobile Number' },
-            { icon: 'fa-map-location-dot', ph: 'District' }, { icon: 'fa-sitemap', ph: 'Mandal' },
-            { icon: 'fa-comment-dots', ph: 'Reason for Visit' }, { icon: 'fa-camera', ph: 'Selfie' }
-        ]
-      },
-      'party_attendance': {
-        title: 'Party Attendance',
-        headers: ['Name', 'Mobile', 'Designation', 'Date', 'Action'],
-        fields: [
-            { key: 'name', label: 'Name' },
-            { key: 'mobile', label: 'Mobile' },
-            { key: 'designation', label: 'Designation' },
-            { key: 'created_at', label: 'Date', type: 'date', readonly: true }
-        ],
-        previewFields: [
-            { icon: 'fa-user', ph: 'Name' }, { icon: 'fa-phone', ph: 'Mobile' },
-            { icon: 'fa-id-badge', ph: 'Designation' }, { icon: 'fa-camera', ph: 'Selfie' }
-        ]
+  function renderPrograms() {
+    const arr = Array.isArray(state.config.programs) ? state.config.programs : [];
+    els.progList.innerHTML = "";
+    if (arr.length === 0) { els.progList.innerHTML = `<div class="text-slate-500 text-sm">No programs yet.</div>`; return; }
+    arr.forEach((name, idx) => {
+      const row = document.createElement("div");
+      row.className = "flex items-center gap-2 bg-slate-950/20 border border-slate-800 rounded-xl px-3 py-2";
+      row.innerHTML = `
+        <div class="flex-1 min-w-0"><div class="text-sm text-white font-bold truncate">${escapeHtml(name)}</div></div>
+        <button class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold" data-prog-del="${idx}">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>`;
+      els.progList.appendChild(row);
+    });
+    els.progList.querySelectorAll("[data-prog-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = parseInt(btn.getAttribute("data-prog-del"), 10);
+        const a = [...(state.config.programs || [])];
+        a.splice(i, 1);
+        state.config.programs = a;
+        renderPrograms();
+      });
+    });
+  }
+
+  function getAssetUrl(assetObj) { return (assetObj && assetObj.value) ? assetObj.value : ""; }
+
+  function setPreview(imgEl, iconEl, url) {
+    if (url) { imgEl.src = url; imgEl.classList.remove("hidden"); iconEl.classList.add("hidden"); }
+    else { imgEl.src = ""; imgEl.classList.add("hidden"); iconEl.classList.remove("hidden"); }
+  }
+
+  function renderAssetPreviews() {
+    const b = state.config.branding;
+    const logoVal = (state.pending.logo && state.pending.logo.previewUrl) || getAssetUrl(b.logo);
+    setPreview(els.prev_logo, els.icon_logo, logoVal);
+    const headerVal = (state.pending.header && state.pending.header.previewUrl) || getAssetUrl(b.header);
+    setPreview(els.prev_header, els.icon_header, headerVal);
+    const bgVal = (state.pending.background && state.pending.background.previewUrl) || getAssetUrl(b.background);
+    setPreview(els.prev_bg, els.icon_bg, bgVal);
+  }
+
+  function renderBrandPreview() {
+    const b = state.config.branding;
+    const c1 = els.b_c1.value || "#f97316";
+    const c2 = els.b_c2.value || "#ef4444";
+    els.previewHeaderBar.style.backgroundImage = `linear-gradient(to right, ${c1}, ${c2})`;
+    els.sw1.style.background = c1; els.sw2.style.background = c2;
+    els.txt1.textContent = c1; els.txt2.textContent = c2;
+    els.previewTitle.textContent = els.b_title.value || "—";
+    els.previewSubtitle.textContent = els.b_subtitle.value || "";
+    els.previewTagline.textContent = els.b_tagline.value || "";
+    const bgUrl = (state.pending.background && state.pending.background.previewUrl) || getAssetUrl(b.background);
+    els.previewBg.style.backgroundImage = bgUrl ? `url('${bgUrl}')` : "";
+    const headerUrl = (state.pending.header && state.pending.header.previewUrl) || getAssetUrl(b.header);
+    if (headerUrl) { els.previewHeaderImgWrap.classList.remove("hidden"); els.previewHeaderImg.src = headerUrl; }
+    else { els.previewHeaderImgWrap.classList.add("hidden"); els.previewHeaderImg.src = ""; }
+    const logoUrl = (state.pending.logo && state.pending.logo.previewUrl) || getAssetUrl(b.logo);
+    if (logoUrl) { els.previewLogo.src = logoUrl; els.previewLogo.classList.remove("hidden"); els.previewLogoIcon.classList.add("hidden"); }
+    else { els.previewLogo.src = ""; els.previewLogo.classList.add("hidden"); els.previewLogoIcon.classList.remove("hidden"); }
+  }
+
+  function applyFormValuesFromState() {
+    const b = state.config.branding || DEFAULT_CONFIG.branding;
+    els.b_title.value = b.title || "";
+    els.b_subtitle.value = b.subtitle || "";
+    els.b_tagline.value = b.tagline || "";
+    els.b_c1.value = b.color1 || "#f97316";
+    els.b_c2.value = b.color2 || "#ef4444";
+    els.lvl_mandal_reporting.value = state.config.fixed_levels?.mandal_reporting || "";
+    els.lvl_coordinator.value = state.config.fixed_levels?.coordinator || "";
+    els.lvl_program_info.value = state.config.fixed_levels?.program_info || "";
+    renderPrograms();
+    renderAssetPreviews();
+    renderBrandPreview();
+  }
+
+  function bindLiveBranding() {
+    ["input","change"].forEach(ev => {
+      els.b_title.addEventListener(ev, () => { state.config.branding.title = (els.b_title.value||"").trim(); renderBrandPreview(); });
+      els.b_subtitle.addEventListener(ev, () => { state.config.branding.subtitle = (els.b_subtitle.value||"").trim(); renderBrandPreview(); });
+      els.b_tagline.addEventListener(ev, () => { state.config.branding.tagline = (els.b_tagline.value||"").trim(); renderBrandPreview(); });
+      els.b_c1.addEventListener(ev, () => { state.config.branding.color1 = els.b_c1.value; renderBrandPreview(); });
+      els.b_c2.addEventListener(ev, () => { state.config.branding.color2 = els.b_c2.value; renderBrandPreview(); });
+      els.lvl_mandal_reporting.addEventListener(ev, () => { state.config.fixed_levels.mandal_reporting = els.lvl_mandal_reporting.value; });
+      els.lvl_coordinator.addEventListener(ev, () => { state.config.fixed_levels.coordinator = els.lvl_coordinator.value; });
+      els.lvl_program_info.addEventListener(ev, () => { state.config.fixed_levels.program_info = els.lvl_program_info.value; });
+    });
+  }
+
+  function showTab(name) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.add("hidden"));
+    const target = document.getElementById("tab-" + name);
+    if (target) target.classList.remove("hidden");
+    document.querySelectorAll(".navBtn").forEach(b => {
+      const isActive = (b.getAttribute("data-tab") === name);
+      b.className = isActive
+        ? "navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/50 hover:bg-slate-800 border border-slate-700 text-slate-200 text-sm font-bold"
+        : "navBtn w-full text-left px-3 py-2 rounded-xl bg-slate-900/20 hover:bg-slate-800 border border-slate-800 text-slate-200 text-sm font-bold";
+    });
+  }
+  document.querySelectorAll(".navBtn").forEach(b => b.addEventListener("click", () => showTab(b.getAttribute("data-tab"))));
+
+  function setPendingAsset(kind, file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    state.pending[kind] = { file, previewUrl: url };
+    if (kind === "logo") els.name_logo.textContent = file.name;
+    if (kind === "header") els.name_header.textContent = file.name;
+    if (kind === "background") els.name_bg.textContent = file.name;
+    renderAssetPreviews(); renderBrandPreview();
+  }
+
+  els.btn_logo.addEventListener("click", () => els.file_logo.click());
+  els.btn_header.addEventListener("click", () => els.file_header.click());
+  els.btn_bg.addEventListener("click", () => els.file_bg.click());
+  els.file_logo.addEventListener("change", () => setPendingAsset("logo", els.file_logo.files[0]));
+  els.file_header.addEventListener("change", () => setPendingAsset("header", els.file_header.files[0]));
+  els.file_bg.addEventListener("change", () => setPendingAsset("background", els.file_bg.files[0]));
+
+  document.querySelectorAll("[data-clear]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const k = btn.getAttribute("data-clear");
+      if (k === "logo") { state.pending.logo=null; state.config.branding.logo={kind:"none",value:""}; els.name_logo.textContent="No file selected"; els.file_logo.value=""; }
+      if (k === "header") { state.pending.header=null; state.config.branding.header={kind:"none",value:""}; els.name_header.textContent="No file selected"; els.file_header.value=""; }
+      if (k === "bg") { state.pending.background=null; state.config.branding.background={kind:"none",value:""}; els.name_bg.textContent="No file selected"; els.file_bg.value=""; }
+      renderAssetPreviews(); renderBrandPreview();
+    });
+  });
+
+  els.btnAddProg.addEventListener("click", () => {
+    const v = (els.progInput.value || "").trim();
+    if (!v) return;
+    const a = Array.isArray(state.config.programs) ? [...state.config.programs] : [];
+    if (a.includes(v)) { els.progInput.value = ""; return; }
+    a.unshift(v);
+    state.config.programs = a.slice(0, 200);
+    els.progInput.value = "";
+    renderPrograms();
+  });
+
+  function lsKey() { return `EL_POLITICAL_ADMIN_CONFIG::${cid || "default"}`; }
+  function deepMerge(base, override) {
+    if (!override || typeof override !== "object") return base;
+    const out = Array.isArray(base) ? [...base] : { ...base };
+    Object.keys(override).forEach(k => {
+      const bv = out[k];
+      const ov = override[k];
+      if (Array.isArray(ov)) out[k] = ov;
+      else if (ov && typeof ov === "object" && bv && typeof bv === "object" && !Array.isArray(bv)) out[k] = deepMerge(bv, ov);
+      else out[k] = ov;
+    });
+    return out;
+  }
+
+  async function loadConfig() {
+    if (!cid) { setStatus("CID missing in URL. Still you can edit preview, but save needs CID.", "error"); state.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); applyFormValuesFromState(); return; }
+    setStatus("Loading config...", "loading");
+    let cfg = null;
+    try { const res = await apiCall("admin_get_config", { collection_id: cid }); cfg = res.config || res.data || res.item || null; } catch (e) {}
+    if (!cfg) { try { const raw = localStorage.getItem(lsKey()); if (raw) cfg = JSON.parse(raw); } catch (e) {} }
+    if (!cfg) cfg = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
+    applyFormValuesFromState();
+    setStatus("Config loaded", "success");
+  }
+
+  async function saveConfig() {
+    if (!cid) { setStatus("CID missing: cannot save to backend.", "error"); return; }
+    els.btnSave.disabled = true;
+    const oldTxt = els.btnSave.innerHTML;
+    els.btnSave.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Saving...';
+    setStatus("Saving... (uploading assets if any)", "loading");
+    try {
+      state.config.branding.title = (els.b_title.value || "").trim();
+      state.config.branding.subtitle = (els.b_subtitle.value || "").trim();
+      state.config.branding.tagline = (els.b_tagline.value || "").trim();
+      state.config.branding.color1 = els.b_c1.value || "#f97316";
+      state.config.branding.color2 = els.b_c2.value || "#ef4444";
+      state.config.fixed_levels.mandal_reporting = els.lvl_mandal_reporting.value || "";
+      state.config.fixed_levels.coordinator = els.lvl_coordinator.value || "";
+      state.config.fixed_levels.program_info = els.lvl_program_info.value || "";
+
+      const assetMap = [["logo","logo"],["header","header"],["background","background"]];
+      for (const [pendingKey, brandingKey] of assetMap) {
+        const p = state.pending[pendingKey];
+        if (!p || !p.file) continue;
+        let uploaded = null;
+        try { uploaded = await tryUploadAsset(brandingKey, p.file); } catch (e) { uploaded = null; }
+        if (uploaded && uploaded.value) state.config.branding[brandingKey] = { kind: uploaded.kind, value: uploaded.value };
+        else state.config.branding[brandingKey] = { kind: "data", value: await fileToDataUrl(p.file) };
+        state.pending[pendingKey] = null;
       }
-    };
 
-    if(!collectionId) {
-        document.getElementById('cidWarning').classList.remove('hidden');
-        document.getElementById('sidebarCidDisplay').textContent = "CID: MISSING";
+      let backendSaved = false;
+      try { await apiCall("admin_save_config", { collection_id: cid, config: state.config }); backendSaved = true; } catch (e) { backendSaved = false; }
+      localStorage.setItem(lsKey(), JSON.stringify(state.config));
+      applyFormValuesFromState();
+      setStatus(backendSaved ? "Saved to backend + local cache" : "Backend save failed. Saved to local cache only.", backendSaved ? "success" : "error");
+    } catch (e) {
+      console.error(e);
+      setStatus(e.message || "Save failed", "error");
+    } finally {
+      els.btnSave.disabled = false;
+      els.btnSave.innerHTML = oldTxt;
+    }
+  }
+
+  els.btnSave.addEventListener("click", saveConfig);
+  els.btnReload.addEventListener("click", loadConfig);
+
+  function buildPreviewUrl() {
+    const file = els.previewFormSel.value;
+    const mode = els.previewModeSel.value;
+    const params = new URLSearchParams();
+    if (mode === "token") {
+      if (!token) { alert("Token missing in admin console URL. Add ?token=XXXX to use token preview."); return ""; }
+      params.set("token", token);
     } else {
-        document.getElementById('sidebarCidDisplay').textContent = `CID: ${collectionId.substring(0,8)}...`;
-        setTimeout(() => {
-            loadSettings();
-            loadData();
-        }, 100);
+      if (!cid) { alert("CID missing. Add ?cid=COLLECTION_ID to preview in CID mode."); return ""; }
+      params.set("cid", cid);
     }
+    params.set("preview", "1");
+    return `${file}?${params.toString()}`;
+  }
 
-    function switchTab(tab, el) {
-      currentTab = tab;
-      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-      el.classList.add('active');
-     
-      const titles = {
-          'program_info': 'Event Details', 'coordinator_entry': 'Coordinator Management',
-          'mandal_reporting': 'Mandal Reports', 'president_tour': 'President Tour Logs',
-          'visitor_form': 'Visitor Entries', 'party_attendance': 'Party Attendance',
-          'settings': 'Dashboard Settings'
-      };
-      document.getElementById('pageTitle').textContent = titles[tab];
-      if(tab === 'settings') {
-        document.getElementById('dataView').classList.add('hidden');
-        document.getElementById('dataControls').classList.add('hidden');
-        document.getElementById('settingsView').classList.remove('hidden');
-        updatePreview();
-      } else {
-        document.getElementById('settingsView').classList.add('hidden');
-        document.getElementById('dataView').classList.remove('hidden');
-        document.getElementById('dataControls').classList.remove('hidden');
-        loadData(true);
-      }
-    }
+  els.btnOpenNew.addEventListener("click", () => { const u = buildPreviewUrl(); if (!u) return; window.open(u, "_blank"); });
+  els.btnLoadIframe.addEventListener("click", () => { const u = buildPreviewUrl(); if (!u) return; els.previewIframe.src = u; els.iframeUrlTxt.textContent = u; });
 
-    async function loadData(showLoading = true, forceScan = false) {
-      if(!collectionId) return;
-      const tbody = document.getElementById('tableBody');
-      const thead = document.getElementById('tableHeaderRow');
-      const schema = SCHEMAS[currentTab];
-     
-      thead.innerHTML = schema.headers.map((h, index) =>
-        `<th class="p-4 border-b border-slate-700 whitespace-nowrap" onclick="sortTable(${index}, '${h}')">
-            ${h} <i class="fa-solid fa-sort text-slate-600 text-[10px] ml-1"></i>
-         </th>`
-      ).join('');
-      if(showLoading) {
-          tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-orange-500"></i><br>Fetching Records...</td></tr>`;
-      }
-      try {
-        let payload = {
-            collection_id: collectionId,
-            form_type: "all",
-            limit: 500,
-            start_ms: "0"
-        };
-       
-        if(forceScan) payload.scan = true;
-        const json = await apiCall('/political/public/forms', {
-            action: "admin_list",
-            payload: payload
-        });
-       
-        let allItems = (json.items || []);
-       
-        if (allItems.length === 0 && !forceScan) {
-             console.warn("Index query returned 0. Retrying with full Scan...");
-             payload.scan = true;
-             const retryJson = await apiCall('/political/public/forms', {
-                action: "admin_list",
-                payload: payload
-             });
-             allItems = (retryJson.items || []);
-             if(allItems.length > 0) showToast("Loaded via Scan (Index issue)", "info");
-        }
-       
-        const typesFound = [...new Set(allItems.map(i => 
-            (safeVal(i, 'form_type') || safeVal(i, 'ft') || 'unknown').toLowerCase().trim()
-        ))];
-        document.getElementById('debugInfo').textContent = 
-            typesFound.length ? `DB form_types: ${typesFound.join(', ')}` : 'No data found in DB for this CID.';
-       
-        rawData = allItems.filter(item => {
-            let ft = (safeVal(item, 'form_type') || safeVal(item, 'ft') || '').toLowerCase().trim();
-            const tab = currentTab.toLowerCase().trim();
-            
-            const normFt = ft.replace(/_form$/, '');
-            const normTab = tab.replace(/_form$/, '');
-            
-            return (
-                ft === tab ||
-                ft === `${tab}_form` ||
-                normFt === normTab ||
-                normFt === tab ||
-                ft.includes(tab) ||
-                tab.includes(normFt)
-            );
-        });
-       
-        filteredData = [...rawData];
-        renderTable();
-        document.getElementById('lastUpdated').innerText = new Date().toLocaleTimeString();
-      } catch(err) {
-          console.error(err);
-          tbody.innerHTML = `<tr><td colspan="${schema.headers.length}" class="p-8 text-center text-red-400">Error loading data. <br><span class="text-xs">${err.message}</span></td></tr>`;
-      }
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        const schema = SCHEMAS[currentTab];
-        document.getElementById('recordCount').innerText = `${filteredData.length} Records`;
-        if(filteredData.length === 0) {
-            document.getElementById('emptyState').classList.remove('hidden');
-            return;
-        }
-        document.getElementById('emptyState').classList.add('hidden');
-        filteredData.forEach(item => {
-            let d = item.data || item.payload || item;
-            if (d && d.M) d = d.M;
-           
-            let tds = '';
-            schema.fields.forEach(f => {
-                let val = safeVal(d, f.key);
-                if (val === '') val = safeVal(item, f.key);
-                if(!val) val = '-';
-               
-                if(f.type === 'date' && val !== '-') {
-                    try { val = new Date(val).toLocaleDateString(); } catch(e){}
-                }
-                tds += `<td class="p-4 text-slate-300 border-b border-slate-800/50 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]">${val}</td>`;
-            });
-           
-            const entryId = safeVal(item, 'entry_id');
-           
-            tbody.innerHTML += `
-            <tr class="table-row transition">
-                ${tds}
-                <td class="p-4 text-right border-b border-slate-800/50">
-                    <button onclick="openEdit('${entryId}')" class="text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition mr-2">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button onclick="deleteItem('${entryId}')" class="text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-1.5 rounded-lg text-xs font-medium transition" title="Delete Entry">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-            </tr>`;
-        });
-    }
-
-    function filterTable() {
-        const term = document.getElementById('searchInput').value.toLowerCase();
-        const schema = SCHEMAS[currentTab];
-       
-        filteredData = rawData.filter(item => {
-            let d = item.data || item.payload || item;
-            if (d && d.M) d = d.M;
-           
-            return schema.fields.some(f => {
-                let val = safeVal(d, f.key);
-                if (val === '') val = safeVal(item, f.key);
-                return String(val || '').toLowerCase().includes(term);
-            });
-        });
-        renderTable();
-    }
-
-    function sortTable(colIndex, headerName) {
-        sortDir = sortDir * -1;
-        const key = SCHEMAS[currentTab].fields[colIndex].key;
-       
-        filteredData.sort((a, b) => {
-            let dA = a.data || a.payload || a;
-            if (dA && dA.M) dA = dA.M;
-           
-            let dB = b.data || b.payload || b;
-            if (dB && dB.M) dB = dB.M;
-           
-            let valA = safeVal(dA, key);
-            if (valA === '') valA = safeVal(a, key);
-           
-            let valB = safeVal(dB, key);
-            if (valB === '') valB = safeVal(b, key);
-           
-            valA = String(valA || '').toLowerCase();
-            valB = String(valB || '').toLowerCase();
-           
-            if (valA < valB) return -1 * sortDir;
-            if (valA > valB) return 1 * sortDir;
-            return 0;
-        });
-        renderTable();
-    }
-
-    function exportCSV() {
-        if(filteredData.length === 0) return showToast("No data to export", "error");
-       
-        const schema = SCHEMAS[currentTab];
-        const headers = schema.fields.map(f => f.label).join(',');
-        const rows = filteredData.map(item => {
-            let d = item.data || item.payload || item;
-            if (d && d.M) d = d.M;
-            return schema.fields.map(f => {
-                let val = safeVal(d, f.key);
-                if (val === '') val = safeVal(item, f.key);
-                return `"${String(val || '').replace(/"/g, '""')}"`;
-            }).join(',');
-        }).join('\n');
-       
-        const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `${currentTab}_export_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast("Export Started");
-    }
-
-    async function saveSettings() {
-        const btn = document.querySelector('button[onclick="saveSettings()"]');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...';
-        btn.disabled = true;
-        const settings = {
-            name: document.getElementById('brandName').value,
-            theme: document.getElementById('brandTheme').value,
-            footer: document.getElementById('brandFooter').value,
-            logo_url: document.getElementById('logoPreviewSmall').src || '',
-            header_bg: document.getElementById('previewHeaderBg').style.backgroundImage.slice(5, -2) || ''
-        };
-        localStorage.setItem(`political_branding_${collectionId}`, JSON.stringify(settings));
-        showToast("Settings Saved Locally!");
-       
-        btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Save Configuration';
-        btn.disabled = false;
-    }
-
-    async function loadSettings() {
-        const saved = localStorage.getItem(`political_branding_${collectionId}`);
-        if(saved) applySettings(JSON.parse(saved));
-    }
-
-    function applySettings(s) {
-        if(s.name) document.getElementById('brandName').value = s.name;
-        if(s.theme) document.getElementById('brandTheme').value = s.theme;
-        if(s.footer) document.getElementById('brandFooter').value = s.footer;
-        if(s.logo_url) {
-            document.getElementById('logoPreviewSmall').src = s.logo_url;
-            document.getElementById('logoPreviewSmall').classList.remove('hidden');
-            document.getElementById('logoPlaceholder').classList.add('hidden');
-            document.getElementById('previewLogo').src = s.logo_url;
-        }
-        if(s.header_bg) {
-            document.getElementById('previewHeaderBg').style.backgroundImage = `url('${s.header_bg}')`;
-        }
-        updatePreview();
-    }
-
-    function openEdit(id) {
-        const item = rawData.find(i => safeVal(i, 'entry_id') === id); if(!item) return; editingId = id;
-        const formContainer = document.getElementById('modalForm'); formContainer.innerHTML = '';
-        const fields = SCHEMAS[currentTab].fields || [];
-       
-        let data = item.data || item.payload || item;
-        if (data && data.M) data = data.M;
-       
-        fields.forEach(field => {
-            if(field.readonly) return;
-           
-            let val = safeVal(data, field.key);
-            if (val === '') val = safeVal(item, field.key);
-           
-            let inputHtml = `<input type="${field.type || 'text'}" id="edit_${field.key}" value="${val}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white outline-none focus:border-orange-500" />`;
-           
-            if(field.type === 'select') {
-                inputHtml = `<select id="edit_${field.key}" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:border-orange-500">
-                    ${field.options.map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}
-                </select>`;
-            }
-            formContainer.innerHTML += `<div><label class="block text-xs font-medium text-slate-400 mb-1.5 uppercase">${field.label}</label>${inputHtml}</div>`;
-        });
-        document.getElementById('editModal').classList.add('open');
-    }
-
-    function closeModal() { document.getElementById('editModal').classList.remove('open'); }
-   
-    async function saveChanges() {
-        const btn = document.getElementById('btnSave');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
-        btn.disabled = true;
-        const updatedFields = {};
-        const fields = SCHEMAS[currentTab].fields;
-        fields.forEach(f => {
-            if(f.readonly) return;
-            const el = document.getElementById(`edit_${f.key}`);
-            if(el) updatedFields[f.key] = el.value;
-        });
-        try {
-            await apiCall('/political/public/forms', {
-                action: "admin_update_entry",
-                payload: {
-                    collection_id: collectionId,
-                    entry_id: editingId,
-                    form_type: currentTab,
-                    updates: updatedFields
-                }
-            });
-            showToast("Updated Successfully!");
-            closeModal();
-            loadData(false);
-        } catch(e) {
-            console.error(e);
-            showToast("Update Failed: " + e.message, "error");
-        } finally {
-            btn.innerHTML = '<span>Save Changes</span>';
-            btn.disabled = false;
-        }
-    }
-
-    async function deleteItem(id) {
-       if(!confirm("Are you sure?")) return;
-       try {
-            await apiCall('/political/public/forms', {
-                action: "admin_delete_entry",
-                payload: {
-                    collection_id: collectionId,
-                    entry_id: id,
-                    form_type: currentTab
-                }
-            });
-            showToast("Deleted Successfully!");
-            loadData(false);
-       } catch(e) {
-            console.error(e);
-            showToast("Delete Failed: " + e.message, "error");
-       }
-    }
-
-    async function runDeepDiagnostics() {
-        if(!collectionId) return;
-        const panel = document.getElementById('diagnosticPanel');
-        panel.classList.remove('hidden');
-       
-        const updateStatus = (id, text, colorClass) => {
-            const el = document.getElementById(id);
-            el.innerText = text;
-            if(colorClass) el.className = `font-bold ${colorClass}`;
-        }
-        document.getElementById('diagCid').innerText = collectionId;
-        updateStatus('diagApiStatus', 'Testing Connection...', 'text-yellow-400');
-        updateStatus('diagWriteStatus', 'Pending...', 'text-slate-400');
-        updateStatus('diagReadStatus', 'Pending...', 'text-slate-400');
-        updateStatus('diagListStatus', 'Pending...', 'text-slate-400');
-        document.getElementById('diagRawOutput').innerText = 'Initializing diagnostics...';
-        try {
-            const resStats = await apiCall('/political/public/forms', {
-                action: "admin_stats",
-                payload: { collection_id: collectionId, start_ms: "0" }
-            });
-           
-            updateStatus('diagApiStatus', 'Connected (200 OK)', 'text-green-400');
-            document.getElementById('diagRawOutput').innerText += `\n> Stats Check: Total ${resStats.total} entries found.`;
-           
-            updateStatus('diagWriteStatus', 'Attempting Write...', 'text-yellow-400');
-            const testPayload = { name: "Diagnostics Bot", reason: "System Check", created_at: new Date().toISOString() };
-           
-            const createRes = await apiCall('/political/public/forms', {
-                action: "public_create_entry",
-                payload: {
-                    collection_id: collectionId,
-                    form_type: "visitor_form",
-                    file_name: "diag_test.jpg",
-                    mime_type: "image/jpeg",
-                    payload: testPayload
-                }
-            });
-            if(createRes.entry_id) {
-                updateStatus('diagWriteStatus', `Success (ID: ${createRes.entry_id.substring(0,6)}...)`, 'text-green-400');
-                document.getElementById('diagRawOutput').innerText += `\n> Write Success. Entry ID: ${createRes.entry_id}`;
-               
-                await apiCall('/political/public/forms', {
-                    action: "public_finalize_entry",
-                    payload: { finalize_token: createRes.finalize_token, entry_id: createRes.entry_id }
-                });
-                document.getElementById('diagRawOutput').innerText += `\n> Finalized Entry.`;
-               
-                updateStatus('diagReadStatus', 'Verifying Direct Get...', 'text-yellow-400');
-                try {
-                    const getRes = await apiCall('/political/public/forms', {
-                        action: "admin_get_entry",
-                        payload: { entry_id: createRes.entry_id }
-                    });
-                    if (getRes && getRes.item) {
-                        updateStatus('diagReadStatus', 'Verified! Item exists.', 'text-green-400');
-                        document.getElementById('diagRawOutput').innerText += `\n> Direct Get Success. Item is in DB.`;
-                    } else {
-                        throw new Error("GetItem returned empty");
-                    }
-                } catch(e) {
-                    updateStatus('diagReadStatus', 'Direct Get Failed', 'text-red-400');
-                    document.getElementById('diagRawOutput').innerText += `\n> Direct Get Error: ${e.message}`;
-                }
-            } else {
-                throw new Error("Create response missing entry_id");
-            }
-           
-            updateStatus('diagListStatus', 'Checking Index...', 'text-yellow-400');
-            await new Promise(r => setTimeout(r, 5000));
-           
-            const listRes = await apiCall('/political/public/forms', {
-                action: "admin_list",
-                payload: { collection_id: collectionId, form_type: "visitor_form", limit: 10, start_ms: "0" }
-            });
-           
-            const found = (listRes.items || []).find(i => safeVal(i, 'entry_id') === createRes.entry_id);
-            if(found) {
-                updateStatus('diagListStatus', 'Verified! Index Active.', 'text-green-400');
-                document.getElementById('diagRawOutput').innerText += `\n> List Verification Successful. New entry found in list.`;
-                showToast("Diagnostics Passed! System is healthy.", "success");
-                loadData(true);
-            } else {
-                updateStatus('diagListStatus', 'Index Lag Detected', 'text-orange-400');
-                document.getElementById('diagRawOutput').innerText += `\n> Warning: Item exists (Direct Get) but not in List. This usually means DynamoDB GSI Index is lagging or broken.`;
-            }
-        } catch(e) {
-            console.error(e);
-            updateStatus('diagApiStatus', 'Failed', 'text-red-500');
-            document.getElementById('diagRawOutput').innerText += `\n> ERROR: ${e.message}`;
-        }
-    }
-
-    function createTestEntry() {
-       runDeepDiagnostics();
-    }
-
-    function handleImageUpload(input, targetImgId, smallPreviewId = null) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = document.getElementById(targetImgId);
-                if(targetImgId === 'previewHeaderBg') {
-                    img.style.backgroundImage = `url('${e.target.result}')`;
-                } else {
-                    img.src = e.target.result;
-                    img.classList.remove('hidden');
-                }
-                if (smallPreviewId) {
-                    const small = document.getElementById(smallPreviewId);
-                    small.src = e.target.result;
-                    small.classList.remove('hidden');
-                    document.getElementById('logoPlaceholder').classList.add('hidden');
-                }
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
-    function updatePreview() {
-        const name = document.getElementById('brandName').value;
-        const footer = document.getElementById('brandFooter').value;
-        const theme = document.getElementById('brandTheme').value;
-        const selectedForm = document.getElementById('previewFormSelector').value;
-       
-        document.getElementById('prevHeader').textContent = name;
-        document.getElementById('prevFooter').textContent = footer;
-        document.getElementById('prevSubHeader').textContent = SCHEMAS[selectedForm].title;
-       
-        const btn = document.getElementById('prevBtn');
-        const screen = document.getElementById('mobileScreen');
-        let bgGrad, btnGrad;
-        if(theme === 'blue') {
-            bgGrad = 'radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 50%), #0f172a';
-            btnGrad = 'from-blue-600 to-indigo-600';
-        } else if(theme === 'green') {
-            bgGrad = 'radial-gradient(circle at top left, rgba(16,185,129,0.15), transparent 50%), #0f172a';
-            btnGrad = 'from-emerald-600 to-teal-600';
-        } else if(theme === 'red') {
-            bgGrad = 'radial-gradient(circle at top left, rgba(239,68,68,0.15), transparent 50%), #0f172a';
-            btnGrad = 'from-red-600 to-rose-600';
-        } else {
-            bgGrad = 'radial-gradient(circle at top left, rgba(249,115,22,0.15), transparent 50%), #0f172a';
-            btnGrad = 'from-orange-500 to-red-500';
-        }
-        screen.style.background = bgGrad;
-        btn.className = `h-12 bg-gradient-to-r rounded-xl w-full mt-5 shadow-lg flex items-center justify-center text-white font-bold text-sm ${btnGrad}`;
-       
-        const fieldsContainer = document.getElementById('previewFields');
-        fieldsContainer.innerHTML = '';
-        const previewSchema = SCHEMAS[selectedForm].previewFields || [];
-        previewSchema.forEach(f => {
-            let innerContent = '';
-            if(f.icon === 'fa-camera') {
-                innerContent = `
-                <div class="border-2 border-dashed border-slate-600/50 rounded-xl h-24 flex flex-col items-center justify-center bg-slate-800/30">
-                    <i class="fa-solid fa-camera text-slate-500 mb-1"></i>
-                    <span class="text-[10px] text-slate-500">${f.ph}</span>
-                </div>`;
-            } else {
-                innerContent = `
-                <div class="relative">
-                    <input disabled type="text" placeholder="${f.ph}" class="w-full bg-slate-900/60 border border-slate-700/50 rounded-lg py-3 pl-10 pr-3 text-xs text-slate-400">
-                    <i class="fa-solid ${f.icon} absolute left-3 top-3.5 text-slate-500 text-xs"></i>
-                </div>`;
-            }
-            fieldsContainer.innerHTML += innerContent;
-        });
-    }
-
-    async function copyLink(filename, formType) {
-        if(!collectionId) { showToast("Collection ID Missing!", "error"); return; }
-       
-        const btn = event.currentTarget;
-        const origText = btn.innerText;
-        btn.innerText = "Generating...";
-        btn.disabled = true;
-        try {
-            let endpoint = '/political/public/forms';
-            let action = formType === 'search' ? 'generate_search_link' : 'generate_form_link';
-            let payload = { collection_id: collectionId, days_valid: 30 };
-            if(formType !== 'search') payload.form_type = formType;
-            const res = await apiCall(endpoint, {
-                action: action,
-                payload: payload
-            });
-            const token = res.token;
-            if(!token) throw new Error("No token returned");
-            const base = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
-            const link = `${base}/${filename}?token=${encodeURIComponent(token)}`;
-           
-            navigator.clipboard.writeText(link);
-            showToast("Secure Link Copied!");
-            btn.innerText = "Copied!";
-        } catch(e) {
-            console.error(e);
-            showToast("Failed to generate link", "error");
-            btn.innerText = "Retry";
-        } finally {
-            btn.disabled = false;
-            setTimeout(() => btn.innerText = origText, 2000);
-        }
-    }
-  </script>
+  bindLiveBranding();
+  showTab("branding");
+  loadConfig();
+})();
+</script>
 </body>
 </html>

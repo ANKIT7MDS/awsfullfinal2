@@ -2341,14 +2341,14 @@ async function generatePoliticalPublicLink(){
     let label = '';
 
     if(kind === 'political_search'){
-      const r = await politicalApi('/political/forms', { action: 'generate_search_link', payload: { collection_id: cid, days_valid: days } });
+      const r = await politicalApi('/political/public/forms', { action: 'generate_search_link', payload: { collection_id: cid, days_valid: days } });
       token = r.token;
       finalUrl = `${window.location.origin}/political-search.html?token=${encodeURIComponent(token)}`;
       label = `Search link • CID: ${cid} • ${days} days`;
       addToLinkHistory('POLITICAL_SEARCH', finalUrl, '-', days * 24);
     } else {
       const formType = ($('#polFormType')?.value) || 'visitor_form';
-      const r = await politicalApi('/political/forms', { action: 'generate_form_link', payload: { collection_id: cid, form_type: formType, days_valid: days } });
+      const r = await politicalApi('/political/public/forms', { action: 'generate_form_link', payload: { collection_id: cid, form_type: formType, days_valid: days } });
       token = r.token;
 
       const fileMap = {

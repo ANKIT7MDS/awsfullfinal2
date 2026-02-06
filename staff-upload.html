@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EventLens – Bulk Upload Pro</title>
+    <title>EventLens – Staff Upload Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HEIC Conversion Library -->
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -46,6 +48,8 @@
         .btn-primary:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            background-color: #333;
+            color: #666;
         }
 
         .btn-secondary {
@@ -66,13 +70,12 @@
             0%, 100% { opacity: 1; }
             50% { opacity: .5; }
         }
-        .error-glow { border-color: #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-10">
 
     <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-zinc-900 border border-zinc-800 p-4 rounded-xl shadow-2xl hidden">
-        <p id="toastMsg"></p>
+        <p id="toastMsg" class="font-bold"></p>
     </div>
 
     <div class="max-w-4xl mx-auto">
@@ -80,55 +83,74 @@
         <div class="flex justify-between items-center mb-10">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-black shadow-lg">
-                    <i class="fa-solid fa-bolt-lightning text-2xl"></i>
+                    <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-heading font-extrabold tracking-tight leading-none">Bulk <span class="text-emerald-500">Uploader</span></h1>
-                    <p class="text-zinc-500 text-sm mt-1 flex items-center gap-2 text-hindi">
-                        Smart Resume & Batch Mode
+                    <h1 class="text-2xl font-heading font-extrabold tracking-tight leading-none">Staff <span class="text-emerald-500">Portal</span></h1>
+                    <p class="text-zinc-500 text-sm mt-1 flex items-center gap-2">
+                        Fast Upload & Processing
                         <span id="wakeLockStatus" class="hidden text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20 items-center gap-1">
-                            <i class="fa-solid fa-sun pulse-green"></i> STAY AWAKE ACTIVE
+                            <i class="fa-solid fa-sun pulse-green"></i> AWAKE
                         </span>
                     </p>
                 </div>
             </div>
             <div id="userInfo" class="hidden text-right">
-                <p class="text-xs text-zinc-500">Logged in as</p>
-                <p class="text-sm font-bold text-emerald-400">Photographer</p>
-                <button onclick="doLogout()" class="text-[10px] text-red-500 underline uppercase tracking-widest mt-1">Logout</button>
+                <p class="text-xs text-zinc-500">Access Mode</p>
+                <p class="text-sm font-bold text-emerald-400" id="userRoleDisplay">Staff Guest</p>
+                <button onclick="doLogout()" id="btnLogout" class="hidden text-[10px] text-red-500 underline uppercase tracking-widest mt-1">Logout</button>
             </div>
         </div>
 
-        <div id="viewLogin" class="bg-zinc-950 border border-zinc-900 rounded-3xl p-10 text-center">
-            <i class="fa-solid fa-shield-halved text-5xl text-zinc-800 mb-6"></i>
-            <h2 class="text-3xl font-heading font-bold mb-4 text-hindi">Authentication Required</h2>
-            <button onclick="doLogin()" class="btn-primary w-full max-w-xs">Login via Cognito</button>
+        <!-- Login View (Only shows if no Link Params) -->
+        <div id="viewLogin" class="hidden bg-zinc-950 border border-zinc-900 rounded-3xl p-10 text-center">
+            <i class="fa-solid fa-lock text-5xl text-zinc-800 mb-6"></i>
+            <h2 class="text-3xl font-heading font-bold mb-4">Access Restricted</h2>
+            <p class="text-zinc-500 mb-8">Please use the generated staff link from the admin panel.</p>
+            <button onclick="doLogin()" class="btn-primary w-full max-w-xs">Admin Login</button>
         </div>
 
+        <!-- Main Upload View -->
         <div id="viewMain" class="hidden space-y-6">
             
             <div class="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 md:p-8">
+                <!-- Status Bar -->
+                <div class="flex items-center justify-between mb-6 bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
+                     <div class="flex items-center gap-2 text-sm text-zinc-400">
+                        <i class="fa-solid fa-database text-emerald-500"></i>
+                        Collection ID: <span id="displayCid" class="text-white font-mono font-bold">...</span>
+                     </div>
+                     <div id="pinStatus" class="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-500 hidden">
+                        PIN Protected
+                     </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
-                        <label class="block text-xs font-bold text-zinc-500 mb-2 tracking-widest uppercase">Collection</label>
-                        <select id="colSelect" class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white appearance-none focus:border-emerald-500 transition-colors" onchange="loadEvents()"></select>
+                    <div class="opacity-60 pointer-events-none">
+                        <!-- Auto-filled and locked for staff safety -->
+                        <label class="block text-xs font-bold text-zinc-500 mb-2 tracking-widest uppercase">Target Collection</label>
+                        <input id="colNameDisplay" readonly class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white focus:border-emerald-500" value="Loading...">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-zinc-500 mb-2 tracking-widest uppercase">Event</label>
-                        <select id="evSelect" class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white appearance-none focus:border-emerald-500 transition-colors"></select>
+                        <label class="block text-xs font-bold text-zinc-500 mb-2 tracking-widest uppercase">Target Event</label>
+                        <select id="evSelect" class="w-full bg-black border border-zinc-800 p-4 rounded-xl text-white appearance-none focus:border-emerald-500 transition-colors cursor-pointer hover:border-zinc-600">
+                            <option value="">Loading Events...</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-zinc-800 hover:border-emerald-500 rounded-2xl p-8 text-center cursor-pointer transition-all bg-zinc-900/30">
-                        <i class="fa-solid fa-images text-3xl text-zinc-600 mb-3"></i>
-                        <h4 class="font-bold text-sm">Select Individual Files</h4>
-                        <input type="file" id="fileInput" multiple accept="image/*" class="hidden" onchange="handleFiles(this.files)">
+                    <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-zinc-800 hover:border-emerald-500 rounded-2xl p-8 text-center cursor-pointer transition-all bg-zinc-900/30 group">
+                        <i class="fa-solid fa-images text-3xl text-zinc-600 mb-3 group-hover:text-emerald-500 transition-colors"></i>
+                        <h4 class="font-bold text-sm">Select Photos</h4>
+                        <p class="text-[10px] text-zinc-500 mt-1">JPG, PNG, HEIC</p>
+                        <input type="file" id="fileInput" multiple accept="image/*,.heic" class="hidden" onchange="handleFiles(this.files)">
                     </div>
 
-                    <div onclick="document.getElementById('folderInput').click()" class="border-2 border-dashed border-zinc-800 hover:border-emerald-500 rounded-2xl p-8 text-center cursor-pointer transition-all bg-emerald-500/5">
-                        <i class="fa-solid fa-folder-tree text-3xl text-emerald-500 mb-3"></i>
+                    <div onclick="document.getElementById('folderInput').click()" class="border-2 border-dashed border-zinc-800 hover:border-emerald-500 rounded-2xl p-8 text-center cursor-pointer transition-all bg-emerald-500/5 group">
+                        <i class="fa-solid fa-folder-tree text-3xl text-emerald-500 mb-3 group-hover:scale-110 transition-transform"></i>
                         <h4 class="font-bold text-sm text-emerald-500">Select Full Folder</h4>
+                        <p class="text-[10px] text-zinc-500 mt-1">Bulk Batch Mode</p>
                         <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden" onchange="handleFiles(this.files)">
                     </div>
                 </div>
@@ -137,23 +159,25 @@
             <div id="progressBox" class="hidden bg-zinc-950 border border-zinc-900 rounded-3xl p-6">
                 <div class="flex justify-between items-end mb-4">
                     <div>
-                        <h3 class="font-bold text-lg" id="uploadTitle">Queue Ready</h3>
-                        <p class="text-zinc-500 text-xs mt-1" id="statsText">0 files ready</p>
+                        <h3 class="font-bold text-lg" id="uploadTitle">Processing Queue</h3>
+                        <p class="text-zinc-500 text-xs mt-1" id="statsText">Initializing...</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-[10px] text-zinc-500 uppercase mb-1">Batch Progress</p>
+                        <p class="text-[10px] text-zinc-500 uppercase mb-1">Total Progress</p>
                         <p class="text-3xl font-heading font-black text-emerald-500 leading-none" id="totalPct">0%</p>
                     </div>
                 </div>
                 
-                <div class="h-3 bg-zinc-900 rounded-full overflow-hidden mb-6">
-                    <div id="progressBar" class="h-full bg-emerald-500 w-0 transition-all duration-300"></div>
+                <div class="h-3 bg-zinc-900 rounded-full overflow-hidden mb-6 relative">
+                    <div id="progressBar" class="h-full bg-emerald-500 w-0 transition-all duration-300 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-white/20 w-full h-full animate-[shimmer_2s_infinite]"></div>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap gap-4 items-center justify-between">
                     <div class="flex gap-4">
                         <div class="bg-zinc-900 px-4 py-2 rounded-lg text-center min-w-[70px]">
-                            <p class="text-[10px] text-zinc-500 font-bold uppercase">Done</p>
+                            <p class="text-[10px] text-zinc-500 font-bold uppercase">Success</p>
                             <p class="text-lg font-bold" id="countUploaded">0</p>
                         </div>
                         <div class="bg-zinc-900 px-4 py-2 rounded-lg text-center min-w-[70px]">
@@ -161,7 +185,7 @@
                             <p class="text-lg font-bold text-blue-400" id="countSkipped">0</p>
                         </div>
                         <div class="bg-zinc-900 px-4 py-2 rounded-lg text-center min-w-[70px]">
-                            <p class="text-[10px] text-zinc-500 font-bold uppercase">Failed</p>
+                            <p class="text-[10px] text-zinc-500 font-bold uppercase">Errors</p>
                             <p class="text-lg font-bold text-red-500" id="countFailed">0</p>
                         </div>
                     </div>
@@ -169,8 +193,8 @@
                         <button id="btnPause" disabled onclick="togglePause()" class="btn-secondary hidden">
                             <i class="fa-solid fa-pause"></i> Pause
                         </button>
-                        <button id="btnStart" disabled onclick="startUpload()" class="btn-primary min-w-[200px]">
-                            <i class="fa-solid fa-play"></i> Start Upload
+                        <button id="btnStart" disabled onclick="startUpload()" class="btn-primary min-w-[180px]">
+                            <i class="fa-solid fa-rocket"></i> Start Upload
                         </button>
                     </div>
                 </div>
@@ -178,118 +202,152 @@
 
             <div class="bg-zinc-950 border border-zinc-900 rounded-3xl p-6 relative">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest">Activity Monitor</h3>
+                    <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest">Live Logs</h3>
                     <button onclick="copyLogs()" class="text-[10px] bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded-md transition-colors flex items-center gap-2">
-                        <i class="fa-solid fa-copy"></i> COPY LOGS
+                        <i class="fa-solid fa-copy"></i> COPY
                     </button>
                 </div>
                 <div id="logList" class="space-y-1 h-48 overflow-y-auto custom-scroll text-[10px] font-mono p-2 bg-black/50 rounded-xl">
-                    <div class="text-zinc-600 italic">Select photos to begin monitoring system tasks...</div>
+                    <div class="text-zinc-600 italic">System ready. Waiting for files...</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        /* ================= CONFIGURATION ================= */
         const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod"; 
         const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognito.com";
         const CLIENT_ID = "6j3gec3kk0q0ktkals8cr8s367";
         const REDIRECT_URI = window.location.origin + window.location.pathname;
 
+        /* ================= STATE ================= */
         let idToken = localStorage.getItem('idToken');
         let uploadQueue = [];
         let isUploading = false;
         let isPaused = false;
         let currentBatchIndex = 0;
+        
         let processedCount = 0;
         let failedCount = 0;
         let skippedCount = 0;
-        let BATCH_SIZE = 10; // Optimized for stability
+        
+        let BATCH_SIZE = 5; // Reduced for reliability (Processing Original + Thumb)
         let wakeLock = null;
 
+        // URL Params for Staff Mode
+        const params = new URLSearchParams(window.location.search);
+        const urlCid = params.get('cid') || params.get('collection_id');
+        const urlEid = params.get('eid') || params.get('event_id');
+        const urlPin = params.get('pin') || params.get('password');
+
+        /* ================= INITIALIZATION ================= */
         window.onload = async () => {
-            const params = new URLSearchParams(window.location.search);
+            // Check for Cognito Code Callback
             if(params.has('code')){ await exchangeCode(params.get('code')); return; }
-            if(!idToken) showView('viewLogin'); else { showView('viewMain'); document.getElementById('userInfo').classList.remove('hidden'); loadCollections(); }
-        };
 
-        /* ================= AWAKE LOCK LOGIC ================= */
-        const requestWakeLock = async () => {
-            if ('wakeLock' in navigator) {
-                try {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    document.getElementById('wakeLockStatus').classList.remove('hidden');
-                    document.getElementById('wakeLockStatus').classList.add('flex');
-                    log("Screen Wake Lock active (Device will not sleep)", "success");
-                    
-                    wakeLock.addEventListener('release', () => {
-                        document.getElementById('wakeLockStatus').classList.add('hidden');
-                        document.getElementById('wakeLockStatus').classList.remove('flex');
-                    });
-                } catch (err) {
-                    console.error(`${err.name}, ${err.message}`);
-                }
+            if (urlCid) {
+                // GUEST STAFF MODE (Via Link)
+                log("Mode: Staff Link Access (No Login Required)", "success");
+                document.getElementById('userRoleDisplay').innerText = "Guest Staff";
+                document.getElementById('displayCid').innerText = urlCid;
+                document.getElementById('colNameDisplay').value = "Linked: " + urlCid;
+                if(urlPin) document.getElementById('pinStatus').classList.remove('hidden');
+                
+                showView('viewMain');
+                document.getElementById('userInfo').classList.remove('hidden');
+                loadEvents(); // Load events for this CID
+            } else if (idToken) {
+                // ADMIN LOGGED IN MODE
+                log("Mode: Admin Logged In", "success");
+                document.getElementById('userRoleDisplay').innerText = "Admin";
+                document.getElementById('btnLogout').classList.remove('hidden');
+                document.getElementById('displayCid').innerText = "Select from Dropdown";
+                showView('viewMain');
+                document.getElementById('userInfo').classList.remove('hidden');
+                // Note: For admins, we might want to show collection selector, 
+                // but this UI is optimized for the specific collection upload. 
+                // Currently defaults to behavior similar to staff link if no selector UI exists.
+                alert("Please use the 'Staff Link' generated from dashboard to access this upload page correctly.");
+            } else {
+                showView('viewLogin');
             }
         };
 
-        const releaseWakeLock = () => {
-            if (wakeLock !== null) {
-                wakeLock.release();
-                wakeLock = null;
+        /* ================= API WRAPPER ================= */
+        async function api(path, method = 'GET', body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            
+            // AUTH LOGIC: Prefer Token, Fallback to Params
+            if (idToken) {
+                headers['Authorization'] = idToken;
+            } else {
+                // If no login, pass context via headers for backend validation (if supported)
+                // OR rely on backend accepting CID in body for public routes
+                if(urlCid) headers['x-collection-id'] = urlCid;
+                if(urlPin) headers['x-access-pin'] = urlPin;
             }
-        };
 
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
-                await requestWakeLock();
+            // AUTO-INJECT CID/PIN into BODY for POST requests (for public lambda support)
+            if (method === 'POST' && body && urlCid && !idToken) {
+                if(!body.collection_id) body.collection_id = urlCid;
+                if(!body.pin && urlPin) body.pin = urlPin;
             }
-        });
 
-        /* ================= API WRAPPER WITH ENHANCED RETRY ================= */
-        async function api(path, method = 'GET', body = null, retries = 5) {
-            const headers = { 'Authorization': idToken, 'Content-Type': 'application/json' };
             const opts = { method, headers };
             if(body) opts.body = JSON.stringify(body);
 
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const res = await fetch(`${API_BASE}${path}`, opts);
-                    if (res.status === 500) throw new Error("Internal Server Error (Lambda Overload)");
-                    if (!res.ok) throw new Error(await res.text());
-                    return await res.json();
-                } catch (err) {
-                    if (i === retries - 1) throw err;
-                    const delay = Math.pow(2, i) * 1000;
-                    log(`API Issue: Retrying Lambda [Attempt ${i+1}/5] in ${delay/1000}s...`, "error");
-                    await new Promise(r => setTimeout(r, delay));
+            try {
+                const res = await fetch(`${API_BASE}${path}`, opts);
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(txt || res.statusText);
                 }
+                return await res.json();
+            } catch (err) {
+                throw err;
             }
         }
 
-        async function loadCollections() {
-            try {
-                const data = await api('/get-collections');
-                const list = data.Items || data;
-                document.getElementById('colSelect').innerHTML = '<option value="">Select Collection</option>' + list.map(c => `<option value="${c.collection_id}">${c.name}</option>`).join('');
-            } catch(e) { log("Col Load Error: " + e.message, "error"); }
-        }
-
+        /* ================= DATA LOADING ================= */
         async function loadEvents() {
-            const cid = document.getElementById('colSelect').value;
+            const cid = urlCid; // Use URL Param
             if(!cid) return;
+
             try {
-                log(`Fetching event configuration for CID: ${cid.substring(0,8)}...`);
+                log(`Fetching events for Collection: ${cid}...`);
+                // Note: Backend must allow this call without Auth header if CID is provided
                 const data = await api('/get-events', 'POST', { collection_id: cid });
+                
                 const events = data.events || data.Items || [];
-                document.getElementById('evSelect').innerHTML = '<option value="">Select Event</option>' + events.map(e => `<option value="${e.event_id}">${e.name}</option>`).join('');
-            } catch(e) { log("Event Load Error: " + e.message, "error"); }
+                
+                if(events.length === 0) {
+                    document.getElementById('evSelect').innerHTML = '<option value="">No events found</option>';
+                    return;
+                }
+
+                const options = events.map(e => {
+                    const isSelected = (urlEid && e.event_id === urlEid) ? 'selected' : '';
+                    return `<option value="${e.event_id}" ${isSelected}>${e.name} (${e.event_date || ''})</option>`;
+                }).join('');
+                
+                document.getElementById('evSelect').innerHTML = '<option value="">-- Select Event --</option>' + options;
+                log(`Loaded ${events.length} events.`, "success");
+            } catch(e) { 
+                log("Event Load Error: " + e.message, "error"); 
+                // Fallback UI
+                document.getElementById('evSelect').innerHTML = '<option value="">Error loading events</option>';
+            }
         }
 
+        /* ================= FILE HANDLING & THUMBNAILS ================= */
         function handleFiles(files) {
             if(isUploading) return;
-            const validFiles = Array.from(files).filter(f => f.name.match(/\.(jpg|jpeg|png|heic)$/i));
+            // Filter Images
+            const validFiles = Array.from(files).filter(f => f.name.match(/\.(jpg|jpeg|png|heic|HEIC)$/i));
+            
             if(validFiles.length === 0) {
-                log("RED ALERT: Selected folder contains no valid image files!", "error");
+                showToast("No valid image files found!", "error");
                 return;
             }
             
@@ -297,36 +355,77 @@
             currentBatchIndex = 0;
             processedCount = 0; 
             failedCount = 0;
-            skippedCount = 0; // RESET skip count on new selection
+            skippedCount = 0;
             
-            document.getElementById('statsText').innerText = `${validFiles.length} files selected. Ready.`;
+            document.getElementById('statsText').innerText = `${validFiles.length} files queued.`;
             document.getElementById('progressBox').classList.remove('hidden');
             document.getElementById('btnStart').disabled = false;
             document.getElementById('btnPause').classList.add('hidden');
-            updateUIProgress();
-            log(`Queue initialized with ${validFiles.length} images.`);
+            
+            // Reset Counts
+            document.getElementById('countUploaded').innerText = "0";
+            document.getElementById('countFailed').innerText = "0";
+            document.getElementById('countSkipped').innerText = "0";
+            document.getElementById('progressBar').style.width = "0%";
+            document.getElementById('totalPct').innerText = "0%";
+
+            log(`Queue ready: ${validFiles.length} photos.`);
         }
 
-        function togglePause() {
-            isPaused = !isPaused;
-            document.getElementById('btnPause').innerHTML = isPaused ? '<i class="fa-solid fa-play"></i> Resume' : '<i class="fa-solid fa-pause"></i> Pause';
-            if(!isPaused) {
-                log("Action: Resuming bulk process...");
-                requestWakeLock();
-                startUpload();
-            } else {
-                log("Action: Bulk process paused by user.");
-                releaseWakeLock();
+        /* ================= THUMBNAIL GENERATOR ================= */
+        const generateThumbnail = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Resize Logic (Max 400px)
+                        const MAX_SIZE = 400;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > height) {
+                            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                        } else {
+                            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob((blob) => {
+                            resolve(blob);
+                        }, 'image/jpeg', 0.7); // 70% Quality JPG
+                    };
+                };
+                reader.readAsDataURL(file);
+            });
+        };
+
+        const convertHeic = async (file) => {
+            log(`Converting HEIC: ${file.name}...`);
+            try {
+                const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
+                const newName = file.name.replace(/\.heic$/i, ".jpg");
+                return new File([blob], newName, { type: "image/jpeg" });
+            } catch(e) {
+                log(`HEIC Error: ${file.name}`, "error");
+                return null;
             }
-        }
+        };
 
+        /* ================= UPLOAD PROCESS ================= */
         async function startUpload() {
-            const cid = document.getElementById('colSelect').value;
+            const cid = urlCid;
             const eid = document.getElementById('evSelect').value;
             
             if(!cid || !eid) {
-                log("RED ALERT: Target Collection or Event not selected!", "error");
-                showToast("Select Collection & Event!", "error");
+                showToast("Please select an Event first!", "error");
                 return;
             }
 
@@ -335,11 +434,9 @@
             document.getElementById('btnStart').disabled = true;
             document.getElementById('btnPause').classList.remove('hidden');
             document.getElementById('btnPause').disabled = false;
-            document.getElementById('uploadTitle').innerText = "Bulk Upload in Progress...";
+            document.getElementById('uploadTitle').innerText = "Uploading...";
 
             await requestWakeLock();
-
-            log(`TASK INITIALIZED: Processing ${uploadQueue.length} files in high-stability mode (Batch: ${BATCH_SIZE}).`, "success");
 
             for (let i = currentBatchIndex; i < uploadQueue.length; i += BATCH_SIZE) {
                 if(isPaused || !isUploading) {
@@ -348,75 +445,119 @@
                     return; 
                 }
                 const batch = uploadQueue.slice(i, i + BATCH_SIZE);
-                log(`Batch [${Math.ceil((i+1)/BATCH_SIZE)}]: Processing ${batch.length} files...`);
+                log(`Starting Batch ${Math.ceil((i+1)/BATCH_SIZE)}...`);
                 await processBatch(batch, cid, eid);
                 currentBatchIndex = i + BATCH_SIZE;
-                
-                await new Promise(r => setTimeout(r, 1200)); // Stability breather
             }
 
             isUploading = false;
             releaseWakeLock();
             document.getElementById('btnPause').classList.add('hidden');
-            document.getElementById('uploadTitle').innerText = "Tasks Complete";
-            showToast("Bulk upload finished successfully.");
-            log("FINAL STATUS: All photos processed. System returning to standby.", "success");
+            document.getElementById('uploadTitle').innerText = "Process Complete";
+            showToast("All tasks finished!");
+            log("Job Done. You can close this tab.", "success");
         }
 
         async function processBatch(files, cid, eid) {
-            log(`Task: Hashing ${files.length} files...`);
-            const fileMetas = [];
-            
-            for(const file of files) {
-                const hash = await computeHash(file);
-                fileMetas.push({ 
-                    name: file.name.replace(/[^a-zA-Z0-9.]/g, '_'), 
-                    type: 'image/jpeg', 
-                    size: file.size, 
-                    hash, 
-                    fileObj: file 
-                });
+            const uploadTasks = [];
+
+            // 1. PRE-PROCESS: Convert HEIC & Generate Thumbs
+            for(let file of files) {
+                try {
+                    // HEIC Conversion
+                    if(file.name.toLowerCase().endsWith('.heic')) {
+                        const jpgFile = await convertHeic(file);
+                        if(jpgFile) file = jpgFile;
+                        else { failedCount++; continue; }
+                    }
+
+                    // Generate Thumbnail
+                    const thumbBlob = await generateThumbnail(file);
+
+                    // Hash Calculation (Original)
+                    const hash = await computeHash(file);
+                    
+                    // Sanitize Name
+                    const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+
+                    // Push Metadata for 2 files (Original & Thumb)
+                    // We suffix thumb hash to distinguish, but keep same original filename structure
+                    uploadTasks.push({
+                        type: 'original',
+                        name: cleanName,
+                        fileObj: file,
+                        hash: hash,
+                        size: file.size
+                    });
+
+                    uploadTasks.push({
+                        type: 'thumbnail',
+                        name: `thumbnails/${cleanName}`, // S3 Path convention
+                        fileObj: thumbBlob,
+                        hash: hash, // Use same hash for duplicate check context
+                        size: thumbBlob.size
+                    });
+
+                } catch(e) {
+                    log(`Prep Error ${file.name}: ${e.message}`, "error");
+                    failedCount++;
+                }
             }
 
+            if(uploadTasks.length === 0) { updateUIProgress(); return; }
+
+            // 2. GET URLS
             try {
-                log("Requesting Lambda: Checking for duplicates and generating S3 paths...");
+                // We ask URLs for everything at once
                 const res = await api('/generate-upload-urls', 'POST', { 
                     collection_id: cid, 
                     event_id: eid, 
-                    files: fileMetas.map(m => ({ name: m.name, hash: m.hash, size: m.size })) 
+                    files: uploadTasks.map(t => ({ name: t.name, hash: t.hash, size: t.size })) 
                 });
                 
                 const urls = res.urls || [];
-                const skippedBatchCount = fileMetas.length - urls.length;
-                skippedCount += skippedBatchCount; // Accumulate skipped count
                 
-                if(skippedBatchCount > 0) log(`Info: ${skippedBatchCount} photos skipped (Duplicate detected in DB).`, "info");
-                if(urls.length > 0) log(`Ready: Received ${urls.length} upload tokens. Starting parallel transfer...`, "success");
+                // Count skips (Originals only for UI stats)
+                const originalsRequested = uploadTasks.filter(t => t.type === 'original').length;
+                const originalsReturned = urls.filter(u => !u.fileName.includes('thumbnails/')).length;
+                skippedCount += (originalsRequested - originalsReturned);
 
+                // 3. UPLOAD TO S3
                 await Promise.all(urls.map(async u => {
-                    const meta = fileMetas.find(m => m.hash === u.hash);
-                    if(!meta) return;
+                    // Match task by name
+                    // Note: Ensure backend returns 'fileName' or we match by order/hash
+                    const task = uploadTasks.find(t => t.name === u.fileName || t.name === u.key);
+                    if(!task) return;
+
                     try {
-                        const up = await fetch(u.uploadURL, { 
+                        await fetch(u.uploadURL, { 
                             method: 'PUT', 
-                            body: meta.fileObj, 
-                            headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': meta.hash } 
+                            body: task.fileObj, 
+                            headers: { 
+                                'Content-Type': 'image/jpeg',
+                                // Only send hash header for original to avoid mismatch logic on server triggers
+                                ...(task.type === 'original' ? {'x-amz-meta-original-hash': task.hash} : {})
+                            } 
                         });
-                        if(up.ok) {
+                        
+                        if(task.type === 'original') {
                             processedCount++;
-                            log(`Success: ${meta.name} -> S3. Auto-indexing triggered.`, "success");
-                        } else {
-                            failedCount++;
-                            log(`Error: S3 rejected ${meta.name}`, "error");
+                            log(`Uploaded: ${task.name}`, "success");
                         }
-                    } catch(e) { failedCount++; }
+                    } catch(e) {
+                        if(task.type === 'original') {
+                            failedCount++;
+                            log(`S3 Error: ${task.name}`, "error");
+                        }
+                    }
                     updateUIProgress();
                 }));
-            } catch(e) { 
-                log(`RED ALERT: Batch [${currentBatchIndex}] FAILED - ${e.message}`, "error");
-                log("Action: System will continue to next batch. Check failed count.", "error");
-                failedCount += files.length; 
-                updateUIProgress(); 
+
+            } catch(e) {
+                log(`Batch API Error: ${e.message}`, "error");
+                // Assume all originals in this batch failed if API fails
+                failedCount += uploadTasks.filter(t => t.type === 'original').length;
+                updateUIProgress();
             }
         }
 
@@ -430,52 +571,55 @@
             const total = uploadQueue.length;
             const current = processedCount + failedCount + skippedCount;
             const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+            
             document.getElementById('totalPct').innerText = `${pct}%`;
             document.getElementById('progressBar').style.width = `${pct}%`;
             document.getElementById('countUploaded').innerText = processedCount;
             document.getElementById('countFailed').innerText = failedCount;
             document.getElementById('countSkipped').innerText = skippedCount;
-            document.getElementById('statsText').innerText = `${current} of ${total} files processed.`;
+            document.getElementById('statsText').innerText = `${current}/${total} Processed`;
         }
+
+        /* ================= UTILS ================= */
+        const requestWakeLock = async () => {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    document.getElementById('wakeLockStatus').classList.remove('hidden');
+                    document.getElementById('wakeLockStatus').classList.add('flex');
+                } catch (err) {}
+            }
+        };
+
+        const releaseWakeLock = () => {
+            if (wakeLock) { wakeLock.release(); wakeLock = null; }
+            document.getElementById('wakeLockStatus').classList.add('hidden');
+        };
 
         function log(msg, type = 'info') {
             const list = document.getElementById('logList');
             const el = document.createElement('div');
-            const timestamp = new Date().toLocaleTimeString();
-            
-            el.className = type === 'error' ? 'text-red-500 font-bold' : (type === 'success' ? 'text-emerald-500' : 'text-zinc-500');
-            el.innerHTML = `[${timestamp}] > ${msg}`;
+            const color = type === 'error' ? 'text-red-400' : (type === 'success' ? 'text-emerald-400' : 'text-zinc-500');
+            el.className = `${color} border-b border-zinc-900/50 pb-1`;
+            el.innerHTML = `<span class="opacity-50">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
             list.prepend(el);
-            if(list.children.length > 200) list.removeChild(list.lastChild); 
-        }
-
-        function copyLogs() {
-            const list = document.getElementById('logList');
-            const text = Array.from(list.children).map(el => el.innerText).join('\n');
-            const temp = document.createElement("textarea");
-            temp.value = text;
-            document.body.appendChild(temp);
-            temp.select();
-            document.execCommand("copy");
-            document.body.removeChild(temp);
-            showToast("Full logs copied to clipboard!");
         }
 
         function showView(id) {
-            document.getElementById('viewLogin').classList.add('hidden');
-            document.getElementById('viewMain').classList.add('hidden');
+            ['viewLogin', 'viewMain'].forEach(v => document.getElementById(v).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
-
-        function doLogin() { window.location.href = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
 
         function showToast(msg, type = "success") {
             const t = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
             t.classList.remove('hidden', 'translate-x-full');
-            if(type === "error") t.style.borderColor = "#ef4444"; else t.style.borderColor = "#27272a";
+            t.style.borderColor = type === "error" ? "#ef4444" : "#10b981";
             setTimeout(() => t.classList.add('translate-x-full'), 3000);
         }
+
+        function doLogin() { window.location.href = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`; }
+        function doLogout() { localStorage.clear(); window.location.reload(); }
     </script>
 </body>
 </html>

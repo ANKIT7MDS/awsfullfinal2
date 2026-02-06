@@ -280,7 +280,7 @@
         </nav>
 
         <div class="text-center">
-          <p class="text-[10px] text-slate-600">v2.8.1 Pro • EventLens System</p>
+          <p class="text-[10px] text-slate-600">v2.9.0 Pro • EventLens System</p>
         </div>
       </aside>
 
@@ -840,8 +840,8 @@
   function renderFormPreviewIframe() {
     const ft = state.target === "__defaults__" ? "visitor_form" : state.target;
     const file = FORM_META[ft]?.file;
-    // Pass token so iframe can fetch config if needed
-    const url = `${file}?cid=${state.cid}&preview=1&form_type=${ft}&t=${Date.now()}&token=${getIdToken()}`; 
+    // Pass token + user_type=admin to help iframe know it can act as admin/preview
+    const url = `${file}?cid=${state.cid}&preview=1&form_type=${ft}&t=${Date.now()}&token=${getIdToken()}&role=admin&user_type=admin`; 
     $('formPreviewIframe').src = url;
     $('formPreviewUrlTxt').textContent = `${file}?cid=${state.cid}`;
   }
@@ -965,7 +965,7 @@
           // Send BOTH 'config' and 'settings' to satisfy backend validation
           await apiCallCandidates(["admin_save_config","admin_save_settings","save_admin_config"], { 
              collection_id: state.cid, 
-             config_type: "political_forms", // REQUIRED by Backend
+             config_type: "political_forms", // REQUIRED by Backend for SAVE
              config: state.config,
              settings: state.config 
           });
@@ -997,11 +997,10 @@
      const t = showToast("Loading configuration...", "loading");
      let cfg = null;
      try {
-        // Including form_type: "visitor_form" as safe default per user request
+        // EXACT payload user said works (no config_type for GET)
         const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
             collection_id: state.cid,
-            form_type: "visitor_form",
-            config_type: "political_forms" // Added this to fix potential validation error
+            form_type: "visitor_form" 
         });
         cfg = res.config || res.data || res.item || null;
      } catch(e) {}

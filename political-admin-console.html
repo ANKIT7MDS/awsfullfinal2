@@ -170,6 +170,11 @@
 
           <div class="h-6 w-px bg-slate-800 mx-1"></div>
 
+          <!-- AUTH BUTTON -->
+          <button id="btnAuth" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-orange-400 hover:text-orange-300 transition-colors border border-transparent hover:border-orange-500/30" title="Update Token">
+            <i class="fa-solid fa-key text-sm"></i>
+          </button>
+
           <button id="btnReload" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors border border-transparent hover:border-slate-700">
             <i class="fa-solid fa-rotate-right text-sm group-hover:rotate-180 transition-transform duration-500"></i>
           </button>
@@ -275,7 +280,7 @@
         </nav>
 
         <div class="text-center">
-          <p class="text-[10px] text-slate-600">v2.6.0 Pro • EventLens System</p>
+          <p class="text-[10px] text-slate-600">v2.7.0 Pro • EventLens System</p>
         </div>
       </aside>
 
@@ -668,6 +673,19 @@
     </div>
   </div>
 
+  <!-- Auth Modal -->
+  <div id="authModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl">
+      <h3 class="text-lg font-bold text-white mb-2">Update Access Token</h3>
+      <p class="text-xs text-slate-400 mb-4">Your session has expired or the token is invalid. Please paste a new ID Token below.</p>
+      <textarea id="authTokenInput" class="w-full h-24 bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono mb-4 focus:border-orange-500 outline-none" placeholder="Paste id_token here..."></textarea>
+      <div class="flex justify-end gap-3">
+        <button id="btnCancelAuth" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800">Cancel</button>
+        <button id="btnSaveAuth" class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-orange-600 hover:bg-orange-500">Save & Reload</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 (() => {
   // --- Constants & Utils ---
@@ -730,6 +748,15 @@
       }, 3000);
     }
     return el;
+  }
+
+  function openAuthModal() {
+      const modal = $('authModal');
+      if(modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          $('authTokenInput').focus();
+      }
   }
 
   // --- State & Config ---
@@ -849,15 +876,10 @@
 
     let resp = await doFetch(idToken || "");
     
-    // Auto-recover from 401 by asking user for token
+    // Auto-recover from 401 using custom Modal
     if (resp.status === 401) {
-        const newToken = prompt("⚠️ Session Expired (401)\n\nPlease paste a valid ID Token to continue:");
-        if (newToken && newToken.trim()) {
-            localStorage.setItem("id_token", newToken.trim());
-            resp = await doFetch(newToken.trim()); // Retry with new token
-        } else {
-            throw new Error("Unauthorized: Login required (Session Expired)");
-        }
+        openAuthModal();
+        throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
     }
     
     const txt = await resp.text();
@@ -952,7 +974,8 @@
           localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(state.config));
           // If error is explicitly Unauthorized, show it
           if(e.message && e.message.includes("Unauthorized")) {
-             t.remove(); showToast("Login Expired. Saved locally only.", "error");
+             t.remove(); showToast("Login Expired. Opening Auth...", "error");
+             openAuthModal();
           } else {
              t.remove(); showToast("Backend error: " + (e.message || "Unknown") + ". Saved locally.", "warning");
           }
@@ -1136,6 +1159,18 @@
   };
   $('btnCloseModal').onclick = () => { $('modal').classList.add('hidden'); $('modal').classList.remove('flex'); };
   $('modalBackdrop').onclick = $('btnCloseModal').onclick;
+
+  // Auth Button Handlers
+  $('btnAuth').onclick = openAuthModal;
+  $('btnCancelAuth').onclick = () => { $('authModal').classList.remove('flex'); $('authModal').classList.add('hidden'); };
+  $('btnSaveAuth').onclick = () => {
+      const t = $('authTokenInput').value.trim();
+      if(t) {
+          localStorage.setItem("id_token", t);
+          showToast("Token updated! Reloading...", "success");
+          setTimeout(() => location.reload(), 800);
+      }
+  };
 
   // --- Charts ---
   function buildCharts() {

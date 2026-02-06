@@ -21,490 +21,1254 @@
           },
           animation: {
             'fade-in': 'fadeIn 0.3s ease-out forwards',
+            'slide-up': 'slideUp 0.4s ease-out forwards',
           },
           keyframes: {
-            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } }
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            slideUp: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
           }
         }
       }
-    };
+    }
   </script>
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background-color: #020617;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(56, 189, 248, 0.10) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: #e2e8f0;
+    }
+    
+    /* Glass Effect Enhanced */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    }
+    .glass-header {
+      background: rgba(2, 6, 23, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Inputs & UI Elements */
+    .input-field {
+      background: rgba(2, 6, 23, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      transition: all 0.2s;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #f97316;
+      background: rgba(2, 6, 23, 0.7);
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+    }
+    
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: #475569; }
-    .glass-panel { @apply bg-dark-800/80 backdrop-blur-xl border border-white/5 shadow-2xl; }
+
+    /* Phone Mockup */
+    .phone-mockup {
+      border: 12px solid #1e293b;
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+      background: #000;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .phone-mockup::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 24px;
+      background: #1e293b;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      z-index: 10;
+    }
+
+    /* Tab Animations */
+    .nav-btn {
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+    .nav-btn.active {
+      background: linear-gradient(90deg, rgba(249, 115, 22, 0.15), transparent);
+      border-left-color: #f97316;
+      color: #fff;
+    }
+    .nav-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .toast {
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(10px);
+    }
+    
+    .loading-spinner {
+      border: 3px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      border-top: 3px solid #f97316;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="bg-dark-950 text-white min-h-screen selection:bg-brand-500/30">
 
-  <!-- Setup Overlay (if no CID) -->
-  <div id="setupOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-dark-950/90 backdrop-blur-md hidden">
-    <div class="glass-panel p-8 rounded-2xl max-w-md w-full text-center space-y-6">
-      <div class="w-16 h-16 bg-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-        <i class="fas fa-fingerprint text-3xl text-brand-500"></i>
+<body class="min-h-screen font-sans selection:bg-orange-500/30">
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Top bar -->
+  <nav class="sticky top-0 z-50 glass-header h-16">
+    <div class="max-w-[1600px] mx-auto px-4 h-full">
+      <div class="flex items-center justify-between h-full gap-4">
+        
+        <!-- Logo Area -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 ring-1 ring-white/10">
+            <i class="fa-solid fa-om"></i>
+          </div>
+          <div>
+            <div class="text-white font-extrabold tracking-tight text-lg leading-none">EventLens <span class="text-orange-500">Pro</span></div>
+            <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Political Admin Console</div>
+          </div>
+        </div>
+
+        <!-- Right Actions -->
+        <div class="flex items-center gap-3">
+          <!-- CID Display -->
+          <div id="cidPill" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-300">
+            <i class="fa-solid fa-database text-emerald-500"></i>
+            <span id="cidVal" class="font-bold text-white tracking-wide"></span>
+          </div>
+
+          <div class="h-6 w-px bg-slate-800 mx-1"></div>
+
+          <!-- AUTH BUTTON -->
+          <button id="btnAuth" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-orange-400 hover:text-orange-300 transition-colors border border-transparent hover:border-orange-500/30" title="Update Token">
+            <i class="fa-solid fa-key text-sm"></i>
+          </button>
+
+          <button id="btnReload" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors border border-transparent hover:border-slate-700">
+            <i class="fa-solid fa-rotate-right text-sm group-hover:rotate-180 transition-transform duration-500"></i>
+          </button>
+
+          <button id="btnSave" class="group relative px-5 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-sm font-bold shadow-lg shadow-orange-600/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 overflow-hidden">
+            <span class="relative z-10 flex items-center gap-2">
+              <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </span>
+            <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+          </button>
+        </div>
       </div>
-      <h2 class="text-2xl font-bold">Connect to EventLens</h2>
-      <p class="text-gray-400">Enter your Organization ID (Collection ID) to access the dashboard.</p>
-      <input type="text" id="setupCid" placeholder="e.g. org-123-abc" class="w-full bg-dark-900 border border-gray-700 rounded-xl px-4 py-3 text-center focus:ring-2 focus:ring-brand-500 outline-none transition-all">
-      <button onclick="saveCid()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-brand-500/20 transition-all hover:scale-[1.02]">
-        Access Dashboard
-      </button>
+    </div>
+  </nav>
+
+  <!-- Main Layout -->
+  <main class="max-w-[1600px] mx-auto px-4 py-6">
+    <div class="grid lg:grid-cols-12 gap-6 items-start">
+
+      <!-- Left Sidebar -->
+      <aside class="lg:col-span-3 space-y-6 sticky top-24">
+        
+        <!-- Context Card -->
+        <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group">
+          <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+            <i class="fa-solid fa-chess-rook text-6xl text-orange-500"></i>
+          </div>
+          
+          <div class="text-xs font-bold text-orange-400 uppercase tracking-widest mb-4">Current Context</div>
+          
+          <div class="space-y-4 relative z-10">
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 uppercase">Collection ID</label>
+              <div class="mt-1 flex gap-2">
+                <input id="cidInput" class="input-field w-full rounded-lg px-3 py-2 text-xs font-mono" placeholder="Enter CID..." />
+                <button id="btnApplyCid" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white transition-colors">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 uppercase">Edit Target</label>
+              <div class="relative mt-1">
+                <select id="targetFormSel" class="input-field w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer">
+                  <option value="__defaults__">📡 Defaults (All Forms)</option>
+                  <option disabled>──────────────</option>
+                  <option value="visitor_form">📝 Visitor Form</option>
+                  <option value="party_attendance">🚩 Party Attendance</option>
+                  <option value="president_tour">🚙 President Tour</option>
+                  <option value="mandal_reporting">📊 कार्यक्रम रिपोर्टिंग</option>
+                  <option value="coordinator">👔 Coordinator</option>
+                  <option value="program_info">ℹ️ Program Info</option>
+                </select>
+                <div class="absolute right-3 top-3 text-slate-400 pointer-events-none text-xs">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+              </div>
+              <div class="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                Changes apply to the selected form only unless "Defaults" is chosen.
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 rounded-lg bg-slate-950/40 border border-slate-800 p-3">
+              <div>
+                <div class="text-xs font-bold text-white">Live Preview</div>
+                <div class="text-[10px] text-slate-500">Real-time branding update</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="livePreviewToggle" type="checkbox" class="sr-only peer" checked>
+                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-orange-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="glass-panel rounded-2xl p-2 space-y-1">
+          <button class="nav-btn active w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="branding">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-palette text-orange-400"></i></span>
+            Branding & Preview
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="programs">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-list-check text-blue-400"></i></span>
+            Program Names
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="levels">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-lock text-rose-400"></i></span>
+            Level Locks
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="data">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-table text-emerald-400"></i></span>
+            Data Records
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="analytics">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-chart-pie text-purple-400"></i></span>
+            Analytics
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="backend">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-plug text-yellow-400"></i></span>
+            API Config
+          </button>
+        </nav>
+
+        <div class="text-center">
+          <p class="text-[10px] text-slate-600">v2.9.0 Pro • EventLens System</p>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <div class="lg:col-span-9 min-h-[80vh]">
+        
+        <!-- TAB: Branding -->
+        <section id="tab-branding" class="tab-content animate-fade-in">
+          <div class="grid lg:grid-cols-12 gap-6">
+            
+            <!-- Editor Column -->
+            <div class="lg:col-span-7 space-y-6">
+              <div class="glass-panel rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                   <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                     <i class="fa-solid fa-pen-nib text-orange-500"></i> Appearance
+                   </h2>
+                   <div class="flex gap-2">
+                      <button id="btnResetBrand" class="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-lg transition-colors">Reset</button>
+                      <button id="btnCopyToDefaults" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg transition-colors">Copy to All</button>
+                   </div>
+                </div>
+
+                <!-- Text Inputs -->
+                <div class="space-y-4">
+                  <div class="grid md:grid-cols-2 gap-4">
+                    <div class="group">
+                      <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Title / Header</label>
+                      <input id="b_title" class="input-field w-full rounded-xl px-4 py-3 text-sm font-bold" placeholder="e.g. भाजपा कार्यालय मंदसौर" />
+                    </div>
+                    <div class="group">
+                      <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Subtitle</label>
+                      <input id="b_subtitle" class="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. स्वागत" />
+                    </div>
+                  </div>
+                  <div class="group">
+                    <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Tagline</label>
+                    <input id="b_tagline" class="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. सेवा • संगठन • समर्पण" />
+                  </div>
+                </div>
+
+                <!-- Colors -->
+                <div class="mt-6 p-4 bg-slate-950/30 rounded-xl border border-slate-800/50">
+                  <label class="text-xs font-bold text-slate-400 block mb-3">Gradient Theme</label>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <div class="flex items-center gap-3">
+                        <input id="b_c1" type="color" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-0 p-0" />
+                        <div class="text-xs font-mono text-slate-400">Primary</div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-3">
+                        <input id="b_c2" type="color" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-0 p-0" />
+                        <div class="text-xs font-mono text-slate-400">Secondary</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Assets Upload -->
+              <div class="glass-panel rounded-2xl p-6">
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Assets</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <!-- Logo Upload -->
+                  <div class="relative group">
+                    <input id="file_logo" type="file" accept="image/*" class="hidden" />
+                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_logo').click()">
+                      <img id="prev_logo" class="absolute inset-0 w-full h-full object-contain p-2 hidden z-10" />
+                      <i id="icon_logo" class="fa-solid fa-image text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform"></i>
+                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white">Upload Logo</span>
+                    </div>
+                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="logo"><i class="fa-solid fa-xmark text-xs"></i></button>
+                    <div id="name_logo" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
+                  </div>
+
+                  <!-- Header Upload -->
+                  <div class="relative group">
+                    <input id="file_header" type="file" accept="image/*" class="hidden" />
+                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_header').click()">
+                      <img id="prev_header" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
+                      <i id="icon_header" class="fa-solid fa-panorama text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
+                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white z-20 relative">Upload Header</span>
+                    </div>
+                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="header"><i class="fa-solid fa-xmark text-xs"></i></button>
+                    <div id="name_header" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
+                  </div>
+
+                  <!-- BG Upload -->
+                  <div class="relative group">
+                    <input id="file_bg" type="file" accept="image/*" class="hidden" />
+                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_bg').click()">
+                      <img id="prev_bg" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
+                      <i id="icon_bg" class="fa-solid fa-mountain-sun text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
+                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white z-20 relative">Upload BG</span>
+                    </div>
+                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="bg"><i class="fa-solid fa-xmark text-xs"></i></button>
+                    <div id="name_bg" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview Column -->
+            <div class="lg:col-span-5">
+              <div class="sticky top-28">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Mobile Preview</h3>
+                  <div class="flex gap-2">
+                     <button id="btnLoadFormPreview" class="px-3 py-1 text-xs rounded-full bg-orange-600 hover:bg-orange-500 text-white font-bold transition-colors"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
+                     <button id="btnOpenFormPreview" class="px-3 py-1 text-xs rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-colors"><i class="fa-solid fa-up-right-from-square"></i></button>
+                  </div>
+                </div>
+
+                <!-- Phone Mockup Container -->
+                <div class="flex justify-center">
+                  <div class="phone-mockup w-[320px] h-[640px] bg-white">
+                    <iframe id="formPreviewIframe" class="w-full h-full bg-white border-0"></iframe>
+                    
+                    <!-- Fallback/Overlay for branding preview (JS controlled opacity) -->
+                    <div id="customPreviewOverlay" class="absolute inset-0 bg-slate-900 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col">
+                       <!-- This overlay is just for quick color feedback if iframe is slow -->
+                       <div id="previewHeaderBar" class="h-1 w-full bg-orange-500"></div>
+                       <div id="previewBg" class="flex-1 bg-cover bg-center relative">
+                         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+                         <div class="relative p-6 flex flex-col items-center justify-center h-full text-center">
+                            <div id="previewHeaderImgWrap" class="w-full h-32 rounded-lg overflow-hidden mb-4 hidden shadow-lg">
+                               <img id="previewHeaderImg" class="w-full h-full object-cover">
+                            </div>
+                            <img id="previewLogo" class="w-20 h-20 rounded-full object-cover border-4 border-white/10 mb-4 hidden shadow-2xl">
+                            <i id="previewLogoIcon" class="fa-solid fa-bolt text-4xl text-orange-500 mb-4"></i>
+                            
+                            <h2 id="previewTitle" class="text-2xl font-bold text-white mb-1">Title</h2>
+                            <p id="previewSubtitle" class="text-sm text-slate-300">Subtitle</p>
+                            <div class="mt-6 flex gap-2 justify-center">
+                               <div id="sw1" class="w-4 h-4 rounded-full bg-orange-500"></div>
+                               <div id="sw2" class="w-4 h-4 rounded-full bg-red-500"></div>
+                            </div>
+                         </div>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                   <div class="inline-block px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] text-slate-500 font-mono">
+                     <span id="formPreviewUrlTxt" class="max-w-[200px] truncate block">...</span>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: Programs -->
+        <section id="tab-programs" class="tab-content hidden animate-fade-in space-y-6">
+          <div class="glass-panel rounded-2xl p-6">
+             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                   <h2 class="text-xl font-bold text-white">Program Management</h2>
+                   <p class="text-sm text-slate-400">Manage the list of programs available in dropdowns.</p>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900/50 p-1 rounded-lg border border-slate-800">
+                   <span class="text-xs font-bold text-slate-400 px-2">Mode:</span>
+                   <select id="progScopeSel" class="bg-transparent text-xs text-white font-bold py-1 pr-2 outline-none">
+                      <option value="current">Current Form Only</option>
+                      <option value="defaults">Defaults (Global)</option>
+                   </select>
+                </div>
+             </div>
+
+             <div class="flex gap-2 mb-8">
+                <input id="progInput" class="input-field flex-1 rounded-xl px-4 py-3 text-sm" placeholder="Type new program name (e.g. बूथ विजय अभियान)..." />
+                <button id="btnAddProg" class="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold shadow-lg shadow-orange-600/20 transition-all active:scale-95">
+                   <i class="fa-solid fa-plus"></i> Add
+                </button>
+             </div>
+
+             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3" id="progList">
+                <!-- Program items injected here -->
+             </div>
+          </div>
+        </section>
+
+        <!-- TAB: Levels -->
+        <section id="tab-levels" class="tab-content hidden animate-fade-in space-y-6">
+          <div class="glass-panel rounded-2xl p-6">
+             <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">Hierarchical Locks</h2>
+                <select id="levelScopeSel" class="input-field rounded-lg px-3 py-1.5 text-xs">
+                   <option value="current">Current Form</option>
+                   <option value="defaults">Defaults</option>
+                </select>
+             </div>
+             
+             <div class="grid md:grid-cols-3 gap-6">
+                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
+                   <div class="flex items-center gap-3 mb-4">
+                      <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-sitemap"></i></div>
+                      <div class="font-bold text-white text-sm">Reporting Level</div>
+                   </div>
+                   <select id="lvl_mandal_reporting" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                      <option value="">🔓 Unlocked</option>
+                      <option value="district">District Fixed</option>
+                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
+                      <option value="mandal">Mandal Fixed</option>
+                   </select>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
+                   <div class="flex items-center gap-3 mb-4">
+                      <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><i class="fa-solid fa-user-tie"></i></div>
+                      <div class="font-bold text-white text-sm">Coordinator</div>
+                   </div>
+                   <select id="lvl_coordinator" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                      <option value="">🔓 Unlocked</option>
+                      <option value="district">District Fixed</option>
+                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
+                      <option value="mandal">Mandal Fixed</option>
+                   </select>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
+                   <div class="flex items-center gap-3 mb-4">
+                      <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-info"></i></div>
+                      <div class="font-bold text-white text-sm">Program Info</div>
+                   </div>
+                   <select id="lvl_program_info" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                      <option value="">🔓 Unlocked</option>
+                      <option value="district">District Fixed</option>
+                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
+                      <option value="mandal">Mandal Fixed</option>
+                   </select>
+                </div>
+             </div>
+          </div>
+        </section>
+
+        <!-- TAB: Data -->
+        <section id="tab-data" class="tab-content hidden animate-fade-in space-y-6">
+          <div class="glass-panel rounded-2xl p-6">
+             <!-- Filters -->
+             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+                <div class="col-span-2 lg:col-span-2">
+                   <input id="dataSearch" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="Search name, mobile..." />
+                </div>
+                <div class="col-span-1 lg:col-span-1">
+                   <select id="dataFormSel" class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
+                      <option value="__all__">All Forms</option>
+                      <option value="visitor_form">Visitor</option>
+                      <option value="party_attendance">Attendance</option>
+                      <option value="president_tour">Tour</option>
+                      <option value="mandal_reporting">Reporting</option>
+                      <option value="coordinator">Coordinator</option>
+                      <option value="program_info">Program Info</option>
+                   </select>
+                </div>
+                <div class="col-span-1">
+                   <input id="dateFrom" type="date" class="input-field w-full rounded-xl px-3 py-2.5 text-sm" />
+                </div>
+                <div class="col-span-1">
+                   <input id="dateTo" type="date" class="input-field w-full rounded-xl px-3 py-2.5 text-sm" />
+                </div>
+                <div class="col-span-1">
+                   <button id="btnApplyFilter" class="w-full h-full rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-colors border border-slate-700">Filter</button>
+                </div>
+             </div>
+
+             <!-- Stats -->
+             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+                   <div class="text-[10px] text-slate-500 font-bold uppercase">Total Entries</div>
+                   <div id="kpiTotal" class="text-2xl font-extrabold text-white mt-1">0</div>
+                </div>
+                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+                   <div class="text-[10px] text-slate-500 font-bold uppercase">Today</div>
+                   <div id="kpiToday" class="text-2xl font-extrabold text-orange-500 mt-1">0</div>
+                </div>
+                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+                   <div class="text-[10px] text-slate-500 font-bold uppercase">Unique Mobiles</div>
+                   <div id="kpiUnique" class="text-2xl font-extrabold text-blue-400 mt-1">0</div>
+                </div>
+                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+                    <div class="flex gap-2 mt-2">
+                       <button id="btnLoadData" class="flex-1 py-1.5 rounded-lg bg-orange-600/20 text-orange-500 hover:bg-orange-600 hover:text-white text-xs font-bold transition-all">Load</button>
+                       <button id="btnExportCsv" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-bold transition-all"><i class="fa-solid fa-download"></i> CSV</button>
+                    </div>
+                 </div>
+             </div>
+
+             <!-- Table -->
+             <div class="rounded-xl border border-slate-800 overflow-hidden bg-slate-950/20">
+                <div class="overflow-x-auto">
+                   <table class="w-full text-sm text-left">
+                      <thead class="bg-slate-900/80 text-xs uppercase text-slate-400 font-bold">
+                         <tr>
+                            <th class="px-4 py-3 cursor-pointer hover:text-white" data-sort="created_at">Time <i class="fa-solid fa-sort ml-1"></i></th>
+                            <th class="px-4 py-3">Form</th>
+                            <th class="px-4 py-3 cursor-pointer hover:text-white" data-sort="mobile">Mobile <i class="fa-solid fa-sort ml-1"></i></th>
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3 cursor-pointer hover:text-white" data-sort="district">District <i class="fa-solid fa-sort ml-1"></i></th>
+                            <th class="px-4 py-3">Action</th>
+                         </tr>
+                      </thead>
+                      <tbody id="dataTbody" class="divide-y divide-slate-800 text-slate-300">
+                         <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500 italic">Click "Load" to fetch data</td></tr>
+                      </tbody>
+                   </table>
+                </div>
+                <div class="bg-slate-900/80 px-4 py-2 flex justify-between items-center border-t border-slate-800">
+                   <div class="text-xs text-slate-500">Showing <span id="loadedCount" class="text-white font-bold">0</span> records</div>
+                   <div class="flex gap-2">
+                      <button id="btnPrevPage" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-white disabled:opacity-50">Prev</button>
+                      <button id="btnNextPage" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-white disabled:opacity-50">Next</button>
+                   </div>
+                </div>
+             </div>
+          </div>
+        </section>
+
+        <!-- TAB: Analytics -->
+        <section id="tab-analytics" class="tab-content hidden animate-fade-in space-y-6">
+          <div class="flex justify-end">
+             <button id="btnRefreshCharts" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-colors border border-slate-700"><i class="fa-solid fa-rotate mr-2"></i>Refresh Charts</button>
+          </div>
+          <div class="grid md:grid-cols-2 gap-6">
+             <div class="glass-panel p-5 rounded-2xl">
+                <h4 class="text-sm font-bold text-slate-300 mb-4">Submission Trends (14 Days)</h4>
+                <div class="h-[250px]"><canvas id="chartByDay"></canvas></div>
+             </div>
+             <div class="glass-panel p-5 rounded-2xl">
+                <h4 class="text-sm font-bold text-slate-300 mb-4">By Form Type</h4>
+                <div class="h-[250px]"><canvas id="chartByForm"></canvas></div>
+             </div>
+             <div class="glass-panel p-5 rounded-2xl md:col-span-2">
+                <h4 class="text-sm font-bold text-slate-300 mb-4">Top Districts</h4>
+                <div class="h-[200px]"><canvas id="chartDistrict"></canvas></div>
+             </div>
+          </div>
+        </section>
+        
+        <!-- TAB: Backend Info -->
+        <section id="tab-backend" class="tab-content hidden animate-fade-in">
+           <div class="glass-panel rounded-2xl p-8 text-center">
+              <div class="inline-flex w-16 h-16 rounded-full bg-slate-800 items-center justify-center mb-4">
+                 <i class="fa-solid fa-server text-2xl text-slate-400"></i>
+              </div>
+              <h2 class="text-xl font-bold text-white">Backend Configuration</h2>
+              <p class="text-sm text-slate-400 mt-2 max-w-lg mx-auto">This console connects to the EventLens AWS Lambda infrastructure. Ensure your user account has `political_admin` claims.</p>
+              
+              <div class="mt-8 grid gap-4 max-w-2xl mx-auto text-left">
+                 <div class="bg-slate-950/50 rounded-lg p-4 border border-slate-800 font-mono text-xs text-slate-300">
+                    <span class="text-orange-500">POST</span> /prod/political/forms
+                 </div>
+                 <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-900/30 p-3 rounded border border-slate-800">
+                       <div class="text-[10px] text-slate-500 uppercase font-bold">Action</div>
+                       <div class="text-sm text-white font-mono mt-1">admin_save_config</div>
+                    </div>
+                    <div class="bg-slate-900/30 p-3 rounded border border-slate-800">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold">Action</div>
+                        <div class="text-sm text-white font-mono mt-1">admin_list_entries</div>
+                     </div>
+                 </div>
+              </div>
+           </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center z-[60] backdrop-blur-sm">
+    <div class="absolute inset-0 bg-black/80" id="modalBackdrop"></div>
+    <div class="relative max-w-2xl w-[90%] rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden animate-slide-up">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+        <div>
+          <h3 class="text-lg font-bold text-white">Data Details</h3>
+          <div id="modalMeta" class="text-xs text-slate-400 font-mono mt-1">ID: ...</div>
+        </div>
+        <button id="btnCloseModal" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-0 overflow-auto max-h-[70vh]">
+        <pre id="modalJson" class="text-xs text-green-400 bg-[#0d1117] p-6 font-mono overflow-auto"></pre>
+      </div>
     </div>
   </div>
 
-  <!-- Main Layout -->
-  <div class="flex h-screen overflow-hidden" id="appRoot">
-    
-    <!-- Sidebar -->
-    <aside class="w-72 bg-dark-900 border-r border-white/5 flex flex-col hidden md:flex">
-      <div class="p-6 border-b border-white/5">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-gradient-to-tr from-brand-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20">
-            <i class="fas fa-shield-alt text-white"></i>
-          </div>
-          <div>
-            <h1 class="font-bold text-lg leading-tight">EventLens</h1>
-            <p class="text-xs text-brand-500 font-medium">Political Admin</p>
-          </div>
-        </div>
+  <!-- Auth Modal -->
+  <div id="authModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl">
+      <h3 class="text-lg font-bold text-white mb-2">Update Access Token</h3>
+      <p class="text-xs text-slate-400 mb-4">Your session has expired or the token is invalid. Please paste a new ID Token below.</p>
+      <textarea id="authTokenInput" class="w-full h-24 bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono mb-4 focus:border-orange-500 outline-none" placeholder="Paste id_token here..."></textarea>
+      <div class="flex justify-end gap-3">
+        <button id="btnCancelAuth" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800">Cancel</button>
+        <button id="btnSaveAuth" class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-orange-600 hover:bg-orange-500">Save & Reload</button>
       </div>
-
-      <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-        <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-gray-400 hover:bg-white/5 hover:text-white transition-all active-nav" data-tab="dashboard">
-          <i class="fas fa-chart-pie w-5 text-center"></i> Dashboard
-        </button>
-        <button onclick="switchTab('entries')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-gray-400 hover:bg-white/5 hover:text-white transition-all" data-tab="entries">
-          <i class="fas fa-users w-5 text-center"></i> Entries & Data
-        </button>
-        <button onclick="switchTab('branding')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-gray-400 hover:bg-white/5 hover:text-white transition-all" data-tab="branding">
-          <i class="fas fa-paint-brush w-5 text-center"></i> Form Branding
-        </button>
-        <button onclick="switchTab('links')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-gray-400 hover:bg-white/5 hover:text-white transition-all" data-tab="links">
-          <i class="fas fa-link w-5 text-center"></i> Link Generator
-        </button>
-      </nav>
-
-      <div class="p-4 border-t border-white/5">
-        <div class="bg-dark-800 rounded-xl p-4 border border-white/5">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs text-gray-400">Collection ID</span>
-            <button onclick="clearCid()" class="text-xs text-red-400 hover:text-red-300">Logout</button>
-          </div>
-          <code id="displayCid" class="block text-xs bg-black/30 p-2 rounded text-gray-300 break-all font-mono">...</code>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Content Area -->
-    <main class="flex-1 flex flex-col overflow-hidden relative">
-      <!-- Mobile Header -->
-      <header class="md:hidden bg-dark-900 border-b border-white/5 p-4 flex items-center justify-between">
-        <span class="font-bold text-lg">EventLens Admin</span>
-        <button onclick="document.querySelector('aside').classList.toggle('hidden'); document.querySelector('aside').classList.toggle('absolute'); document.querySelector('aside').classList.toggle('z-50'); document.querySelector('aside').classList.toggle('h-full');" class="text-gray-300">
-          <i class="fas fa-bars text-xl"></i>
-        </button>
-      </header>
-
-      <!-- Views -->
-      <div id="view-dashboard" class="view-panel flex-1 overflow-y-auto p-6 space-y-6">
-        <h2 class="text-2xl font-bold mb-4">Overview</h2>
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
-            <div class="absolute -right-4 -top-4 w-24 h-24 bg-brand-500/10 rounded-full group-hover:scale-110 transition-transform"></div>
-            <p class="text-gray-400 text-sm font-medium mb-1">Total Visitors</p>
-            <h3 id="statTotal" class="text-3xl font-bold">0</h3>
-          </div>
-          <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
-            <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full group-hover:scale-110 transition-transform"></div>
-            <p class="text-gray-400 text-sm font-medium mb-1">This Month</p>
-            <h3 id="statMonth" class="text-3xl font-bold">0</h3>
-          </div>
-        </div>
-        
-        <!-- Chart Area -->
-        <div class="glass-panel p-6 rounded-2xl h-80">
-          <h3 class="text-lg font-bold mb-4">Traffic Trends</h3>
-          <canvas id="trafficChart"></canvas>
-        </div>
-      </div>
-
-      <div id="view-entries" class="view-panel hidden flex-1 flex flex-col h-full">
-        <!-- Filter Bar -->
-        <div class="p-6 border-b border-white/5 bg-dark-900/50 backdrop-blur-sm z-10 flex flex-wrap gap-4 items-center justify-between">
-          <div class="flex gap-4 items-center">
-            <div class="relative">
-              <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-              <input type="text" id="searchQ" placeholder="Search name, mobile..." class="pl-10 pr-4 py-2 bg-dark-800 border border-gray-700 rounded-lg text-sm focus:border-brand-500 outline-none w-64">
-            </div>
-            <select id="filterType" class="bg-dark-800 border border-gray-700 rounded-lg text-sm px-3 py-2 outline-none">
-              <option value="all">All Types</option>
-              <option value="visitor_form">Visitor</option>
-              <option value="party_attendance">Attendance</option>
-              <option value="president_tour_form">Tour</option>
-            </select>
-            <button onclick="loadData()" class="bg-brand-600 hover:bg-brand-500 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              <i class="fas fa-filter mr-2"></i> Apply
-            </button>
-          </div>
-          <button onclick="exportCsv()" class="text-gray-400 hover:text-white text-sm flex items-center gap-2">
-            <i class="fas fa-download"></i> Export CSV
-          </button>
-        </div>
-
-        <!-- Table -->
-        <div class="flex-1 overflow-auto p-6">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-gray-400 text-sm border-b border-white/5">
-                <th class="p-4 font-medium">Photo</th>
-                <th class="p-4 font-medium">Name / Mobile</th>
-                <th class="p-4 font-medium">Type</th>
-                <th class="p-4 font-medium">Location</th>
-                <th class="p-4 font-medium">Time</th>
-                <th class="p-4 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="entriesTableBody" class="text-sm">
-              <!-- JS Populated -->
-            </tbody>
-          </table>
-          <div id="loadingIndicator" class="hidden py-8 text-center text-gray-500">
-            <i class="fas fa-circle-notch fa-spin mr-2"></i> Loading entries...
-          </div>
-        </div>
-      </div>
-
-      <div id="view-branding" class="view-panel hidden flex-1 overflow-y-auto p-6">
-        <div class="max-w-4xl mx-auto space-y-8">
-          <div class="flex justify-between items-center">
-            <h2 class="text-2xl font-bold">Form Branding</h2>
-            <button onclick="saveSettings()" id="btnSave" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2">
-              <i class="fas fa-save"></i> Save Changes
-            </button>
-          </div>
-
-          <div class="glass-panel p-6 rounded-2xl space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm text-gray-400 mb-2">Select Form to Edit</label>
-                <select id="brandingTarget" onchange="loadBrandingPreview()" class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 outline-none focus:border-brand-500">
-                  <option value="visitor_form">Visitor Form</option>
-                  <option value="party_attendance">Party Attendance</option>
-                  <option value="president_tour_form">President Tour</option>
-                  <option value="mandal_reporting">Mandal Reporting</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm text-gray-400 mb-2">Form Title (Hindi/English)</label>
-                <input type="text" id="brandTitle" class="w-full bg-dark-900 border border-gray-700 rounded-lg px-4 py-2 outline-none focus:border-brand-500">
-              </div>
-            </div>
-
-            <!-- Uploads -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="p-4 border border-dashed border-gray-700 rounded-xl text-center hover:bg-white/5 transition-colors cursor-pointer group" onclick="document.getElementById('uplLogo').click()">
-                <input type="file" id="uplLogo" hidden accept="image/*" onchange="handleUpload('logo_key')">
-                <i class="fas fa-cloud-upload-alt text-2xl text-gray-500 group-hover:text-brand-500 mb-2"></i>
-                <p class="text-xs text-gray-400">Upload Logo</p>
-              </div>
-              <div class="p-4 border border-dashed border-gray-700 rounded-xl text-center hover:bg-white/5 transition-colors cursor-pointer group" onclick="document.getElementById('uplHeader').click()">
-                <input type="file" id="uplHeader" hidden accept="image/*" onchange="handleUpload('header_key')">
-                <i class="fas fa-image text-2xl text-gray-500 group-hover:text-brand-500 mb-2"></i>
-                <p class="text-xs text-gray-400">Header Banner</p>
-              </div>
-              <div class="p-4 border border-dashed border-gray-700 rounded-xl text-center hover:bg-white/5 transition-colors cursor-pointer group" onclick="document.getElementById('uplBg').click()">
-                <input type="file" id="uplBg" hidden accept="image/*" onchange="handleUpload('background_key')">
-                <i class="fas fa-fill-drip text-2xl text-gray-500 group-hover:text-brand-500 mb-2"></i>
-                <p class="text-xs text-gray-400">Background</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="view-links" class="view-panel hidden flex-1 p-6">
-        <div class="glass-panel p-8 rounded-2xl max-w-2xl mx-auto text-center space-y-6">
-          <div class="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto text-green-500 text-3xl">
-            <i class="fas fa-link"></i>
-          </div>
-          <h2 class="text-2xl font-bold">Generate Public Links</h2>
-          <p class="text-gray-400">Create secure links for public distribution. Links auto-expire.</p>
-          
-          <div class="grid grid-cols-2 gap-4 text-left">
-            <div>
-              <label class="text-xs text-gray-500">Type</label>
-              <select id="linkType" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-2 mt-1">
-                <option value="visitor_form">Visitor Form</option>
-                <option value="party_attendance">Attendance</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-xs text-gray-500">Validity (Days)</label>
-              <input type="number" id="linkDays" value="30" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-2 mt-1">
-            </div>
-          </div>
-
-          <button onclick="generateLink()" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold transition-all">
-            Generate Link
-          </button>
-
-          <div id="linkResult" class="hidden mt-6 bg-dark-900 p-4 rounded-xl border border-green-500/30 flex items-center gap-2">
-            <input type="text" readonly class="bg-transparent flex-1 outline-none text-green-400 text-sm font-mono" id="generatedUrl">
-            <button onclick="copyLink()" class="text-gray-400 hover:text-white"><i class="fas fa-copy"></i></button>
-          </div>
-        </div>
-      </div>
-
-    </main>
+    </div>
   </div>
 
-  <script>
-    // --- CONFIG ---
-    const API_URL = "https://k0o6935270.execute-api.ap-south-1.amazonaws.com/political"; // Replace with your actual URL
-    let state = {
-      cid: "",
-      config: null,
-      entries: [],
-      nextKey: null
+<script>
+(() => {
+  // --- Constants & Utils ---
+  const API_ID = "vxid0yoovj"; // Replace if needed
+  const REGION = "ap-south-1";
+  const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+  const FORMS_URL = `${BASE_URL}/political/forms`;
+
+  const FORM_META = {
+    __defaults__: { file: "political_visitor_form.html" },
+    visitor_form: { file: "political_visitor_form.html" },
+    party_attendance: { file: "political_party_attendance_form.html" },
+    president_tour: { file: "political_president_tour_form.html" },
+    mandal_reporting: { file: "political_mandal_reporting_form.html" },
+    coordinator: { file: "political_coordinator_form.html" },
+    program_info: { file: "political_program_info_form.html" },
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch(e){ return ""; } };
+
+  function getIdToken(){ return localStorage.getItem("id_token") || localStorage.getItem("idToken") || ""; }
+  function extFromMime(m){ if(!m) return "jpg"; if(m.includes("png")) return "png"; if(m.includes("webp")) return "webp"; return "jpg"; }
+  async function sha256Hex(file){
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  function fileToDataUrl(file){
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = ()=>resolve(String(r.result||""));
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // --- UI Helpers ---
+  function showToast(msg, type = 'info') {
+    const container = $('toastContainer');
+    const el = document.createElement('div');
+    
+    let icon = 'fa-info-circle';
+    let colors = 'bg-slate-800 border-slate-700 text-white';
+    
+    if(type === 'success') { icon = 'fa-circle-check'; colors = 'bg-emerald-900/90 border-emerald-500/30 text-emerald-100'; }
+    if(type === 'error') { icon = 'fa-circle-exclamation'; colors = 'bg-red-900/90 border-red-500/30 text-red-100'; }
+    if(type === 'loading') { icon = 'fa-circle-notch fa-spin'; colors = 'bg-blue-900/90 border-blue-500/30 text-blue-100'; }
+
+    el.className = `toast flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl min-w-[300px] ${colors}`;
+    el.innerHTML = `<i class="fa-solid ${icon}"></i> <span class="text-sm font-medium">${msg}</span>`;
+    
+    container.appendChild(el);
+
+    if(type !== 'loading') {
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(10px)';
+        setTimeout(() => el.remove(), 300);
+      }, 3000);
+    }
+    return el;
+  }
+
+  function openAuthModal() {
+      const modal = $('authModal');
+      if(modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          $('authTokenInput').focus();
+      }
+  }
+
+  // --- State & Config ---
+  const DEFAULT_CONFIG = {
+    defaults: {
+      branding: { title: "Political Forms", subtitle: "Visitor Entry System", tagline: "", color1: "#f97316", color2: "#ef4444", logo: { kind: "none" }, header: { kind: "none" }, background: { kind: "none" } },
+      programs: ["मंडल बैठक","कार्यकर्ता सम्मेलन","जनसंपर्क","बूथ मीटिंग"],
+      fixed_levels: {}
+    },
+    forms: { visitor_form: {}, party_attendance: {}, president_tour: {}, mandal_reporting: {}, coordinator: {}, program_info: {} }
+  };
+
+  let state = {
+    cid: (qs("cid") || qs("collection_id") || "").trim(),
+    target: "__defaults__",
+    config: JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
+    pendingAssets: {},
+    allItems: [],
+    viewItems: [],
+    nextToken: null,
+    prevStack: [],
+    sort: { key: "created_at", dir: "desc" },
+    charts: { byForm: null, byDay: null, byDistrict: null }
+  };
+
+  // --- Core Logic ---
+  function ensureFormObj(ft){ if (!state.config.forms[ft]) state.config.forms[ft] = {}; }
+  function deepMerge(base, override){
+    if (!override || typeof override !== "object") return base;
+    const out = Array.isArray(base) ? [...base] : { ...base };
+    Object.keys(override).forEach(k=>{
+      const bv = out[k], ov = override[k];
+      if (Array.isArray(ov)) out[k] = ov;
+      else if (ov && typeof ov === "object" && bv && typeof bv === "object" && !Array.isArray(bv)) out[k] = deepMerge(bv, ov);
+      else out[k] = ov;
+    });
+    return out;
+  }
+
+  function getEffectiveBranding(ft) {
+    const d = state.config.defaults.branding;
+    const o = (ft !== "__defaults__") ? (state.config.forms[ft]?.branding || {}) : {};
+    return { ...d, ...o };
+  }
+
+  function renderBrandPreview() {
+    const ft = state.target;
+    const b = getEffectiveBranding(ft);
+    
+    // Inputs sync
+    if(document.activeElement !== $('b_title')) $('b_title').value = b.title || "";
+    if(document.activeElement !== $('b_subtitle')) $('b_subtitle').value = b.subtitle || "";
+    if(document.activeElement !== $('b_tagline')) $('b_tagline').value = b.tagline || "";
+    $('b_c1').value = b.color1 || "#f97316";
+    $('b_c2').value = b.color2 || "#ef4444";
+
+    // Overlay Preview Logic (simulates iframe content visually)
+    const pend = state.pendingAssets[ft] || {};
+    
+    const logoUrl = pend.logo ? pend.logo.previewUrl : (b.logo?.kind !== 'none' ? b.logo?.value : null);
+    const headerUrl = pend.header ? pend.header.previewUrl : (b.header?.kind !== 'none' ? b.header?.value : null);
+    const bgUrl = pend.background ? pend.background.previewUrl : (b.background?.kind !== 'none' ? b.background?.value : null);
+
+    // Update overlay elements
+    $('previewTitle').textContent = b.title || "Title";
+    $('previewSubtitle').textContent = b.subtitle || "";
+    $('previewHeaderBar').style.background = `linear-gradient(to right, ${b.color1}, ${b.color2})`;
+    $('sw1').style.backgroundColor = b.color1;
+    $('sw2').style.backgroundColor = b.color2;
+
+    if(logoUrl) { $('previewLogo').src = logoUrl; $('previewLogo').classList.remove('hidden'); $('previewLogoIcon').classList.add('hidden'); }
+    else { $('previewLogo').classList.add('hidden'); $('previewLogoIcon').classList.remove('hidden'); }
+
+    if(headerUrl) { $('previewHeaderImg').src = headerUrl; $('previewHeaderImgWrap').classList.remove('hidden'); }
+    else { $('previewHeaderImgWrap').classList.add('hidden'); }
+
+    if(bgUrl) $('previewBg').style.backgroundImage = `url('${bgUrl}')`;
+    else $('previewBg').style.backgroundImage = '';
+  }
+
+  function renderFormPreviewIframe() {
+    const ft = state.target === "__defaults__" ? "visitor_form" : state.target;
+    const file = FORM_META[ft]?.file;
+    // Pass token + user_type=admin to help iframe know it can act as admin/preview
+    const url = `${file}?cid=${state.cid}&preview=1&form_type=${ft}&t=${Date.now()}&token=${getIdToken()}&role=admin&user_type=admin`; 
+    $('formPreviewIframe').src = url;
+    $('formPreviewUrlTxt').textContent = `${file}?cid=${state.cid}`;
+  }
+
+  function setPending(key, file) {
+    if(!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
+    state.pendingAssets[state.target][key] = { file, previewUrl: URL.createObjectURL(file) };
+    $(`name_${key}`).textContent = file.name;
+    
+    // Immediate preview in thumbnail
+    $(`prev_${key}`).src = URL.createObjectURL(file);
+    $(`prev_${key}`).classList.remove('hidden');
+    $(`icon_${key}`).classList.add('hidden');
+    
+    renderBrandPreview();
+  }
+
+  // --- API Calls (Restored Robust Logic) ---
+  async function apiCall(action, payload){
+    let idToken = getIdToken();
+    
+    const doFetch = async (token) => {
+        return await fetch(FORMS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ action, payload })
+        });
     };
 
-    // --- CORE API UTILS (THE FIX) ---
+    if (!idToken) {
+       console.warn("No ID token found in storage.");
+    }
+
+    let resp = await doFetch(idToken || "");
     
-    // 1. Robust CID extraction
-    function getCid() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const fromUrl = urlParams.get('cid') || urlParams.get('collection_id');
-      const fromStore = localStorage.getItem('political_cid');
-      return fromUrl || fromStore || "";
+    // Auto-recover from 401 using custom Modal
+    if (resp.status === 401) {
+        openAuthModal();
+        throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
     }
+    
+    const txt = await resp.text();
+    let json = {};
+    try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
+    
+    if (!resp.ok) throw new Error(json.message || json.error || `HTTP ${resp.status}`);
+    return json;
+  }
+  
+  async function apiCallCandidates(actions, payload){
+    let lastErr = null;
+    for (const a of actions){
+      try { return await apiCall(a, payload); } catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error("API call failed");
+  }
 
-    // 2. Robust API Caller - Automatically injects collection_id everywhere
-    async function callApi(action, payload = {}) {
-      const cid = state.cid || getCid();
-      if (!cid) {
-        showSetup();
-        throw new Error("No Collection ID");
-      }
+  async function initAssetUpload(assetKind, ft, file){
+    const sha = await sha256Hex(file);
+    const fileName = `${crypto.randomUUID()}.${extFromMime(file.type)}`;
+    const payload = { collection_id: state.cid, form_type: ft === "__defaults__" ? "visitor_form" : ft, asset_kind: assetKind, sha256: sha, file_name: fileName, mime_type: file.type };
+    const res = await apiCallCandidates(["admin_init_asset_upload","admin_init_upload_asset","init_asset_upload"], payload);
+    const uploadUrl = res.upload_url || res.url;
+    if (!uploadUrl) return null;
+    await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": file.type } });
+    const publicUrl = res.public_url || res.asset_url || res.url_public || "";
+    const key = res.s3_key || res.asset_key || res.key || "";
+    return { kind: "s3", value: publicUrl || key || "" };
+  }
 
-      // Construct Unified Payload
-      // We put collection_id in root AND in payload to be 100% safe
-      const bodyData = {
-        action: action,
-        collection_id: cid,  // Root level for blind extraction
-        cid: cid,            // Backup alias
-        payload: {
-          ...payload,
-          collection_id: cid // Nested level for legacy checks
-        }
-      };
+  async function saveConfig() {
+     if(!state.cid) return showToast("Collection ID (CID) required", "error");
+     
+     const oldText = $('btnSave').innerHTML;
+     $('btnSave').disabled = true;
+     $('btnSave').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Saving...';
+     const t = showToast("Saving changes...", "loading");
+     const ft = state.target;
 
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyData)
+     try {
+       // 1. Update text config from inputs
+       const newBrand = {
+          title: $('b_title').value,
+          subtitle: $('b_subtitle').value,
+          tagline: $('b_tagline').value,
+          color1: $('b_c1').value,
+          color2: $('b_c2').value
+       };
+
+       if(ft === "__defaults__") state.config.defaults.branding = { ...state.config.defaults.branding, ...newBrand };
+       else {
+          ensureFormObj(ft);
+          state.config.forms[ft].branding = { ...(state.config.forms[ft].branding||{}), ...newBrand };
+       }
+
+       // 2. Handle Asset Uploads (Real Logic)
+       const pends = state.pendingAssets[ft];
+       if(pends) {
+          for(const k of ['logo','header','background']) {
+             if(pends[k] && pends[k].file) {
+                const kind = (k==="logo")?"logo":(k==="header"?"header":"background");
+                let uploaded = null;
+                try { uploaded = await initAssetUpload(kind, ft, pends[k].file); } catch(e) { console.error(e); uploaded = null; }
+                
+                if (uploaded && uploaded.value){
+                   if(ft === "__defaults__") state.config.defaults.branding[k] = { kind: uploaded.kind, value: uploaded.value };
+                   else state.config.forms[ft].branding[k] = { kind: uploaded.kind, value: uploaded.value };
+                } else {
+                   // Fallback to data url if S3 fails
+                   const dataUrl = await fileToDataUrl(pends[k].file);
+                   if(ft === "__defaults__") state.config.defaults.branding[k] = { kind: 'data', value: dataUrl };
+                   else state.config.forms[ft].branding[k] = { kind: 'data', value: dataUrl };
+                }
+             }
+          }
+          state.pendingAssets[ft] = null; // clear pending
+       }
+
+       // 3. Save Backend
+       try {
+          // Send BOTH 'config' and 'settings' to satisfy backend validation
+          await apiCallCandidates(["admin_save_config","admin_save_settings","save_admin_config"], { 
+             collection_id: state.cid, 
+             config_type: "political_forms", // REQUIRED by Backend for SAVE
+             config: state.config,
+             settings: state.config 
+          });
+          t.remove(); showToast("Saved to Cloud successfully", "success");
+       } catch(e) {
+          console.error(e);
+          localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(state.config));
+          // If error is explicitly Unauthorized, show it
+          if(e.message && e.message.includes("Unauthorized")) {
+             t.remove(); showToast("Login Expired. Saved locally only.", "error");
+          } else {
+             t.remove(); showToast("Backend error: " + (e.message || "Unknown") + ". Saved locally.", "warning");
+          }
+       }
+       renderFormPreviewIframe();
+     } catch(e) {
+       t.remove(); showToast(e.message || "Save failed", "error");
+     } finally {
+       $('btnSave').disabled = false;
+       $('btnSave').innerHTML = oldText;
+     }
+  }
+
+  async function loadConfig() {
+     if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
+     $('cidPill').classList.remove('hidden');
+     $('cidVal').textContent = state.cid;
+
+     const t = showToast("Loading configuration...", "loading");
+     let cfg = null;
+     try {
+        // EXACT payload user said works (no config_type for GET)
+        const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
+            collection_id: state.cid,
+            form_type: "visitor_form" 
         });
-        const data = await res.json();
-        
-        if (data.statusCode >= 400) {
-          console.error("API Error:", data);
-          alert("Error: " + (data.body ? JSON.parse(data.body).message : "Unknown error"));
-          return null;
-        }
-        
-        // Parse nested body if API Gateway returns standard wrapper
-        return typeof data.body === 'string' ? JSON.parse(data.body) : data;
-      } catch (e) {
-        console.error("Network/Parse Error:", e);
-        return null;
+        cfg = res.config || res.data || res.item || null;
+     } catch(e) {}
+     
+     if (!cfg){
+        const local = localStorage.getItem(`EL_CFG_${state.cid}`);
+        if(local) try{ cfg = JSON.parse(local); }catch(e){}
+     }
+
+     if (cfg) state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
+     t.remove();
+     renderAll();
+  }
+
+  // --- Rendering & Logic ---
+  function renderAll() {
+     renderBrandPreview();
+     renderPrograms();
+     renderLevels();
+  }
+
+  function renderPrograms() {
+     const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
+     const scope = $('progScopeSel').value;
+     let list = [];
+     
+     if(scope === 'defaults') list = state.config.defaults.programs || [];
+     else {
+        // If specific form
+        const specific = state.config.forms[ft]?.programs;
+        list = specific || state.config.defaults.programs || []; 
+     }
+
+     const container = $('progList');
+     container.innerHTML = '';
+     list.forEach((p, idx) => {
+        const el = document.createElement('div');
+        el.className = "flex items-center justify-between bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2";
+        el.innerHTML = `<span class="text-sm font-medium text-slate-300 truncate">${p}</span> 
+                        <button class="text-slate-500 hover:text-red-400 p-1" onclick="deleteProg(${idx})"><i class="fa-solid fa-trash"></i></button>`;
+        container.appendChild(el);
+     });
+     
+     window.deleteProg = (idx) => {
+         const newList = [...list];
+         newList.splice(idx, 1);
+         if(scope === 'defaults') state.config.defaults.programs = newList;
+         else {
+             ensureFormObj(ft);
+             state.config.forms[ft].programs = newList;
+         }
+         renderPrograms();
+     };
+  }
+  
+  function renderLevels() {
+      const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
+      const src = (ft === "__defaults__") ? state.config.defaults.fixed_levels : (state.config.forms[ft]?.fixed_levels || state.config.defaults.fixed_levels);
+      
+      $('lvl_mandal_reporting').value = src?.mandal_reporting || "";
+      $('lvl_coordinator').value = src?.coordinator || "";
+      $('lvl_program_info').value = src?.program_info || "";
+  }
+
+  // --- Data Loading (Restored Real Logic) ---
+  function normalizeItem(it){
+    const payload = it.payload || it.data || it.fields || {};
+    const createdAt = it.created_at || it.createdAt || it.ts || 0;
+    const ft = it.form_type || it.formType || payload.form_type || "";
+    return {
+      entry_id: it.entry_id || it.id || "",
+      created_at: createdAt,
+      form_type: ft,
+      payload,
+      mobile: payload.mobile || payload.phone || "",
+      name: payload.name || payload.full_name || "",
+      district: payload.district || "",
+      program_name: payload.program_name || payload.program || payload.karyakram || ""
+    };
+  }
+  function dateKeyFromMs(ms){
+    if (!ms) return "";
+    const x = new Date(Number(ms));
+    return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
+  }
+
+  async function loadData(direction="fresh") {
+     if(!state.cid) return showToast("CID Required", "error");
+     const t = showToast("Fetching records...", "loading");
+     
+     let next_token = null;
+     if (direction === "next") next_token = state.nextToken || null;
+     if (direction === "prev"){ const prev = state.prevStack.pop() || null; next_token = prev; }
+
+     const payload = {
+       collection_id: state.cid,
+       form_type: $('dataFormSel').value,
+       filters: { q: ($('dataSearch').value||"").trim(), date_from: $('dateFrom').value||"", date_to: $('dateTo').value||"" },
+       limit: 200,
+       next_token
+     };
+
+     let res = null;
+     try{
+       res = await apiCallCandidates(["admin_list_entries","admin_query_entries","list_entries_admin","admin_list_data"], payload);
+       state.allItems = (res.items || res.data || res.rows || []).map(normalizeItem);
+       state.nextToken = res.next_token || res.nextToken || null;
+       try{ localStorage.setItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`, JSON.stringify(state.allItems)); }catch(_){}
+       t.remove(); showToast(`Loaded ${state.allItems.length} items`, "success");
+     } catch(e){
+        // Cache fallback
+        try{
+            const raw = localStorage.getItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`);
+            if(raw){ state.allItems = JSON.parse(raw).map(normalizeItem); t.remove(); showToast("Loaded from cache (Offline)", "info"); }
+            else { t.remove(); showToast("Failed to load data", "error"); }
+        }catch(_){ t.remove(); showToast("Failed to load data", "error"); }
+     }
+     
+     state.viewItems = state.allItems; 
+     renderTable();
+     updateStats();
+  }
+
+  function renderTable() {
+      const tbody = $('dataTbody');
+      tbody.innerHTML = '';
+      $('loadedCount').textContent = state.viewItems.length;
+
+      state.viewItems.slice(0, 50).forEach(item => {
+          const row = document.createElement('tr');
+          row.className = "hover:bg-slate-800/30 transition-colors border-b border-slate-800/50";
+          row.innerHTML = `
+             <td class="px-4 py-3 text-slate-400 font-mono text-xs">${new Date(item.created_at).toLocaleDateString()}</td>
+             <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 border border-slate-700 text-slate-300">${item.form_type}</span></td>
+             <td class="px-4 py-3 text-white font-mono text-xs">${item.payload.mobile || '-'}</td>
+             <td class="px-4 py-3 text-white font-medium">${item.payload.name || '-'}</td>
+             <td class="px-4 py-3 text-slate-400">${item.payload.district || '-'}</td>
+             <td class="px-4 py-3">
+                <button class="text-orange-500 hover:text-orange-400 text-xs font-bold" onclick='openModal(${JSON.stringify(item)})'>View</button>
+             </td>
+          `;
+          tbody.appendChild(row);
+      });
+  }
+
+  function updateStats() {
+      $('kpiTotal').textContent = state.allItems.length;
+      $('kpiUnique').textContent = new Set(state.allItems.map(i => i.payload.mobile)).size;
+      buildCharts();
+  }
+
+  window.openModal = (item) => {
+      $('modal').classList.remove('hidden');
+      $('modal').classList.add('flex');
+      $('modalJson').textContent = JSON.stringify(item, null, 2);
+  };
+  $('btnCloseModal').onclick = () => { $('modal').classList.add('hidden'); $('modal').classList.remove('flex'); };
+  $('modalBackdrop').onclick = $('btnCloseModal').onclick;
+
+  // Auth Button Handlers
+  $('btnAuth').onclick = openAuthModal;
+  $('btnCancelAuth').onclick = () => { $('authModal').classList.remove('flex'); $('authModal').classList.add('hidden'); };
+  $('btnSaveAuth').onclick = () => {
+      const t = $('authTokenInput').value.trim();
+      if(t) {
+          localStorage.setItem("id_token", t);
+          showToast("Token updated! Reloading...", "success");
+          setTimeout(() => location.reload(), 800);
       }
-    }
+  };
 
-    // --- APP LOGIC ---
+  // --- Charts ---
+  function buildCharts() {
+     const items = state.viewItems.length ? state.viewItems : state.allItems;
 
-    async function init() {
-      state.cid = getCid();
-      if (state.cid) {
-        document.getElementById('setupOverlay').classList.add('hidden');
-        document.getElementById('displayCid').innerText = state.cid;
-        await loadSettings();
-        await loadData(); // Load initial data
+     const byForm = {}; items.forEach(x=>{ const k=x.form_type||"unknown"; byForm[k]=(byForm[k]||0)+1; });
+     const formLabels = Object.keys(byForm); const formVals = formLabels.map(k=>byForm[k]);
+
+     const dayMap = {}; items.forEach(x=>{ const k=dateKeyFromMs(x.created_at); if(!k) return; dayMap[k]=(dayMap[k]||0)+1; });
+     const days = Object.keys(dayMap).sort(); const last14 = days.slice(-14); const dayVals = last14.map(k=>dayMap[k]);
+
+     const dist = {}; items.forEach(x=>{ const k=(x.district||"").trim()||"Unknown"; dist[k]=(dist[k]||0)+1; });
+     const distPairs = Object.entries(dist).sort((a,b)=>b[1]-a[1]).slice(0,10);
+     const distLabels = distPairs.map(p=>p[0]); const distVals = distPairs.map(p=>p[1]);
+
+     if(state.charts.byDay) state.charts.byDay.destroy();
+     if(state.charts.byForm) state.charts.byForm.destroy();
+     if(state.charts.district) state.charts.district.destroy();
+
+     const common = { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false} }, scales: { x: { display: false }, y: { display: false } } };
+
+     state.charts.byDay = new Chart($('chartByDay'), { type: 'line', data: { labels: last14, datasets: [{ data: dayVals, borderColor: '#f97316', tension: 0.4 }] }, options: common });
+     state.charts.byForm = new Chart($('chartByForm'), { type: 'bar', data: { labels: formLabels, datasets: [{ data: formVals, backgroundColor: '#3b82f6' }] }, options: common });
+     state.charts.district = new Chart($('chartDistrict'), { type: 'bar', data: { labels: distLabels, datasets: [{ data: distVals, backgroundColor: '#a855f7' }] }, options: common });
+  }
+
+  // --- Event Listeners ---
+  $('btnSave').onclick = saveConfig;
+  $('btnReload').onclick = loadConfig;
+  $('btnApplyCid').onclick = () => { state.cid = $('cidInput').value; loadConfig(); };
+  
+  // Tab Switching
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.onclick = () => {
+          document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+          $(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+      };
+  });
+
+  // Target Change
+  $('targetFormSel').onchange = () => {
+      state.target = $('targetFormSel').value;
+      renderAll();
+      renderFormPreviewIframe();
+  };
+
+  // Asset Inputs
+  ['logo','header','bg'].forEach(k => {
+     $(`file_${k}`).onchange = (e) => { if(e.target.files[0]) setPending(k, e.target.files[0]); };
+     const clearBtn = document.querySelector(`[data-clear="${k}"]`);
+     if(clearBtn) clearBtn.onclick = (e) => { e.stopPropagation(); $(`file_${k}`).value = ""; setPending(k, null); renderBrandPreview(); };
+  });
+
+  // Input Live Sync
+  ['input','change'].forEach(ev => {
+      $('b_title').addEventListener(ev, renderBrandPreview);
+      $('b_subtitle').addEventListener(ev, renderBrandPreview);
+      $('b_c1').addEventListener(ev, renderBrandPreview);
+      $('b_c2').addEventListener(ev, renderBrandPreview);
+  });
+
+  $('btnAddProg').onclick = () => {
+      const v = $('progInput').value.trim();
+      if(!v) return;
+      const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
+      const scope = $('progScopeSel').value;
+      if(scope === 'defaults') {
+          state.config.defaults.programs = [v, ...(state.config.defaults.programs||[])];
       } else {
-        showSetup();
+          ensureFormObj(ft);
+          state.config.forms[ft].programs = [v, ...(state.config.forms[ft].programs||[])];
       }
-    }
+      $('progInput').value = "";
+      renderPrograms();
+      showToast("Program Added", "success");
+  };
 
-    function showSetup() {
-      document.getElementById('setupOverlay').classList.remove('hidden');
-    }
+  $('btnLoadData').onclick = () => loadData("fresh");
+  $('btnApplyFilter').onclick = () => loadData("fresh");
+  $('btnNextPage').onclick = () => loadData("next");
+  $('btnPrevPage').onclick = () => loadData("prev");
+  $('btnExportCsv').onclick = () => {
+     const csvContent = "data:text/csv;charset=utf-8," + state.allItems.map(e => Object.values(e.payload).join(",")).join("\n");
+     const encodedUri = encodeURI(csvContent);
+     const link = document.createElement("a");
+     link.setAttribute("href", encodedUri);
+     link.setAttribute("download", "data.csv");
+     document.body.appendChild(link);
+     link.click();
+  };
 
-    function saveCid() {
-      const val = document.getElementById('setupCid').value.trim();
-      if (val) {
-        localStorage.setItem('political_cid', val);
-        window.location.href = `?cid=${val}`;
-      }
-    }
+  // Init
+  loadConfig();
+  renderFormPreviewIframe();
 
-    function clearCid() {
-      localStorage.removeItem('political_cid');
-      window.location.href = window.location.pathname;
-    }
-
-    // --- SETTINGS ---
-
-    async function loadSettings() {
-      const res = await callApi("admin_get_settings");
-      if (res && res.settings) {
-        state.config = res.settings;
-        loadBrandingPreview(); // Refresh UI inputs
-      }
-    }
-
-    async function saveSettings() {
-      const btn = document.getElementById('btnSave');
-      const origText = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Saving...';
-      
-      // Update state config from UI inputs before saving
-      const target = document.getElementById('brandingTarget').value;
-      if (!state.config.forms[target]) state.config.forms[target] = {};
-      state.config.forms[target].title = document.getElementById('brandTitle').value;
-
-      const res = await callApi("admin_save_settings", { settings: state.config });
-      
-      btn.innerHTML = origText;
-      if (res) alert("Settings Saved Successfully!");
-    }
-
-    function loadBrandingPreview() {
-      if (!state.config) return;
-      const target = document.getElementById('brandingTarget').value;
-      const cfg = state.config.forms[target] || {};
-      document.getElementById('brandTitle').value = cfg.title || "";
-    }
-
-    async function handleUpload(keyType) {
-      // 1. Get Presigned URL
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const res = await callApi("admin_init_asset_upload", { 
-        filename: file.name, 
-        mime_type: file.type 
-      });
-
-      if (!res || !res.upload_url) return;
-
-      // 2. Upload to S3
-      await fetch(res.upload_url, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file
-      });
-
-      // 3. Update Config locally
-      const target = document.getElementById('brandingTarget').value;
-      if (!state.config.forms[target]) state.config.forms[target] = {};
-      state.config.forms[target][keyType] = res.s3_key;
-
-      alert("Upload complete. Don't forget to Save Changes.");
-    }
-
-    // --- DATA / ENTRIES ---
-
-    async function loadData() {
-      const ind = document.getElementById('loadingIndicator');
-      ind.classList.remove('hidden');
-      
-      const q = document.getElementById('searchQ').value;
-      const type = document.getElementById('filterType').value;
-      
-      const res = await callApi("admin_list", {
-        limit: 50,
-        filters: JSON.stringify({ q: q }), // Search filter
-        form_type: type === 'all' ? '' : type
-      });
-
-      ind.classList.add('hidden');
-      
-      if (res && res.items) {
-        state.entries = res.items;
-        renderTable(res.items);
-        document.getElementById('statTotal').innerText = res.count || state.entries.length;
-      }
-    }
-
-    function renderTable(items) {
-      const tbody = document.getElementById('entriesTableBody');
-      tbody.innerHTML = items.map(item => `
-        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
-          <td class="p-4">
-            <img src="${item.thumb_url || item.photo_url || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover border border-white/10">
-          </td>
-          <td class="p-4">
-            <div class="font-medium text-white">${item.name || 'Unknown'}</div>
-            <div class="text-xs text-gray-500">${item.mobile || '-'}</div>
-          </td>
-          <td class="p-4 text-gray-400 text-xs uppercase tracking-wider">${item.form_type?.replace(/_/g, ' ')}</td>
-          <td class="p-4 text-gray-400">${item.district || '-'}</td>
-          <td class="p-4 text-gray-500 text-xs">${new Date(parseInt(item.created_at)).toLocaleDateString()}</td>
-          <td class="p-4 text-right">
-            <button onclick="viewEntry('${item.entry_id}')" class="text-brand-500 hover:text-brand-400 text-sm">View</button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    // --- LINKS ---
-
-    async function generateLink() {
-      const type = document.getElementById('linkType').value;
-      const days = document.getElementById('linkDays').value;
-      
-      const res = await callApi("generate_form_link", { form_type: type, days_valid: days });
-      
-      if (res && res.token) {
-        const url = `https://your-public-url.com/form?token=${res.token}`; // Replace with actual public URL logic
-        document.getElementById('generatedUrl').value = url; // In real app, build full URL
-        document.getElementById('linkResult').classList.remove('hidden');
-        // Just for demo, showing the token. In reality you'd append ?token=... to your form host
-        document.getElementById('generatedUrl').value = res.token; 
-      }
-    }
-
-    function copyLink() {
-      const el = document.getElementById('generatedUrl');
-      el.select();
-      document.execCommand('copy');
-      alert("Token copied!");
-    }
-
-    // --- UI HELPERS ---
-
-    function switchTab(tab) {
-      document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
-      document.getElementById(`view-${tab}`).classList.remove('hidden');
-      
-      document.querySelectorAll('.nav-btn').forEach(el => {
-        if(el.dataset.tab === tab) {
-          el.classList.add('bg-white/10', 'text-white');
-          el.classList.remove('text-gray-400');
-        } else {
-          el.classList.remove('bg-white/10', 'text-white');
-          el.classList.add('text-gray-400');
-        }
-      });
-    }
-
-    // Init
-    window.onload = init;
-
-  </script>
+})();
+</script>
 </body>
 </html>

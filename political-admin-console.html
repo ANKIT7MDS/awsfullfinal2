@@ -280,7 +280,7 @@
         </nav>
 
         <div class="text-center">
-          <p class="text-[10px] text-slate-600">v2.7.0 Pro • EventLens System</p>
+          <p class="text-[10px] text-slate-600">v2.8.0 Pro • EventLens System</p>
         </div>
       </aside>
 
@@ -840,7 +840,8 @@
   function renderFormPreviewIframe() {
     const ft = state.target === "__defaults__" ? "visitor_form" : state.target;
     const file = FORM_META[ft]?.file;
-    const url = `${file}?cid=${state.cid}&preview=1&form_type=${ft}&t=${Date.now()}`; // cache bust
+    // Pass token so iframe can fetch config if needed
+    const url = `${file}?cid=${state.cid}&preview=1&form_type=${ft}&t=${Date.now()}&token=${getIdToken()}`; 
     $('formPreviewIframe').src = url;
     $('formPreviewUrlTxt').textContent = `${file}?cid=${state.cid}`;
   }
@@ -974,8 +975,7 @@
           localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(state.config));
           // If error is explicitly Unauthorized, show it
           if(e.message && e.message.includes("Unauthorized")) {
-             t.remove(); showToast("Login Expired. Opening Auth...", "error");
-             openAuthModal();
+             t.remove(); showToast("Login Expired. Saved locally only.", "error");
           } else {
              t.remove(); showToast("Backend error: " + (e.message || "Unknown") + ". Saved locally.", "warning");
           }

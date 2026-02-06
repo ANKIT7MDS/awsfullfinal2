@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
-  <meta name="referrer" content="no-referrer" />
   <title>EventLens – Smart AI Gallery</title>
 
   <!-- Libraries -->
@@ -830,9 +829,15 @@
             
             const isFav = favorites.has(p.photo_id) ? 'active' : '';
             
+            // FIXED: Fallback to full resolution image if thumbnail fails
             const html = `
             <div class="photo-item" id="pitem-${idx}" onclick="openViewer(${idx})" data-time="${timeLabel}">
-                <img src="${p.thumbnail_url || p.url}" loading="lazy" onload="this.classList.add('loaded')">
+                <img 
+                    src="${p.thumbnail_url || p.url}" 
+                    loading="lazy" 
+                    onload="this.classList.add('loaded')" 
+                    onerror="if(!this.dataset.retried){this.dataset.retried=true; this.src='${p.url}';} else {this.closest('.photo-item').style.display='none';}"
+                >
                 <div class="select-ring"></div>
                 <button class="fav-btn ${isFav}" onclick="toggleFav(event, '${p.photo_id}', ${idx})">
                     <i class="${isFav?'fa-solid':'fa-regular'} fa-heart"></i>

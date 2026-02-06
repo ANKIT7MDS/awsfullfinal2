@@ -275,7 +275,7 @@
         </nav>
 
         <div class="text-center">
-          <p class="text-[10px] text-slate-600">v2.5.2 Pro • EventLens System</p>
+          <p class="text-[10px] text-slate-600">v2.6.0 Pro • EventLens System</p>
         </div>
       </aside>
 
@@ -833,15 +833,32 @@
 
   // --- API Calls (Restored Robust Logic) ---
   async function apiCall(action, payload){
-    const idToken = getIdToken();
-    if (!idToken) throw new Error("Unauthorized: Login required (Id Token expired/missing)");
-    const resp = await fetch(FORMS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
-      body: JSON.stringify({ action, payload })
-    });
+    let idToken = getIdToken();
     
-    if (resp.status === 401) throw new Error("Unauthorized: Login required (Session Expired)");
+    const doFetch = async (token) => {
+        return await fetch(FORMS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ action, payload })
+        });
+    };
+
+    if (!idToken) {
+       console.warn("No ID token found in storage.");
+    }
+
+    let resp = await doFetch(idToken || "");
+    
+    // Auto-recover from 401 by asking user for token
+    if (resp.status === 401) {
+        const newToken = prompt("⚠️ Session Expired (401)\n\nPlease paste a valid ID Token to continue:");
+        if (newToken && newToken.trim()) {
+            localStorage.setItem("id_token", newToken.trim());
+            resp = await doFetch(newToken.trim()); // Retry with new token
+        } else {
+            throw new Error("Unauthorized: Login required (Session Expired)");
+        }
+    }
     
     const txt = await resp.text();
     let json = {};
@@ -862,7 +879,7 @@
   async function initAssetUpload(assetKind, ft, file){
     const sha = await sha256Hex(file);
     const fileName = `${crypto.randomUUID()}.${extFromMime(file.type)}`;
-    const payload = { collection_id: state.cid, form_type: ft === "__defaults__" ? "" : ft, asset_kind: assetKind, sha256: sha, file_name: fileName, mime_type: file.type };
+    const payload = { collection_id: state.cid, form_type: ft === "__defaults__" ? "visitor_form" : ft, asset_kind: assetKind, sha256: sha, file_name: fileName, mime_type: file.type };
     const res = await apiCallCandidates(["admin_init_asset_upload","admin_init_upload_asset","init_asset_upload"], payload);
     const uploadUrl = res.upload_url || res.url;
     if (!uploadUrl) return null;
@@ -957,8 +974,11 @@
      const t = showToast("Loading configuration...", "loading");
      let cfg = null;
      try {
-        // Including form_type: "__defaults__" or similar might be needed if backend strict
-        const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { collection_id: state.cid });
+        // Including form_type: "visitor_form" as safe default per user request
+        const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
+            collection_id: state.cid,
+            form_type: "visitor_form" 
+        });
         cfg = res.config || res.data || res.item || null;
      } catch(e) {}
      

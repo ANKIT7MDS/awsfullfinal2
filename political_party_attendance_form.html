@@ -73,12 +73,16 @@
     <div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
     <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
 
-    <div id="header-image" class="hidden w-full h-24 rounded-xl mb-4 bg-slate-800/40 border border-white/5 overflow-hidden bg-cover bg-center"></div>
+    <!-- Header banner (Admin branding) -->
+    <div id="header-wrap" class="hidden w-full rounded-xl mb-4 overflow-hidden bg-slate-800/40 border border-white/5">
+      <img id="header-image" alt="Header" class="w-full h-32 sm:h-44 object-contain object-center" />
+    </div>
 
     <div class="text-center mb-6" id="form-header">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 text-orange-500 mb-3 overflow-hidden border border-white/10">
+        <!-- Logo (Admin branding) -->
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 text-orange-500 mb-3 overflow-hidden border border-white/10 p-2">
             <i id="default-icon" class="fa-solid fa-people-group text-2xl"></i>
-            <img id="custom-logo" src="" class="w-full h-full object-cover hidden" alt="logo">
+            <img id="custom-logo" src="" class="w-full h-full object-contain hidden" alt="logo">
         </div>
         <h1 id="org-name" class="text-2xl font-extrabold brand-text">पार्टी उपस्थिति फॉर्म</h1>
         <p id="org-subtitle" class="text-slate-300/80 text-xs mt-1">Party Attendance</p>
@@ -388,10 +392,14 @@ function applyBrandingFromResponse(resp, formType) {
     logoEl.classList.remove("hidden");
   }
 
-  const headerEl = $("header-image");
-  if (headerEl && headerUrl) {
-    headerEl.src = headerUrl;
-    headerEl.classList.remove("hidden");
+  // Header banner (show wrapper only when we have a URL)
+  const headerWrap = $("header-wrap");
+  const headerImg = $("header-image");
+  if (headerWrap && headerImg && headerUrl) {
+    headerImg.src = headerUrl;
+    headerWrap.classList.remove("hidden");
+  } else if (headerWrap) {
+    headerWrap.classList.add("hidden");
   }
 
   // Optional background image

@@ -280,7 +280,7 @@
         </nav>
 
         <div class="text-center">
-          <p class="text-[10px] text-slate-600">v3.0.1 Pro • EventLens System</p>
+          <p class="text-[10px] text-slate-600">v2.9.0 Pro • EventLens System</p>
         </div>
       </aside>
 
@@ -782,82 +782,6 @@
     charts: { byForm: null, byDay: null, byDistrict: null }
   };
 
-  // --- Transformation Helpers ---
-
-  // Converts the nested UI state to the flat structure expected by the backend
-  function transformStateToBackend(localConfig) {
-      const out = JSON.parse(JSON.stringify(localConfig)); // Deep copy
-
-      const processNode = (node) => {
-          if (!node || !node.branding) return node;
-          
-          // Flatten text fields
-          node.title = node.branding.title || "";
-          node.subtitle = node.branding.subtitle || "";
-          node.tagline = node.branding.tagline || "";
-          
-          // Flatten assets: branding.logo.value (S3 Key) -> logo_key
-          if (node.branding.logo && node.branding.logo.value) node.logo_key = node.branding.logo.value;
-          if (node.branding.header && node.branding.header.value) node.header_key = node.branding.header.value;
-          if (node.branding.background && node.branding.background.value) node.background_key = node.branding.background.value;
-          
-          // Flatten theme
-          node.theme = node.theme || {};
-          if (node.branding.color1) node.theme.primary = node.branding.color1;
-          if (node.branding.color2) node.theme.secondary = node.branding.color2;
-          
-          return node;
-      };
-
-      if (out.defaults) processNode(out.defaults);
-      if (out.forms) {
-          Object.keys(out.forms).forEach(k => processNode(out.forms[k]));
-      }
-      
-      return out;
-  }
-
-  // Converts the flat backend response back to the nested UI state
-  function transformBackendToState(backendConfig) {
-      const out = JSON.parse(JSON.stringify(backendConfig));
-      
-      const processNode = (node) => {
-          if (!node) return;
-          if (!node.branding) node.branding = {};
-          
-          // Restore text
-          if (node.title) node.branding.title = node.title;
-          if (node.subtitle) node.branding.subtitle = node.subtitle;
-          if (node.tagline) node.branding.tagline = node.tagline;
-          
-          // Restore assets: logo_key -> value (ID), logo_url -> previewUrl (Visual)
-          // This fixes the issue where broken images appear because we tried to use the key as a URL
-          
-          if (node.logo_key) node.branding.logo = { kind: 's3', value: node.logo_key, previewUrl: node.logo_url };
-          else if (node.logo_url) node.branding.logo = { kind: 's3', value: node.logo_key, previewUrl: node.logo_url };
-          else node.branding.logo = { kind: 'none' };
-
-          if (node.header_key) node.branding.header = { kind: 's3', value: node.header_key, previewUrl: node.header_url };
-          else node.branding.header = { kind: 'none' };
-
-          if (node.background_key) node.branding.background = { kind: 's3', value: node.background_key, previewUrl: node.background_url };
-          else node.branding.background = { kind: 'none' };
-          
-          // Restore colors
-          if (node.theme) {
-              if (node.theme.primary) node.branding.color1 = node.theme.primary;
-              if (node.theme.secondary) node.branding.color2 = node.theme.secondary;
-          }
-      };
-
-      if (out.defaults) processNode(out.defaults);
-      if (out.forms) {
-          Object.keys(out.forms).forEach(k => processNode(out.forms[k]));
-      }
-      return out;
-  }
-
-
   // --- Core Logic ---
   function ensureFormObj(ft){ if (!state.config.forms[ft]) state.config.forms[ft] = {}; }
   function deepMerge(base, override){
@@ -892,10 +816,9 @@
     // Overlay Preview Logic (simulates iframe content visually)
     const pend = state.pendingAssets[ft] || {};
     
-    // Updated Logic: Check previewUrl first (signed URL or Blob), then fallback to value
-    const logoUrl = pend.logo ? pend.logo.previewUrl : (b.logo?.kind !== 'none' ? (b.logo?.previewUrl || b.logo?.value) : null);
-    const headerUrl = pend.header ? pend.header.previewUrl : (b.header?.kind !== 'none' ? (b.header?.previewUrl || b.header?.value) : null);
-    const bgUrl = pend.background ? pend.background.previewUrl : (b.background?.kind !== 'none' ? (b.background?.previewUrl || b.background?.value) : null);
+    const logoUrl = pend.logo ? pend.logo.previewUrl : (b.logo?.kind !== 'none' ? b.logo?.value : null);
+    const headerUrl = pend.header ? pend.header.previewUrl : (b.header?.kind !== 'none' ? b.header?.value : null);
+    const bgUrl = pend.background ? pend.background.previewUrl : (b.background?.kind !== 'none' ? b.background?.value : null);
 
     // Update overlay elements
     $('previewTitle').textContent = b.title || "Title";
@@ -1009,11 +932,9 @@
     const uploadUrl = res.upload_url || res.url;
     if (!uploadUrl) return null;
     await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": file.type } });
-    
-    // Get keys and public URLs
-    const publicUrl = res.public_url || res.asset_url || res.url_public || res.preview_url || "";
+    const publicUrl = res.public_url || res.asset_url || res.url_public || "";
     const key = res.s3_key || res.asset_key || res.key || "";
-    return { kind: "s3", value: key || "", previewUrl: publicUrl };
+    return { kind: "s3", value: publicUrl || key || "" };
   }
 
   async function saveConfig() {
@@ -1051,19 +972,13 @@
                 try { uploaded = await initAssetUpload(kind, ft, pends[k].file); } catch(e) { console.error(e); uploaded = null; }
                 
                 if (uploaded && uploaded.value){
-                   const newObj = { kind: uploaded.kind, value: uploaded.value };
-                   // Preserve the local preview until next reload or backend sync
-                   if(pends[k].previewUrl) newObj.previewUrl = pends[k].previewUrl; 
-                   else if(uploaded.previewUrl) newObj.previewUrl = uploaded.previewUrl;
-                   
-                   if(ft === "__defaults__") state.config.defaults.branding[k] = newObj;
-                   else state.config.forms[ft].branding[k] = newObj;
+                   if(ft === "__defaults__") state.config.defaults.branding[k] = { kind: uploaded.kind, value: uploaded.value };
+                   else state.config.forms[ft].branding[k] = { kind: uploaded.kind, value: uploaded.value };
                 } else {
                    // Fallback to data url if S3 fails
                    const dataUrl = await fileToDataUrl(pends[k].file);
-                   const newObj = { kind: 'data', value: dataUrl, previewUrl: dataUrl };
-                   if(ft === "__defaults__") state.config.defaults.branding[k] = newObj;
-                   else state.config.forms[ft].branding[k] = newObj;
+                   if(ft === "__defaults__") state.config.defaults.branding[k] = { kind: 'data', value: dataUrl };
+                   else state.config.forms[ft].branding[k] = { kind: 'data', value: dataUrl };
                 }
              }
           }
@@ -1072,14 +987,12 @@
 
        // 3. Save Backend
        try {
-          // Transform nested state to flat structure before saving
-          const backendPayload = transformStateToBackend(state.config);
-
+          // Send BOTH 'config' and 'settings' to satisfy backend validation
           await apiCallCandidates(["admin_save_config","admin_save_settings","save_admin_config"], { 
              collection_id: state.cid, 
              config_type: "political_forms", // REQUIRED by Backend for SAVE
-             config: backendPayload,
-             settings: backendPayload 
+             config: state.config,
+             settings: state.config 
           });
           t.remove(); showToast("Saved to Cloud successfully", "success");
        } catch(e) {
@@ -1114,7 +1027,7 @@
             collection_id: state.cid,
             form_type: "visitor_form" 
         });
-        cfg = res.config || res.data || res.item || res.settings || null;
+        cfg = res.config || res.data || res.item || null;
      } catch(e) {}
      
      if (!cfg){
@@ -1122,11 +1035,7 @@
         if(local) try{ cfg = JSON.parse(local); }catch(e){}
      }
 
-     if (cfg) {
-         // Transform backend (flat) back to state (nested)
-         const transformed = transformBackendToState(cfg);
-         state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), transformed);
-     }
+     if (cfg) state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
      t.remove();
      renderAll();
   }
@@ -1353,7 +1262,7 @@
   $('btnAddProg').onclick = () => {
       const v = $('progInput').value.trim();
       if(!v) return;
-      const ft = state.target === "__defaults__\" ? "__defaults__" : state.target;
+      const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
       const scope = $('progScopeSel').value;
       if(scope === 'defaults') {
           state.config.defaults.programs = [v, ...(state.config.defaults.programs||[])];

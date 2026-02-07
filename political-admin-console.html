@@ -687,6 +687,24 @@
   </div>
 
 <script>
+  const __previewTokenCache = {};
+
+async function getPublicPreviewToken(formType){
+  const cid = window.__STATE?.cid || getQueryParam("cid") || "";
+  if(!cid) return "";
+  const key = cid + "::" + (formType || "visitor_form");
+  if(__previewTokenCache[key]) return __previewTokenCache[key];
+
+  const res = await apiCallCandidates(
+    ["generate_form_link"],
+    { collection_id: cid, cid, form_type: (formType||"visitor_form"), days_valid: 3650 }
+  );
+
+  const t = res?.token || res?.data?.token || "";
+  __previewTokenCache[key] = t;
+  return t;
+}
+
 (() => {
   // --- Constants & Utils ---
   const API_ID = "vxid0yoovj"; // Replace if needed

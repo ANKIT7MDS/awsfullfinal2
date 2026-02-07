@@ -348,7 +348,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <!-- Logo Upload -->
                   <div class="relative group">
-                    <input id="file_logo" type="file" accept="image/*" class="hidden" />
+                    <input id="file_logo" type="file" accept="image/*,.svg" class="hidden" />
                     <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_logo').click()">
                       <img id="prev_logo" class="absolute inset-0 w-full h-full object-contain p-2 hidden z-10" />
                       <i id="icon_logo" class="fa-solid fa-image text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform"></i>
@@ -360,7 +360,7 @@
 
                   <!-- Header Upload -->
                   <div class="relative group">
-                    <input id="file_header" type="file" accept="image/*" class="hidden" />
+                    <input id="file_header" type="file" accept="image/*,.svg" class="hidden" />
                     <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_header').click()">
                       <img id="prev_header" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
                       <i id="icon_header" class="fa-solid fa-panorama text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
@@ -372,7 +372,7 @@
 
                   <!-- BG Upload -->
                   <div class="relative group">
-                    <input id="file_bg" type="file" accept="image/*" class="hidden" />
+                    <input id="file_bg" type="file" accept="image/*,.svg" class="hidden" />
                     <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_bg').click()">
                       <img id="prev_bg" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
                       <i id="icon_bg" class="fa-solid fa-mountain-sun text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
@@ -397,7 +397,11 @@
                 </div>
 
 
-                <div id="previewTabs" class="mt-3 flex flex-wrap gap-2"></div>
+                <div class="flex items-center gap-2">
+  <label class="text-xs text-slate-400">Preview form</label>
+  <select id="previewTargetSelect" class="rounded-lg border border-white/10 bg-slate-900/40 px-2 py-1 text-sm text-white"></select>
+</div>
+<div id="previewTabs" class="mt-3 flex flex-wrap gap-2"></div>
                 <!-- Phone Mockup Container -->
                 <div class="flex justify-center">
                   <div class="phone-mockup w-[320px] h-[640px] bg-white">
@@ -436,19 +440,8 @@
               </div>
             </div>
           </div>
-        
-          <div class="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="text-sm font-bold text-slate-300">All Forms Live Preview</div>
-                <div class="text-xs text-slate-500 mt-1">हर फॉर्म का प्रीव्यू यहाँ दिखेगा। किसी भी कार्ड पर क्लिक करके उस फॉर्म को चुनें।</div>
-              </div>
-              <button id="btnRefreshSignedUrls" class="px-3 py-2 text-xs rounded-lg bg-white/10 hover:bg-white/15">Refresh Preview</button>
-            </div>
-            <div id="allFormsGrid" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-          </div>
-
-        </section>
+<!-- Removed All Forms Live Preview grid -->
+</section>
 
         <!-- TAB: Programs -->
         <section id="tab-programs" class="tab-content hidden animate-fade-in space-y-6">
@@ -920,7 +913,7 @@ function renderBrandPreview() {
   if(btn) btn.style.backgroundImage = `linear-gradient(90deg, ${eff.color1}, ${eff.color2})`;
 
   renderPreviewTabs();
-  renderAllFormsGrid();
+  // renderAllFormsGrid(); // removed (use right preview selector)
 }
 
 
@@ -1050,39 +1043,62 @@ function openCurrentPreviewInNewTab() {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-function renderPreviewTabs() {
-  const wrap = $("previewTabs");
-  if(!wrap || !state.config) return;
-  const forms = state.config.forms || {};
-  const keys = Object.keys(forms);
 
-  wrap.innerHTML = "";
-  const makeBtn = (ft, label) => {
-    const b = document.createElement("button");
-    const active = (ft === state.target);
-    b.className = "px-3 py-2 text-xs rounded-lg border " + (active
-      ? "bg-white/15 border-white/25 text-white"
-      : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10");
-    b.textContent = label;
-    b.addEventListener("click", () => {
-      state.target = ft;
-      const sel = $("targetFormSel");
-      if(sel) sel.value = ft;
-      renderAll();
-      renderFormPreviewIframe();
-      renderBrandPreview();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+  function renderPreviewTabs(){
+    const tabsEl = document.getElementById("previewTabs");
+    const selEl = document.getElementById("previewTargetSelect");
+    if(!tabsEl) return;
+
+    const cfg = state.config || {};
+    const formsNode = cfg.forms || {};
+    const formKeys = Object.keys(formsNode);
+
+    tabsEl.innerHTML = "";
+    if(selEl) selEl.innerHTML = "";
+
+    // Fallback list if config hasn't loaded yet
+    const keys = (formKeys && formKeys.length) ? formKeys : Object.keys(FORM_META || {});
+    keys.forEach((k)=>{
+      // tabs
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "px-3 py-1.5 rounded-full text-sm border transition " + (k===state.target
+        ? "bg-white text-slate-900 border-white"
+        : "bg-white/5 text-white border-white/10 hover:bg-white/10");
+      btn.textContent = (FORM_META[k] && FORM_META[k].label) ? FORM_META[k].label : k;
+      btn.addEventListener("click", ()=>{
+        if(k === state.target) return;
+        state.target = k;
+        renderPreviewTabs();
+        renderFormPreviewIframe();
+        renderBrandPreview();
+      });
+      tabsEl.appendChild(btn);
+
+      // select
+      if(selEl){
+        const opt = document.createElement("option");
+        opt.value = k;
+        opt.textContent = btn.textContent;
+        if(k===state.target) opt.selected = true;
+        selEl.appendChild(opt);
+      }
     });
-    return b;
-  };
 
-  wrap.appendChild(makeBtn("__defaults__", "Defaults"));
+    if(selEl && !selEl.__wired){
+      selEl.__wired = true;
+      selEl.addEventListener("change", (e)=>{
+        const v = e.target.value;
+        if(v && v !== state.target){
+          state.target = v;
+          renderPreviewTabs();
+          renderFormPreviewIframe();
+          renderBrandPreview();
+        }
+      });
+    }
+  }
 
-  keys.forEach(ft => {
-    const label = (forms[ft]?.title || ft).toString().slice(0, 22);
-    wrap.appendChild(makeBtn(ft, label));
-  });
-}
 
 function renderAllFormsGrid() {
   const grid = $("allFormsGrid");

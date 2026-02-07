@@ -196,6 +196,40 @@ const $ = (id) => document.getElementById(id);
 const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
 const token = (qs("token") || "").trim();
 const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+
+// Backward compatible globals expected by older helpers
+const TOKEN = token || "";
+let CID = cidParam || "";
+
+// If cid/collection_id is not present in URL, derive it from token payload
+function _b64urlDecode(str) {
+  try {
+    str = (str || "").replace(/-/g, "+").replace(/_/g, "/");
+    const pad = str.length % 4;
+    if (pad) str += "=".repeat(4 - pad);
+    return atob(str);
+  } catch (_) {
+    return null;
+  }
+}
+
+function parseTokenClaims(tok) {
+  try {
+    const part = (tok || "").split(".")[0];
+    const decoded = _b64urlDecode(part);
+    if (!decoded) return null;
+    return JSON.parse(decoded);
+  } catch (_) {
+    return null;
+  }
+}
+
+if (!CID && TOKEN) {
+  const claims = parseTokenClaims(TOKEN);
+  if (claims) {
+    CID = claims.cid || claims.collection_id || claims.collectionId || "";
+  }
+}
 const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
 const debug = (qs("debug") || "").trim() === "1";
 
@@ -607,11 +641,6 @@ function applyLocationAutofill(info) {
   // init district cascade after config load (no change)
   initDistrictCascade();
 
-  // init mobile lookup
-  initMobileLookup();
-
-  // init submit
-  initSubmit();
 }
 
 

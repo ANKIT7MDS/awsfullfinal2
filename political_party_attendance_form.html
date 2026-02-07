@@ -259,82 +259,165 @@ function mergeObj(a, b) {
 // BRANDING + PROGRAMS + FIXED LEVEL
 // ===============================
 async function loadRemoteConfig(formType) {
-  // Returns { branding, programs, fixed_level } or null
   try {
-    const payload = isPublicMode()
-      ? { token, form_type: formType }
-      : { collection_id: cidParam, form_type: formType };
-
-    const action = isPublicMode() ? "public_get_config" : "admin_get_config";
-    const res = await apiCall(action, payload);
-    return res && (res.config || res.data || res);
+    const payload = {
+      cid: CID,
+      collection_id: CID,
+      form_type: formType,
+      token: TOKEN,
+    };
+    // IMPORTANT: return FULL response (it contains: settings, config, form, form_type)
+    const res = await apiCallPublic("public_get_config", payload);
+    return res || null;
   } catch (e) {
-    if (debug) console.log("config load failed", e);
+    console.error("loadRemoteConfig failed:", e);
     return null;
   }
 }
 
-function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
-  const globalBrand = (cfg && cfg.branding && cfg.branding.global) ? cfg.branding.global : {};
-  const perForm = (cfg && cfg.branding && cfg.branding.forms && cfg.branding.forms[formType]) ? cfg.branding.forms[formType] : {};
-  const brand = mergeObj(globalBrand, perForm);
-
-  const title = brand.title || fallbackTitle || "EventLens Form";
-  const subtitle = brand.subtitle || fallbackSubtitle || "";
-  const tagline = brand.tagline || fallbackTagline || "";
-  const logoUrl = brand.logo_url || "";
-  const headerImg = brand.header_image_url || "";
-  const footerText = brand.footer_text || "";
-  const bgImg = brand.background_image_url || "";
-
-  if ($("org-name")) $("org-name").textContent = title;
-  if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
-  if ($("org-tagline")) $("org-tagline").textContent = tagline;
-
-  if ($("footer-text")) $("footer-text").textContent = footerText;
-
-  // Theme
-  setThemeVars(brand.theme_primary, brand.theme_secondary);
-  setBackgroundImage(bgImg);
-
-  // Logo
-  if (logoUrl && $("custom-logo")) {
-    $("custom-logo").src = logoUrl;
-    $("custom-logo").classList.remove("hidden");
-    if ($(defaultIconId)) $(defaultIconId).classList.add("hidden");
-  }
-
-  // Header Image
-  if (headerImg && $("header-image")) {
-    $("header-image").style.backgroundImage = `url('${headerImg}')`;
-    $("header-image").classList.remove("hidden");
-  }
+function safeStr(x) {
+  return (x === undefined || x === null) ? "" : String(x);
 }
 
-function fillProgramNames(cfg, selectId) {
-  const sel = $(selectId);
-  if (!sel) return;
-  const list = (cfg && (cfg.programs || (cfg.data && cfg.data.programs))) || [];
-  const programs = Array.isArray(list) ? list : [];
-  if (!programs.length) return;
+// ---------- Helpers to read NEW API shape ----------
+function getDefaultsNode(resp) {
+  return (resp && resp.settings && resp.settings.defaults) ||
+         (resp && resp.config && resp.config.defaults) ||
+         null;
+}
 
-  sel.innerHTML = '<option value="">— कार्यक्रम चुनें —</option>';
-  programs.forEach((p) => {
-    const v = safeStr(p).trim();
-    if (!v) return;
+function getGlobalNode(resp) {
+  return (resp && resp.settings && resp.settings.global) ||
+         (resp && resp.config && resp.config.global) ||
+         null;
+}
+
+function getFormNode(resp, formType) {
+  if (!resp) return null;
+
+  // Backend already returns resolved `form`
+  if (resp.form && typeof resp.form === "object") return resp.form;
+
+  const ft = formType || resp.form_type || FORM_TYPE;
+
+  if (resp.settings && resp.settings.forms && resp.settings.forms[ft]) return resp.settings.forms[ft];
+  if (resp.config && resp.config.forms && resp.config.forms[ft]) return resp.config.forms[ft];
+
+  return null;
+}
+
+function pickAssetUrl(assetObj, fallbackUrl) {
+  if (!assetObj) return safeStr(fallbackUrl || "");
+  if (typeof assetObj === "string") return assetObj;
+  return safeStr(assetObj.url || fallbackUrl || "");
+}
+
+function pickBranding(resp, formNode) {
+  const defaults = getDefaultsNode(resp) || {};
+  // form branding > defaults branding > empty
+  return (formNode && formNode.branding) || defaults.branding || {};
+}
+
+function applyBrandingFromResponse(resp, formType) {
+  const formNode = getFormNode(resp, formType) || {};
+  const branding = pickBranding(resp, formNode);
+  const globalNode = getGlobalNode(resp) || {};
+  const globalTheme = globalNode.theme || {};
+
+  // Text
+  const orgNameEl = $("org-name");
+  const orgSubtitleEl = $("org-subtitle");
+  const orgTaglineEl = $("org-tagline");
+  if (orgNameEl) orgNameEl.textContent = safeStr(formNode.title || orgNameEl.textContent);
+  if (orgSubtitleEl) orgSubtitleEl.textContent = safeStr(formNode.subtitle || orgSubtitleEl.textContent);
+  if (orgTaglineEl) orgTaglineEl.textContent = safeStr(formNode.tagline || branding.tagline || orgTaglineEl.textContent);
+
+  // Footer
+  const footerTextEl = $("footer-text");
+  if (footerTextEl) footerTextEl.textContent = safeStr(globalNode.tagline || "Powered by EventLens");
+
+  // Images (use signed URLs if present)
+  const logoUrl = pickAssetUrl(branding.logo, formNode.logo_url);
+  const headerUrl = pickAssetUrl(branding.header, formNode.header_url);
+  const bgUrl = pickAssetUrl(branding.background, formNode.background_url);
+
+  const logoEl = $("custom-logo");
+  if (logoEl && logoUrl) {
+    logoEl.src = logoUrl;
+    logoEl.classList.remove("hidden");
+  }
+
+  const headerEl = $("header-image");
+  if (headerEl && headerUrl) {
+    headerEl.src = headerUrl;
+    headerEl.classList.remove("hidden");
+  }
+
+  // Optional background image
+  if (bgUrl) {
+    document.body.style.backgroundImage = `url('${bgUrl}')`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundAttachment = "fixed";
+  }
+
+  // Optional theme colors: if you later wire CSS vars, these are ready
+  const primary = branding.color1 || globalTheme.primary || "#f97316";
+  const secondary = branding.color2 || globalTheme.secondary || "#ef4444";
+  const background = globalTheme.background || "#0f172a";
+  document.documentElement.style.setProperty("--brand-primary", primary);
+  document.documentElement.style.setProperty("--brand-secondary", secondary);
+  document.documentElement.style.setProperty("--brand-background", background);
+}
+
+function fillProgramNamesFromResponse(resp, formType, selectId) {
+  const select = $(selectId);
+  if (!select) return;
+
+  const firstOpt = select.querySelector("option") ? select.querySelector("option").outerHTML : '<option value="">Select Program</option>';
+  select.innerHTML = firstOpt;
+
+  const formNode = getFormNode(resp, formType) || {};
+  const defaults = getDefaultsNode(resp) || {};
+
+  const list =
+    (Array.isArray(formNode.program_options) && formNode.program_options) ||
+    (Array.isArray(formNode.programs) && formNode.programs) ||
+    (Array.isArray(defaults.programs) && defaults.programs) ||
+    [];
+
+  const uniq = [...new Set(list.map(x => safeStr(x).trim()).filter(Boolean))];
+  uniq.forEach(p => {
     const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    sel.appendChild(opt);
+    opt.value = p;
+    opt.textContent = p;
+    select.appendChild(opt);
   });
 }
 
-function getFixedLevel(cfg, formType) {
-  const fixed = (cfg && cfg.fixed_levels) ? cfg.fixed_levels : (cfg && cfg.data && cfg.data.fixed_levels) ? cfg.data.fixed_levels : {};
-  if (fixed && fixed[formType]) return String(fixed[formType]).toLowerCase();
-  return "";
+// Kept for compatibility (if you add fixed_level dropdown later)
+function getFixedLevelFromResponse(resp, formType) {
+  const formNode = getFormNode(resp, formType) || {};
+  if (formNode.fixed_level) return safeStr(formNode.fixed_level);
+
+  const defaults = getDefaultsNode(resp) || {};
+  const fixedLevels = defaults.fixed_levels || {};
+  return safeStr(fixedLevels[formType] || fixedLevels["party_attendance"] || "");
 }
-    const FORM_TYPE = "party_attendance";
+
+function applyFixedLevelFromResponse(resp, formType) {
+  const levelSelect = $("fixed_level");
+  if (!levelSelect) return;
+
+  const level = getFixedLevelFromResponse(resp, formType);
+  if (level) {
+    levelSelect.value = level;
+    levelSelect.disabled = true;
+  }
+}
+
+
+const FORM_TYPE = "party_attendance";
     const FIELD_IDS = ["mobile","name","designation","program_name","district","vidhansabha","mandal","attendance_date","attendance_time","remarks"];
 
     const DISTRICT_DATA = {
@@ -513,16 +596,24 @@ function applyLocationAutofill(info) {
     let remoteCfg = null;
 
     async function initAll() {
-      initDistrictCascade();
+  // remote config (branding + programs)
+  const remoteResp = await loadRemoteConfig(FORM_TYPE);
+  if (remoteResp) {
+    applyBrandingFromResponse(remoteResp, FORM_TYPE);
+    fillProgramNamesFromResponse(remoteResp, FORM_TYPE, "program_name");
+    applyFixedLevelFromResponse(remoteResp, FORM_TYPE);
+  }
 
-      remoteCfg = await loadRemoteConfig(FORM_TYPE);
-      applyBrandingFromConfig(remoteCfg, FORM_TYPE, "पार्टी उपस्थिति फॉर्म", "Party Attendance", "", "default-icon");
+  // init district cascade after config load (no change)
+  initDistrictCascade();
 
-      if ($("org-tagline") && $("org-tagline").textContent.trim()) $("org-tagline").classList.remove("hidden");
-      if ($("footer-text") && $("footer-text").textContent.trim() === "") $("footer-text").textContent = "Powered by EventLens";
+  // init mobile lookup
+  initMobileLookup();
 
-      fillProgramNames(remoteCfg, "program_name");
-    }
+  // init submit
+  initSubmit();
+}
+
 
     document.addEventListener("DOMContentLoaded", initAll);
 

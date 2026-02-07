@@ -702,13 +702,13 @@
   const FORMS_URL = `${BASE_URL}/political/forms`;
 
   const FORM_META = {
-    __defaults__: { file: "political_visitor_form.html", label: "📡 Defaults" },
-    visitor_form: { file: "political_visitor_form.html", label: "📝 Visitor" },
-    party_attendance: { file: "political_party_attendance_form.html", label: "🚩 Attendance" },
-    president_tour: { file: "political_president_tour_form.html", label: "🚙 Tour" },
-    mandal_reporting: { file: "political_mandal_reporting_form.html", label: "📊 Reporting" },
-    coordinator: { file: "political_coordinator_form.html", label: "👔 Coordinator" },
-    program_info: { file: "political_program_info_form.html", label: "ℹ️ Program Info" },
+    __defaults__: { file: "political_visitor_form.html" },
+    visitor_form: { file: "political_visitor_form.html" },
+    party_attendance: { file: "political_party_attendance_form.html" },
+    president_tour: { file: "political_president_tour_form.html" },
+    mandal_reporting: { file: "political_mandal_reporting_form.html" },
+    coordinator: { file: "political_coordinator_form.html" },
+    program_info: { file: "political_program_info_form.html" },
   };
 
   const $ = (id) => document.getElementById(id);
@@ -813,16 +813,26 @@
 
   
 function withCacheBust(url) {
-  if(!url) return "";
+  if (!url) return "";
+  const s = String(url);
+
+  // IMPORTANT: Adding query params breaks blob: URLs (browser will treat it as a different blob and fail).
+  if (s.startsWith("blob:") || s.startsWith("data:")) return s;
+
+  // Only cache-bust real http(s) URLs. If it's a plain key / relative path, return as-is.
+  if (!/^https?:\/\//i.test(s)) return s;
+
   try {
-    const u = new URL(url, window.location.href);
+    const u = new URL(s);
     u.searchParams.set("cb", String(state.cacheBust || Date.now()));
     return u.toString();
-  } catch(e) {
-    const sep = url.includes("?") ? "&" : "?";
-    return url + sep + "cb=" + encodeURIComponent(String(state.cacheBust || Date.now()));
+  } catch (e) {
+    // Fallback (still only for absolute http(s) URLs)
+    const sep = s.includes("?") ? "&" : "?";
+    return s + sep + "cb=" + encodeURIComponent(String(state.cacheBust || Date.now()));
   }
 }
+
 
 function escHtml(s) {
   return String(s ?? "")
@@ -832,6 +842,44 @@ function escHtml(s) {
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#39;");
 }
+
+
+function collectBrandFromUI() {
+  // Returns branding object to be merged into form.branding
+  // NOTE: Never persist blob: URLs in config. Only store S3 keys (logo_key/header_key/background_key).
+  try {
+    const meta = collectMetaFromUI();
+    const pend = (state.pendingAssets && state.pendingAssets[state.target]) ? state.pendingAssets[state.target] : {};
+
+    const pickKey = (slot) => {
+      const o = pend && pend[slot] ? pend[slot] : null;
+      return (o && (o.key || o.s3Key)) ? (o.key || o.s3Key) : "";
+    };
+
+    const logoKey = pickKey("logo");
+    const headerKey = pickKey("header");
+    const bgKey = pickKey("background");
+
+    const branding = {
+      color1: meta.color1 || "#f97316",
+      color2: meta.color2 || "#ef4444",
+      subtitle: meta.subtitle || "",
+      tagline: meta.tagline || "",
+      title: "Political Forms"
+    };
+
+    if (logoKey) branding.logo = { kind: "s3", value: logoKey };
+    if (headerKey) branding.header = { kind: "s3", value: headerKey };
+    if (bgKey) branding.background = { kind: "s3", value: bgKey };
+    else branding.background = { kind: "none" };
+
+    return branding;
+  } catch (e) {
+    console.warn("collectBrandFromUI failed:", e);
+    return {};
+  }
+}
+
 
 function getEffectiveForm(ft) {
   const cfg = state.config || {};
@@ -848,9 +896,9 @@ function getEffectiveForm(ft) {
   const tagline = (form.tagline ?? cfg.form?.tagline ?? branding.tagline ?? global.tagline ?? "");
 
   const pend = (state.pendingAssets?.[ft] || {});
-  const logoUrl = pend.logo?.previewUrl || form.logo_url || branding.logo?.url || (typeof branding.logo?.value === "string" && branding.logo.value.startsWith("http") ? branding.logo.value : "");
-  const headerUrl = pend.header?.previewUrl || form.header_url || branding.header?.url || (typeof branding.header?.value === "string" && branding.header.value.startsWith("http") ? branding.header.value : "");
-  const bgUrl = pend.background?.previewUrl || form.background_url || branding.background?.url || (typeof branding.background?.value === "string" && branding.background.value.startsWith("http") ? branding.background.value : "");
+  const logoUrl = pend.logo?.uploadedUrl || pend.logo?.previewUrl || form.logo_url || branding.logo?.url || (typeof branding.logo?.value === "string" && branding.logo.value.startsWith("http") ? branding.logo.value : "");
+  const headerUrl = pend.header?.uploadedUrl || pend.header?.previewUrl || form.header_url || branding.header?.url || (typeof branding.header?.value === "string" && branding.header.value.startsWith("http") ? branding.header.value : "");
+  const bgUrl = pend.background?.uploadedUrl || pend.background?.previewUrl || form.background_url || branding.background?.url || (typeof branding.background?.value === "string" && branding.background.value.startsWith("http") ? branding.background.value : "");
 
   const color1 = branding.color1 || "#f97316";
   const color2 = branding.color2 || "#ef4444";
@@ -874,51 +922,9 @@ function renderBrandInputsFromConfig() {
   if($("b_c2")) $("b_c2").value = eff.color2 || "#ef4444";
 
   // Current images previews
-  const logoUrl = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
-  const headerUrl = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-  const bgUrl = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
-
-  if($("prev_logo")) {
-    if(logoUrl) {
-      $("prev_logo").src = logoUrl;
-      $("prev_logo").classList.remove('hidden');
-      $("icon_logo").classList.add('hidden');
-      $("name_logo").textContent = "Uploaded";
-    } else {
-      $("prev_logo").src = "";
-      $("prev_logo").classList.add('hidden');
-      $("icon_logo").classList.remove('hidden');
-      $("name_logo").textContent = "No file";
-    }
-  }
-  
-  if($("prev_header")) {
-    if(headerUrl) {
-      $("prev_header").src = headerUrl;
-      $("prev_header").classList.remove('hidden');
-      $("icon_header").classList.add('hidden');
-      $("name_header").textContent = "Uploaded";
-    } else {
-      $("prev_header").src = "";
-      $("prev_header").classList.add('hidden');
-      $("icon_header").classList.remove('hidden');
-      $("name_header").textContent = "No file";
-    }
-  }
-  
-  if($("prev_bg")) {
-    if(bgUrl) {
-      $("prev_bg").src = bgUrl;
-      $("prev_bg").classList.remove('hidden');
-      $("icon_bg").classList.add('hidden');
-      $("name_bg").textContent = "Uploaded";
-    } else {
-      $("prev_bg").src = "";
-      $("prev_bg").classList.add('hidden');
-      $("icon_bg").classList.remove('hidden');
-      $("name_bg").textContent = "No file";
-    }
-  }
+  if($("prev_logo")) $("prev_logo").src = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
+  if($("prev_header")) $("prev_header").src = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
+  if($("prev_bg")) $("prev_bg").src = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
 }
 
 function renderBrandPreview() {
@@ -961,14 +967,8 @@ function renderBrandPreview() {
 
 function buildPreviewSrcDoc(ft) {
   const eff = getEffectiveForm(ft || "visitor_form");
-  
-  // Use live input values if available, otherwise use saved config
-  const title = $("b_title")?.value?.trim() || eff.title || "";
-  const subtitle = $("b_subtitle")?.value?.trim() || eff.subtitle || "";
-  const tagline = $("b_tagline")?.value?.trim() || eff.tagline || "";
-  const c1 = $("b_c1")?.value || eff.color1 || "#f97316";
-  const c2 = $("b_c2")?.value || eff.color2 || "#ef4444";
-  
+  const c1 = eff.color1 || "#f97316";
+  const c2 = eff.color2 || "#ef4444";
   const bg = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
   const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
   const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
@@ -1031,9 +1031,9 @@ function buildPreviewSrcDoc(ft) {
           ${logoBlock}
         </div>
         <div class="content">
-          <h1 class="title">${escHtml(title)}</h1>
-          ${subtitle ? `<div class="sub">${escHtml(subtitle)}</div>` : ``}
-          ${tagline ? `<div class="tag">${escHtml(tagline)}</div>` : ``}
+          <h1 class="title">${escHtml(eff.title || "")}</h1>
+          ${eff.subtitle ? `<div class="sub">${escHtml(eff.subtitle)}</div>` : ``}
+          ${eff.tagline ? `<div class="tag">${escHtml(eff.tagline)}</div>` : ``}
 
           <div class="field">
             <label>नाम / Name</label>
@@ -1148,13 +1148,6 @@ function openCurrentPreviewInNewTab() {
   }
 
 
-function collectBrandFromUI() {
-  return {
-    color1: $("b_c1")?.value || "#f97316",
-    color2: $("b_c2")?.value || "#ef4444"
-  };
-}
-
 function renderAllFormsGrid() {
   const grid = $("allFormsGrid");
   if(!grid || !state.config) return;
@@ -1218,31 +1211,17 @@ function renderAllFormsGrid() {
 }
 
 function setPending(key, file) {
-    if(!file) {
-      // Clear the asset
-      if(state.pendingAssets[state.target]?.[key]) {
-        delete state.pendingAssets[state.target][key];
-      }
-      $(`prev_${key}`).src = "";
-      $(`prev_${key}`).classList.add('hidden');
-      $(`icon_${key}`).classList.remove('hidden');
-      $(`name_${key}`).textContent = "No file";
-      renderBrandPreview();
-      renderFormPreviewIframe();
-      return;
-    }
-    
     if(!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
-    state.pendingAssets[state.target][key] = { file, previewUrl: URL.createObjectURL(file) };
+    const objUrl = URL.createObjectURL(file);
+    state.pendingAssets[state.target][key] = { file, previewUrl: objUrl };
     $(`name_${key}`).textContent = file.name;
     
     // Immediate preview in thumbnail
-    $(`prev_${key}`).src = URL.createObjectURL(file);
+    $(`prev_${key}`).src = objUrl;
     $(`prev_${key}`).classList.remove('hidden');
     $(`icon_${key}`).classList.add('hidden');
     
     renderBrandPreview();
-    renderFormPreviewIframe();
   }
 
   // --- API Calls (Restored Robust Logic) ---
@@ -1295,7 +1274,7 @@ function setPending(key, file) {
     await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": file.type } });
     const publicUrl = res.public_url || res.asset_url || res.url_public || "";
     const key = res.s3_key || res.asset_key || res.key || "";
-    return { kind: "s3", value: publicUrl || key || "" };
+    return { key: key || "", url: publicUrl || "" };
   }
 
   async function saveConfig() {
@@ -1309,28 +1288,6 @@ function setPending(key, file) {
     try {
       const ft = state.target || "visitor_form";
 
-      // FIRST: Upload pending assets if any
-      const pending = state.pendingAssets?.[ft] || {};
-      const assetRefs = {};
-      
-      if(pending.logo?.file) {
-        showToast("Uploading logo...", "info");
-        const ref = await initAssetUpload("logo", ft, pending.logo.file);
-        if(ref) assetRefs.logo = ref;
-      }
-      
-      if(pending.header?.file) {
-        showToast("Uploading header...", "info");
-        const ref = await initAssetUpload("header", ft, pending.header.file);
-        if(ref) assetRefs.header = ref;
-      }
-      
-      if(pending.background?.file) {
-        showToast("Uploading background...", "info");
-        const ref = await initAssetUpload("background", ft, pending.background.file);
-        if(ref) assetRefs.bg = ref;
-      }
-
       // Users expect Title/Sub/Tagline to change the actual form heading.
       const meta = {
         title: ($("b_title")?.value || "").trim(),
@@ -1339,11 +1296,6 @@ function setPending(key, file) {
       };
 
       const brand = collectBrandFromUI();
-      
-      // Merge uploaded assets into branding
-      if(assetRefs.logo) brand.logo = assetRefs.logo;
-      if(assetRefs.header) brand.header = assetRefs.header;
-      if(assetRefs.bg) brand.background = assetRefs.bg;
 
       // Apply local changes into state.config
       state.config.defaults = state.config.defaults || {};
@@ -1365,18 +1317,47 @@ function setPending(key, file) {
         f.tagline = meta.tagline || f.tagline || "";
 
         f.branding = deepMerge(f.branding || {}, brand);
+
+        const pending = (state.pendingAssets?.[ft] || {});
+
+        // Upload pending images to S3 and store keys in config (never store blob URLs).
+        for (const slot of ["logo", "header", "background"]) {
+          const p = pending?.[slot];
+          if (p && p.file) {
+            try {
+              const up = await initAssetUpload(slot, ft, p.file);
+              if (up && up.key) {
+                p.key = up.key;
+                p.uploadedUrl = up.url || "";
+              }
+            } catch (e) {
+              console.warn("Upload failed for", slot, e);
+            }
+          }
+        }
+
+        if (pending.logo?.key) { f.logo_key = pending.logo.key; if (pending.logo.uploadedUrl) f.logo_url = pending.logo.uploadedUrl; }
+        if (pending.header?.key) { f.header_key = pending.header.key; if (pending.header.uploadedUrl) f.header_url = pending.header.uploadedUrl; }
+        if (pending.background?.key) { f.background_key = pending.background.key; if (pending.background.uploadedUrl) f.background_url = pending.background.uploadedUrl; }
+
+        // Keep branding assets in-sync with top-level keys (used by public forms)
+        if (f.logo_key) f.branding = deepMerge(f.branding || {}, { logo: { kind: "s3", value: f.logo_key } });
+        if (f.header_key) f.branding = deepMerge(f.branding || {}, { header: { kind: "s3", value: f.header_key } });
+        if (f.background_key) f.branding = deepMerge(f.branding || {}, { background: { kind: "s3", value: f.background_key } });
       }
 
       // Save to backend (political module)
-      await apiCall("admin_save_config", {
-        collection_id: state.cid,
-        config_type: "political_forms",
-        config: state.config
+      await apiCall({
+        action: "admin_save_config",
+        payload: {
+          collection_id: state.cid,
+          config_type: "political_forms",
+          config: state.config
+        }
       });
 
       toast.remove?.();
-      showToast("✅ Saved successfully!","success");
-      
+      showToast("Saved","success");
       // Clear pending for this form (uploaded already)
       if(state.pendingAssets?.[ft]) delete state.pendingAssets[ft];
 
@@ -1386,7 +1367,7 @@ function setPending(key, file) {
     } catch(e) {
       console.error("Save failed:", e);
       toast.remove?.();
-      showToast("❌ Save failed: " + (e?.message || e),"error");
+      showToast("Save failed: " + (e?.message || e),"error");
     } finally {
       if(btn){ btn.disabled = false; btn.textContent = "Save Config"; }
       state.cacheBust = Date.now();
@@ -1606,43 +1587,6 @@ function setPending(key, file) {
 
   // --- Event Listeners ---
   $('btnSave').onclick = saveConfig;
-  
-  // Branding buttons
-  if($('btnResetBrand')) {
-    $('btnResetBrand').onclick = () => {
-      if(confirm('Reset branding to defaults?')) {
-        $('b_title').value = "";
-        $('b_subtitle').value = "";
-        $('b_tagline').value = "";
-        $('b_c1').value = "#f97316";
-        $('b_c2').value = "#ef4444";
-        renderFormPreviewIframe();
-        renderBrandPreview();
-        showToast("Branding reset", "info");
-      }
-    };
-  }
-  
-  if($('btnCopyToDefaults')) {
-    $('btnCopyToDefaults').onclick = async () => {
-      if(!confirm('Copy current branding to all forms as defaults?')) return;
-      
-      const brand = collectBrandFromUI();
-      const meta = {
-        title: $('b_title').value.trim(),
-        subtitle: $('b_subtitle').value.trim(),
-        tagline: $('b_tagline').value.trim()
-      };
-      
-      // Copy to defaults
-      state.config.defaults.branding = deepMerge(state.config.defaults.branding || {}, brand);
-      if(meta.title) state.config.defaults.branding.title = meta.title;
-      if(meta.subtitle) state.config.defaults.branding.subtitle = meta.subtitle;
-      if(meta.tagline) state.config.defaults.branding.tagline = meta.tagline;
-      
-      showToast("✅ Copied to defaults! Click Save to apply.", "success");
-    };
-  }
 
   // Preview controls
   if($('btnLoadFormPreview')) $('btnLoadFormPreview').onclick = () => { state.cacheBust = Date.now(); renderBrandPreview(); renderFormPreviewIframe(); };
@@ -1677,20 +1621,12 @@ function setPending(key, file) {
   });
 
   // Input Live Sync
-  const livePreviewToggle = $('livePreviewToggle');
-  const updatePreviewLive = () => {
-    if(livePreviewToggle?.checked) {
-      renderFormPreviewIframe();
-    }
-    renderBrandPreview();
-  };
-  
   ['input','change'].forEach(ev => {
-      $('b_title').addEventListener(ev, updatePreviewLive);
-      $('b_subtitle').addEventListener(ev, updatePreviewLive);
-      $('b_tagline').addEventListener(ev, updatePreviewLive);
-      $('b_c1').addEventListener(ev, updatePreviewLive);
-      $('b_c2').addEventListener(ev, updatePreviewLive);
+      $('b_title').addEventListener(ev, renderBrandPreview);
+      $('b_subtitle').addEventListener(ev, renderBrandPreview);
+      $('b_tagline').addEventListener(ev, renderBrandPreview);
+      $('b_c1').addEventListener(ev, renderBrandPreview);
+      $('b_c2').addEventListener(ev, renderBrandPreview);
   });
 
   $('btnAddProg').onclick = () => {

@@ -702,13 +702,13 @@
   const FORMS_URL = `${BASE_URL}/political/forms`;
 
   const FORM_META = {
-    __defaults__: { file: "political_visitor_form.html" },
-    visitor_form: { file: "political_visitor_form.html" },
-    party_attendance: { file: "political_party_attendance_form.html" },
-    president_tour: { file: "political_president_tour_form.html" },
-    mandal_reporting: { file: "political_mandal_reporting_form.html" },
-    coordinator: { file: "political_coordinator_form.html" },
-    program_info: { file: "political_program_info_form.html" },
+    __defaults__: { file: "political_visitor_form.html", label: "📡 Defaults" },
+    visitor_form: { file: "political_visitor_form.html", label: "📝 Visitor" },
+    party_attendance: { file: "political_party_attendance_form.html", label: "🚩 Attendance" },
+    president_tour: { file: "political_president_tour_form.html", label: "🚙 Tour" },
+    mandal_reporting: { file: "political_mandal_reporting_form.html", label: "📊 Reporting" },
+    coordinator: { file: "political_coordinator_form.html", label: "👔 Coordinator" },
+    program_info: { file: "political_program_info_form.html", label: "ℹ️ Program Info" },
   };
 
   const $ = (id) => document.getElementById(id);
@@ -874,9 +874,51 @@ function renderBrandInputsFromConfig() {
   if($("b_c2")) $("b_c2").value = eff.color2 || "#ef4444";
 
   // Current images previews
-  if($("prev_logo")) $("prev_logo").src = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
-  if($("prev_header")) $("prev_header").src = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-  if($("prev_bg")) $("prev_bg").src = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
+  const logoUrl = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
+  const headerUrl = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
+  const bgUrl = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
+
+  if($("prev_logo")) {
+    if(logoUrl) {
+      $("prev_logo").src = logoUrl;
+      $("prev_logo").classList.remove('hidden');
+      $("icon_logo").classList.add('hidden');
+      $("name_logo").textContent = "Uploaded";
+    } else {
+      $("prev_logo").src = "";
+      $("prev_logo").classList.add('hidden');
+      $("icon_logo").classList.remove('hidden');
+      $("name_logo").textContent = "No file";
+    }
+  }
+  
+  if($("prev_header")) {
+    if(headerUrl) {
+      $("prev_header").src = headerUrl;
+      $("prev_header").classList.remove('hidden');
+      $("icon_header").classList.add('hidden');
+      $("name_header").textContent = "Uploaded";
+    } else {
+      $("prev_header").src = "";
+      $("prev_header").classList.add('hidden');
+      $("icon_header").classList.remove('hidden');
+      $("name_header").textContent = "No file";
+    }
+  }
+  
+  if($("prev_bg")) {
+    if(bgUrl) {
+      $("prev_bg").src = bgUrl;
+      $("prev_bg").classList.remove('hidden');
+      $("icon_bg").classList.add('hidden');
+      $("name_bg").textContent = "Uploaded";
+    } else {
+      $("prev_bg").src = "";
+      $("prev_bg").classList.add('hidden');
+      $("icon_bg").classList.remove('hidden');
+      $("name_bg").textContent = "No file";
+    }
+  }
 }
 
 function renderBrandPreview() {
@@ -919,8 +961,14 @@ function renderBrandPreview() {
 
 function buildPreviewSrcDoc(ft) {
   const eff = getEffectiveForm(ft || "visitor_form");
-  const c1 = eff.color1 || "#f97316";
-  const c2 = eff.color2 || "#ef4444";
+  
+  // Use live input values if available, otherwise use saved config
+  const title = $("b_title")?.value?.trim() || eff.title || "";
+  const subtitle = $("b_subtitle")?.value?.trim() || eff.subtitle || "";
+  const tagline = $("b_tagline")?.value?.trim() || eff.tagline || "";
+  const c1 = $("b_c1")?.value || eff.color1 || "#f97316";
+  const c2 = $("b_c2")?.value || eff.color2 || "#ef4444";
+  
   const bg = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
   const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
   const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
@@ -983,9 +1031,9 @@ function buildPreviewSrcDoc(ft) {
           ${logoBlock}
         </div>
         <div class="content">
-          <h1 class="title">${escHtml(eff.title || "")}</h1>
-          ${eff.subtitle ? `<div class="sub">${escHtml(eff.subtitle)}</div>` : ``}
-          ${eff.tagline ? `<div class="tag">${escHtml(eff.tagline)}</div>` : ``}
+          <h1 class="title">${escHtml(title)}</h1>
+          ${subtitle ? `<div class="sub">${escHtml(subtitle)}</div>` : ``}
+          ${tagline ? `<div class="tag">${escHtml(tagline)}</div>` : ``}
 
           <div class="field">
             <label>नाम / Name</label>
@@ -1100,6 +1148,13 @@ function openCurrentPreviewInNewTab() {
   }
 
 
+function collectBrandFromUI() {
+  return {
+    color1: $("b_c1")?.value || "#f97316",
+    color2: $("b_c2")?.value || "#ef4444"
+  };
+}
+
 function renderAllFormsGrid() {
   const grid = $("allFormsGrid");
   if(!grid || !state.config) return;
@@ -1163,6 +1218,20 @@ function renderAllFormsGrid() {
 }
 
 function setPending(key, file) {
+    if(!file) {
+      // Clear the asset
+      if(state.pendingAssets[state.target]?.[key]) {
+        delete state.pendingAssets[state.target][key];
+      }
+      $(`prev_${key}`).src = "";
+      $(`prev_${key}`).classList.add('hidden');
+      $(`icon_${key}`).classList.remove('hidden');
+      $(`name_${key}`).textContent = "No file";
+      renderBrandPreview();
+      renderFormPreviewIframe();
+      return;
+    }
+    
     if(!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
     state.pendingAssets[state.target][key] = { file, previewUrl: URL.createObjectURL(file) };
     $(`name_${key}`).textContent = file.name;
@@ -1173,6 +1242,7 @@ function setPending(key, file) {
     $(`icon_${key}`).classList.add('hidden');
     
     renderBrandPreview();
+    renderFormPreviewIframe();
   }
 
   // --- API Calls (Restored Robust Logic) ---
@@ -1239,6 +1309,28 @@ function setPending(key, file) {
     try {
       const ft = state.target || "visitor_form";
 
+      // FIRST: Upload pending assets if any
+      const pending = state.pendingAssets?.[ft] || {};
+      const assetRefs = {};
+      
+      if(pending.logo?.file) {
+        showToast("Uploading logo...", "info");
+        const ref = await initAssetUpload("logo", ft, pending.logo.file);
+        if(ref) assetRefs.logo = ref;
+      }
+      
+      if(pending.header?.file) {
+        showToast("Uploading header...", "info");
+        const ref = await initAssetUpload("header", ft, pending.header.file);
+        if(ref) assetRefs.header = ref;
+      }
+      
+      if(pending.background?.file) {
+        showToast("Uploading background...", "info");
+        const ref = await initAssetUpload("background", ft, pending.background.file);
+        if(ref) assetRefs.bg = ref;
+      }
+
       // Users expect Title/Sub/Tagline to change the actual form heading.
       const meta = {
         title: ($("b_title")?.value || "").trim(),
@@ -1247,6 +1339,11 @@ function setPending(key, file) {
       };
 
       const brand = collectBrandFromUI();
+      
+      // Merge uploaded assets into branding
+      if(assetRefs.logo) brand.logo = assetRefs.logo;
+      if(assetRefs.header) brand.header = assetRefs.header;
+      if(assetRefs.bg) brand.background = assetRefs.bg;
 
       // Apply local changes into state.config
       state.config.defaults = state.config.defaults || {};
@@ -1268,25 +1365,18 @@ function setPending(key, file) {
         f.tagline = meta.tagline || f.tagline || "";
 
         f.branding = deepMerge(f.branding || {}, brand);
-
-        const pending = (state.pendingAssets?.[ft] || {});
-        if(pending.logo?.key) f.logo_key = pending.logo.key;
-        if(pending.header?.key) f.header_key = pending.header.key;
-        if(pending.background?.key) f.background_key = pending.background.key;
       }
 
       // Save to backend (political module)
-      await apiCall({
-        action: "admin_save_config",
-        payload: {
-          collection_id: state.cid,
-          config_type: "political_forms",
-          config: state.config
-        }
+      await apiCall("admin_save_config", {
+        collection_id: state.cid,
+        config_type: "political_forms",
+        config: state.config
       });
 
       toast.remove?.();
-      showToast("Saved","success");
+      showToast("✅ Saved successfully!","success");
+      
       // Clear pending for this form (uploaded already)
       if(state.pendingAssets?.[ft]) delete state.pendingAssets[ft];
 
@@ -1296,7 +1386,7 @@ function setPending(key, file) {
     } catch(e) {
       console.error("Save failed:", e);
       toast.remove?.();
-      showToast("Save failed: " + (e?.message || e),"error");
+      showToast("❌ Save failed: " + (e?.message || e),"error");
     } finally {
       if(btn){ btn.disabled = false; btn.textContent = "Save Config"; }
       state.cacheBust = Date.now();
@@ -1516,6 +1606,43 @@ function setPending(key, file) {
 
   // --- Event Listeners ---
   $('btnSave').onclick = saveConfig;
+  
+  // Branding buttons
+  if($('btnResetBrand')) {
+    $('btnResetBrand').onclick = () => {
+      if(confirm('Reset branding to defaults?')) {
+        $('b_title').value = "";
+        $('b_subtitle').value = "";
+        $('b_tagline').value = "";
+        $('b_c1').value = "#f97316";
+        $('b_c2').value = "#ef4444";
+        renderFormPreviewIframe();
+        renderBrandPreview();
+        showToast("Branding reset", "info");
+      }
+    };
+  }
+  
+  if($('btnCopyToDefaults')) {
+    $('btnCopyToDefaults').onclick = async () => {
+      if(!confirm('Copy current branding to all forms as defaults?')) return;
+      
+      const brand = collectBrandFromUI();
+      const meta = {
+        title: $('b_title').value.trim(),
+        subtitle: $('b_subtitle').value.trim(),
+        tagline: $('b_tagline').value.trim()
+      };
+      
+      // Copy to defaults
+      state.config.defaults.branding = deepMerge(state.config.defaults.branding || {}, brand);
+      if(meta.title) state.config.defaults.branding.title = meta.title;
+      if(meta.subtitle) state.config.defaults.branding.subtitle = meta.subtitle;
+      if(meta.tagline) state.config.defaults.branding.tagline = meta.tagline;
+      
+      showToast("✅ Copied to defaults! Click Save to apply.", "success");
+    };
+  }
 
   // Preview controls
   if($('btnLoadFormPreview')) $('btnLoadFormPreview').onclick = () => { state.cacheBust = Date.now(); renderBrandPreview(); renderFormPreviewIframe(); };
@@ -1550,12 +1677,20 @@ function setPending(key, file) {
   });
 
   // Input Live Sync
+  const livePreviewToggle = $('livePreviewToggle');
+  const updatePreviewLive = () => {
+    if(livePreviewToggle?.checked) {
+      renderFormPreviewIframe();
+    }
+    renderBrandPreview();
+  };
+  
   ['input','change'].forEach(ev => {
-      $('b_title').addEventListener(ev, renderBrandPreview);
-      $('b_subtitle').addEventListener(ev, renderBrandPreview);
-      $('b_tagline').addEventListener(ev, renderBrandPreview);
-      $('b_c1').addEventListener(ev, renderBrandPreview);
-      $('b_c2').addEventListener(ev, renderBrandPreview);
+      $('b_title').addEventListener(ev, updatePreviewLive);
+      $('b_subtitle').addEventListener(ev, updatePreviewLive);
+      $('b_tagline').addEventListener(ev, updatePreviewLive);
+      $('b_c1').addEventListener(ev, updatePreviewLive);
+      $('b_c2').addEventListener(ev, updatePreviewLive);
   });
 
   $('btnAddProg').onclick = () => {

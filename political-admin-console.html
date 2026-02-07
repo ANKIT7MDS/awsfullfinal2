@@ -847,7 +847,7 @@
     // NOT the Cognito JWT. Cognito JWT causes "Unauthorized / bad signature".
     //
     // So for preview, we generate a short-lived public token and pass it in the iframe URL.
-    setPending('Generating preview link...', true);
+    const _t = showToast('Generating preview link...','loading');
 
     apiCall('generate_form_link', { collection_id: state.cid, form_type: formType, days_valid: 3 })
       .then(resp => {
@@ -858,7 +858,7 @@
         const t = Date.now();
 
         iframe.src = `political_${formType}.html?cid=${cid}&preview=1&form_type=${ft}&t=${t}&token=${tok}&role=admin&user_type=admin`;
-        setPending('', false);
+        try{_t&&_t.remove&&_t.remove();}catch(e){};
       })
       .catch(err => {
         console.error('Preview token error', err);
@@ -867,7 +867,7 @@
         const ft = encodeURIComponent(formType);
         const t = Date.now();
         iframe.src = `political_${formType}.html?cid=${cid}&preview=1&form_type=${ft}&t=${t}`;
-        setPending('Preview token failed. Check Lambda generate_form_link.', false);
+        try{_t&&_t.remove&&_t.remove();}catch(e){}; showToast('Preview token failed. generate_form_link error','error');
       });
   }
 

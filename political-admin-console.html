@@ -348,7 +348,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <!-- Logo Upload -->
                   <div class="relative group">
-                    <input id="file_logo" type="file" accept="image/*,.svg" class="hidden" />
+                    <input id="file_logo" type="file" accept="image/*" class="hidden" />
                     <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_logo').click()">
                       <img id="prev_logo" class="absolute inset-0 w-full h-full object-contain p-2 hidden z-10" />
                       <i id="icon_logo" class="fa-solid fa-image text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform"></i>
@@ -360,7 +360,7 @@
 
                   <!-- Header Upload -->
                   <div class="relative group">
-                    <input id="file_header" type="file" accept="image/*,.svg" class="hidden" />
+                    <input id="file_header" type="file" accept="image/*" class="hidden" />
                     <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_header').click()">
                       <img id="prev_header" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
                       <i id="icon_header" class="fa-solid fa-panorama text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
@@ -372,7 +372,7 @@
 
                   <!-- BG Upload -->
                   <div class="relative group">
-                    <input id="file_bg" type="file" accept="image/*,.svg" class="hidden" />
+                    <input id="file_bg" type="file" accept="image/*" class="hidden" />
                     <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_bg').click()">
                       <img id="prev_bg" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
                       <i id="icon_bg" class="fa-solid fa-mountain-sun text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
@@ -397,11 +397,10 @@
                 </div>
 
 
-                <div class="flex items-center gap-2">
-  <label class="text-xs text-slate-400">Preview form</label>
-  <select id="previewTargetSelect" class="rounded-lg border border-white/10 bg-slate-900/40 px-2 py-1 text-sm text-white"></select>
+                <div class="mt-3 flex items-center gap-2">
+  <select id="previewFormSel" class="px-3 py-2 text-xs rounded-xl bg-slate-900/60 border border-slate-700 text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500"></select>
+  <div id="previewTabs" class="flex flex-wrap gap-2"></div>
 </div>
-<div id="previewTabs" class="mt-3 flex flex-wrap gap-2"></div>
                 <!-- Phone Mockup Container -->
                 <div class="flex justify-center">
                   <div class="phone-mockup w-[320px] h-[640px] bg-white">
@@ -440,8 +439,19 @@
               </div>
             </div>
           </div>
-<!-- Removed All Forms Live Preview grid -->
-</section>
+        
+          <div class="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-bold text-slate-300">All Forms Live Preview</div>
+                <div class="text-xs text-slate-500 mt-1">हर फॉर्म का प्रीव्यू यहाँ दिखेगा। किसी भी कार्ड पर क्लिक करके उस फॉर्म को चुनें।</div>
+              </div>
+              <button id="btnRefreshSignedUrls" class="px-3 py-2 text-xs rounded-lg bg-white/10 hover:bg-white/15">Refresh Preview</button>
+            </div>
+            <div id="allFormsGrid" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+          </div>
+
+        </section>
 
         <!-- TAB: Programs -->
         <section id="tab-programs" class="tab-content hidden animate-fade-in space-y-6">
@@ -702,13 +712,13 @@
   const FORMS_URL = `${BASE_URL}/political/forms`;
 
   const FORM_META = {
-    __defaults__: { file: "political_visitor_form.html", label: "📡 Defaults" },
-    visitor_form: { file: "political_visitor_form.html", label: "📝 Visitor" },
-    party_attendance: { file: "political_party_attendance_form.html", label: "🚩 Attendance" },
-    president_tour: { file: "political_president_tour_form.html", label: "🚙 Tour" },
-    mandal_reporting: { file: "political_mandal_reporting_form.html", label: "📊 Reporting" },
-    coordinator: { file: "political_coordinator_form.html", label: "👔 Coordinator" },
-    program_info: { file: "political_program_info_form.html", label: "ℹ️ Program Info" },
+    __defaults__: { file: "political_visitor_form.html" },
+    visitor_form: { file: "political_visitor_form.html" },
+    party_attendance: { file: "political_party_attendance_form.html" },
+    president_tour: { file: "political_president_tour_form.html" },
+    mandal_reporting: { file: "political_mandal_reporting_form.html" },
+    coordinator: { file: "political_coordinator_form.html" },
+    program_info: { file: "political_program_info_form.html" },
   };
 
   const $ = (id) => document.getElementById(id);
@@ -812,117 +822,91 @@
   }
 
   
-function withCacheBust(url) {
-  if(!url) return "";
-  // Don't add cache busting to blob URLs or data URLs
-  if(url.startsWith("blob:") || url.startsWith("data:")) return url;
-  
-  try {
+function withCacheBust(url){
+  try{
+    if(!url) return url;
+    // Never modify blob/data URLs
+    if(String(url).startsWith("blob:") || String(url).startsWith("data:")) return url;
+    // If URL is AWS S3 presigned (AWS4), do NOT append anything (signature will break)
+    if(/[?&]X-Amz-(Algorithm|Credential|Signature|Security-Token)=/i.test(String(url))) return url;
+
     const u = new URL(url, window.location.href);
-    u.searchParams.set("cb", String(state.cacheBust || Date.now()));
+    u.searchParams.set("cb", String(Date.now()));
     return u.toString();
-  } catch(e) {
-    const sep = url.includes("?") ? "&" : "?";
-    return url + sep + "cb=" + encodeURIComponent(String(state.cacheBust || Date.now()));
+  }catch(e){
+    return url;
   }
 }
 
-function escHtml(s) {
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-}
+function getEffectiveForm(ft){
+    const base = (state.config && state.config.forms && state.config.forms[ft]) ? state.config.forms[ft] : {};
+    const pend = (state.pendingAssets && state.pendingAssets[ft]) ? state.pendingAssets[ft] : {};
+    const out = Object.assign({}, base);
 
-function getEffectiveForm(ft) {
-  const cfg = state.config || {};
-  const forms = cfg.forms || {};
-  const defaults = cfg.defaults || {};
-  const global = cfg.global || {};
-  const form = (ft && ft !== "__defaults__") ? (forms[ft] || {}) : {};
-  const brandingDefaults = (defaults.branding || {});
-  const brandingForm = (form.branding || {});
-  const branding = deepMerge(brandingDefaults, brandingForm);
+    const pick = (k) => {
+      const p = pend[k] || {};
+      return p.localUrl || p.url || '';
+    };
 
-  const title = form.title || cfg.form?.title || branding.title || "Form";
-  const subtitle = form.subtitle || cfg.form?.subtitle || branding.subtitle || "";
-  const tagline = (form.tagline ?? cfg.form?.tagline ?? branding.tagline ?? global.tagline ?? "");
+    if(pend.logo){
+      if(pend.logo.key) out.logo_key = pend.logo.key;
+      if(pick('logo')) out.logo_url = pick('logo');
+    }
+    if(pend.header){
+      if(pend.header.key) out.header_key = pend.header.key;
+      if(pick('header')) out.header_url = pick('header');
+    }
+    if(pend.bg){
+      if(pend.bg.key) out.background_key = pend.bg.key;
+      if(pick('bg')) out.background_url = pick('bg');
+    }
 
-  const pend = (state.pendingAssets?.[ft] || {});
-  const logoUrl = pend.logo?.previewUrl || form.logo_url || branding.logo?.url || (typeof branding.logo?.value === "string" && branding.logo.value.startsWith("http") ? branding.logo.value : "");
-  const headerUrl = pend.header?.previewUrl || form.header_url || branding.header?.url || (typeof branding.header?.value === "string" && branding.header.value.startsWith("http") ? branding.header.value : "");
-  const bgUrl = pend.background?.previewUrl || form.background_url || branding.background?.url || (typeof branding.background?.value === "string" && branding.background.value.startsWith("http") ? branding.background.value : "");
-
-  const color1 = branding.color1 || "#f97316";
-  const color2 = branding.color2 || "#ef4444";
-
-  return { ft, form, branding, title, subtitle, tagline, logoUrl, headerUrl, bgUrl, color1, color2 };
-}
+    return out;
+  }
 
 
-function renderBrandInputsFromConfig() {
-  if(!state.config) return;
-  const ft = state.target || "visitor_form";
-  const eff = getEffectiveForm(ft);
+function renderBrandInputsFromConfig(){
+    const ft = state.target;
+    const cur = getEffectiveForm(ft);
 
-  // Title/Sub/Tagline inputs (users expect these to change form heading)
-  if($("b_title")) $("b_title").value = eff.title || "";
-  if($("b_subtitle")) $("b_subtitle").value = eff.subtitle || "";
-  if($("b_tagline")) $("b_tagline").value = eff.tagline || "";
+    // Fill basic fields
+    $('b_title').value = cur.title || '';
+    $('b_subtitle').value = cur.subtitle || '';
+    $('b_tagline').value = cur.tagline || '';
 
-  // Colors
-  if($("b_c1")) $("b_c1").value = eff.color1 || "#f97316";
-  if($("b_c2")) $("b_c2").value = eff.color2 || "#ef4444";
+    // Colors (prefer config.defaults.branding)
+    const defBrand = (state.config && state.config.defaults && state.config.defaults.branding) ? state.config.defaults.branding : {};
+    $('b_c1').value = (defBrand.color1 || cur.color1 || '#f97316');
+    $('b_c2').value = (defBrand.color2 || cur.color2 || '#ef4444');
 
-  // Current images previews
-  const logoUrl = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
-  const headerUrl = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-  const bgUrl = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
+    // Asset previews (never cache-bust presigned URLs)
+    const ftPend = (state.pendingAssets && state.pendingAssets[ft]) ? state.pendingAssets[ft] : {};
+    const logoSrc = (ftPend.logo && (ftPend.logo.localUrl || ftPend.logo.url)) || cur.logo_url || '';
+    const headerSrc = (ftPend.header && (ftPend.header.localUrl || ftPend.header.url)) || cur.header_url || '';
+    const bgSrc = (ftPend.bg && (ftPend.bg.localUrl || ftPend.bg.url)) || cur.background_url || '';
 
-  if($("prev_logo")) {
-    if(logoUrl) {
-      $("prev_logo").src = logoUrl;
-      $("prev_logo").classList.remove('hidden');
-      $("icon_logo").classList.add('hidden');
-      $("name_logo").textContent = "Uploaded";
-    } else {
-      $("prev_logo").src = "";
-      $("prev_logo").classList.add('hidden');
-      $("icon_logo").classList.remove('hidden');
-      $("name_logo").textContent = "No file";
+    if(logoSrc) $('prev_logo').src = withCacheBust(logoSrc); else $('prev_logo').removeAttribute('src');
+    if(headerSrc) $('prev_header').src = withCacheBust(headerSrc); else $('prev_header').removeAttribute('src');
+    if(bgSrc) $('prev_bg').src = withCacheBust(bgSrc); else $('prev_bg').removeAttribute('src');
+
+    // Rebuild preview tabs
+    const tabs = $('previewTabs');
+    if(tabs){
+      const forms = (state.config && state.config.forms) ? Object.keys(state.config.forms) : [];
+      tabs.innerHTML = forms.map(k => {
+        const active = (k===ft) ? 'bg-slate-900 text-white' : 'bg-white';
+        return `<button data-ft="${k}" class="px-2 py-1 rounded ${active} border">${k}</button>`;
+      }).join('');
+      tabs.querySelectorAll('button[data-ft]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.target = btn.getAttribute('data-ft');
+          $('targetFormSel').value = state.target;
+          renderBrandInputsFromConfig();
+          renderBrandPreview();
+        });
+      });
     }
   }
-  
-  if($("prev_header")) {
-    if(headerUrl) {
-      $("prev_header").src = headerUrl;
-      $("prev_header").classList.remove('hidden');
-      $("icon_header").classList.add('hidden');
-      $("name_header").textContent = "Uploaded";
-    } else {
-      $("prev_header").src = "";
-      $("prev_header").classList.add('hidden');
-      $("icon_header").classList.remove('hidden');
-      $("name_header").textContent = "No file";
-    }
-  }
-  
-  if($("prev_bg")) {
-    if(bgUrl) {
-      $("prev_bg").src = bgUrl;
-      $("prev_bg").classList.remove('hidden');
-      $("icon_bg").classList.add('hidden');
-      $("name_bg").textContent = "Uploaded";
-    } else {
-      $("prev_bg").src = "";
-      $("prev_bg").classList.add('hidden');
-      $("icon_bg").classList.remove('hidden');
-      $("name_bg").textContent = "No file";
-    }
-  }
-}
 
 function renderBrandPreview() {
   if(!state.config) return;
@@ -958,20 +942,14 @@ function renderBrandPreview() {
   if(btn) btn.style.backgroundImage = `linear-gradient(90deg, ${eff.color1}, ${eff.color2})`;
 
   renderPreviewTabs();
-  // renderAllFormsGrid(); // removed (use right preview selector)
+  // renderAllFormsGrid(); // removed (user wants only right-side preview)
 }
 
 
 function buildPreviewSrcDoc(ft) {
   const eff = getEffectiveForm(ft || "visitor_form");
-  
-  // Use live input values if available, otherwise use saved config
-  const title = $("b_title")?.value?.trim() || eff.title || "";
-  const subtitle = $("b_subtitle")?.value?.trim() || eff.subtitle || "";
-  const tagline = $("b_tagline")?.value?.trim() || eff.tagline || "";
-  const c1 = $("b_c1")?.value || eff.color1 || "#f97316";
-  const c2 = $("b_c2")?.value || eff.color2 || "#ef4444";
-  
+  const c1 = eff.color1 || "#f97316";
+  const c2 = eff.color2 || "#ef4444";
   const bg = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
   const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
   const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
@@ -1034,9 +1012,9 @@ function buildPreviewSrcDoc(ft) {
           ${logoBlock}
         </div>
         <div class="content">
-          <h1 class="title">${escHtml(title)}</h1>
-          ${subtitle ? `<div class="sub">${escHtml(subtitle)}</div>` : ``}
-          ${tagline ? `<div class="tag">${escHtml(tagline)}</div>` : ``}
+          <h1 class="title">${escHtml(eff.title || "")}</h1>
+          ${eff.subtitle ? `<div class="sub">${escHtml(eff.subtitle)}</div>` : ``}
+          ${eff.tagline ? `<div class="tag">${escHtml(eff.tagline)}</div>` : ``}
 
           <div class="field">
             <label>नाम / Name</label>
@@ -1094,69 +1072,43 @@ function openCurrentPreviewInNewTab() {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
+function renderPreviewTabs() {
+      const wrap = $("previewTabs");
+      if (!wrap) return;
+      wrap.innerHTML = "";
 
-  function renderPreviewTabs(){
-    const tabsEl = document.getElementById("previewTabs");
-    const selEl = document.getElementById("previewTargetSelect");
-    if(!tabsEl) return;
+      const sel = document.createElement("select");
+      sel.className = "text-sm px-2 py-1 rounded border border-gray-300 bg-white dark:bg-slate-900 dark:border-slate-700";
+      sel.title = "Preview form";
 
-    const cfg = state.config || {};
-    const formsNode = cfg.forms || {};
-    const formKeys = Object.keys(formsNode);
+      const opts = [];
+      opts.push({ v: "__defaults__", t: "Defaults (Only Theme)" });
+      Object.entries(FORM_LABELS).forEach(([k, label]) => opts.push({ v: k, t: label }));
 
-    tabsEl.innerHTML = "";
-    if(selEl) selEl.innerHTML = "";
-
-    // Fallback list if config hasn't loaded yet
-    const keys = (formKeys && formKeys.length) ? formKeys : Object.keys(FORM_META || {});
-    keys.forEach((k)=>{
-      // tabs
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "px-3 py-1.5 rounded-full text-sm border transition " + (k===state.target
-        ? "bg-white text-slate-900 border-white"
-        : "bg-white/5 text-white border-white/10 hover:bg-white/10");
-      btn.textContent = (FORM_META[k] && FORM_META[k].label) ? FORM_META[k].label : k;
-      btn.addEventListener("click", ()=>{
-        if(k === state.target) return;
-        state.target = k;
-        renderPreviewTabs();
-        renderFormPreviewIframe();
-        renderBrandPreview();
+      opts.forEach(o => {
+        const op = document.createElement("option");
+        op.value = o.v;
+        op.textContent = o.t;
+        sel.appendChild(op);
       });
-      tabsEl.appendChild(btn);
 
-      // select
-      if(selEl){
-        const opt = document.createElement("option");
-        opt.value = k;
-        opt.textContent = btn.textContent;
-        if(k===state.target) opt.selected = true;
-        selEl.appendChild(opt);
-      }
-    });
+      sel.value = state.previewFormType || "__defaults__";
+      sel.onchange = () => {
+        state.previewFormType = sel.value;
+        refreshLivePreview();
+      };
 
-    if(selEl && !selEl.__wired){
-      selEl.__wired = true;
-      selEl.addEventListener("change", (e)=>{
-        const v = e.target.value;
-        if(v && v !== state.target){
-          state.target = v;
-          renderPreviewTabs();
-          renderFormPreviewIframe();
-          renderBrandPreview();
-        }
-      });
+      const lab = document.createElement("div");
+      lab.className = "text-xs text-gray-500";
+      lab.textContent = "Live Preview:";
+
+      const row = document.createElement("div");
+      row.className = "flex items-center gap-2";
+      row.appendChild(lab);
+      row.appendChild(sel);
+
+      wrap.appendChild(row);
     }
-  }
-
-
-function collectBrandFromUI() {
-  return {
-    color1: $("b_c1")?.value || "#f97316",
-    color2: $("b_c2")?.value || "#ef4444"
-  };
-}
 
 function renderAllFormsGrid() {
   const grid = $("allFormsGrid");
@@ -1207,6 +1159,7 @@ function renderAllFormsGrid() {
       if(sel) sel.value = ft;
       renderAll();
       renderFormPreviewIframe();
+  try{ const g=document.getElementById('allFormsGrid'); if(g) g.classList.add('hidden'); }catch(e){}
       renderBrandPreview();
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
@@ -1220,32 +1173,22 @@ function renderAllFormsGrid() {
   keys.forEach(ft => addCard(ft, getEffectiveForm(ft)));
 }
 
-function setPending(key, file) {
-    if(!file) {
-      // Clear the asset
-      if(state.pendingAssets[state.target]?.[key]) {
-        delete state.pendingAssets[state.target][key];
-      }
-      $(`prev_${key}`).src = "";
-      $(`prev_${key}`).classList.add('hidden');
-      $(`icon_${key}`).classList.remove('hidden');
-      $(`name_${key}`).textContent = "No file";
-      renderBrandPreview();
-      renderFormPreviewIframe();
-      return;
+function setPending(key, file){
+    const ft = state.target;
+    state.pendingAssets = state.pendingAssets || {};
+    state.pendingAssets[ft] = state.pendingAssets[ft] || {};
+
+    // clean previous localUrl
+    const prev = state.pendingAssets[ft][key];
+    if(prev && prev.localUrl){
+      try{ URL.revokeObjectURL(prev.localUrl); }catch(e){}
     }
-    
-    if(!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
-    state.pendingAssets[state.target][key] = { file, previewUrl: URL.createObjectURL(file) };
-    $(`name_${key}`).textContent = file.name;
-    
-    // Immediate preview in thumbnail
-    $(`prev_${key}`).src = URL.createObjectURL(file);
-    $(`prev_${key}`).classList.remove('hidden');
-    $(`icon_${key}`).classList.add('hidden');
-    
+
+    const localUrl = URL.createObjectURL(file);
+    state.pendingAssets[ft][key] = { file, localUrl };
+
+    // Update preview immediately
     renderBrandPreview();
-    renderFormPreviewIframe();
   }
 
   // --- API Calls (Restored Robust Logic) ---
@@ -1288,114 +1231,137 @@ function setPending(key, file) {
     throw lastErr || new Error("API call failed");
   }
 
-  async function initAssetUpload(assetKind, ft, file){
-    const sha = await sha256Hex(file);
-    const fileName = `${crypto.randomUUID()}.${extFromMime(file.type)}`;
-    const payload = { collection_id: state.cid, form_type: ft === "__defaults__" ? "visitor_form" : ft, asset_kind: assetKind, sha256: sha, file_name: fileName, mime_type: file.type };
-    const res = await apiCallCandidates(["admin_init_asset_upload","admin_init_upload_asset","init_asset_upload"], payload);
-    const uploadUrl = res.upload_url || res.url;
-    if (!uploadUrl) return null;
-    await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": file.type } });
-    const publicUrl = res.public_url || res.asset_url || res.url_public || "";
-    const key = res.s3_key || res.asset_key || res.key || "";
-    return { kind: "s3", value: publicUrl || key || "" };
+  async function initAssetUpload(assetType, file, sha256b64){
+    // Backend returns: {s3_key, upload_url, preview_url}
+    const ext = (file.name || '').split('.').pop() || 'bin';
+    const safeName = `${crypto.randomUUID()}.${ext}`;
+
+    const res = await apiCallCandidates([
+      'admin_init_asset_upload',
+      'admin_init_upload',
+    ], {
+      collection_id: state.cid,
+      form_type: state.target,
+      asset_type: assetType,
+      file_name: safeName,
+      content_type: file.type || 'application/octet-stream',
+      content_sha256: sha256b64,
+    });
+
+    if(!res || !res.upload_url || !res.s3_key){
+      throw new Error('init_asset_upload failed');
+    }
+
+    const putRes = await fetch(res.upload_url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+      body: file,
+    });
+    if(!putRes.ok){
+      const t = await putRes.text().catch(()=>"");
+      throw new Error(`S3 upload failed: ${putRes.status} ${t}`);
+    }
+
+    return { key: res.s3_key, url: res.preview_url || '' };
   }
 
-  async function saveConfig() {
-    if(!state.cid) { showToast("CID missing","error"); return; }
-    if(!state.config) { showToast("Config not loaded","error"); return; }
+  function collectBrandFromUI(){
+    return {
+      color1: ($('b_c1')?.value || '').trim() || '#f97316',
+      color2: ($('b_c2')?.value || '').trim() || '#ef4444',
+    };
+  }
 
-    const btn = $("btnSave");
-    const toast = showToast("Saving...","info",0);
-    if(btn){ btn.disabled = true; btn.textContent = "Saving..."; }
-
-    try {
-      const ft = state.target || "visitor_form";
-
-      // FIRST: Upload pending assets if any
-      const pending = state.pendingAssets?.[ft] || {};
-      const assetRefs = {};
-      
-      if(pending.logo?.file) {
-        showToast("Uploading logo...", "info");
-        const ref = await initAssetUpload("logo", ft, pending.logo.file);
-        if(ref) assetRefs.logo = ref;
+  function sanitizeSettingsForSave(settings){
+    const clean = JSON.parse(JSON.stringify(settings || {}));
+    // Remove derived timestamps
+    delete clean.updated_at_iso; delete clean.updated_at_ms;
+    // Remove any derived urls (presigned URLs should NOT be stored)
+    if(clean.forms && typeof clean.forms === 'object'){
+      for(const k of Object.keys(clean.forms)){
+        const f = clean.forms[k] || {};
+        delete f.logo_url; delete f.header_url; delete f.background_url;
+        delete f.updated_at_iso; delete f.updated_at_ms;
+        if(f.branding && typeof f.branding === 'object'){
+          for(const ak of ['logo','header','background']){
+            if(f.branding[ak] && typeof f.branding[ak] === 'object'){
+              delete f.branding[ak].url;
+            }
+          }
+        }
+        clean.forms[k] = f;
       }
-      
-      if(pending.header?.file) {
-        showToast("Uploading header...", "info");
-        const ref = await initAssetUpload("header", ft, pending.header.file);
-        if(ref) assetRefs.header = ref;
-      }
-      
-      if(pending.background?.file) {
-        showToast("Uploading background...", "info");
-        const ref = await initAssetUpload("background", ft, pending.background.file);
-        if(ref) assetRefs.bg = ref;
-      }
+    }
+    return clean;
+  }
 
-      // Users expect Title/Sub/Tagline to change the actual form heading.
-      const meta = {
-        title: ($("b_title")?.value || "").trim(),
-        subtitle: ($("b_subtitle")?.value || "").trim(),
-        tagline: ($("b_tagline")?.value || "").trim(),
+async function saveConfig(){
+    const ft = state.target;
+    try{
+      setStatus('Saving...', true);
+
+      // Ensure structure
+      state.config = state.config || {};
+      state.config.forms = state.config.forms || {};
+      const f = Object.assign({}, state.config.forms[ft] || {});
+
+      // Apply basic form fields
+      f.title = ($('b_title')?.value || '').trim();
+      f.subtitle = ($('b_subtitle')?.value || '').trim();
+      f.tagline = ($('b_tagline')?.value || '').trim();
+
+      // Apply brand colors (stored in defaults + form.branding)
+      const brand = collectBrandFromUI();
+      state.config.defaults = state.config.defaults || {};
+      state.config.defaults.branding = Object.assign({}, state.config.defaults.branding || {}, brand);
+      f.branding = Object.assign({}, f.branding || {}, brand);
+
+      // Upload pending assets (if any)
+      state.pendingAssets = state.pendingAssets || {};
+      state.pendingAssets[ft] = state.pendingAssets[ft] || {};
+
+      const uploadOne = async (uiKey, assetType, keyField) => {
+        const p = state.pendingAssets[ft][uiKey];
+        if(!p || !p.file) return;
+        const sha = await sha256base64(p.file);
+        const up = await initAssetUpload(assetType, p.file, sha);
+        f[keyField] = up.key;
+        // keep preview url for UI
+        state.pendingAssets[ft][uiKey] = { key: up.key, url: up.url };
+        // revoke local preview if any
+        if(p.localUrl){
+          try{ URL.revokeObjectURL(p.localUrl); }catch(e){}
+        }
       };
 
-      const brand = collectBrandFromUI();
-      
-      // Merge uploaded assets into branding
-      if(assetRefs.logo) brand.logo = assetRefs.logo;
-      if(assetRefs.header) brand.header = assetRefs.header;
-      if(assetRefs.bg) brand.background = assetRefs.bg;
+      await uploadOne('logo', 'logo', 'logo_key');
+      await uploadOne('header', 'header', 'header_key');
+      await uploadOne('bg', 'background', 'background_key');
 
-      // Apply local changes into state.config
-      state.config.defaults = state.config.defaults || {};
-      state.config.defaults.branding = state.config.defaults.branding || {};
-      state.config.forms = state.config.forms || {};
+      // Persist
+      state.config.forms[ft] = f;
+      const toSave = sanitizeSettingsForSave(state.config);
 
-      if(ft === "__defaults__") {
-        state.config.defaults.branding = deepMerge(state.config.defaults.branding, brand);
-        if(meta.title) state.config.defaults.branding.title = meta.title;
-        if(meta.subtitle) state.config.defaults.branding.subtitle = meta.subtitle;
-        if(meta.tagline) state.config.defaults.branding.tagline = meta.tagline;
-
-        state.config.global = state.config.global || {};
-        if(meta.tagline) state.config.global.tagline = meta.tagline;
-      } else {
-        const f = state.config.forms[ft] || (state.config.forms[ft] = {});
-        f.title = meta.title || f.title || "";
-        f.subtitle = meta.subtitle || f.subtitle || "";
-        f.tagline = meta.tagline || f.tagline || "";
-
-        f.branding = deepMerge(f.branding || {}, brand);
-      }
-
-      // Save to backend (political module)
-      await apiCall("admin_save_config", {
+      await apiCallCandidates([
+        'admin_save_config',
+        'admin_save_settings',
+        'save_admin_config',
+      ], {
         collection_id: state.cid,
-        config_type: "political_forms",
-        config: state.config
+        config_type: 'political_forms',
+        settings: toSave,
       });
 
-      toast.remove?.();
-      showToast("✅ Saved successfully!","success");
-      
-      // Clear pending for this form (uploaded already)
-      if(state.pendingAssets?.[ft]) delete state.pendingAssets[ft];
-
-      // Refresh from backend to get latest signed URLs (logo_url/header_url/background_url)
+      setStatus('Saved ✅', false);
       await loadConfig();
+      renderBrandPreview();
 
-    } catch(e) {
-      console.error("Save failed:", e);
-      toast.remove?.();
-      showToast("❌ Save failed: " + (e?.message || e),"error");
-    } finally {
-      if(btn){ btn.disabled = false; btn.textContent = "Save Config"; }
-      state.cacheBust = Date.now();
-      renderBrandInputsFromConfig();
-      renderAll();
-      renderFormPreviewIframe();
+    }catch(err){
+      console.error('Save failed:', err);
+      setStatus('Save failed: ' + (err?.message || String(err)), true);
+      throw err;
     }
   }
 
@@ -1609,43 +1575,6 @@ function setPending(key, file) {
 
   // --- Event Listeners ---
   $('btnSave').onclick = saveConfig;
-  
-  // Branding buttons
-  if($('btnResetBrand')) {
-    $('btnResetBrand').onclick = () => {
-      if(confirm('Reset branding to defaults?')) {
-        $('b_title').value = "";
-        $('b_subtitle').value = "";
-        $('b_tagline').value = "";
-        $('b_c1').value = "#f97316";
-        $('b_c2').value = "#ef4444";
-        renderFormPreviewIframe();
-        renderBrandPreview();
-        showToast("Branding reset", "info");
-      }
-    };
-  }
-  
-  if($('btnCopyToDefaults')) {
-    $('btnCopyToDefaults').onclick = async () => {
-      if(!confirm('Copy current branding to all forms as defaults?')) return;
-      
-      const brand = collectBrandFromUI();
-      const meta = {
-        title: $('b_title').value.trim(),
-        subtitle: $('b_subtitle').value.trim(),
-        tagline: $('b_tagline').value.trim()
-      };
-      
-      // Copy to defaults
-      state.config.defaults.branding = deepMerge(state.config.defaults.branding || {}, brand);
-      if(meta.title) state.config.defaults.branding.title = meta.title;
-      if(meta.subtitle) state.config.defaults.branding.subtitle = meta.subtitle;
-      if(meta.tagline) state.config.defaults.branding.tagline = meta.tagline;
-      
-      showToast("✅ Copied to defaults! Click Save to apply.", "success");
-    };
-  }
 
   // Preview controls
   if($('btnLoadFormPreview')) $('btnLoadFormPreview').onclick = () => { state.cacheBust = Date.now(); renderBrandPreview(); renderFormPreviewIframe(); };
@@ -1670,6 +1599,7 @@ function setPending(key, file) {
       renderBrandInputsFromConfig();
       renderAll();
       renderFormPreviewIframe();
+  try{ const g=document.getElementById('allFormsGrid'); if(g) g.classList.add('hidden'); }catch(e){}
   };
 
   // Asset Inputs
@@ -1680,20 +1610,12 @@ function setPending(key, file) {
   });
 
   // Input Live Sync
-  const livePreviewToggle = $('livePreviewToggle');
-  const updatePreviewLive = () => {
-    if(livePreviewToggle?.checked) {
-      renderFormPreviewIframe();
-    }
-    renderBrandPreview();
-  };
-  
   ['input','change'].forEach(ev => {
-      $('b_title').addEventListener(ev, updatePreviewLive);
-      $('b_subtitle').addEventListener(ev, updatePreviewLive);
-      $('b_tagline').addEventListener(ev, updatePreviewLive);
-      $('b_c1').addEventListener(ev, updatePreviewLive);
-      $('b_c2').addEventListener(ev, updatePreviewLive);
+      $('b_title').addEventListener(ev, renderBrandPreview);
+      $('b_subtitle').addEventListener(ev, renderBrandPreview);
+      $('b_tagline').addEventListener(ev, renderBrandPreview);
+      $('b_c1').addEventListener(ev, renderBrandPreview);
+      $('b_c2').addEventListener(ev, renderBrandPreview);
   });
 
   $('btnAddProg').onclick = () => {
@@ -1729,6 +1651,7 @@ function setPending(key, file) {
   // Init
   loadConfig();
   renderFormPreviewIframe();
+  try{ const g=document.getElementById('allFormsGrid'); if(g) g.classList.add('hidden'); }catch(e){}
 
 })();
 </script>

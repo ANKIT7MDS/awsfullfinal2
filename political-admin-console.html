@@ -904,7 +904,7 @@ function getEffectiveForm(ft) {
   const pend = (state.pendingAssets?.[ft] || {});
   const logoUrl = pend.logo?.previewUrl || form.logo_url || branding.logo?.url || (typeof branding.logo?.value === "string" && branding.logo.value.startsWith("http") ? branding.logo.value : "");
   const headerUrl = pend.header?.previewUrl || form.header_url || branding.header?.url || (typeof branding.header?.value === "string" && branding.header.value.startsWith("http") ? branding.header.value : "");
-  const bgUrl = (pend.background || pend.bg)?.previewUrl || form.background_url || branding.background?.url || (typeof branding.background?.value === "string" && branding.background.value.startsWith("http") ? branding.background.value : "");
+  const bgUrl = pend.background?.previewUrl || form.background_url || branding.background?.url || (typeof branding.background?.value === "string" && branding.background.value.startsWith("http") ? branding.background.value : "");
 
   const color1 = branding.color1 || "#f97316";
   const color2 = branding.color2 || "#ef4444";
@@ -937,60 +937,37 @@ function renderBrandPreview() {
   if(!state.config) return;
   const eff = getEffectiveForm(state.target || "visitor_form");
 
-  // Update small URL pill (actual form file URL)
-  try{
-    const file = (FORM_META[state.target] || FORM_META.visitor_form || {}).file || "";
-    const url = file ? `${window.location.origin}/${file}?cid=${encodeURIComponent(state.cid || "")}` : "";
-    const pill = $("formPreviewUrlTxt");
-    if(pill) pill.textContent = url || "";
-  }catch(_){}
-
-  const headerWrap = $("previewHeaderImgWrap");
   const headerImg = $("previewHeaderImg");
-  const logoImg = $("previewLogo");
-  const logoIcon = $("previewLogoIcon");
-  const bgDiv = $("previewBg");
+  const logoImg = $("previewLogoImg");
+  const bgImg = $("previewBgImg");
   const titleEl = $("previewTitle");
   const subtitleEl = $("previewSubtitle");
-  const sw1 = $("sw1");
-  const sw2 = $("sw2");
-  const bar = $("previewHeaderBar");
+  const taglineEl = $("previewTagline");
+  const btn = $("previewBtn");
 
   const bg = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
-  if(bgDiv) bgDiv.style.backgroundImage = bg ? `url('${bg}')` : "";
+  if(bgImg) bgImg.src = bg || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='900'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230f172a'/%3E%3Cstop offset='1' stop-color='%23111827'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3C/svg%3E";
 
   const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-  if(headerWrap && headerImg){
-    if(header){
-      headerImg.src = header;
-      headerWrap.classList.remove("hidden");
-    }else{
-      headerWrap.classList.add("hidden");
+  if(headerImg) {
+    if(header) headerImg.src = header;
+    else {
+      const c1 = eff.color1.replace("#","%23");
+      const c2 = eff.color2.replace("#","%23");
+      headerImg.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='240'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='${c1}'/%3E%3Cstop offset='1' stop-color='${c2}'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3C/svg%3E`;
     }
   }
 
   const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
-  if(logoImg){
-    if(logo){
-      logoImg.src = logo;
-      logoImg.classList.remove("hidden");
-      if(logoIcon) logoIcon.classList.add("hidden");
-    }else{
-      logoImg.classList.add("hidden");
-      if(logoIcon) logoIcon.classList.remove("hidden");
-    }
-  }
+  if(logoImg) logoImg.src = logo || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='100%25' height='100%25' rx='16' fill='%23111827'/%3E%3Ctext x='50%25' y='54%25' font-size='22' text-anchor='middle' fill='%2394a3b8' font-family='Arial'%3ELOGO%3C/text%3E%3C/svg%3E";
 
   if(titleEl) titleEl.textContent = eff.title || "";
   if(subtitleEl) subtitleEl.textContent = eff.subtitle || "";
-
-  const c1 = eff.color1 || "#f97316";
-  const c2 = eff.color2 || "#ef4444";
-  if(sw1) sw1.style.backgroundColor = c1;
-  if(sw2) sw2.style.backgroundColor = c2;
-  if(bar) bar.style.backgroundImage = `linear-gradient(90deg, ${c1}, ${c2})`;
+  if(taglineEl) taglineEl.textContent = eff.tagline || "";
+  if(btn) btn.style.backgroundImage = `linear-gradient(90deg, ${eff.color1}, ${eff.color2})`;
 
   renderPreviewTabs();
+  // // // renderAllFormsGrid(); // disabled // disabled // disabled (use dropdown preview)
 }
 
 
@@ -1003,105 +980,75 @@ function buildPreviewSrcDoc(ft) {
   const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
 
   const rawPrograms =
-    eff.form?.program_options ||
-    eff.form?.programs ||
-    state.config?.defaults?.programs ||
+    (eff.form && (eff.form.program_options || eff.form.programs)) ||
+    (state.config && state.config.defaults && state.config.defaults.programs) ||
     [];
 
   const programs = Array.isArray(rawPrograms) ? rawPrograms : [];
-  const optionsHtml = programs.slice(0, 40).map(p => `<option>${escHtml(p)}</option>`).join("");
+  const optionsHtml = programs.slice(0, 40).map(p => "<option>" + escHtml(p) + "</option>").join("");
 
   const headerBlock = header
-    ? `<img class="header-img" src="${escHtml(header)}" alt="header" />`
-    : `<div class="header-grad"></div>`;
+    ? "<img class=\"header-img\" src=\"" + escHtml(header) + "\" alt=\"header\" />"
+    : "<div class=\"header-grad\"></div>";
 
   const logoBlock = logo
-    ? `<img class="logo" src="${escHtml(logo)}" alt="logo" />`
-    : `<div class="logo ph">LOGO</div>`;
+    ? "<img class=\"logo\" src=\"" + escHtml(logo) + "\" alt=\"logo\" />"
+    : "<div class=\"logo ph\">LOGO</div>";
 
-  const bgStyle = bg ? `background-image:url('${escHtml(bg)}');` : "";
+  const bgStyle = bg ? ("background-image:url('" + escHtml(bg) + "');") : "";
 
-  return `<!doctype html>
-<html lang="hi">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Preview</title>
-  <style>
-    :root{--c1:${c1};--c2:${c2};}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#e5e7eb; background:#0b1220; ${bgStyle} background-size:cover; background-position:center;}
-    .overlay{min-height:100vh; background:linear-gradient(180deg, rgba(2,6,23,.92), rgba(2,6,23,.88));}
-    .wrap{max-width:420px;margin:0 auto; padding:14px;}
-    .card{border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06); border-radius:18px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,.35);}
-    .header{position:relative;height:150px; overflow:hidden;}
-    .header-img{width:100%;height:100%;object-fit:cover;display:block;}
-    .header-grad{width:100%;height:100%; background:linear-gradient(135deg,var(--c1),var(--c2));}
-    .logo{position:absolute;left:14px;bottom:-26px;width:58px;height:58px;border-radius:16px;border:2px solid rgba(255,255,255,.35); background:rgba(2,6,23,.7); object-fit:cover; box-shadow:0 10px 18px rgba(0,0,0,.35);}
-    .logo.ph{display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#94a3b8;}
-    .content{padding:44px 14px 16px;}
-    .title{font-size:18px;font-weight:800;line-height:1.2;margin:0;}
-    .sub{margin:6px 0 0 0;font-size:12px;color:#cbd5e1;}
-    .tag{margin:6px 0 0 0;font-size:11px;color:#94a3b8;}
-    .field{margin-top:12px;}
-    label{display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px;}
-    input,select{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14); background:rgba(2,6,23,.55); color:#e5e7eb; padding:12px 12px; outline:none;}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    .btn{margin-top:14px;width:100%;border:none;border-radius:14px;padding:12px 14px;font-weight:800;color:white; cursor:pointer;background:linear-gradient(90deg,var(--c1),var(--c2));}
-    .note{margin-top:10px;font-size:10px;color:#64748b;text-align:center;}
-  </style>
-</head>
-<body>
-  <div class="overlay">
-    <div class="wrap">
-      <div class="card">
-        <div class="header">
-          ${headerBlock}
-          ${logoBlock}
-        </div>
-        <div class="content">
-          <h1 class="title">${escHtml(eff.title || "")}</h1>
-          ${eff.subtitle ? `<div class="sub">${escHtml(eff.subtitle)}</div>` : ``}
-          ${eff.tagline ? `<div class="tag">${escHtml(eff.tagline)}</div>` : ``}
+  const html = [
+    "<!doctype html>",
+    "<html lang=\"hi\">",
+    "<head>",
+    "  <meta charset=\"utf-8\" />",
+    "  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />",
+    "  <title>Preview</title>",
+    "  <style>",
+    "    :root{--c1:" + c1 + ";--c2:" + c2 + ";}",
+    "    *{box-sizing:border-box}",
+    "    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#e5e7eb; background:#0b1220; " + bgStyle + " background-size:cover; background-position:center;}",
+    "    .overlay{min-height:100vh; background:linear-gradient(180deg, rgba(2,6,23,.92), rgba(2,6,23,.88));}",
+    "    .wrap{max-width:420px;margin:0 auto; padding:14px;}",
+    "    .card{border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06); border-radius:18px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,.35);}",
+    "    .header{position:relative;height:150px; overflow:hidden;}",
+    "    .header-img{width:100%;height:100%;object-fit:cover;display:block;}",
+    "    .header-grad{width:100%;height:100%;background:linear-gradient(90deg,var(--c1),var(--c2));}",
+    "    .logoWrap{position:absolute;left:14px;bottom:-22px;display:flex;gap:10px;align-items:center;}",
+    "    .logo{width:74px;height:74px;border-radius:18px;object-fit:cover;border:2px solid rgba(255,255,255,.22);background:rgba(17,24,39,.85);}",
+    "    .logo.ph{display:flex;align-items:center;justify-content:center;font-weight:800;}",
+    "    .body{padding:38px 14px 14px;}",
+    "    h2{margin:0;font-size:18px;line-height:1.2;}",
+    "    p{margin:6px 0 0;color:#cbd5e1;font-size:13px;}",
+    "    .tag{margin-top:10px;padding:10px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);}",
+    "    select,input{width:100%;margin-top:10px;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:#e5e7eb;outline:none;}",
+    "    .btn{margin-top:12px;width:100%;padding:12px;border-radius:14px;border:0;color:#0b1220;font-weight:800;background:linear-gradient(90deg,var(--c1),var(--c2));}",
+    "  </style>",
+    "</head>",
+    "<body>",
+    "  <div class=\"overlay\">",
+    "    <div class=\"wrap\">",
+    "      <div class=\"card\">",
+    "        <div class=\"header\">",
+    "          " + headerBlock,
+    "          <div class=\"logoWrap\">" + logoBlock + "</div>",
+    "        </div>",
+    "        <div class=\"body\">",
+    "          <h2>" + escHtml(eff.title || "Political Form") + "</h2>",
+    "          <p>" + escHtml(eff.subtitle || "Live preview") + "</p>",
+    "          <div class=\"tag\">" + escHtml(eff.tagline || "") + "</div>",
+    "          <select><option>कार्यक्रम चुनें</option>" + optionsHtml + "</select>",
+    "          <input placeholder=\"नाम\" />",
+    "          <button class=\"btn\">Submit</button>",
+    "        </div>",
+    "      </div>",
+    "    </div>",
+    "  </div>",
+    "</body>",
+    "</html>"
+  ];
 
-          <div class="field">
-            <label>नाम / Name</label>
-            <input placeholder="अपना नाम लिखें" />
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>मोबाइल</label>
-              <input placeholder="10 अंकों का" />
-            </div>
-            <div class="field">
-              <label>जिला</label>
-              <input placeholder="जिला" />
-            </div>
-          </div>
-
-          ${optionsHtml ? `
-          <div class="field">
-            <label>कार्यक्रम / Program</label>
-            <select>
-              <option value="">Select</option>
-              ${optionsHtml}
-            </select>
-          </div>` : ``}
-
-          <div class="field">
-            <label>टिप्पणी</label>
-            <input placeholder="Optional" />
-          </div>
-
-          <button class="btn">Submit</button>
-          <div class="note">Admin Preview • Live Branding</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
+  return html.join("");
 }
 
 function renderFormPreviewIframe() {
@@ -1231,73 +1178,52 @@ function renderAllFormsGrid() {
 }
 
 function setPending(key, file) {
-  const ft = state.target || "visitor_form";
-  if(!state.pendingAssets) state.pendingAssets = {};
-  if(!state.pendingAssets[ft]) state.pendingAssets[ft] = {};
-
-  const nameEl = $(`name_${key}`);
-  const prevEl = $(`prev_${key}`);
-  const iconEl = $(`icon_${key}`);
-
-  // Clear selection
-  if(!file) {
-    try{
-      if(state.pendingAssets[ft][key]?.previewUrl) URL.revokeObjectURL(state.pendingAssets[ft][key].previewUrl);
-    }catch(_){}
-    delete state.pendingAssets[ft][key];
-
-    if(nameEl) nameEl.textContent = "No file";
-    if(prevEl){ prevEl.src = ""; prevEl.classList.add("hidden"); }
-    if(iconEl) iconEl.classList.remove("hidden");
-
+    if(!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
+    state.pendingAssets[state.target][key] = { file, previewUrl: URL.createObjectURL(file) };
+    $(`name_${key}`).textContent = file.name;
+    
+    // Immediate preview in thumbnail
+    $(`prev_${key}`).src = URL.createObjectURL(file);
+    $(`prev_${key}`).classList.remove('hidden');
+    $(`icon_${key}`).classList.add('hidden');
+    
     renderBrandPreview();
-    return;
   }
-
-  // New selection
-  const url = URL.createObjectURL(file);
-  try{
-    if(state.pendingAssets[ft][key]?.previewUrl) URL.revokeObjectURL(state.pendingAssets[ft][key].previewUrl);
-  }catch(_){}
-
-  state.pendingAssets[ft][key] = { file, previewUrl: url };
-  if(nameEl) nameEl.textContent = file.name || "Selected";
-  if(prevEl){ prevEl.src = url; prevEl.classList.remove("hidden"); }
-  if(iconEl) iconEl.classList.add("hidden");
-
-  renderBrandPreview();
-}
 
   // --- API Calls (Restored Robust Logic) ---
   async function apiCall(action, payload){
-  const tokenRaw = (getIdToken() || "").trim();
+    let idToken = getIdToken();
+    
+    const doFetch = async (token) => {
+        const h = { "Content-Type": "application/json" };
+        const t = (token || "").toString().trim();
+        if (t) h["Authorization"] = `Bearer ${t}`;
+        return await fetch(FORMS_URL, {
+          method: "POST",
+          headers: h,
+          body: JSON.stringify({ action, payload })
+        });
+    };
 
-  const headers = { "Content-Type": "application/json" };
-  if (tokenRaw) {
-    headers["Authorization"] = tokenRaw.toLowerCase().startsWith("bearer ") ? tokenRaw : (`Bearer ${tokenRaw}`);
+    if (!idToken) {
+       console.warn("No ID token found in storage.");
+    }
+
+    let resp = await doFetch(idToken || "");
+    
+    // Auto-recover from 401 using custom Modal
+    if (resp.status === 401) {
+        openAuthModal();
+        throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
+    }
+    
+    const txt = await resp.text();
+    let json = {};
+    try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
+    
+    if (!resp.ok) throw new Error(json.message || json.error || `HTTP ${resp.status}`);
+    return json;
   }
-
-  const resp = await fetch(FORMS_URL, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ action, payload })
-  });
-
-  // If API is protected and token is missing/expired
-  if (resp.status === 401) {
-    openAuthModal();
-    throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
-  }
-
-  const txt = await resp.text();
-  let json = {};
-  try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
-
-  if (!resp.ok) {
-    throw new Error(json.message || json.error || `HTTP ${resp.status}`);
-  }
-  return json;
-}
   
   async function apiCallCandidates(actions, payload){
     let lastErr = null;
@@ -1362,27 +1288,9 @@ function setPending(key, file) {
         f.branding = deepMerge(f.branding || {}, brand);
 
         const pending = (state.pendingAssets?.[ft] || {});
-
-        // If user selected new images, upload to S3 first (so we get s3_key)
-        const ensureUploaded = async (uiKey, backendKind) => {
-          const obj = pending[uiKey];
-          if(obj && obj.file && !obj.key){
-            const up = await initAssetUpload(backendKind, ft, obj.file);
-            if(up && up.key){
-              obj.key = up.key;
-              if(up.previewUrl) obj.previewUrl = up.previewUrl;
-            }
-          }
-          return obj;
-        };
-
-        const pLogo = await ensureUploaded("logo","logo");
-        const pHeader = await ensureUploaded("header","header");
-        const pBg = await ensureUploaded("bg","background");
-
-        if(pLogo?.key) f.logo_key = pLogo.key;
-        if(pHeader?.key) f.header_key = pHeader.key;
-        if(pBg?.key) f.background_key = pBg.key;
+        if(pending.logo?.key) f.logo_key = pending.logo.key;
+        if(pending.header?.key) f.header_key = pending.header.key;
+        if(pending.background?.key) f.background_key = pending.background.key;
       }
 
       // Save to backend (political module)
@@ -1414,40 +1322,32 @@ function setPending(key, file) {
   }
 
   async function loadConfig() {
-  if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
-  $('cidPill').classList.remove('hidden');
-  $('cidVal').textContent = state.cid;
+     if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
+     $('cidPill').classList.remove('hidden');
+     $('cidVal').textContent = state.cid;
 
-  const t = showToast("Loading configuration...", "loading");
-  let cfg = null;
+     const t = showToast("Loading configuration...", "loading");
+     let cfg = null;
+     try {
+        // EXACT payload user said works (no config_type for GET)
+        const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
+            collection_id: state.cid,
+            form_type: "visitor_form" 
+        });
+        cfg = res.config || res.data || res.item || null;
+     } catch(e) {}
+     
+     if (!cfg){
+        const local = localStorage.getItem(`EL_CFG_${state.cid}`);
+        if(local) try{ cfg = JSON.parse(local); }catch(e){}
+     }
 
-  try {
-    const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
-      collection_id: state.cid,
-      form_type: "visitor_form"
-    });
-    cfg = res.config || res.settings || res.data || res.item || null;
-  } catch(e) {
-    console.warn("loadConfig API failed:", e);
+     if (cfg) state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
+     t.remove();
+     renderAll();
   }
 
-  if (!cfg){
-    const local = localStorage.getItem(`EL_CFG_${state.cid}`);
-    if(local) try{ cfg = JSON.parse(local); }catch(e){}
-  }
-
-  if (cfg) {
-    state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
-    try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(cfg)); }catch(_){}
-  }
-
-  t.remove?.();
-
-  // Sync UI from loaded config
-  renderBrandInputsFromConfig();
-  renderAll();
-  renderFormPreviewIframe();
-} & Logic ---
+  // --- Rendering & Logic ---
   function renderAll() {
      renderBrandPreview();
      renderPrograms();

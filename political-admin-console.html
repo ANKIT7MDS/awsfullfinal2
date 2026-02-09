@@ -828,10 +828,13 @@ function srcdocSafeUrl(url) {
 
 function withCacheBust(url) {
   if (!url) return "";
-  // Do NOT alter S3 pre-signed URLs; changing query string breaks the signature.
-  if (/X-Amz-(Signature|Credential|Algorithm)=/i.test(url)) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return url + sep + "cb=" + String(state.cacheBust || Date.now());
+  const u = String(url);
+  const lower = u.toLowerCase();
+  // Don't alter blob/data URLs (breaks), and don't alter S3 pre-signed URLs (breaks signature).
+  if (lower.startsWith("blob:") || lower.startsWith("data:")) return u;
+  if (/X-Amz-(Signature|Credential|Algorithm)=/i.test(u)) return u;
+  const sep = u.includes("?") ? "&" : "?";
+  return u + sep + "cb=" + String(state.cacheBust || Date.now());
 }
 
 function escHtml(v) {
@@ -1080,10 +1083,24 @@ function buildPreviewSrcDoc(ft) {
 
 function renderFormPreviewIframe() {
   const iframe = $("formPreviewIframe");
-  if(!iframe) return;
+  if (!iframe) return;
   const doc = buildPreviewSrcDoc(state.target || "visitor_form");
   state.lastPreviewDoc = doc;
-  iframe.srcdoc = doc;
+
+  // Use a Blob URL (same-origin) instead of srcdoc so blob: preview images also work reliably.
+  try{
+    if (state._previewBlobUrl) URL.revokeObjectURL(state._previewBlobUrl);
+  }catch(e){}
+  try{
+    const blob = new Blob([doc], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    state._previewBlobUrl = url;
+    iframe.removeAttribute("srcdoc");
+    iframe.src = url;
+  }catch(e){
+    // Fallback
+    iframe.srcdoc = doc;
+  }
 }
 
 function openCurrentPreviewInNewTab() {

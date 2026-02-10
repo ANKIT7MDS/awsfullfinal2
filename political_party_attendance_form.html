@@ -263,7 +263,7 @@ async function apiCall(action, payload) {
   const res = await fetch(url, {
     method: "POST",
     cache: "no-store",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-cache", "Pragma": "no-cache" },
     body: JSON.stringify({ action, payload: payload || {} })
   });
   const text = await res.text();
@@ -395,6 +395,7 @@ function applyBrandingFromResponse(resp, formType) {
     logoEl.src = logoUrl;
     logoEl.classList.remove("hidden");
   }
+  if (logoEl && logoUrl) { logoEl.onerror = () => { try{ logoEl.classList.add("hidden"); }catch(e){} }; }
 
   // Header banner (show wrapper only when we have a URL)
   const headerWrap = $("header-wrap");
@@ -402,22 +403,40 @@ function applyBrandingFromResponse(resp, formType) {
   if (headerWrap && headerImg && headerUrl) {
     headerImg.src = headerUrl;
     headerWrap.classList.remove("hidden");
-  } else if (headerWrap) {
+  }
+    try{ headerImg.onerror = () => { headerWrap.classList.add("hidden"); }; }catch(e){} else if (headerWrap) {
     headerWrap.classList.add("hidden");
   }
 
-  // Optional background image
+  // Optional background image (validate once to avoid ORB/XML showing as an image)
   if (bgUrl) {
-    document.body.style.backgroundImage = `url('${bgUrl}')`;
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundPosition = "center";
-    document.body.style.backgroundAttachment = "fixed";
+    const testImg = new Image();
+    testImg.onload = () => {
+      document.documentElement.style.setProperty("--bgimg", `url('${bgUrl}')`);
+      document.body.style.backgroundImage = `url('${bgUrl}')`;
+      document.body.style.backgroundSize = "cover";
+      document.body.style.backgroundPosition = "center";
+      document.body.style.backgroundAttachment = "fixed";
+    };
+    testImg.onerror = () => {
+      document.documentElement.style.setProperty("--bgimg", "none");
+      document.body.style.backgroundImage = "none";
+    };
+    testImg.src = bgUrl;
+  } else {
+    document.documentElement.style.setProperty("--bgimg", "none");
+    document.body.style.backgroundImage = "none";
   }
 
-  // Optional theme colors: if you later wire CSS vars, these are ready
+  // Theme colors (form CSS uses --c1/--c2)
   const primary = branding.color1 || globalTheme.primary || "#f97316";
   const secondary = branding.color2 || globalTheme.secondary || "#ef4444";
   const background = globalTheme.background || "#0f172a";
+
+  document.documentElement.style.setProperty("--c1", primary);
+  document.documentElement.style.setProperty("--c2", secondary);
+
+  // Backward-compatible vars (some forms may use these)
   document.documentElement.style.setProperty("--brand-primary", primary);
   document.documentElement.style.setProperty("--brand-secondary", secondary);
   document.documentElement.style.setProperty("--brand-background", background);
@@ -433,11 +452,10 @@ function fillProgramNamesFromResponse(resp, formType, selectId) {
   const formNode = getFormNode(resp, formType) || {};
   const defaults = getDefaultsNode(resp) || {};
 
-  const list =
-    (Array.isArray(formNode.program_options) && formNode.program_options) ||
-    (Array.isArray(formNode.programs) && formNode.programs) ||
-    (Array.isArray(defaults.programs) && defaults.programs) ||
-    [];
+  const po = (Array.isArray(formNode.program_options) ? formNode.program_options : []);
+  const pr = (Array.isArray(formNode.programs) ? formNode.programs : []);
+  const dp = (Array.isArray(defaults.programs) ? defaults.programs : []);
+  const list = [...po, ...pr, ...dp];
 
   const uniq = [...new Set(list.map(x => safeStr(x).trim()).filter(Boolean))];
   uniq.forEach(p => {
@@ -685,7 +703,23 @@ function applyLocationAutofill(info) {
 }
 
 
-    document.addEventListener("DOMContentLoaded", initAll);
+    
+  // Auto-refresh config when tab regains focus (so latest Programs appear)
+  async function refreshConfigIfVisible() {
+    try {
+      if (document.visibilityState !== "visible") return;
+      const remoteResp = await loadRemoteConfig(FORM_TYPE);
+      if (remoteResp) {
+        applyBrandingFromResponse(remoteResp, FORM_TYPE);
+        fillProgramNamesFromResponse(remoteResp, FORM_TYPE, "program_name");
+        applyFixedLevelFromResponse(remoteResp, FORM_TYPE);
+      }
+    } catch(e) {}
+  }
+  window.addEventListener("focus", refreshConfigIfVisible);
+  document.addEventListener("visibilitychange", refreshConfigIfVisible);
+
+document.addEventListener("DOMContentLoaded", initAll);
 
     // Mobile Auto-fill
     let mobileTimer = null;

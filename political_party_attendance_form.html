@@ -262,6 +262,7 @@ async function apiCall(action, payload) {
   const url = `${BASE_URL}${path}`;
   const res = await fetch(url, {
     method: "POST",
+    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action, payload: payload || {} })
   });
@@ -340,8 +341,11 @@ function getGlobalNode(resp) {
 function getFormNode(resp, formType) {
   if (!resp) return null;
 
-  // Backend already returns resolved `form`
-  if (resp.form && typeof resp.form === "object") return resp.form;
+  // Backend may return resolved `form` shortcut for the requested form_type
+  if (resp.form && typeof resp.form === "object") {
+    const want = (formType || resp.form_type || FORM_TYPE);
+    if (!resp.form_type || resp.form_type === want) return resp.form;
+  }
 
   const ft = formType || resp.form_type || FORM_TYPE;
 
@@ -376,10 +380,6 @@ function applyBrandingFromResponse(resp, formType) {
   if (orgNameEl) orgNameEl.textContent = safeStr(formNode.title || orgNameEl.textContent);
   if (orgSubtitleEl) orgSubtitleEl.textContent = safeStr(formNode.subtitle || orgSubtitleEl.textContent);
   if (orgTaglineEl) orgTaglineEl.textContent = safeStr(formNode.tagline || branding.tagline || orgTaglineEl.textContent);
-  if (orgTaglineEl) {
-    const t = safeStr(formNode.tagline || branding.tagline || "");
-    if (!t) orgTaglineEl.classList.add("hidden"); else orgTaglineEl.classList.remove("hidden");
-  }
 
   // Footer
   const footerTextEl = $("footer-text");
@@ -394,9 +394,6 @@ function applyBrandingFromResponse(resp, formType) {
   if (logoEl && logoUrl) {
     logoEl.src = logoUrl;
     logoEl.classList.remove("hidden");
-  } else if (logoEl) {
-    logoEl.src = "";
-    logoEl.classList.add("hidden");
   }
 
   // Header banner (show wrapper only when we have a URL)
@@ -406,21 +403,15 @@ function applyBrandingFromResponse(resp, formType) {
     headerImg.src = headerUrl;
     headerWrap.classList.remove("hidden");
   } else if (headerWrap) {
-    if (headerImg) headerImg.src = "";
     headerWrap.classList.add("hidden");
   }
 
   // Optional background image
   if (bgUrl) {
-    // Set both inline background + CSS var (this form CSS uses --bgimg)
-    document.documentElement.style.setProperty("--bgimg", `url('${bgUrl}')`);
     document.body.style.backgroundImage = `url('${bgUrl}')`;
     document.body.style.backgroundSize = "cover";
     document.body.style.backgroundPosition = "center";
     document.body.style.backgroundAttachment = "fixed";
-  } else {
-    document.documentElement.style.setProperty("--bgimg", "none");
-    document.body.style.backgroundImage = "none";
   }
 
   // Optional theme colors: if you later wire CSS vars, these are ready
@@ -430,9 +421,6 @@ function applyBrandingFromResponse(resp, formType) {
   document.documentElement.style.setProperty("--brand-primary", primary);
   document.documentElement.style.setProperty("--brand-secondary", secondary);
   document.documentElement.style.setProperty("--brand-background", background);
-  // compatibility with this form CSS variables
-  document.documentElement.style.setProperty("--c1", primary);
-  document.documentElement.style.setProperty("--c2", secondary);
 }
 
 function fillProgramNamesFromResponse(resp, formType, selectId) {
@@ -660,6 +648,25 @@ function applyLocationAutofill(info) {
 
     let remoteCfg = null;
 
+
+    function setupLiveBrandSync() {
+      try {
+        if (!CID) return;
+        window.addEventListener("storage", async (e) => {
+          if (e.key === `EL_BRAND_PING_${CID}`) {
+            const remoteResp = await loadRemoteConfig(FORM_TYPE);
+            if (remoteResp) {
+              applyBrandingFromResponse(remoteResp, FORM_TYPE);
+              fillProgramNamesFromResponse(remoteResp, FORM_TYPE, "program_name");
+              applyFixedLevelFromResponse(remoteResp, FORM_TYPE);
+            }
+          }
+        });
+      } catch (e) {
+        // ignore
+      }
+    }
+
     async function initAll() {
   // remote config (branding + programs)
   const remoteResp = await loadRemoteConfig(FORM_TYPE);
@@ -668,6 +675,9 @@ function applyLocationAutofill(info) {
     fillProgramNamesFromResponse(remoteResp, FORM_TYPE, "program_name");
     applyFixedLevelFromResponse(remoteResp, FORM_TYPE);
   }
+
+  // Live sync: when admin saves branding in another tab, refresh automatically
+  setupLiveBrandSync();
 
   // init district cascade after config load (no change)
   initDistrictCascade();

@@ -1252,21 +1252,6 @@ function setPending(key, file) {
     return json;
   }
 
-    let resp = await doFetch(idToken || "");
-    
-    // Auto-recover from 401 using custom Modal
-    if (resp.status === 401) {
-        openAuthModal();
-        throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
-    }
-    
-    const txt = await resp.text();
-    let json = {};
-    try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
-    
-    if (!resp.ok) throw new Error(json.message || json.error || `HTTP ${resp.status}`);
-    return json;
-  }
   
   async function apiCallCandidates(actions, payload){
     let lastErr = null;

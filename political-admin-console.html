@@ -1208,20 +1208,53 @@ function renderAllFormsGrid() {
   keys.forEach(ft => addCard(ft, getEffectiveForm(ft)));
 }
 
-function setPending(key, file) {
-    if(!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
-    state.pendingAssets[state.target][key] = { file, previewUrl: URL.createObjectURL(file) };
-    $(`name_${key}`).textContent = file.name;
-    
+function setPending(kind, file, uiKey) {
+    uiKey = uiKey || kind;
+
+    // Ensure container exists
+    if (!state.pendingAssets) state.pendingAssets = {};
+    if (!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
+
+    const nameEl = $(`name_${uiKey}`);
+    const prevImg = $(`prev_${uiKey}`);
+    const iconEl = $(`icon_${uiKey}`);
+
+    // Clear
+    if (!file) {
+      try {
+        if (state.pendingAssets[state.target]?.[kind]?.previewUrl) {
+          URL.revokeObjectURL(state.pendingAssets[state.target][kind].previewUrl);
+        }
+      } catch(e){}
+      if (state.pendingAssets[state.target]) delete state.pendingAssets[state.target][kind];
+
+      if (nameEl) nameEl.textContent = "No file selected";
+      if (prevImg) { prevImg.src = ""; prevImg.classList.add("hidden"); }
+      if (iconEl) iconEl.classList.remove("hidden");
+
+      renderBrandPreview();
+      renderFormPreviewIframe();
+      return;
+    }
+
+    // Set
+    const previewUrl = URL.createObjectURL(file);
+    state.pendingAssets[state.target][kind] = { file, previewUrl };
+
+    if (nameEl) nameEl.textContent = file.name;
+
     // Immediate preview in thumbnail
-    $(`prev_${key}`).src = URL.createObjectURL(file);
-    $(`prev_${key}`).classList.remove('hidden');
-    $(`icon_${key}`).classList.add('hidden');
-    
+    if (prevImg) {
+      prevImg.src = previewUrl;
+      prevImg.classList.remove('hidden');
+    }
+    if (iconEl) iconEl.classList.add('hidden');
+
     renderBrandPreview();
+    renderFormPreviewIframe();
   }
 
-  // --- API Calls (Restored Robust Logic) ---
+// --- API Calls (Restored Robust Logic) (Restored Robust Logic) ---
   async function apiCall(action, payload){
     const token = (getIdToken() || "").trim();
     const headers = { "Content-Type": "application/json" };
@@ -1658,11 +1691,28 @@ function setPending(key, file) {
   };
 
   // Asset Inputs
-  ['logo','header','bg'].forEach(k => {
-     $(`file_${k}`).onchange = (e) => { if(e.target.files[0]) setPending(k, e.target.files[0]); };
-     const clearBtn = document.querySelector(`[data-clear="${k}"]`);
-     if(clearBtn) clearBtn.onclick = (e) => { e.stopPropagation(); $(`file_${k}`).value = ""; setPending(k, null); renderBrandPreview(); };
-  });
+// UI keys: logo, header, bg
+// Backend keys: logo, header, background (IMPORTANT!)
+[
+  { ui: "logo", kind: "logo" },
+  { ui: "header", kind: "header" },
+  { ui: "bg", kind: "background" },
+].forEach(({ui, kind}) => {
+   const inp = $(`file_${ui}`);
+   if (inp){
+     inp.onchange = (e) => {
+       const f = e?.target?.files?.[0];
+       if (f) setPending(kind, f, ui);
+     };
+   }
+
+   const clearBtn = document.querySelector(`[data-clear="${ui}"]`);
+   if(clearBtn) clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (inp) inp.value = "";
+      setPending(kind, null, ui);
+   };
+});
 
   // Input Live Sync
   ['input','change'].forEach(ev => {

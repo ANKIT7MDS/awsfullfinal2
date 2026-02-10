@@ -237,7 +237,7 @@ if (!CID && TOKEN) {
 const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
 const debug = (qs("debug") || "").trim() === "1";
 
-function isPublicMode() { return !!token; }
+function isPublicMode() { return !!TOKEN; }
 
 function setThemeVars(c1, c2) {
   if (c1) document.documentElement.style.setProperty("--c1", c1);
@@ -258,7 +258,7 @@ function showStatus(msg, isError) {
 }
 
 async function apiCall(action, payload) {
-  const path = isPublicMode() ? "/political/public/forms" : "/political/forms";
+  const path = "/political/forms"; // use same endpoint (has CORS).
   const url = `${BASE_URL}${path}`;
   const res = await fetch(url, {
     method: "POST",
@@ -311,6 +311,7 @@ async function loadRemoteConfig(formType) {
       collection_id: CID,
       form_type: formType,
       token: TOKEN,
+    _ts: Date.now(),
     };
     // IMPORTANT: return FULL response (it contains: settings, config, form, form_type)
     const res = await apiCallPublic("public_get_config", payload);

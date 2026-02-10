@@ -1223,20 +1223,34 @@ function setPending(key, file) {
 
   // --- API Calls (Restored Robust Logic) ---
   async function apiCall(action, payload){
-    let idToken = getIdToken();
-    
-    const doFetch = async (token) => {
-        return await fetch(FORMS_URL, {
-          method: "POST",
-          cache: "no-store",
-headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ action, payload })
-        });
-    };
+    const token = (getIdToken() || "").trim();
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    if (!idToken) {
-       console.warn("No ID token found in storage.");
+    let resp;
+    try{
+      resp = await fetch(FORMS_URL, {
+        method: "POST",
+        cache: "no-store",
+        headers,
+        body: JSON.stringify({ action, payload })
+      });
+    }catch(e){
+      throw new Error("Network error calling API. Check internet / CORS.");
     }
+
+    if (resp.status === 401) {
+      openAuthModal();
+      throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
+    }
+
+    const txt = await resp.text();
+    let json = {};
+    try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
+
+    if (!resp.ok) throw new Error(json.message || json.error || `HTTP ${resp.status}`);
+    return json;
+  }
 
     let resp = await doFetch(idToken || "");
     
@@ -1262,16 +1276,45 @@ headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}
     throw lastErr || new Error("API call failed");
   }
 
+  function guessMimeFromName(name){
+    const n = (name || "").toLowerCase();
+    if (n.endsWith(".png")) return "image/png";
+    if (n.endsWith(".webp")) return "image/webp";
+    if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+    return "";
+  }
+
   async function initAssetUpload(assetKind, ft, file){
-    const sha = await sha256Hex(file);
-    const fileName = `${crypto.randomUUID()}.${extFromMime(file.type)}`;
-    const payload = { collection_id: state.cid, form_type: ft === "__defaults__" ? "visitor_form" : ft, asset_kind: assetKind, sha256: sha, file_name: fileName, mime_type: file.type };
-    const res = await apiCallCandidates(["admin_init_asset_upload","admin_init_upload_asset","init_asset_upload"], payload);
+    const mime = (file && file.type) ? file.type : (guessMimeFromName(file?.name) || "image/jpeg");
+    const fileName = `${crypto.randomUUID()}.${extFromMime(mime)}`;
+    const payload = {
+      collection_id: state.cid,
+      form_type: ft === "__defaults__" ? "visitor_form" : ft,
+      asset_kind: assetKind,
+      file_name: fileName,
+      mime_type: mime
+    };
+
+    const res = await apiCallCandidates(["admin_init_asset_upload","admin_get_upload_url","admin_upload_init"], payload);
     const uploadUrl = res.upload_url || res.url;
-    if (!uploadUrl) return null;
-    await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": file.type } });
+    if (!uploadUrl) throw new Error("Upload URL missing from backend");
+
+    let putResp;
+    try{
+      putResp = await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": mime } });
+    } catch(e){
+      throw new Error("S3 upload blocked (CORS). S3 bucket CORS में PUT allow करो.");
+    }
+
+    if (!putResp.ok){
+      let t = "";
+      try{ t = await putResp.text(); }catch(e){}
+      throw new Error(`S3 upload failed: HTTP ${putResp.status} ${t ? ("- " + t.slice(0,120)) : ""}`);
+    }
+
     const previewUrl = res.preview_url || res.public_url || res.asset_url || res.url_public || "";
     const key = res.s3_key || res.asset_key || res.key || "";
+    if (!key) throw new Error("S3 key missing from backend");
     return { kind: "s3", key, previewUrl };
   }
 
@@ -1348,6 +1391,8 @@ headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}
 
       toast.remove?.();
       showToast("Saved","success");
+      // Reload from backend to confirm persisted + refresh signed URLs
+      await loadConfig({ allowFallback: false, silent: true });
       // Clear pending for this form (uploaded already)
       if(state.pendingAssets?.[ft]) delete state.pendingAssets[ft];
 

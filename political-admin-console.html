@@ -419,6 +419,7 @@
                             
                             <h2 id="previewTitle" class="text-2xl font-bold text-white mb-1">Title</h2>
                             <p id="previewSubtitle" class="text-sm text-slate-300">Subtitle</p>
+                            <p id="previewTagline" class="text-xs text-slate-400 mt-2 hidden">Tagline</p>
                             <div class="mt-6 flex gap-2 justify-center">
                                <div id="sw1" class="w-4 h-4 rounded-full bg-orange-500"></div>
                                <div id="sw2" class="w-4 h-4 rounded-full bg-red-500"></div>
@@ -937,39 +938,62 @@ function renderBrandPreview() {
   if(!state.config) return;
   const eff = getEffectiveForm(state.target || "visitor_form");
 
+  const bgDiv = $("previewBg");
+  const headerWrap = $("previewHeaderImgWrap");
   const headerImg = $("previewHeaderImg");
-  const logoImg = $("previewLogoImg");
-  const bgImg = $("previewBgImg");
+  const logoImg = $("previewLogo");
+  const logoIcon = $("previewLogoIcon");
   const titleEl = $("previewTitle");
   const subtitleEl = $("previewSubtitle");
   const taglineEl = $("previewTagline");
-  const btn = $("previewBtn");
+  const sw1 = $("sw1");
+  const sw2 = $("sw2");
 
-  const bg = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
-  if(bgImg) bgImg.src = bg || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='900'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230f172a'/%3E%3Cstop offset='1' stop-color='%23111827'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3C/svg%3E";
+  // Background
+  if (bgDiv) {
+    const bg = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
+    if (bg) bgDiv.style.backgroundImage = `url('${bg}')`;
+    else bgDiv.style.backgroundImage = "linear-gradient(135deg, rgba(15,23,42,1), rgba(17,24,39,1))";
+  }
 
+  // Header banner
   const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-  if(headerImg) {
-    if(header) headerImg.src = header;
-    else {
-      const c1 = eff.color1.replace("#","%23");
-      const c2 = eff.color2.replace("#","%23");
-      headerImg.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='240'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='${c1}'/%3E%3Cstop offset='1' stop-color='${c2}'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3C/svg%3E`;
+  if (headerWrap && headerImg) {
+    if (header) {
+      headerImg.src = header;
+      headerWrap.classList.remove("hidden");
+    } else {
+      headerWrap.classList.add("hidden");
     }
   }
 
+  // Logo
   const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
-  if(logoImg) logoImg.src = logo || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='100%25' height='100%25' rx='16' fill='%23111827'/%3E%3Ctext x='50%25' y='54%25' font-size='22' text-anchor='middle' fill='%2394a3b8' font-family='Arial'%3ELOGO%3C/text%3E%3C/svg%3E";
+  if (logoImg && logoIcon) {
+    if (logo) {
+      logoImg.src = logo;
+      logoImg.classList.remove("hidden");
+      logoIcon.classList.add("hidden");
+    } else {
+      logoImg.classList.add("hidden");
+      logoIcon.classList.remove("hidden");
+    }
+  }
 
-  if(titleEl) titleEl.textContent = eff.title || "";
-  if(subtitleEl) subtitleEl.textContent = eff.subtitle || "";
-  if(taglineEl) taglineEl.textContent = eff.tagline || "";
-  if(btn) btn.style.backgroundImage = `linear-gradient(90deg, ${eff.color1}, ${eff.color2})`;
+  if (titleEl) titleEl.textContent = eff.title || "";
+  if (subtitleEl) subtitleEl.textContent = eff.subtitle || "";
+
+  if (taglineEl) {
+    const tg = (eff.tagline || "").trim();
+    taglineEl.textContent = tg;
+    taglineEl.classList.toggle("hidden", !tg);
+  }
+
+  if (sw1) sw1.style.backgroundColor = eff.color1 || "#f97316";
+  if (sw2) sw2.style.backgroundColor = eff.color2 || "#ef4444";
 
   renderPreviewTabs();
-  // // // renderAllFormsGrid(); // disabled // disabled // disabled (use dropdown preview)
 }
-
 
 function buildPreviewSrcDoc(ft) {
   const eff = getEffectiveForm(ft || "visitor_form");
@@ -980,75 +1004,105 @@ function buildPreviewSrcDoc(ft) {
   const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
 
   const rawPrograms =
-    (eff.form && (eff.form.program_options || eff.form.programs)) ||
-    (state.config && state.config.defaults && state.config.defaults.programs) ||
+    eff.form?.program_options ||
+    eff.form?.programs ||
+    state.config?.defaults?.programs ||
     [];
 
   const programs = Array.isArray(rawPrograms) ? rawPrograms : [];
-  const optionsHtml = programs.slice(0, 40).map(p => "<option>" + escHtml(p) + "</option>").join("");
+  const optionsHtml = programs.slice(0, 40).map(p => `<option>${escHtml(p)}</option>`).join("");
 
   const headerBlock = header
-    ? "<img class=\"header-img\" src=\"" + escHtml(header) + "\" alt=\"header\" />"
-    : "<div class=\"header-grad\"></div>";
+    ? `<img class="header-img" src="${escHtml(header)}" alt="header" />`
+    : `<div class="header-grad"></div>`;
 
   const logoBlock = logo
-    ? "<img class=\"logo\" src=\"" + escHtml(logo) + "\" alt=\"logo\" />"
-    : "<div class=\"logo ph\">LOGO</div>";
+    ? `<img class="logo" src="${escHtml(logo)}" alt="logo" />`
+    : `<div class="logo ph">LOGO</div>`;
 
-  const bgStyle = bg ? ("background-image:url('" + escHtml(bg) + "');") : "";
+  const bgStyle = bg ? `background-image:url('${escHtml(bg)}');` : "";
 
-  const html = [
-    "<!doctype html>",
-    "<html lang=\"hi\">",
-    "<head>",
-    "  <meta charset=\"utf-8\" />",
-    "  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />",
-    "  <title>Preview</title>",
-    "  <style>",
-    "    :root{--c1:" + c1 + ";--c2:" + c2 + ";}",
-    "    *{box-sizing:border-box}",
-    "    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#e5e7eb; background:#0b1220; " + bgStyle + " background-size:cover; background-position:center;}",
-    "    .overlay{min-height:100vh; background:linear-gradient(180deg, rgba(2,6,23,.92), rgba(2,6,23,.88));}",
-    "    .wrap{max-width:420px;margin:0 auto; padding:14px;}",
-    "    .card{border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06); border-radius:18px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,.35);}",
-    "    .header{position:relative;height:150px; overflow:hidden;}",
-    "    .header-img{width:100%;height:100%;object-fit:cover;display:block;}",
-    "    .header-grad{width:100%;height:100%;background:linear-gradient(90deg,var(--c1),var(--c2));}",
-    "    .logoWrap{position:absolute;left:14px;bottom:-22px;display:flex;gap:10px;align-items:center;}",
-    "    .logo{width:74px;height:74px;border-radius:18px;object-fit:cover;border:2px solid rgba(255,255,255,.22);background:rgba(17,24,39,.85);}",
-    "    .logo.ph{display:flex;align-items:center;justify-content:center;font-weight:800;}",
-    "    .body{padding:38px 14px 14px;}",
-    "    h2{margin:0;font-size:18px;line-height:1.2;}",
-    "    p{margin:6px 0 0;color:#cbd5e1;font-size:13px;}",
-    "    .tag{margin-top:10px;padding:10px;border-radius:14px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);}",
-    "    select,input{width:100%;margin-top:10px;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:#e5e7eb;outline:none;}",
-    "    .btn{margin-top:12px;width:100%;padding:12px;border-radius:14px;border:0;color:#0b1220;font-weight:800;background:linear-gradient(90deg,var(--c1),var(--c2));}",
-    "  </style>",
-    "</head>",
-    "<body>",
-    "  <div class=\"overlay\">",
-    "    <div class=\"wrap\">",
-    "      <div class=\"card\">",
-    "        <div class=\"header\">",
-    "          " + headerBlock,
-    "          <div class=\"logoWrap\">" + logoBlock + "</div>",
-    "        </div>",
-    "        <div class=\"body\">",
-    "          <h2>" + escHtml(eff.title || "Political Form") + "</h2>",
-    "          <p>" + escHtml(eff.subtitle || "Live preview") + "</p>",
-    "          <div class=\"tag\">" + escHtml(eff.tagline || "") + "</div>",
-    "          <select><option>कार्यक्रम चुनें</option>" + optionsHtml + "</select>",
-    "          <input placeholder=\"नाम\" />",
-    "          <button class=\"btn\">Submit</button>",
-    "        </div>",
-    "      </div>",
-    "    </div>",
-    "  </div>",
-    "</body>",
-    "</html>"
-  ];
+  return `<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Preview</title>
+  <style>
+    :root{--c1:${c1};--c2:${c2};}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#e5e7eb; background:#0b1220; ${bgStyle} background-size:cover; background-position:center;}
+    .overlay{min-height:100vh; background:linear-gradient(180deg, rgba(2,6,23,.92), rgba(2,6,23,.88));}
+    .wrap{max-width:420px;margin:0 auto; padding:14px;}
+    .card{border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06); border-radius:18px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,.35);}
+    .header{position:relative;height:150px; overflow:hidden;}
+    .header-img{width:100%;height:100%;object-fit:cover;display:block;}
+    .header-grad{width:100%;height:100%; background:linear-gradient(135deg,var(--c1),var(--c2));}
+    .logo{position:absolute;left:14px;bottom:-26px;width:58px;height:58px;border-radius:16px;border:2px solid rgba(255,255,255,.35); background:rgba(2,6,23,.7); object-fit:cover; box-shadow:0 10px 18px rgba(0,0,0,.35);}
+    .logo.ph{display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#94a3b8;}
+    .content{padding:44px 14px 16px;}
+    .title{font-size:18px;font-weight:800;line-height:1.2;margin:0;}
+    .sub{margin:6px 0 0 0;font-size:12px;color:#cbd5e1;}
+    .tag{margin:6px 0 0 0;font-size:11px;color:#94a3b8;}
+    .field{margin-top:12px;}
+    label{display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px;}
+    input,select{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14); background:rgba(2,6,23,.55); color:#e5e7eb; padding:12px 12px; outline:none;}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .btn{margin-top:14px;width:100%;border:none;border-radius:14px;padding:12px 14px;font-weight:800;color:white; cursor:pointer;background:linear-gradient(90deg,var(--c1),var(--c2));}
+    .note{margin-top:10px;font-size:10px;color:#64748b;text-align:center;}
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <div class="wrap">
+      <div class="card">
+        <div class="header">
+          ${headerBlock}
+          ${logoBlock}
+        </div>
+        <div class="content">
+          <h1 class="title">${escHtml(eff.title || "")}</h1>
+          ${eff.subtitle ? `<div class="sub">${escHtml(eff.subtitle)}</div>` : ``}
+          ${eff.tagline ? `<div class="tag">${escHtml(eff.tagline)}</div>` : ``}
 
-  return html.join("");
+          <div class="field">
+            <label>नाम / Name</label>
+            <input placeholder="अपना नाम लिखें" />
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>मोबाइल</label>
+              <input placeholder="10 अंकों का" />
+            </div>
+            <div class="field">
+              <label>जिला</label>
+              <input placeholder="जिला" />
+            </div>
+          </div>
+
+          ${optionsHtml ? `
+          <div class="field">
+            <label>कार्यक्रम / Program</label>
+            <select>
+              <option value="">Select</option>
+              ${optionsHtml}
+            </select>
+          </div>` : ``}
+
+          <div class="field">
+            <label>टिप्पणी</label>
+            <input placeholder="Optional" />
+          </div>
+
+          <button class="btn">Submit</button>
+          <div class="note">Admin Preview • Live Branding</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
 }
 
 function renderFormPreviewIframe() {
@@ -1179,14 +1233,38 @@ function renderAllFormsGrid() {
 
 function setPending(key, file) {
     if(!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
+
+    // Clear
+    if(!file){
+      if(state.pendingAssets[state.target][key]) delete state.pendingAssets[state.target][key];
+      const nameEl = $(`name_${key}`);
+      const prevEl = $(`prev_${key}`);
+      const iconEl = $(`icon_${key}`);
+      const fileEl = $(`file_${key}`);
+
+      if(fileEl) fileEl.value = "";
+      if(nameEl) nameEl.textContent = "No file";
+      if(prevEl) { prevEl.src = ""; prevEl.classList.add("hidden"); }
+      if(iconEl) iconEl.classList.remove("hidden");
+
+      renderBrandPreview();
+      return;
+    }
+
+    // Set
     state.pendingAssets[state.target][key] = { file, previewUrl: URL.createObjectURL(file) };
-    $(`name_${key}`).textContent = file.name;
-    
+    const nameEl = $(`name_${key}`);
+    if(nameEl) nameEl.textContent = file.name;
+
     // Immediate preview in thumbnail
-    $(`prev_${key}`).src = URL.createObjectURL(file);
-    $(`prev_${key}`).classList.remove('hidden');
-    $(`icon_${key}`).classList.add('hidden');
-    
+    const prevEl = $(`prev_${key}`);
+    if(prevEl) {
+      prevEl.src = URL.createObjectURL(file);
+      prevEl.classList.remove('hidden');
+    }
+    const iconEl = $(`icon_${key}`);
+    if(iconEl) iconEl.classList.add('hidden');
+
     renderBrandPreview();
   }
 
@@ -1195,12 +1273,12 @@ function setPending(key, file) {
     let idToken = getIdToken();
     
     const doFetch = async (token) => {
-        const h = { "Content-Type": "application/json" };
-        const t = (token || "").toString().trim();
-        if (t) h["Authorization"] = `Bearer ${t}`;
+        const headers = { "Content-Type": "application/json" };
+        const tkn = (token || "").trim();
+        if (tkn) headers["Authorization"] = `Bearer ${tkn}`;
         return await fetch(FORMS_URL, {
           method: "POST",
-          headers: h,
+          headers,
           body: JSON.stringify({ action, payload })
         });
     };
@@ -1277,6 +1355,25 @@ function setPending(key, file) {
         if(meta.subtitle) state.config.defaults.branding.subtitle = meta.subtitle;
         if(meta.tagline) state.config.defaults.branding.tagline = meta.tagline;
 
+        const pending = (state.pendingAssets?.[ft] || {});
+
+        // Upload selected assets first (logo/header/bg)
+        for (const k of Object.keys(pending)) {
+          const obj = pending[k];
+          if (obj && obj.file) {
+            const kind = (k === "bg") ? "background" : k;
+            const up = await initAssetUpload(kind, ft, obj.file);
+            if (up && up.key) {
+              pending[k].key = up.key;
+              pending[k].uploadedPreviewUrl = up.previewUrl || "";
+            }
+          }
+        }
+
+        if(pending.logo?.key) state.config.defaults.branding.logo_key = pending.logo.key;
+        if(pending.header?.key) state.config.defaults.branding.header_key = pending.header.key;
+        if(pending.bg?.key) state.config.defaults.branding.background_key = pending.bg.key;
+
         state.config.global = state.config.global || {};
         if(meta.tagline) state.config.global.tagline = meta.tagline;
       } else {
@@ -1288,9 +1385,23 @@ function setPending(key, file) {
         f.branding = deepMerge(f.branding || {}, brand);
 
         const pending = (state.pendingAssets?.[ft] || {});
-        if(pending.logo?.key) f.logo_key = pending.logo.key;
-        if(pending.header?.key) f.header_key = pending.header.key;
-        if(pending.background?.key) f.background_key = pending.background.key;
+
+// Upload selected assets first (logo/header/bg)
+for (const k of Object.keys(pending)) {
+  const obj = pending[k];
+  if (obj && obj.file) {
+    const kind = (k === "bg") ? "background" : k;
+    const up = await initAssetUpload(kind, ft, obj.file);
+    if (up && up.key) {
+      pending[k].key = up.key;
+      pending[k].uploadedPreviewUrl = up.previewUrl || "";
+    }
+  }
+}
+
+if(pending.logo?.key) f.logo_key = pending.logo.key;
+if(pending.header?.key) f.header_key = pending.header.key;
+if(pending.bg?.key) f.background_key = pending.bg.key;
       }
 
       // Save to backend (political module)

@@ -219,8 +219,9 @@ const token = (qs("token") || "").trim();
 const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
 const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
 const debug = (qs("debug") || "").trim() === "1";
+const CLIENT_VERSION = "coordinator_brandingfix_v2_2026-02-11";
 
-function isPublicMode() { return !!token; }
+function isPublicMode(){ return !!token || !!cidParam; }
 
 function setThemeVars(c1, c2) {
   if (c1) document.documentElement.style.setProperty("--c1", c1);
@@ -475,7 +476,30 @@ function getFixedLevel(resp, formType) {
   const v = safeStr(formNode.fixed_level || "");
   return v ? v.toLowerCase() : "";
 }
-    const FORM_TYPE = "coordinator_entry";
+    // ===== Dynamic form_type resolution (must match Admin Console keys) =====
+function decodeJwtPayloadUnverified(t){
+  try{
+    if(!t) return {};
+    const parts = String(t).split(".");
+    if(parts.length < 2) return {};
+    let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    const jsonStr = atob(b64 + pad);
+    return JSON.parse(jsonStr);
+  }catch(e){ return {}; }
+}
+const TOKEN_CLAIMS = decodeJwtPayloadUnverified(token);
+const FT_FROM_QS = (qs("ft") || qs("form_type") || "").trim();
+// IMPORTANT: Admin Console uses "coordinator" as key (not coordinator_entry_form)
+const FORM_TYPE = (() => {
+  const ft = String(TOKEN_CLAIMS.ft || TOKEN_CLAIMS.form_type || FT_FROM_QS || "coordinator").trim();
+  const map = {
+    "coordinator_entry": "coordinator",
+    "coordinator_entry_form": "coordinator",
+    "coordinator_form": "coordinator"
+  };
+  return map[ft] || ft;
+})();
     const FIELD_IDS = ["level","program_name","district","vidhansabha","mandal","coordinator_name","coordinator_mobile","entry_date","role","notes"];
 
     const DISTRICT_DATA = {
@@ -2521,8 +2545,9 @@ function onPhotosSelected(ev, maxFiles=10) {
 
     let remoteCfg = null;
 
-    async function initAll() {
-      initDistrictCascade();
+    async function initAll(){
+  try{ console.log("[EventLens] Coordinator Form", CLIENT_VERSION); }catch(e){}
+initDistrictCascade();
 
       remoteCfg = await loadRemoteConfig(FORM_TYPE);
       applyBrandingFromResponse(remoteCfg, FORM_TYPE, "संयोजक (Coordinator) फॉर्म", "Coordinator Entry", "", "default-icon");

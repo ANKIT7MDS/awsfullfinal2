@@ -320,24 +320,97 @@ function mergeObj(a, b) {
 // BRANDING + PROGRAMS + FIXED LEVEL
 // ===============================
 async function loadRemoteConfig(formType) {
-  // Returns { branding, programs, fixed_level } or null
   try {
     const payload = isPublicMode()
-      ? { token, form_type: formType }
-      : { collection_id: cidParam, form_type: formType };
+      ? { cid: cidParam, collection_id: cidParam, token, form_type: formType, _ts: Date.now() }
+      : { collection_id: cidParam, form_type: formType, _ts: Date.now() };
 
     const action = isPublicMode() ? "public_get_config" : "admin_get_config";
     const res = await apiCall(action, payload);
-    return res && (res.config || res.data || res);
+    return res || null; // keep full response (settings/config/form)
   } catch (e) {
     if (debug) console.log("config load failed", e);
     return null;
   }
 }
 
-function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
-  const globalBrand = (cfg && cfg.branding && cfg.branding.global) ? cfg.branding.global : {};
-  const perForm = (cfg && cfg.branding && cfg.branding.forms && cfg.branding.forms[formType]) ? cfg.branding.forms[formType] : {};
+
+function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
+  const obj = cfgOrResp || {};
+
+  // -------- NEW response shape support (preferred) --------
+  const defaultsNode = (obj.settings && obj.settings.defaults) || (obj.config && obj.config.defaults) || null;
+  const globalNode = (obj.settings && obj.settings.global) || (obj.config && obj.config.global) || null;
+
+  // Form node
+  const ft = formType || obj.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+  const formNode =
+    (obj.form && typeof obj.form === "object" && (!obj.form_type || obj.form_type === ft)) ? obj.form :
+    (obj.settings && obj.settings.forms && obj.settings.forms[ft]) ? obj.settings.forms[ft] :
+    (obj.config && obj.config.forms && obj.config.forms[ft]) ? obj.config.forms[ft] :
+    null;
+
+  // If we have new nodes, apply using them
+  if (defaultsNode || globalNode || formNode) {
+    const branding = (formNode && formNode.branding) || (defaultsNode && defaultsNode.branding) || {};
+    const theme = (globalNode && globalNode.theme) || {};
+
+    const title = safeStr((formNode && formNode.title) || fallbackTitle || "EventLens Form");
+    const subtitle = safeStr((formNode && formNode.subtitle) || fallbackSubtitle || "");
+    const tagline = safeStr((formNode && formNode.tagline) || branding.tagline || fallbackTagline || "");
+    const footerText = safeStr((globalNode && globalNode.tagline) || branding.footer_text || "Powered by EventLens");
+
+    // Signed URLs from backend (preferred)
+    const logoUrl = safeStr((formNode && formNode.logo_url) || (branding.logo && branding.logo.url) || branding.logo_url || "");
+    const headerUrl = safeStr((formNode && formNode.header_url) || (branding.header && branding.header.url) || branding.header_image_url || "");
+    const bgUrl = safeStr((formNode && formNode.background_url) || (branding.background && branding.background.url) || branding.background_image_url || "");
+
+    // Cache bust (use updated_at if present, else Date.now)
+    const ver = safeStr(obj.updated_at_ms || (globalNode && globalNode.updated_at_ms) || Date.now());
+
+    if ($("org-name")) $("org-name").textContent = title;
+    if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
+    if ($("org-tagline")) $("org-tagline").textContent = tagline;
+    if ($("footer-text")) $("footer-text").textContent = footerText;
+
+    // Theme colors -> our CSS uses --c1/--c2
+    const primary = safeStr(branding.color1 || theme.primary || "#f97316");
+    const secondary = safeStr(branding.color2 || theme.secondary || "#ef4444");
+    setThemeVars(primary, secondary);
+    setBackgroundImage(bgUrl, ver);
+
+    // Logo
+    const logoEl = $("custom-logo");
+    const iconEl = $(defaultIconId);
+    const logoFinal = cacheBust(logoUrl, ver);
+    if (logoEl && logoFinal) {
+      logoEl.src = logoFinal;
+      logoEl.classList.remove("hidden");
+      if (iconEl) iconEl.classList.add("hidden");
+      try { logoEl.onerror = () => { logoEl.classList.add("hidden"); if (iconEl) iconEl.classList.remove("hidden"); }; } catch(e) {}
+    } else {
+      if (logoEl) logoEl.classList.add("hidden");
+      if (iconEl) iconEl.classList.remove("hidden");
+    }
+
+    // Header
+    const headerWrap = $("header-wrap");
+    const headerEl = $("header-image");
+    const headerFinal = cacheBust(headerUrl, ver);
+    if (headerWrap && headerEl && headerFinal) {
+      headerEl.src = headerFinal;
+      headerWrap.classList.remove("hidden");
+      try { headerEl.onerror = () => { headerWrap.classList.add("hidden"); }; } catch(e) {}
+    } else if (headerWrap) {
+      headerWrap.classList.add("hidden");
+    }
+
+    return;
+  }
+
+  // -------- OLD config shape fallback --------
+  const globalBrand = (obj && obj.branding && obj.branding.global) ? obj.branding.global : {};
+  const perForm = (obj && obj.branding && obj.branding.forms && obj.branding.forms[formType]) ? obj.branding.forms[formType] : {};
   const brand = mergeObj(globalBrand, perForm);
 
   const title = brand.title || fallbackTitle || "EventLens Form";
@@ -347,19 +420,16 @@ function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle,
   const headerImg = brand.header_image_url || "";
   const footerText = brand.footer_text || "";
   const bgImg = brand.background_image_url || "";
-  const ver = (cfg && (cfg.updated_at_ms || cfg.updatedAtMs || cfg.updated_at_iso)) || Date.now();
+  const ver = (obj && (obj.updated_at_ms || obj.updatedAtMs || obj.updated_at_iso)) || Date.now();
 
   if ($("org-name")) $("org-name").textContent = title;
   if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
   if ($("org-tagline")) $("org-tagline").textContent = tagline;
-
   if ($("footer-text")) $("footer-text").textContent = footerText;
 
-  // Theme
   setThemeVars(brand.theme_primary, brand.theme_secondary);
   setBackgroundImage(bgImg, ver);
 
-  // Logo
   const logoEl = $("custom-logo");
   const iconEl = $(defaultIconId);
   const logoFinal = cacheBust(logoUrl, ver);
@@ -372,7 +442,6 @@ function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle,
     if (logoEl) logoEl.classList.add("hidden");
     if (iconEl) iconEl.classList.remove("hidden");
   }
-// Header banner
   const headerWrap = $("header-wrap");
   const headerEl = $("header-image");
   const headerFinal = cacheBust(headerImg, ver);
@@ -385,29 +454,74 @@ function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle,
   }
 }
 
-function fillProgramNames(cfg, selectId) {
+
+function fillProgramNames(cfgOrResp, selectId) {
   const sel = $(selectId);
   if (!sel) return;
-  const list = (cfg && (cfg.programs || (cfg.data && cfg.data.programs))) || [];
-  const programs = Array.isArray(list) ? list : [];
+
+  const obj = cfgOrResp || {};
+
+  // NEW shape: use formNode.program_options / formNode.programs / defaults.programs
+  const formType = (typeof FORM_TYPE !== "undefined") ? FORM_TYPE : (obj.form_type || "");
+  const formNode = (obj.form && typeof obj.form === "object") ? obj.form :
+    (obj.settings && obj.settings.forms && obj.settings.forms[formType]) ? obj.settings.forms[formType] :
+    (obj.config && obj.config.forms && obj.config.forms[formType]) ? obj.config.forms[formType] :
+    null;
+
+  const defaults = (obj.settings && obj.settings.defaults) || (obj.config && obj.config.defaults) || {};
+  let list = [];
+  if (formNode) {
+    if (Array.isArray(formNode.program_options)) list = list.concat(formNode.program_options);
+    if (Array.isArray(formNode.programs)) list = list.concat(formNode.programs);
+  }
+  if (Array.isArray(defaults.programs)) list = list.concat(defaults.programs);
+
+  // OLD shape fallback
+  if (!list.length) {
+    const legacy = (obj && (obj.programs || (obj.data && obj.data.programs))) || [];
+    if (Array.isArray(legacy)) list = legacy.slice();
+  }
+
+  // De-dup & clean
+  const programs = Array.from(new Set((list || []).map(x => safeStr(x).trim()).filter(Boolean)));
   if (!programs.length) return;
 
+  // If first option exists, keep placeholder
   sel.innerHTML = '<option value="">— कार्यक्रम चुनें —</option>';
-  programs.forEach((p) => {
-    const v = safeStr(p).trim();
-    if (!v) return;
+  programs.forEach(p => {
     const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
+    opt.value = p;
+    opt.textContent = p;
     sel.appendChild(opt);
   });
 }
 
-function getFixedLevel(cfg, formType) {
-  const fixed = (cfg && cfg.fixed_levels) ? cfg.fixed_levels : (cfg && cfg.data && cfg.data.fixed_levels) ? cfg.data.fixed_levels : {};
-  if (fixed && fixed[formType]) return String(fixed[formType]).toLowerCase();
+
+function getFixedLevel(cfgOrResp, formType) {
+  // Supports both old config shape and new response shape
+  const obj = cfgOrResp || {};
+  // NEW: resp.settings.global.fixed_levels OR resp.config.global.fixed_levels
+  const globalNode =
+    (obj.settings && obj.settings.global) ||
+    (obj.config && obj.config.global) ||
+    {};
+  let fixed = globalNode.fixed_levels;
+
+  // Sometimes fixed_levels stored under defaults/global in older data
+  if (!fixed) {
+    const defaults = (obj.settings && obj.settings.defaults) || (obj.config && obj.config.defaults) || {};
+    fixed = defaults.fixed_levels || defaults.fixedLevels || null;
+  }
+
+  // OLD: cfg.fixed_levels or cfg.data.fixed_levels
+  if (!fixed) {
+    fixed = (obj.fixed_levels) ? obj.fixed_levels : (obj.data && obj.data.fixed_levels) ? obj.data.fixed_levels : {};
+  }
+
+  if (fixed && typeof fixed === "object" && fixed[formType]) return String(fixed[formType]).toLowerCase();
   return "";
 }
+
 
     const FORM_TYPE = "visitor_form";
     const FIELD_IDS = ["mobile","name","designation","district","vidhansabha","mandal","address","reason"];

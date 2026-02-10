@@ -1457,9 +1457,12 @@ function setPending(key, file) {
      
      if(scope === 'defaults') list = state.config.defaults.programs || [];
      else {
-        // If specific form
-        const specific = state.config.forms[ft]?.programs;
-        list = specific || state.config.defaults.programs || []; 
+        // Per-form: prefer program_options if present, else programs, else fallback to defaults
+        const node = state.config.forms[ft] || {};
+        const specific =
+          (Array.isArray(node.program_options) && node.program_options.length ? node.program_options :
+           (Array.isArray(node.programs) && node.programs.length ? node.programs : null));
+        list = specific || state.config.defaults.programs || [];
      }
 
      const container = $('progList');
@@ -1479,6 +1482,7 @@ function setPending(key, file) {
          else {
              ensureFormObj(ft);
              state.config.forms[ft].programs = newList;
+             state.config.forms[ft].program_options = newList;
          }
          renderPrograms();
      };
@@ -1678,7 +1682,10 @@ function setPending(key, file) {
           state.config.defaults.programs = [v, ...(state.config.defaults.programs||[])];
       } else {
           ensureFormObj(ft);
-          state.config.forms[ft].programs = [v, ...(state.config.forms[ft].programs||[])];
+          const base = (state.config.forms[ft].program_options || state.config.forms[ft].programs || []);
+          const arr = [v, ...base];
+          state.config.forms[ft].program_options = arr;
+          state.config.forms[ft].programs = arr;
       }
       $('progInput').value = "";
       renderPrograms();

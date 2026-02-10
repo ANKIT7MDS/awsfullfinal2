@@ -259,7 +259,6 @@ function setBackgroundImage(url, ver) {
     document.body.style.backgroundImage = "none";
   };
   testImg.src = finalUrl;
-}')`);
 }
 
 function showStatus(msg, isError) {
@@ -272,19 +271,20 @@ function showStatus(msg, isError) {
 }
 
 async function apiCall(action, payload) {
-  const path = isPublicMode() ? "/political/public/forms" : "/political/forms";
-  const url = `${BASE_URL}${path}`;
+  // IMPORTANT: use same endpoint as admin to avoid CORS/preflight issues
+  const url = `${BASE_URL}/political/forms`;
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
     body: JSON.stringify({ action, payload: payload || {} })
   });
   const text = await res.text();
   let data = {};
-  try { data = JSON.parse(text); } catch(e) { data = { message: text || "Invalid JSON" }; }
+  try { data = JSON.parse(text); } catch (e) { data = { message: text || "Invalid JSON" }; }
   if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
   return data;
 }
+
 
 function safeStr(v) { return (v === null || v === undefined) ? "" : String(v); }
 

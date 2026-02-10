@@ -289,9 +289,15 @@ async function apiCall(action, payload) {
 function safeStr(v) { return (v === null || v === undefined) ? "" : String(v); }
 
 
+function isPresignedUrl(u) {
+  // AWS S3 presigned URLs include X-Amz-* query params; adding our own query breaks the signature
+  return /[?&]x-amz-/i.test(u) || /[?&]X-Amz-/i.test(u) || /X-Amz-Signature/i.test(u) || /X-Amz-Algorithm/i.test(u) || /X-Amz-Credential/i.test(u);
+}
 function cacheBust(url, ver) {
   const u = safeStr(url || "").trim();
   if (!u) return "";
+  // Never append cache-bust to presigned URLs (it invalidates the signature and causes ORB/403 XML)
+  if (isPresignedUrl(u)) return u;
   const v = safeStr(ver || "").trim();
   if (!v) return u;
   const sep = u.includes("?") ? "&" : "?";

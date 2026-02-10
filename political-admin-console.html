@@ -884,6 +884,7 @@ function collectBrandFromUI() {
     if (!state.config.forms[target]) state.config.forms[target] = {};
     applyTo(state.config.forms[target]);
   }
+  return { color1, color2 };
 }
 
 
@@ -927,24 +928,10 @@ function renderBrandInputsFromConfig() {
   if($("b_c1")) $("b_c1").value = eff.color1 || "#f97316";
   if($("b_c2")) $("b_c2").value = eff.color2 || "#ef4444";
 
-  // Current images previews (show last saved branding when admin opens)
-  const setTile = (uiKey, url) => {
-    const prev = $(`prev_${uiKey}`);
-    const icon = $(`icon_${uiKey}`);
-    const name = $(`name_${uiKey}`);
-    if(url) {
-      if(prev){ prev.src = withCacheBust(url); prev.classList.remove("hidden"); }
-      if(icon) icon.classList.add("hidden");
-      if(name && (!name.textContent || name.textContent === "No file")) name.textContent = "Current";
-    } else {
-      if(prev){ prev.src = ""; prev.classList.add("hidden"); }
-      if(icon) icon.classList.remove("hidden");
-      if(name) name.textContent = "No file";
-    }
-  };
-  setTile("logo", eff.logoUrl || "");
-  setTile("header", eff.headerUrl || "");
-  setTile("bg", eff.bgUrl || "");
+  // Current images previews
+  if($("prev_logo")) $("prev_logo").src = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
+  if($("prev_header")) $("prev_header").src = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
+  if($("prev_bg")) $("prev_bg").src = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
 }
 
 function renderBrandPreview() {
@@ -1221,72 +1208,51 @@ function renderAllFormsGrid() {
   keys.forEach(ft => addCard(ft, getEffectiveForm(ft)));
 }
 
-function setPending(uiKey, file) {
-    const ft = state.target || "visitor_form";
-    if(!state.pendingAssets[ft]) state.pendingAssets[ft] = {};
-
-    // Map UI key -> config key
-    const storeKey = (uiKey === "bg") ? "background" : uiKey;
-
-    // Clear pending
-    if(!file) {
-      if(state.pendingAssets[ft][storeKey]) delete state.pendingAssets[ft][storeKey];
-
-      // Reset tile UI
-      const nameEl = $(`name_${uiKey}`);
-      const prevEl = $(`prev_${uiKey}`);
-      const iconEl = $(`icon_${uiKey}`);
-      if(nameEl) nameEl.textContent = "No file";
-      if(prevEl) { prevEl.src = ""; prevEl.classList.add("hidden"); }
-      if(iconEl) iconEl.classList.remove("hidden");
-      renderBrandPreview();
-      return;
-    }
-
-    const objUrl = URL.createObjectURL(file);
-    state.pendingAssets[ft][storeKey] = { file, previewUrl: objUrl, uiKey };
-
-    const nameEl = $(`name_${uiKey}`);
-    const prevEl = $(`prev_${uiKey}`);
-    const iconEl = $(`icon_${uiKey}`);
-
-    if(nameEl) nameEl.textContent = file.name || "Selected";
-    if(prevEl) { prevEl.src = objUrl; prevEl.classList.remove("hidden"); }
-    if(iconEl) iconEl.classList.add("hidden");
-
+function setPending(key, file) {
+    if(!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
+    state.pendingAssets[state.target][key] = { file, previewUrl: URL.createObjectURL(file) };
+    $(`name_${key}`).textContent = file.name;
+    
+    // Immediate preview in thumbnail
+    $(`prev_${key}`).src = URL.createObjectURL(file);
+    $(`prev_${key}`).classList.remove('hidden');
+    $(`icon_${key}`).classList.add('hidden');
+    
     renderBrandPreview();
   }
 
-
   // --- API Calls (Restored Robust Logic) ---
   async function apiCall(action, payload){
-    const idToken = getIdToken();
+    let idToken = getIdToken();
+    
+    const doFetch = async (token) => {
+        return await fetch(FORMS_URL, {
+          method: "POST",
+          cache: "no-store",
+headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ action, payload })
+        });
+    };
 
-    const headers = { "Content-Type": "application/json" };
-    // IMPORTANT: don't send blank "Bearer " (it can cause 500 on some authorizers)
-    if (idToken && String(idToken).trim()) {
-      headers["Authorization"] = `Bearer ${idToken}`;
+    if (!idToken) {
+       console.warn("No ID token found in storage.");
     }
 
-    const resp = await fetch(FORMS_URL, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ action, payload })
-    });
-
+    let resp = await doFetch(idToken || "");
+    
+    // Auto-recover from 401 using custom Modal
     if (resp.status === 401) {
-      openAuthModal();
-      throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
+        openAuthModal();
+        throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
     }
-
+    
     const txt = await resp.text();
     let json = {};
     try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
-
+    
     if (!resp.ok) throw new Error(json.message || json.error || `HTTP ${resp.status}`);
     return json;
   }
-
   
   async function apiCallCandidates(actions, payload){
     let lastErr = null;
@@ -1303,10 +1269,7 @@ function setPending(uiKey, file) {
     const res = await apiCallCandidates(["admin_init_asset_upload","admin_init_upload_asset","init_asset_upload"], payload);
     const uploadUrl = res.upload_url || res.url;
     if (!uploadUrl) return null;
-    const putRes = await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": file.type } });
-    if(!putRes.ok) {
-      throw new Error(`S3 upload failed (HTTP ${putRes.status}). Check S3 CORS (PUT) + Bucket policy.`);
-    }
+    await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": file.type } });
     const previewUrl = res.preview_url || res.public_url || res.asset_url || res.url_public || "";
     const key = res.s3_key || res.asset_key || res.key || "";
     return { kind: "s3", key, previewUrl };
@@ -1354,15 +1317,19 @@ function setPending(uiKey, file) {
         f.branding = deepMerge(f.branding || {}, brand);
 
         const pending = (state.pendingAssets?.[ft] || {});
-
-        // Upload newly selected assets (logo/header/background) to S3 using pre-signed PUT.
-        // NOTE: we do NOT read the S3 response body (avoids CORB warnings).
+        // Upload any pending asset files now (so backend gets NEW keys)
         for (const kind of ["logo","header","background"]) {
           if (pending[kind]?.file && !pending[kind]?.key) {
             const up = await initAssetUpload(kind, ft, pending[kind].file);
             if (up && up.key) {
               pending[kind].key = up.key;
-              if (up.previewUrl) pending[kind].previewUrl = up.previewUrl;
+              if (up.previewUrl) {
+                pending[kind].previewUrl = up.previewUrl;
+                // show immediately in admin preview
+                if (kind === "logo") f.logo_url = up.previewUrl;
+                if (kind === "header") f.header_url = up.previewUrl;
+                if (kind === "background") f.background_url = up.previewUrl;
+              }
             }
           }
         }
@@ -1384,8 +1351,12 @@ function setPending(uiKey, file) {
       // Clear pending for this form (uploaded already)
       if(state.pendingAssets?.[ft]) delete state.pendingAssets[ft];
 
-      // Refresh from backend to get latest signed URLs (logo_url/header_url/background_url)
-      await loadConfig();
+      // Update local cache + notify open form tabs to refresh branding
+      try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(state.config)); }catch(e){}
+      try{ localStorage.setItem(`EL_BRAND_PING_${state.cid}`, String(Date.now())); }catch(e){}
+
+      // Note: we do not auto-reload from backend here (prevents preview reverting to older cached config).
+      // If you need fresh signed URLs later, use "Refresh Signed URLs".
 
     } catch(e) {
       console.error("Save failed:", e);
@@ -1400,36 +1371,49 @@ function setPending(uiKey, file) {
     }
   }
 
-  async function loadConfig() {
+  async function loadConfig(opts = {}) {
+     const allowFallback = (opts.allowFallback !== false);
+     const silent = !!opts.silent;
+
      if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
      $('cidPill').classList.remove('hidden');
      $('cidVal').textContent = state.cid;
 
-     const t = showToast("Loading configuration...", "loading");
+     const t = silent ? null : showToast("Loading configuration...", "loading");
      let cfg = null;
+
      try {
-        // EXACT payload user said works (no config_type for GET)
+        // Ask backend for latest config; use current target as form_type so shortcut `form` matches.
         const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
             collection_id: state.cid,
-            form_type: "visitor_form" 
+            form_type: (state.target && state.target !== "__defaults__") ? state.target : "visitor_form"
         });
         cfg = res.config || res.data || res.item || null;
-     } catch(e) { console.error('admin_get_config failed', e); }
-     
-     if (!cfg){
-        const local = localStorage.getItem(`EL_CFG_${state.cid}`);
-        if(local) try{ cfg = JSON.parse(local); }catch(e){}
+     } catch(e) {
+        console.error('admin_get_config failed', e);
      }
 
-     if (cfg) state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
-     if (cfg) { try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(cfg)); }catch(e){} }
-     t.remove();
+     // Fallback to local cache ONLY when allowed (otherwise keep current state.config to avoid reverting after save)
+     if (!cfg && allowFallback){
+        const local = localStorage.getItem(`EL_CFG_${state.cid}`);
+        if(local) {
+          try{ cfg = JSON.parse(local); } catch(e){}
+        }
+     }
+
+     if (cfg){
+        state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
+        try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(cfg)); }catch(e){}
+     }
+
+     if(t) t.remove?.();
      renderAll();
      renderBrandInputsFromConfig();
      renderFormPreviewIframe();
   }
 
   // --- Rendering & Logic ---
+
   function renderAll() {
      renderBrandPreview();
      renderPrograms();

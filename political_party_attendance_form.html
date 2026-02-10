@@ -376,6 +376,10 @@ function applyBrandingFromResponse(resp, formType) {
   if (orgNameEl) orgNameEl.textContent = safeStr(formNode.title || orgNameEl.textContent);
   if (orgSubtitleEl) orgSubtitleEl.textContent = safeStr(formNode.subtitle || orgSubtitleEl.textContent);
   if (orgTaglineEl) orgTaglineEl.textContent = safeStr(formNode.tagline || branding.tagline || orgTaglineEl.textContent);
+  if (orgTaglineEl) {
+    const t = safeStr(formNode.tagline || branding.tagline || "");
+    if (!t) orgTaglineEl.classList.add("hidden"); else orgTaglineEl.classList.remove("hidden");
+  }
 
   // Footer
   const footerTextEl = $("footer-text");
@@ -390,6 +394,9 @@ function applyBrandingFromResponse(resp, formType) {
   if (logoEl && logoUrl) {
     logoEl.src = logoUrl;
     logoEl.classList.remove("hidden");
+  } else if (logoEl) {
+    logoEl.src = "";
+    logoEl.classList.add("hidden");
   }
 
   // Header banner (show wrapper only when we have a URL)
@@ -399,15 +406,21 @@ function applyBrandingFromResponse(resp, formType) {
     headerImg.src = headerUrl;
     headerWrap.classList.remove("hidden");
   } else if (headerWrap) {
+    if (headerImg) headerImg.src = "";
     headerWrap.classList.add("hidden");
   }
 
   // Optional background image
   if (bgUrl) {
+    // Set both inline background + CSS var (this form CSS uses --bgimg)
+    document.documentElement.style.setProperty("--bgimg", `url('${bgUrl}')`);
     document.body.style.backgroundImage = `url('${bgUrl}')`;
     document.body.style.backgroundSize = "cover";
     document.body.style.backgroundPosition = "center";
     document.body.style.backgroundAttachment = "fixed";
+  } else {
+    document.documentElement.style.setProperty("--bgimg", "none");
+    document.body.style.backgroundImage = "none";
   }
 
   // Optional theme colors: if you later wire CSS vars, these are ready
@@ -417,6 +430,9 @@ function applyBrandingFromResponse(resp, formType) {
   document.documentElement.style.setProperty("--brand-primary", primary);
   document.documentElement.style.setProperty("--brand-secondary", secondary);
   document.documentElement.style.setProperty("--brand-background", background);
+  // compatibility with this form CSS variables
+  document.documentElement.style.setProperty("--c1", primary);
+  document.documentElement.style.setProperty("--c2", secondary);
 }
 
 function fillProgramNamesFromResponse(resp, formType, selectId) {

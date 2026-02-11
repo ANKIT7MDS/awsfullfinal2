@@ -138,6 +138,9 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 </head>
 
 <body class="min-h-screen font-sans selection:bg-orange-500/30">
@@ -1584,12 +1587,99 @@ function setPending(kind, file, uiKey) {
         }catch(_){ t.remove(); showToast("Failed to load data", "error"); }
      }
      
-     state.viewItems = state.allItems; 
+     state.viewItems = state.allItems;
+     populateFilterOptions();
+     applyClientFilters();
+  }
+
+  
+  function getVal(obj, paths){
+     for(const p of paths){
+        const parts = p.split('.');
+        let cur = obj;
+        let ok = true;
+        for(const part of parts){
+           if(cur && Object.prototype.hasOwnProperty.call(cur, part)) cur = cur[part];
+           else { ok = false; break; }
+        }
+        if(ok && cur !== undefined && cur !== null && String(cur).trim() !== "") return cur;
+     }
+     return "";
+  }
+
+  function populateFilterOptions(){
+     const items = state.allItems || [];
+     const dSet = new Set(), aSet = new Set(), mSet = new Set(), pSet = new Set();
+     items.forEach(it=>{
+        const pl = it.payload || it;
+        const d = getVal(pl, ["district","jila","जिला"]);
+        const a = getVal(pl, ["vidhansabha","assembly","विधानसभा"]);
+        const m = getVal(pl, ["mandal","मंडल"]);
+        const pr = getVal(pl, ["program_name","program","कार्यक्रम","कार्यक्रम_नाम"]);
+        if(d) dSet.add(d);
+        if(a) aSet.add(a);
+        if(m) mSet.add(m);
+        if(pr) pSet.add(pr);
+     });
+
+     function fill(selId, set){
+        const sel = $(selId);
+        if(!sel) return;
+        const cur = sel.value;
+        const first = sel.options[0]; // keep "All"
+        sel.innerHTML = "";
+        sel.appendChild(first);
+        Array.from(set).sort((x,y)=>String(x).localeCompare(String(y), 'hi')).forEach(v=>{
+           const opt = document.createElement('option');
+           opt.value = v;
+           opt.textContent = v;
+           sel.appendChild(opt);
+        });
+        sel.value = cur || "";
+     }
+     fill("filterDistrict", dSet);
+     fill("filterAssembly", aSet);
+     fill("filterMandal", mSet);
+     fill("filterProgram", pSet);
+  }
+
+  function applyClientFilters(){
+     const ftSel = $('filterFormType');
+     const d = ($('filterDistrict')?.value || "").trim();
+     const a = ($('filterAssembly')?.value || "").trim();
+     const m = ($('filterMandal')?.value || "").trim();
+     const pr = ($('filterProgram')?.value || "").trim();
+     const ft = ftSel ? ftSel.value : "__all__";
+
+     const from = $('dateFrom')?.value ? new Date($('dateFrom').value + "T00:00:00") : null;
+     const to = $('dateTo')?.value ? new Date($('dateTo').value + "T23:59:59") : null;
+
+     const out = (state.allItems || []).filter(it=>{
+        if(ft && ft !== "__all__" && it.form_type !== ft) return false;
+        const pl = it.payload || it;
+        const dd = getVal(pl, ["district","jila","जिला"]);
+        const aa = getVal(pl, ["vidhansabha","assembly","विधानसभा"]);
+        const mm = getVal(pl, ["mandal","मंडल"]);
+        const pp = getVal(pl, ["program_name","program","कार्यक्रम","कार्यक्रम_नाम"]);
+
+        if(d && dd !== d) return false;
+        if(a && aa !== a) return false;
+        if(m && mm !== m) return false;
+        if(pr && pp !== pr) return false;
+
+        if(from || to){
+          const t = new Date(it.created_at);
+          if(from && t < from) return false;
+          if(to && t > to) return false;
+        }
+        return true;
+     });
+
+     state.viewItems = out;
      renderTable();
      updateStats();
   }
-
-  function renderTable() {
+function renderTable() {
       const tbody = $('dataTbody');
       tbody.innerHTML = '';
       $('loadedCount').textContent = state.viewItems.length;
@@ -1689,8 +1779,111 @@ function setPending(kind, file, uiKey) {
       renderAll();
       renderFormPreviewIframe();
   };
+  // Client-side filters (no backend change)
+  ['filterDistrict','filterAssembly','filterMandal','filterProgram'].forEach(id=>{
+     const el = $(id);
+     if(el) el.onchange = applyClientFilters;
+  });
+  $('filterFormType').onchange = applyClientFilters;
+
 
   // Asset Inputs
+
+  // --- Image Fit / Crop (Client-side, does NOT change backend logic) ---
+  let __cropper = null;
+  let __cropCtx = null; // { kind, uiKey, fileName, mime }
+  function openCropperModal(kind, file, uiKey){
+     uiKey = uiKey || kind;
+     if(!file) return;
+     const modal = $('cropModal');
+     const img = $('cropImage');
+     const hint = $('cropHint');
+
+     // Decide preset
+     const preset = {
+       logo: { aspect: 1, outW: 512, outH: 512, mime: "image/png", quality: 0.92, hint: "Logo: square crop (drag + zoom)" },
+       header: { aspect: 16/5, outW: 1600, outH: 500, mime: "image/jpeg", quality: 0.9, hint: "Header: wide crop (drag + zoom)" },
+       background: { aspect: 16/9, outW: 1920, outH: 1080, mime: "image/jpeg", quality: 0.88, hint: "Background: 16:9 crop (drag + zoom)" },
+     }[kind] || { aspect: NaN, outW: 1400, outH: 800, mime: "image/jpeg", quality: 0.9, hint: "Drag + zoom" };
+
+     hint.textContent = preset.hint;
+
+     // Build image URL
+     const url = URL.createObjectURL(file);
+     img.src = url;
+     __cropCtx = { kind, uiKey, fileName: file.name || (kind + ".jpg"), preset };
+
+     modal.classList.remove("hidden");
+
+     // Initialize cropper after image load
+     img.onload = () => {
+        try{ if(__cropper){ __cropper.destroy(); __cropper = null; } }catch(_){}
+        const aspectSel = $('cropAspect');
+        aspectSel.value = "preset";
+        __cropper = new Cropper(img, {
+           viewMode: 1,
+           dragMode: "move",
+           autoCropArea: 1,
+           movable: true,
+           zoomable: true,
+           scalable: false,
+           rotatable: false,
+           responsive: true,
+           background: false,
+           aspectRatio: preset.aspect,
+           checkOrientation: true,
+        });
+     };
+
+     // Close handlers
+     $('btnCropClose').onclick = closeCropperModal;
+     $('btnCropCancel').onclick = closeCropperModal;
+
+     // Tools
+     $('btnZoomIn').onclick = () => __cropper && __cropper.zoom(0.1);
+     $('btnZoomOut').onclick = () => __cropper && __cropper.zoom(-0.1);
+     $('btnMoveLeft').onclick = () => __cropper && __cropper.move(-10, 0);
+     $('btnMoveRight').onclick = () => __cropper && __cropper.move(10, 0);
+     $('btnMoveUp').onclick = () => __cropper && __cropper.move(0, -10);
+     $('btnMoveDown').onclick = () => __cropper && __cropper.move(0, 10);
+
+     // Aspect toggle
+     $('cropAspect').onchange = (e) => {
+        if(!__cropper) return;
+        const v = e.target.value;
+        if(v === "free") __cropper.setAspectRatio(NaN);
+        else __cropper.setAspectRatio(preset.aspect);
+     };
+
+     $('btnCropApply').onclick = async () => {
+        if(!__cropper || !__cropCtx) return;
+        const { preset } = __cropCtx;
+        const canvas = __cropper.getCroppedCanvas({ width: preset.outW, height: preset.outH, imageSmoothingEnabled: true, imageSmoothingQuality: "high" });
+        if(!canvas){ showToast("Crop failed", "error"); return; }
+
+        const blob = await new Promise(res => canvas.toBlob(res, preset.mime, preset.quality));
+        if(!blob){ showToast("Crop failed", "error"); return; }
+
+        // Create a new File so existing upload logic stays same
+        const safeName = (__cropCtx.fileName || (kind + ".jpg")).replace(/\s+/g,'_');
+        const newFile = new File([blob], safeName, { type: preset.mime });
+
+        // push into pending assets (existing logic)
+        setPending(kind, newFile, uiKey);
+
+        closeCropperModal();
+     };
+  }
+
+  function closeCropperModal(){
+     const modal = $('cropModal');
+     const img = $('cropImage');
+     try{ if(__cropper){ __cropper.destroy(); __cropper = null; } }catch(_){}
+     try{ if(img && img.src && img.src.startsWith("blob:")) URL.revokeObjectURL(img.src); }catch(_){}
+     if(modal) modal.classList.add("hidden");
+     __cropCtx = null;
+  }
+
 // UI keys: logo, header, bg
 // Backend keys: logo, header, background (IMPORTANT!)
 [
@@ -1702,7 +1895,7 @@ function setPending(kind, file, uiKey) {
    if (inp){
      inp.onchange = (e) => {
        const f = e?.target?.files?.[0];
-       if (f) setPending(kind, f, ui);
+       if (f) { openCropperModal(kind, f, ui); e.target.value=''; }
      };
    }
 
@@ -1743,17 +1936,35 @@ function setPending(kind, file, uiKey) {
   };
 
   $('btnLoadData').onclick = () => loadData("fresh");
-  $('btnApplyFilter').onclick = () => loadData("fresh");
+  $('btnApplyFilter').onclick = async () => { await loadData("fresh"); populateFilterOptions(); applyClientFilters(); };
   $('btnNextPage').onclick = () => loadData("next");
   $('btnPrevPage').onclick = () => loadData("prev");
   $('btnExportCsv').onclick = () => {
-     const csvContent = "data:text/csv;charset=utf-8," + state.allItems.map(e => Object.values(e.payload).join(",")).join("\n");
+     const rows = (state.viewItems || []).map(e => (e.payload || e));
+     if(!rows.length){ showToast("No rows to export", "info"); return; }
+     const colsSet = new Set();
+     rows.forEach(r => Object.keys(r||{}).forEach(k=>colsSet.add(k)));
+     const cols = Array.from(colsSet);
+
+     function esc(v){
+       const x = (v===undefined||v===null) ? "" : String(v).replace(/\r?\n/g, " ");
+       return '"' + x.replace(/"/g,'""') + '"';
+     }
+
+     const lines = [];
+     lines.push(cols.map(esc).join(","));
+     rows.forEach(r => {
+        lines.push(cols.map(k => esc(r[k])).join(","));
+     });
+
+     const csvContent = "data:text/csv;charset=utf-8," + lines.join("\n");
      const encodedUri = encodeURI(csvContent);
      const link = document.createElement("a");
      link.setAttribute("href", encodedUri);
-     link.setAttribute("download", "data.csv");
+     link.setAttribute("download", `data_${state.cid || "export"}_${Date.now()}.csv`);
      document.body.appendChild(link);
      link.click();
+     document.body.removeChild(link);
   };
 
   // Init
@@ -1762,5 +1973,57 @@ function setPending(kind, file, uiKey) {
 
 })();
 </script>
+
+<!-- Cropper Modal -->
+<div id="cropModal" class="fixed inset-0 z-[9999] hidden">
+  <div class="absolute inset-0 bg-black/70"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl glass-panel rounded-2xl border border-slate-700 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <div class="text-sm font-extrabold text-white">Image Fit / Crop</div>
+          <div id="cropHint" class="text-xs text-slate-400 mt-0.5">Drag to move • Scroll / pinch to zoom</div>
+        </div>
+        <button id="btnCropClose" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div class="lg:col-span-4">
+            <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950/30">
+              <img id="cropImage" class="max-h-[62vh] w-full object-contain" />
+            </div>
+          </div>
+          <div class="lg:col-span-1 space-y-3">
+            <div class="text-xs font-bold text-slate-300 uppercase tracking-wider">Tools</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnZoomIn" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">Zoom +</button>
+              <button id="btnZoomOut" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">Zoom −</button>
+              <button id="btnMoveLeft" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-left"></i></button>
+              <button id="btnMoveRight" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-right"></i></button>
+              <button id="btnMoveUp" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-up"></i></button>
+              <button id="btnMoveDown" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-down"></i></button>
+            </div>
+
+            <div class="mt-2">
+              <div class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Aspect</div>
+              <select id="cropAspect" class="input-field w-full rounded-xl px-3 py-2 text-sm">
+                <option value="preset">Preset</option>
+                <option value="free">Free</option>
+              </select>
+              <div class="text-[11px] text-slate-400 mt-1">Preset: Logo = Square • Header = Wide • BG = 16:9</div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+              <button id="btnCropApply" class="w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold">Apply</button>
+              <button id="btnCropCancel" class="w-full mt-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

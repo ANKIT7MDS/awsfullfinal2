@@ -286,39 +286,71 @@ async function loadRemoteConfig(formType) {
 }
 
 function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
-  const globalBrand = (cfg && cfg.branding && cfg.branding.global) ? cfg.branding.global : {};
-  const perForm = (cfg && cfg.branding && cfg.branding.forms && cfg.branding.forms[formType]) ? cfg.branding.forms[formType] : {};
-  const brand = mergeObj(globalBrand, perForm);
+  // Robust: supports legacy cfg.branding.* as well as new cfg.settings/defaults/forms shape
+  const root = (cfg && (cfg.settings || cfg.config || cfg)) || {};
+  const defaultsNode = (root.defaults || (root.settings && root.settings.defaults) || {}) || {};
+  const formsNode = (root.forms || (root.settings && root.settings.forms) || {}) || {};
+
+  const ftKey = formType || "";
+  const ftAliasA = ftKey.replace(/_form$/, "");
+  const ftAliasB = (typeof FORM_TYPE_ALIAS !== "undefined" && FORM_TYPE_ALIAS) ? FORM_TYPE_ALIAS : "";
+  const perForm = (formsNode[ftKey] || formsNode[ftAliasB] || formsNode[ftAliasA] || {}) || {};
+
+  // Legacy branding locations
+  const legacyGlobal = (root.branding && root.branding.global) ? root.branding.global : {};
+  const legacyPerForm = (root.branding && root.branding.forms && root.branding.forms[ftKey]) ? root.branding.forms[ftKey] : {};
+
+  // Merge priority: defaults -> perForm -> legacyGlobal -> legacyPerForm (per-form wins)
+  const brand = mergeObj(mergeObj(mergeObj(defaultsNode, perForm), legacyGlobal), legacyPerForm);
 
   const title = brand.title || fallbackTitle || "EventLens Form";
   const subtitle = brand.subtitle || fallbackSubtitle || "";
   const tagline = brand.tagline || fallbackTagline || "";
-  const logoUrl = brand.logo_url || "";
-  const headerImg = brand.header_image_url || "";
+
   const footerText = brand.footer_text || "";
-  const bgImg = brand.background_image_url || "";
+
+  // URLs: try common keys (lambda uses *_url; older uses *_image_url)
+  const logoUrl = brand.logo_url || (brand.logo && brand.logo.url) || "";
+  const headerUrl = brand.header_url || brand.header_image_url || (brand.header && brand.header.url) || "";
+  const bgUrl = brand.background_url || brand.background_image_url || (brand.background && brand.background.url) || "";
 
   if ($("org-name")) $("org-name").textContent = title;
   if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
   if ($("org-tagline")) $("org-tagline").textContent = tagline;
-
   if ($("footer-text")) $("footer-text").textContent = footerText;
 
   // Theme
   setThemeVars(brand.theme_primary, brand.theme_secondary);
-  setBackgroundImage(bgImg);
+  setBackgroundImage(bgUrl);
 
-  // Logo
+  // Logo (preload to avoid ORB showing broken images)
   if (logoUrl && $("custom-logo")) {
-    $("custom-logo").src = logoUrl;
-    $("custom-logo").classList.remove("hidden");
-    if ($(defaultIconId)) $(defaultIconId).classList.add("hidden");
+    const img = new Image();
+    img.onload = function() {
+      $("custom-logo").src = logoUrl;
+      $("custom-logo").classList.remove("hidden");
+      if (defaultIconId && $(defaultIconId)) $(defaultIconId).classList.add("hidden");
+    };
+    img.onerror = function() {
+      // keep default icon
+    };
+    img.src = logoUrl;
   }
 
-  // Header Image
-  if (headerImg && $("header-image")) {
-    $("header-image").style.backgroundImage = "url('" + headerImg + "')";
-    $("header-image").classList.remove("hidden");
+  // Header image: support both <img> and div background
+  if (headerUrl && $("header-image")) {
+    const h = $("header-image");
+    const img = new Image();
+    img.onload = function() {
+      if (h.tagName && h.tagName.toLowerCase() === "img") {
+        h.src = headerUrl;
+      } else {
+        h.style.backgroundImage = "url('" + headerUrl + "')";
+      }
+      h.classList.remove("hidden");
+    };
+    img.onerror = function() {};
+    img.src = headerUrl;
   }
 }
 

@@ -4,7 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Party Attendance - EventLens</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   <script>
@@ -17,6 +18,8 @@
     }
   </script>
   <style>
+select, option { font-family: "Noto Sans Devanagari", "Mangal", "Plus Jakarta Sans", system-ui, sans-serif; }
+
     :root {
       --c1: #f97316; /* primary */
       --c2: #ef4444; /* secondary */
@@ -75,14 +78,14 @@
 
     <!-- Header banner (Admin branding) -->
     <div id="header-wrap" class="hidden w-full rounded-xl mb-4 overflow-hidden bg-slate-800/40 border border-white/5">
-      <img id="header-image" alt="Header" class="w-full h-32 sm:h-44 object-cover object-center" />
+      <img id="header-image" alt="Header" class="w-full h-32 sm:h-44 object-contain object-center" />
     </div>
 
     <div class="text-center mb-6" id="form-header">
         <!-- Logo (Admin branding) -->
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 text-orange-500 mb-3 overflow-hidden border border-white/10">
-            <i id="default-icon" class="fa-solid fa-people-group text-3xl"></i>
-            <img id="custom-logo" src="" class="w-full h-full object-contain scale-[1.15] hidden" alt="logo">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 text-orange-500 mb-3 overflow-hidden border border-white/10 p-2">
+            <i id="default-icon" class="fa-solid fa-people-group text-2xl"></i>
+            <img id="custom-logo" src="" class="w-full h-full object-contain hidden" alt="logo">
         </div>
         <h1 id="org-name" class="text-2xl font-extrabold brand-text">पार्टी उपस्थिति फॉर्म</h1>
         <p id="org-subtitle" class="text-slate-300/80 text-xs mt-1">Party Attendance</p>
@@ -129,7 +132,7 @@
 
         <div>
           <label class="block text-xs font-medium text-slate-300/80 mb-1">जिला</label>
-          <select id="district" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" style="font-family: \'Kruti Dev 010\', \'Kruti Dev\', Mangal, Nirmala UI, sans-serif;">
+          <select id="district" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
             <option value="">— जिला चुनें —</option>
           </select>
         </div>
@@ -143,7 +146,7 @@
           </div>
           <div>
             <label class="block text-xs font-medium text-slate-300/80 mb-1">मंडल</label>
-            <select id="mandal" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled style="font-family: \'Kruti Dev 010\', \'Kruti Dev\', Mangal, Nirmala UI, sans-serif;">
+            <select id="mandal" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
               <option value="">— पहले विधानसभा चुनें —</option>
             </select>
           </div>
@@ -237,7 +240,7 @@ if (!CID && TOKEN) {
 const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
 const debug = (qs("debug") || "").trim() === "1";
 
-function isPublicMode() { return !!TOKEN; }
+function isPublicMode() { return !!token; }
 
 function setThemeVars(c1, c2) {
   if (c1) document.documentElement.style.setProperty("--c1", c1);
@@ -258,12 +261,11 @@ function showStatus(msg, isError) {
 }
 
 async function apiCall(action, payload) {
-  const path = "/political/forms"; // use same endpoint (has CORS).
+  const path = isPublicMode() ? "/political/public/forms" : "/political/forms";
   const url = `${BASE_URL}${path}`;
   const res = await fetch(url, {
     method: "POST",
-    cache: "no-store",
-    // NOTE: no custom headers (avoids CORS preflight)
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action, payload: payload || {} })
   });
   const text = await res.text();
@@ -311,7 +313,6 @@ async function loadRemoteConfig(formType) {
       collection_id: CID,
       form_type: formType,
       token: TOKEN,
-    _ts: Date.now(),
     };
     // IMPORTANT: return FULL response (it contains: settings, config, form, form_type)
     const res = await apiCallPublic("public_get_config", payload);
@@ -342,11 +343,8 @@ function getGlobalNode(resp) {
 function getFormNode(resp, formType) {
   if (!resp) return null;
 
-  // Backend may return resolved `form` shortcut for the requested form_type
-  if (resp.form && typeof resp.form === "object") {
-    const want = (formType || resp.form_type || FORM_TYPE);
-    if (!resp.form_type || resp.form_type === want) return resp.form;
-  }
+  // Backend already returns resolved `form`
+  if (resp.form && typeof resp.form === "object") return resp.form;
 
   const ft = formType || resp.form_type || FORM_TYPE;
 
@@ -392,20 +390,9 @@ function applyBrandingFromResponse(resp, formType) {
   const bgUrl = pickAssetUrl(branding.background, formNode.background_url);
 
   const logoEl = $("custom-logo");
-  const iconEl = $("default-icon");
   if (logoEl && logoUrl) {
     logoEl.src = logoUrl;
     logoEl.classList.remove("hidden");
-    if (iconEl) iconEl.classList.add("hidden");
-  } else {
-    if (iconEl) iconEl.classList.remove("hidden");
-    if (logoEl) logoEl.classList.add("hidden");
-  }
-  if (logoEl) {
-    logoEl.onerror = () => {
-      try { logoEl.classList.add("hidden"); } catch(e) {}
-      try { if (iconEl) iconEl.classList.remove("hidden"); } catch(e) {}
-    };
   }
 
   // Header banner (show wrapper only when we have a URL)
@@ -414,40 +401,22 @@ function applyBrandingFromResponse(resp, formType) {
   if (headerWrap && headerImg && headerUrl) {
     headerImg.src = headerUrl;
     headerWrap.classList.remove("hidden");
-    try { headerImg.onerror = () => { headerWrap.classList.add("hidden"); }; } catch (e) {}
   } else if (headerWrap) {
     headerWrap.classList.add("hidden");
   }
 
-  // Optional background image (validate once to avoid ORB/XML showing as an image)
+  // Optional background image
   if (bgUrl) {
-    const testImg = new Image();
-    testImg.onload = () => {
-      document.documentElement.style.setProperty("--bgimg", `url('${bgUrl}')`);
-      document.body.style.backgroundImage = `url('${bgUrl}')`;
-      document.body.style.backgroundSize = "cover";
-      document.body.style.backgroundPosition = "center";
-      document.body.style.backgroundAttachment = "fixed";
-    };
-    testImg.onerror = () => {
-      document.documentElement.style.setProperty("--bgimg", "none");
-      document.body.style.backgroundImage = "none";
-    };
-    testImg.src = bgUrl;
-  } else {
-    document.documentElement.style.setProperty("--bgimg", "none");
-    document.body.style.backgroundImage = "none";
+    document.body.style.backgroundImage = `url('${bgUrl}')`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundAttachment = "fixed";
   }
 
-  // Theme colors (form CSS uses --c1/--c2)
+  // Optional theme colors: if you later wire CSS vars, these are ready
   const primary = branding.color1 || globalTheme.primary || "#f97316";
   const secondary = branding.color2 || globalTheme.secondary || "#ef4444";
   const background = globalTheme.background || "#0f172a";
-
-  document.documentElement.style.setProperty("--c1", primary);
-  document.documentElement.style.setProperty("--c2", secondary);
-
-  // Backward-compatible vars (some forms may use these)
   document.documentElement.style.setProperty("--brand-primary", primary);
   document.documentElement.style.setProperty("--brand-secondary", secondary);
   document.documentElement.style.setProperty("--brand-background", background);
@@ -463,10 +432,11 @@ function fillProgramNamesFromResponse(resp, formType, selectId) {
   const formNode = getFormNode(resp, formType) || {};
   const defaults = getDefaultsNode(resp) || {};
 
-  const po = (Array.isArray(formNode.program_options) ? formNode.program_options : []);
-  const pr = (Array.isArray(formNode.programs) ? formNode.programs : []);
-  const dp = (Array.isArray(defaults.programs) ? defaults.programs : []);
-  const list = [...po, ...pr, ...dp];
+  const list =
+    (Array.isArray(formNode.program_options) && formNode.program_options) ||
+    (Array.isArray(formNode.programs) && formNode.programs) ||
+    (Array.isArray(defaults.programs) && defaults.programs) ||
+    [];
 
   const uniq = [...new Set(list.map(x => safeStr(x).trim()).filter(Boolean))];
   uniq.forEach(p => {
@@ -502,7 +472,1882 @@ function applyFixedLevelFromResponse(resp, formType) {
 const FORM_TYPE = "party_attendance";
     const FIELD_IDS = ["mobile","name","designation","program_name","district","vidhansabha","mandal","attendance_date","attendance_time","remarks"];
 
-    const DISTRICT_DATA = {"eqjSuk":{"3- lcyx<+":["lcyx<+ uxj","lcyx<+ xkeh.k","usijh","VsaVjk u;k","jkeiqj dyka u;k"],"4- tkSjk":["dSykjl","tkSjk uxj","tkSjk xzkeh.k","igkMx<+","ljlSuh"],"5- lqekoyh":["lqekoyh","NSjk","eqaxkoyh","ckxphuh","eqjSuk xkzeh.k"],"6- eqjSuk":["eqjSuk iwoZ","eqjSuk if'pe","eqjSuk nf{k.k","ckuekSj","fjBkSjkdykW","tMs:vk u;k"],"7- fneuh":["fneuh","flgksfu;ka","thxuh","Fkjk","ukoyh cM+kxkao u;k"],"8- vEckg vtk":["vEckg uxj","vEckg xzkeh.k","iksjlk uxj","iksjlk xzkeh.k","uxjk"]},"fHk.M":{"9- vVsj":["vVsj","QwQ","ihijh","lqjiqjk","ljk;?kkj u;k","toklk u;k"],"10- fHk.M":["fHk.M xkzeh.k","egkjk.kk izrki","cu[k.Ms'oj","lqHkk\"kpanz cksl","mejh ]u;kxkao","mejh vdksM+k u;k"],"11- ygkj":["ygkj","vkyeiqj","ncksg","vlokj","fegksuk","eN.M"],"12- esgxkao":["esgxkao","vkek;u","jkSu","xksjeh","lksuh","nanjkSvk"],"13- xksgn vtk":["xksgn uxj","xksgn xkzeh.k","ekS","fprkSjk","ekyuiqj u;k"]},"nfr;k":{"20- lso<+k":["lso<+k uxj","lso<+k xzkeh.k ¼cvqvkiqjk½","bUnjx<+ uxj","bUnjx<+ xzkeh.k","FkjsV u;k"],"21- Hkk.Msj vtk":["lkykSu ch","Hkk.Msj","mUuko ckykth","bZefy;k mUuko xzkeh.k","mMhuk u;k"],"22- nfr;k":["nfr;k uxj","nfr;k xzkeh.k","cMkSuh","mnxqvk","clbZ","lhrkiqj u;k"]},"Xokfy;j uxj":{"15- Xokfy;j":["dksVs'oj egknso","lar jfonkl","ohj nqxkZnkl jkBkSj","jkuh y{ehckbZ","jktk ekuflag rksej","egkjktk vxzlsu u;k"],"16- Xokfy;j iwoZ":["ia- nhun;ky mik/;k;","egkjk.kk izrki","'kghn Hkxr flag","Lokeh jked`\".k","ohj lkojdj","ckcklkgsc vacsMdj u;k"],"17- Xokfy;j nf{k.k":["vVy fcgkjh  oktikbZ","'kghn gsew dkyksuh","MkW- ';kek izlkn eq[kthZ","Lokeh foosdkuan","xqIrs'oj egknso"]},"Xokfy;j xzk -":{"14- Xokfy;j xzkeh.k":["rkulsu csgV","mfVyk","csjtk","iqjkuh Nkouh","dSaVksesaV","fxjokbZ u;k"],"18- fHkrjokj":["fHkrjokj","vkarjh","phuksj","?kkVhxkao","eksguk","y[ks'ojh u;k"],"19- Mcjk vtk":["Mcjk ua-","Mcjk xkza-","fiNksj","fcykSvk","Nhed"]},"';ksiqj":{"1- ';ksiqj":["';ksiqj","cMksnk","ekuiqj","izselj","ik.Mksyk u;k","';ksiqj xzkeh.k u;k","nkarjnk u;k"],"2-fot;iqj":["fot;iqj","ohjiqj","djkgy","xksjl","xlokuh","vxjk u;k","j?kqukFkiqj u;k"]},"f'koiqjh":{"23- djsjk vtk":["djsjk","fljlkSn","djgh","fnukjk","ujoj"],"24- iksgjh":["iksgjh","cSjkM+","lruokM+k ¼ujoj xzkeh.k½","lqHkk\"kiqjk eqMSjh","f>jh&HkVukoj u;k","eq<Sjh&dqaojiqj u;k"],"25- f'koiqjh":["f'koiqjh uxj","f'koiqjh xzkeh.k","f'koiqjh iqjkuh","[kksM+","ohjk&ljok;k u;k","f'koiqjh&fQftdy u;k"],"26- fiNksj":["fiNksj","[kfu;k/kkuk","ckeksjdyk","ek;kiqj","HkkSrh","eqgkjh u;k"],"27- dksykjl":["dksykjl","cnjokl","jUukSn","yqdoklk","[kjkbZ","[krkSjk u;k"]},"xquk":{"28- ckeksjh":["E;kuk","ckeksjh","fljlh",">kxj u;k","mejh u;k"],"29- xquk vtk":["xquk","xquk dSaV","ctjax<","ixkjk","cw<s ckykth u;k"],"30- pkpkSM+k":["pkpkSMk","dqEHkjkt","edlwnux<+",":fB;kbZ","e`xokl","rsyhxkao u;k"],"31- jk?kksx<+":["jk?kksx<+","vkjksu","tkeusj","iuokMh","Qrsgx<+"]},"v'kksd uxj":{"32- v'kksduxj vtk":["v'kksduxj uxj","v'kksduxj xkzeh.k","'kk<kSjk","jktiqj","lksusjk ¼dpukj½","iNkj u;k"],"33- pansjh":["pansjh uxj","pansjh xkzeh.k","bZlkx<+","ubZljk;","<kdksuh ¼vkuaniqj½"],"34- eqaxkoyh":["eqaxkoyh","cgknqjiqj","fiijbZ","lgjkbZ","Fkwoksu","vFkkbZ[ksMk u;k"]},"lkxj":{"35- chuk vtk":["chuk uxj","chuk xkzeh.k","Hkkux<+ u;k","f[keyklk","e.Mh ckeksjk"],"36- [kqjbZ":["[kqjbZ uxj","[kqjbZ xkzeh.k","ekyFkkSu","okanjh","/kukSjk u;k","cjksfn;k dyka u;k"],"37- lqj[kh":["lqj[kh uxj","flgksjk","jkgrx<+","t;flag uxj","fcygjk","jkgrx<+ uxj u;k"],"40- ufj;koyh vtk":["uj;koyh","lkxj xkzeh.k","lnj","edjksfu;k uxj","edjksfu;k xzkeh.k"],"41- lkxj":["lkxj uxj","MkW- gfjflag xkSj","MkW- Hkhejko vEcsdj",";equkrkbZ Bkdqj u;k"]},"lkxj xzkeh.k":{"38- nsojh":["nsojh uxj","dslyh","xksj>kej","egkjktiqj","lgtiqj","vuariqjk u;k"],"39- jsgyh":["jgsyh uxj","jgsyh xkzeh.k","x<+kdksVk uxj","x<+kdksVk xkzeh.k","'kkgiqj","iVuk cqtqxZ u;k","cysg u;k"],"42- c.Mk":["c.Mk uxj","'kkgx<+","cjksgy","nyiriqj","cjk","cjk;Bk u;k","Nkijh u;k"]},"Vhdex<+":{"43- Vhdex<+":["Vhdex<+ uxj","Vhdex<+ xkzeh.k","cMkxkao/klku","dq.Ms'oj","cqMsjk","lkojdj u;k"],"44- trkjk vtk":["trkjk","fy/kksjk","Fkj cjkuk","pansjk","cEgkSjh dyka u;k"],"47- [kjxkiqj":["iysjk","cYnsox<+","[kjxkiqj","dqMhyk","nsjh u;k"]},"fuokM+h":{"45- i`Fohiqj":["i`Fohiqj uxj","i`Fohiqj xzkeh.k u;k","eksgux<+","tSjksu","fnxksM+k"],"46- fuokMh":["fuokMh uxj","fuokM+h xzkeh.k u;k","vksjNk","rjhpdyk","uSxqvk u;k"]},"Nrjiqj":{"48- egkjktiqj":["egkjktiqj","ukSxkao uxj","gjikyiqj","yqxklh","x<+heygjk u;k"],"49- pUnyk":["pUnyk","ckjhx<+","ljobZ","ckNkSu","xkSjhgkj u;k"],"50- jktuxj":["jktuxj","cehBk","yodq'k uxj","[ktqjkgks","fodzeiqj  u;k"],"51- Nrjiqj":["Nrjiqj uxj","Nrjiqj xzkeh.k","egsok","iM+fj;k","fuokjh u;k"],"52- fctkoj":["fctkoj","lVbZ","bZlkuxj","fd'kux<+","ekrxqoka u;k"],"53- cM+k eysgjk":["cM+keysgjk uxj","cM+keysgjk xzkeh.k","?kqokjk","cDlokgk","cktuk u;k"]},"iUuk":{"58- iobZ":["iobZ","'kkguxj","jSiqjk","eksgUnzk] eksgjkZ flefj;k","dYnk ¼vkfnoklh½","fclkuh u;k","flefj;k u;k"],"59- xqUukSj vtk":["vekuxat","xqUukSj","nsosUnz uxj","lysgk","ddjgVh","egsck u;k"],"60- iUuk":["iUuk uxj","iUuk xzk-","vt;x<+","/kjeiqj","c`tiqj","chjk u;k"]},"lruk":{"61- fp=dqV":["fcjflagiqj","e>xoka","cjkS/kk","tSrokjk","fp=dqV u;k"],"62- jSxkao vtk":["lksgkoy","flagiqj","dksBh","lsejokjk","Hkjtwuk  u;k"],"63- lruk":["lruk uxj if'peh ¼dq'kkHkkÅ Bkdjs½","lruk iwohZ  ¼ia- nhun;ky mik/;k;½","ckcwiqj","vVy fcgkjh oktis;h","MkW- ';kek izlkn eq[kthZ u;k"],"64- ukxkSn":["ukxkSn","mpsgjk","ijlefu;k","vVjk","tlks","Hkjgqr  u;k"],"67- jkeiqj c?ksyku":["jkeiqj c?ksyku","eksgkjh dVjk","dksVj","lTtuiqj","fNckSjk"]},"eSgj  u;k ftyk":{"65- eSgj":["esSgj uxj","uknu","cnsjk","venjk","lksuokjh u;k","csjek u;k"],"66- vejikVu":["vejikVu","jkeuxj","rkyk","e;kZnkiqj","dBgk u;k","cM+okj u;k"]},"jhok":{"68- fljekSj":["fljekSj","tok","MHkkSjk","cSdq.Biqj u;k","vrjSyk u;k"],"69- lsefj;k":["lsefj;k","'kkgiqj","cudqab;k","eudgjh  u;k"],"70- R;kFkkSj":["R;kSFkj","x<+h","jk;iqj lksukSjh","dVjk u;k"],"73- euxoka vtk":["euxoka","jkeiqj lfdZy","ykyxkao ¼x<½","nsokl u;k","lwjk u;k"],"74- jhok":["vVy ¼jhok uxj½","jhok xzkeh.k","fcfN;k","cksnkckx ¼nhun;ky½"],"75- xq<+":["xq<+","xksfoUnx<+","jk;iqjdqpZfy;ku","eglkao u;k"]},"eÅxat  u;k ftykk":{"71- emxat":["emxat","guqeuk","[kVdjh","'kkgiqj u;k","fiijkgh u;k"],"72- nsorkykc":["nsorkykc","j?kqjkt x<+","ubZx<+h","lhrkiqj","rejh u;k"]},"lh/kh":{"76- pqjgV":["pqjgV","jkeiqjuSfdu","[kM~Mh","iVijk","pksjxM+h","iM+[kqjh u;k","guqekux<+ u;k"],"77- lh/kh":["lh/kh uxj","dqpokgh","lsefj;k","cjeckck","vejiqj","pkSQky"],"78- flagkoy":["flagkoy","cgjh","lksuo\"kkZ","vfefy;k u;k","ek;kiqj u;k"],"82- /kkSguh vttk":["e>kSyh","eMokl","dqleh","ikSaMh fuokl","[kMkSjk u;k"]},"flaxjkSyh":{"79- fprjaxh vttk":["fprjaxh","xkSjch","cxnjk","dFkqZvk","ekSgfj;k","cxS;k"],"80- flaxjkSyh":["flaxjkSyh","cS<u","fr;jk","foU/;uxj","t;Ur uxj"],"81- nsolj vtk":["[kqVkj","ekMk","ljbZ","cjxoka","ya?kkMksy","jtfeyku"],"82- /kkSguh":["fuokl","jtfu;k  u;k"],"78- flagkoy":["nsolj ft;kou","ukSfM+;k"]},"'kgMksy":{"83- C;kSgkjh vttk":["ck.klkxj","C;kSgkjh","iikS/k","lh/kh","vkeMhg ¼djdh½","fVdgh u;k","eÅ u;k"],"84- t;flag uxj vttk":["t;flag uxj","xksgik:","'kgMksy uxj","lksgkxiqj","flagiqj","pqgjh  u;k"],"85- tSriqj vttk":["cq<kj","[kSgjk","/kuiqjh","ds'kokgh","tSriqj","cdgks u;k"]},"vuwiiqj":{"86- dksrek":["dksrek uxj","dksrek xkzeh.k","fctqjh uxj","jktuxj uxj","jktuxj xzkeh.k"],"87- vuwiiqj":["vuwiiqj uxj","vuwiiqj xkzeh.k","Qquxk","ilku","tSrgjh"],"88- iq\"ijktx<+ vttk":["vejdaVd","jktsUnzxkze uxj","csuhokjh","djik","oSadV uxj","nesgMh  u;k"]},"mefj;k":{"89- cka/kx<+ vttk":["pafn;k","mefj;k uxj","mefj;k xzkeh.k","djdsyh","ukSjkstkckn","fcykliqj u;k","dksgdk  u;k"],"90- ekuiqj vttk":["vejiqj","ekuiqj","ikyh uxj","ikyh xzkeh.k","fiifj;k","fctkSjh u;k","banokj u;k"]},"tcyiqj uxj":{"97- tcyiqj iwoZ vtk":["MkW- ';ke izlkn eq[kthZ","yksdekU; cky xaxk/kj fryd","'kghn vCnqy gehn","usrk th lqHkk\"kpanz cksl"],"98- tcyiqj mRrj":["'kghn pUnz'ks[kj vktkn","Lokeh foosdkuan","ia- nhun;ky mik/;k;","dq'kkHkkÅ Bkdjs","vkpk;Z fo|klkxj  u;k"],"99- tcyiqj dsUV":["ohj lkojdj","'kghn Hkxr flag","N=ifr f'kokth","vVy fcgkjh oktis;h"],"100- tcyiqj if'pe":["fxjhjkt fd'kksj diwj","jkuh nqxkZorh","eka ueZnk","egkjk.kk izrki","egf\"kZ okfYedh  u;k"]},"tcyiqj xkz-":{"95- ikVu":["ikVu","e>ksyh if'pe","e>ksyh iwoZ","dVaxh","iksMk","uqulj"],"96- cjxh":["cjxh","pjxoka","'kgiqjk","HksMk?kkV","fryokjk","csy[ksM+k"],"101- iukxj":["iukxj uxj","iukxj iwoZ","iukxj if'pe","lksgkxh djesrk","cjsyk","egkjktiqj u;k","jkuh nqxkZorh"],"102- lhgksjk vttk":["lhgksjk uxj","xkslyiqj ¼lhgksjk xzk-½","e>xoka","c?kjkth","dq.Me","pkSjbZ dyka  u;k"]},"dVuh":{"91- cMokjk vttk":["cMokjk","<hej[ksMk","flyksMh","nsojh gVkbZ","dSeksj","foyk;rdyk","iku mefj;k"],"92- fot;jk?kksx<+":["fot; jk?kox<+","fluxksMh","cjgh","f[krkSyh","dkaVh","fiifj;k dyka u;k"],"93- eqMokjk":["eqMokjk ¼dVuhuxj½","ek/kouxj","U;w dVuh","dVuh xkzeh.k","fuokj","Lyheukckn","ia- nhun;ky mik/;k; u;k"],"94- cgksjhcan":["cgksjhcan","jhBh","fcygjh","ckdy","dqvk","nsoxkao  u;k"]},"fM.MkSjh":{"103- 'kkgiqjk vttk":["esganokuh","vejiqj","'kkgiqj","'kgiqjk","ekfudiqj u;k","lDdk  u;k"],"104- fM.MkSjh vttk":["djaft;k","ctkx","leukiqj","fM.MkSjh","xksikyiqj u;k","xkM+kljbZ u;k","cEguh u;k"]},"e.Myk":{"105- fcfN;k vttk":["fcfN;k","eobZ","?kq?kjh","vatfu;k","?kqVkl u;k","lyokg u;k"],"106- fuokl vttk":["fuokl","ukjk;.kxat","chtkgkMh","cdksjh","eksgxkao","ccfy;k u;k"],"107- e.Myk vttk":["e.Myk uxj","e.Myk xzkeh.k","uSuiqj uxj","uSuiqj xzkeh.k","fpjbZ Mksaxjh","cEguh catj uxj","ineh pkSjkg u;k"]},"ckyk?kkV":{"108- cSgj vttk":["fcjlk","eykt[k.M","cSgj","mdok","x<+h","eaMbZ u;k"],"109- ykath":["fdjukiqj","ykath","HkkMjk","Hkkusxkao","dkjatk u;k","ekVs u;k","fclksuh u;k"],"110- ijlokMk":["gV~Vk","ckyk?kkV xzkeh.k","ykeVk","ijlokMk","e>xkao u;k","leukiqj u;k","jtsxkao u;k"],"111- ckyk?kkV":["ckyk?kkV uxj","ykycjkZ","[kefj;k","Hkjosyh","ckyk?kkV mRrj u;k","eksgxkao u;k"],"112- okjkflouh":["okjkflouh uxj","okjkflouh xzkeh.k","[kSjykth","vkjaHkk u;k","jkeik;yh u;k"],"113- dVaxh":["dVaxh","dVksjh","frjksMh","dVaxh if'pe u;k","fejxiqj u;k","egdsikj u;k"]},"flouh":{"114- cj?kkV vttk":["dqjbZ","lq[krjk","cj?kkV","/kkjuk","xaxs:vk"],"115- flouh":["ckjkiRFkj ¼flouh mRrj ½","eaxyhisB ¼flouh nf{k.k½","djdksVh ¼flouh xzkeh.k½","y[kuokMk u;k","eqxokuh","c.Mksy","pekjh","chtknsojh"],"116- dsoykjh":["dsoykjh","Nikjk","mxyh","/kuksjk","dkUghokMk","iykjh","Nhan [kSjykath u;k"],"117-y[kuknkSuvttk":["y[kuknkSu uxj","vkansxkao","?kwek","dgkuh","?kalksj","dsnkjiqj","ukxunsojh u;k"]},"ujflagiqj":{"118- xksVsaxkao vtk":["xksVsxkao uxj","xksVsxkao xzkeh.k","djdcsy","eqaxokuh","Jhuxj u;k","<kaxh<kuk u;k"],"119- ujflagiqj":["ujflagiqj uxj","ujflagiqj xzkeh.k","djsyh uxj","djsyh xzkeh.k","ueZnk","flagiqj u;k"],"120- rsUnw[ksMk":["pkSxku","flgksjk","pkojikBk ¼rsanw[ksM+k½","dkSfM+;k u;k","rsanw[ksM+k u;k"],"121- xkMjokMk":["xkMjokjk uxj","lkbZ[ksMk","phpyh","lkyhpkSdk","vkexkao NksVk u;k"]},"fNanokM+k":{"122- tqUukjnso vttk":["tqUukjnso uxj","tqUukjnso xzkeh.k","neqvk uxj","neqvk xzkeh.k","rkfe;k","pkoyikuh u;k"],"123- vejokMk vttk":["vejokMk uxj","vejokMk xzkeh.k","flaxksMh","cVdk[kkik","gjbZ","fNUnh","lqjyk[kkik"],"124- pkSjbZ":["pkSjbZ uxj","pkSjbZ xzkeh.k","pkan","fcNqvk","dq.Mk","[kekjikuh u;k"],"126- fNUnokMk":["fNUnokMk uxj ¼,d½","fNUnokMk uxj ¼nks½","fNUnokMk xzkeh.k","lkjuk","/kjeVsdM+h u;k","xqykcjk u;k"],"127- ijkfl;k vtk":["ijkfl;k uxj","ixkjk ¼ijkfl;k xzk-½","mejsB","f'koiqjh","iViM+k u;k"]},"ika<q.kkZ u;k ftyk":{"125- lkSlj":["lkSlj","yks/kh[ksMk xzk-","fiiY;kukjk;.kokj","eksg[ksMk","jkekdksuk u;k","fyaxk u;k"],"128- ika<q.kkZ vttk":["ika<q.kkZ uxj","ika<q.kkZ xzk-","uanuokMh","lkojh","dq'kkHkkÅ Bkdjs u;k","';kekizlkn eq[kthZ ¼nsox<+½ u;k"]},"ueZnkiqje~":{"136- flouh ekyok":["flouhekyok uxj","flouhekyok xzkeh.k","dslyk","f'koiqj","HkhyVnso","Mksyfj;k"],"137- ueZnkiqje~":["ueZnkiqje~ uxj","ueZnkiqj uxj","bVkjlh uxj","iqjkuh bVkjlh","ueZnkiqje~ xzkeh.k"],"138- lksgkxiqj":["lksgkxiqj","lsejh","ek[ku uxj ¼ckobZ½","vkjh ckcbZ if'pe","jkeiqj","'kksHkkiqj"],"139- fiifj;k vtk":["fiifj;k uxj","fiifj;k xzkeh.k","cu[ksMh uxj","iape<+h","pkankSu xzkeh.k","[kkij[ksM+k","cu[ksMh xzkeh.k u;k"]},"gjnk":{"134- fVejuh vttk":["fVejuh","dk;nk u;k","jsgVxkao","fljkyh","djrkuk u;k","igVdyka  u;k"],"135- gjnk":["gjnk uxj","gjnk xzk-","f[kjfd;k","gkf.M;k","lksurykbZ u;k","pk:ok u;k"]},"cSrwy":{"129- eqyrkbZ`":["eqyrkbZ uxj","eqyrkbZ xzkeh.k","izHkkr iVV~ue","nqukok","eklkSnk"],"130- vkeyk vtk":["vkeyk uxj","vkeyk xzkeh.k","lkj.kh uxj","lkj.kh xzkeh.k","eksj[kk"],"131- cSrwy":["cSrwy xat","crwy xzkeh.k","cSrwy cktkj","vkBusj uxj","cMksjk","dksBh cktkj"],"132- ?kksMkMksaxjh vttk":["?kksMkMksaxjh","fppksyh uxj","fppkSyh xzkeh.k","'kkgiqj","HkkSjk","pksiuk","ik<j"],"133- HkSalnsgh vttk":["HkSalnsgh uxj","HkSalnsgh xzkeh.k","vkBusj xzkeh.k","Hkheiqj","nkethiqjk","jruiqj u;k","lkoyes<+k u;k"]},"Hkksiky uxj":{"150- Hkksiky mRrj":["jkuh deyirh ¼'kkgtgkukckn½","xq:ukud¼'kkgtgkukckn½","ohj lkojdj ¼cl LVS.M½","jktkHkkst ¼vxzlsu½","uoy 'kkg u;k e.My"],"151- ujsyk":["LVs'ku","lqHkk\"k","Lokeh foosdkuan ¼djksan½","'kghn Hkxr flag ¼djksan½","v'kksdk xkMZu","egkekbZ"],"152- nf{k.k if'pe":["VSxksj  ¼Vh-Vh- uxj½","rkR;kVksis","d:.kk/kke ¼ usg: uxj ½","iap'khy uxj","ekrk 'kcjh u;k"],"153- Hkksiky e/;":["cj[ksMh","pkSd","vjsjk","egkjk.kkizrki","'kkgiqjk"],"154- xksfoaniqjk":["vo/kiqjh","feljksn","lkdsruxj","vkuanuxj","bUnziqjh","Hkkuiqj"],"155- gqtqj":["cSjkx<+ larfgjnkjke uxj","xka/khuxj","MkW- ';kek izlkn eq[kthZ uxj ¼dksykj½","vVy fcgkjh oktis;h ¼dksykj½"]},"Hkksiky xzkeh.k":{"149- cSjfl;k vtk":["uthjkckn","gjkZ[ksMk","cSjfl;k uxj","cSjfl;k xzkeh.k","gfjflf)","ijofy;k lM+d"],"155- gqtqj":["fcyf[kfj;k","QUnk","ia- nhun;ky","uhycM+ ¼jkrhcM+½"]},"jk;lsu":{"140- mn;iqjk":["mn;iqjk","cjsyh uxj","HkkjdPN","nsojh","cjsyh xzkeh.k","[kjxksu u;k e.My","uwjuxj u;k e.My"],"141- Hkkstiqj":["eaMhnhi uxj","vkScsnqYykxat","ckMh","lqYrkuiqj","e.Mhnhi xzkeh.k","Hkkstiqj"],"142- lkaph vtk":["jk;lsu","lkaph","xSjrxat","[kjcbZ","lkWpsr","nsouxj ¼nsoxkao½","xSjrxat xzkeh.k u;k","lykeriqj u;k"],"143- flyokuh":["flyokuh iwoZ","flyokuh if'pe","csxexat ua-","csxexat xzk-","lqYrkuxat xzkeh.k","izrkix<+ u;k"]},"fofn'kk":{"144- fofn'kk":["xqykcxat","oS=ofr ¼fofn'kk uxj½","nqxkZuxj ¼fofn'kk uxj½","cSluxj ¼fofn'kk xzkeh.k½","vgeniqj","<ksy[ksM+h u;k"],"145- cklkSnk":["xatcklksnk uxj","xatcklksnk xzkeh.k","X;kjliqj","R;ksank","fljuksVk u;k"],"146- dqjokbZ vtk":["dqjokbZ","iFkfj;k","esgyqvk pkSjkgk","iBkjh","mn;iqj","nhiuk[ksM+k u;k","vEckuxj u;k"],"147- fljkst":["fljkst uxj","yVsjh","vkuaniqj","fprkoj","nsoiqj"],"148- 'ke'kkckn":["uVsju","'ke'kkckn","[kke[ksMk","lrikMk gkV","nso [kktwjh u;k"]},"lhgksj":{"156- cqnuh":["ul:Yykxat","lyduiqj","'kkgxat","cq/kuh","xksikyiqj","ykM+dqbZ","pdYnh"],"157- vk\"Vk vtk":["vk\"Vk uxj","vk\"Vk xzk-","tkoj","dksBjh","flf}dxat","eSuk u;k","[kkpjksn u;k","MksMh u;k"],"158- bPNkoj":["bPNkoj","fcyfdlxat","cj[ksMh","xqM+Hksyk","nhofM+;k"],"159- lhgksj":["lhgksj uxj&1","';keiqj","nksjkgk","vgeniqj","lhgksj uxj & 2 u;k"]},"jktx<+":{"160- ujflagx<+":["ujflagx<+","dqjkoj","rysu","cksM+k",">kM+yk u;k","e.Mkoj u;k"],"161- C;kojk":["C;kojk","xkfn;k","lqBkfy;k","fiiygsyk","eykoj u;k","fxUnkSjgkV u;k"],"162- jktx<+":["jktx<+","[kqtusj","dkyhihB","iiMsy","djsM+h u;k","fiiyksnh u;k"],"163- f[kyphiqj":["f[kyphiqj","thjkiqj","ekpyiqj","NkihgsM+k","jkex<+ u;k","Hk.Mkon u;k"],"164- lkajxiqj vtk":["lkajxiqj uxj","laMkork","ipkSj","xqykork","iM+kuk u;k"]},"bankSj uxj":{"204- bUnkSj&1":["lqHkk\"kpUnz cksl","y{ehckbZ","lezkV v'kksd","pUnz'ks[kj vktkn","yodq'k","xq: Vsdpan  u;k"],"205- bUnkSj&2":["MkW- vEcsMdj","jkek;.k","ia- nhun;ky mik/;k;","MkW- ';kek izlkn eq[kthZ","larJh eksuh ckck","larJh ckyhukFk","jktekrk thtkckbZ u;k","larJh jfonkl  u;k"],"206- bUnkSj&3":["dq'kkHkkm Bkdjs","nsoh vfgY;k ckbZ","vVy fcgkjh oktis;h","jktsUnz /kkjdj u;k"],"207- bUnkSj&4":["gsew dkyksuh","egkjk.kkizrki","y{e.k flag xkSM","'kghn Hkxr flag"],"208- bUnkSj&5":["f'kokth","ljnkj cYyHk iVsy fryd","N=lky","ohj lkojdj",",s- ih- ts- vCnqy dyke","lar dchjnkl u;k","T;ksfrck Qqys u;k"],"210- jkÅ":["fuHkZ; flag iVsy","lekzV panzxqIr ekS;Z","xq: xksfoan flag"],"203- nsikyiqj":["ljnkj iVsy"],"211- lkaosj":["fuikfu;k"]},"bankSj xkz-":{"209- egw":["Hkhejko vacsMdj &dksnfj;k","dsth ekgs’ojh& eagw uxj","'kghn VaV~;kekek& flejksy","Hks:yky ikVhnkj& eagwxkao","Hkxoku ij’kqjke& ekuiqj"],"203- nsikyiqj":["pkSchl vorkj& nsikyiqj","/kUukyky iVSy& xkSreiqjk","xq:ukud nso& csVek","egkjkt ;’koar jko& gkrksn"],"211- lkaosj":["izdk'k lksudj& lkaosj","eka f’kizk& f'kizk","eka vfgY;k& ikfy;k","eka ueZnk &[kqMsy"],"210- jkÅ":["jkÅ","dSyk'k ikVhnkj","jkÅ xzkeh.k u;k"]},"[k.Mok":{"175- eka/kkrk":["iquklk","fdYyksn","ewanh","vksadkjs'oj","dkosjh u;k"],"176- gjlwn":["gjlwn uxj","gjlwn xzkeh.k","jks'kuh","[kkyok","[kkj","vk'kkiqj u;k"],"177- [k.Mok vttk":["dq'kkHkkm Bkdjs  ¼[k.Mok uxj½","vVy fcgkjh oktis;h","tkoj ¼[k.Mok xzk-½","veyiqjk","ia- nhun;ky mik/;k; u;k"],"178- ia/kkuk vttk":["ia/kkuk","NSxkao ek[ku","cksjxkao","fppxksgu","xqMh[ksM+k","flaxksB"]},"cqjgkuiqj":{"179- usikuxj vttk":["usikuxj uxj-","ukojk ¼usikuxj xzk-½","[kdukj","/kqydksV","vVyfcgkjh cktis;h¼n;kZiqj½","dq'kkHkkÅ Bkdjs"],"180- cqjgkuqij":["cgknjiqj ¼cqjgkuiqj uxj½","MkW-';kek izlkn eq[kthZ ykyckx ¼cqjgkuiqj xzk-½","yksdekU; fryd","ljnkj cYyHk HkkbZ iVsy","'kkgiqj","iafMr nhun;ky mik/;k;","yksdekrk vfgY;k nsoh u;k"]},"[kjxkSu":{"181-  Hkhduxkao vttk":["Hkhduxkao","f>jU;k","fpfj;k","vkHkkiqjh ¼f'kouk½ u;k","Hkhduxkao ¼if'pe½ u;k"],"182- cM+okg":["cM+okg uxj","cM+okg xzk-","lukon uxj","lukon xzk-","cSfM+;k"],"183- egs'oj vtk":["egs'oj","djgh","cyokM+k","eaMys'oj"],"184- dljkon":["dljkon iwoZ","dljkon if'pe","vanM+","dljkon nf{k.k u;k","dljkon uxj u;k"],"185- [kjxkSu":["[kjxkSu uxj ¼iwoZ½","[kjxkSu xzk-","xksxkok","[kjxkSu uxj ¼if'pe½ u;k"],"186- Hkxokuiqjk vttk":["Hkxokuiqjk","fcLVku","lSxkao","c:M+","fljosy egknso u;k"]},"cM+okuh":{"187- lsa/kok vttk":["lsa/kok uxj","las/kok xzkeh.k","/kuksjk","cyokM+h","pkpfj;k","/koyh","'kkgiqjk u;k"],"188- jktiqj vttk":["jktiqj","tqyokuh;k","Bhdjh","vatM+","ryokMk","vks>j"],"189- ikulsey vttk":["ikulsey uxj","pkVyh","[ksfr;k","iylwn","fuokyh","tyxksu u;k"],"190- cM+okuh vttk":["cM+okuh uxj","cM+okuh xzkeh.k","ikVh","flykon","xa/kkoy cksdjkVk","Hkorh fctklu","es.khekrk"]},"vyhjktiqj":{"191- vyhjktiqj vttk":["vyhjktiqj uxj","vyhjktiqj xzkeh.k","lkSjok","Ndryk","lks.Mok","mejkyh u;k"],"192- tkscV vttk":["pUnz'ks[kj vktkn uxj","mn;x<+","dVVhokM+k","tkscV","[kVVkyh","vkEcqvk","cj>j"]},">kcqvk":{"193- >kcqvk vttk":[">kcqvk uxj","fiVksy ¼>kcqvk xzk-½","nso>jh u;k","jk.kkiqj","ou ¼jk.kkiqj xzk-½","dY;k.kiqjk","cksjh"],"194- Fkkanyk vttk":["Fkkanyk","dkduokuh  ¼Fkkanyk xzk-½","es?kuxj","enjkuh","ukSxkaok","[koklk"],"195- isVykon vttk":["isVykon","lkjaxh ¼isVykon xzk-½","jk;iqfj;k","ikjk","jkek","dqanuiqj",">dukon u;k"]},"/kkj":{"196- ljnkjiqj vttk":["ljnkjiqj","jktx<+ uxj","jktx<+ xzkeh.k","ve>sjk nlkbZ","ykcfj;k ¼jktksn½"],"201- /kkj":["dq'kkHkkm Bkdjs","/kkj xzkeh.k","frjyk","fnXBku","ihFkeiqj","lsukifr","lkxkSj"],"202- cnukoj":["cnukoj uxj","cnukoj xzk-","dkuou","lknyiqj","c[krx<+","fcMoky"]},"/kkj xzkeh.k":{"197- xa/kokuh":["xa/kokuh","ckx","dNkonk","thjkckn","Vk.Mk"],"198- dq{kh vttk":["dq{kh uxj","dq{kh xzkeh.k","fuljiqj","Mgh","cMnk"],"199- eukoj vttk":["eukoj uxj","eukoj xzk-","mejcu","fla?kkuk","ckdkusj"],"200- /kjeiqjh vttk":["/kjeiqjh","/kkeuksn","uky{kk","xqtjh","cxM+h u;k"]},"mTtSu uxj":{"216- mTtSu mRrj":["nkSyrxat","ljkQk","thokthxat","dkfrZd pkSd","fodzekfnR;","MkW- ';kek izlkn eq[kth  u;k"],"217- mTtSu nf{k.k":["ek/kouxj","ds'kouxj","egkjktokMk","ia- nhun;ky","'kghn jktHkkÅ egkdky  u;k"]},"mTtSu xzk-":{"212- ukxnk":["ukxnk uxj","ukxnk xzkeh.k","[kkpjkSn uxj","[kkpjkSn xzkeh.k","[kkpjkSn xzkeh.k ¼nf{k.k½ u;k","ukxnk fcjykxzke u;k"],"213- efgniqj":["efgniqj uxj","efgniqj xzkeh.k",">kjMk","efgniqj jksM+"],"214- rjkuk vtk":["rjkuk uxj","rjkuk xzkeh.k","ekdMksu","dukfl;k"],"215- ?kfV;k vtk":["?kfV;k","rktiqj","ikufcgkj","mUgsy"],"218- cMuxj":["cMuxj uxj","cMuxj xzkeh.k","bUxksfj;k","[kjlksndyka","[kjlkSn [kqnZ u;k"],"217- mTtSu nf{k.k":["mTTkSu xzkeh.k ¼nf{k.k½"]},"'kktkiqj":{"167- 'kktkiqj":["'kktkiqj uxj","'kktkiqj xzkeh.k","iuokMh","eksgu cMksfn;k","csjNk","eDlh"],"168- 'kqtkyiqj":["'kqtkyiqj uxj","'kqtkyiqj xzkeh.k","vdksfn;k","xqykuk","lqUnjlh"],"169- dkykihiy":["dkykihiy","[kksdjkdyka","vjfu;kdyka","iksyk;dyka","voarhiqj cM+ksfn;k  u;k","ylqfYM;k  u;k"]},"vkxj":{"165- lqlusj":["lqlusj","uy[ksM+k","cM+kxkao","lks;r","eksM+h u;k","eksguk u;k","/kjksyk u;k"],"166- vkxj vtk":["vkxj uxj","dkuM+","cM+kSn","chtkuxjh","vkxj xzkeh.k","ruksfM+;k u;k","endksVk u;k"]},"nsokl":{"170- lksudPN vtk":["Vksd[kqnZ uxj","Vksd[kqnZ xzkeh.k","lksudPN uxj","lksudPN ¼dk'kh½","HkkSjklk u;k"],"171- nsokl":["nsokl lhfu;j","nsokl twfu;j","nsokl xzkeh.k","Jhear egkjktk","lrxq: 'khyukFk u;k"],"172- gkVfiiY;k":["gkVfiiY;k uxj","gkVihiY;k xzkeh.k","cjksBk","f{kizk","jktksnk u;k"],"173- [kkrsxkao":["[kkrsxkao","dUukSn","gjuxkao","usekoj eanlkSj","ikuhxkao u;k"],"174- ckxyh vttk":["ckxyh","lrokl","mn;uxj","dkWVkQksM yksgkjnk","d.ksZ'oj u;k"]},"jryke":{"219- jryke xzk- vtk":["ukeyh","/kjkM","'kcjh","'kghn pUnz'ks[kj vktkn","ckaxjksn"],"220- jryke flVh":["MkW- ';kek izlkn eq[kthZ","ia- nhun;ky nhun;ky","lwjtey tSu","MkW- vEcsMdj","dq'kkHkkm Bkdjs"],"221- lSykuk vttk":["cktuk","jkoVh f'kox<+","lSykuk","csMnk","jktiqjk"],"222- tkojk":["tkojk xzkeh.k","fiiyksnk","tkojk uxj","lw[ksMk","MkW- y{ehukjk;.k ikaMs u;k"],"223- vkyksV vtk":["vkyksV","rky","cMkonk","Jhear jktekrk fot;kjkts flaf/k;k","tksxf.k;k ekrk"]},"eanlkSj":{"224- eanlkSj":["eanlkSj xzkeh.k","eanlkSj nf{k.k","nykSnk","eanlkSj mRrj","exjk ekrkth  u;k"],"225- eYgkjx<+ vtk":["eYgkjx<+","cw<k cqjgkuiqj","?kqU/kMdk","fiiY;ke.Mh","xqtZj cfM+Z;k u;k"],"226- lqokljk":["lqokljk","lhrkem uxj","lhrkem xzkeh.k","d;keiqj","'kkex<+","clbZ u;k"],"227- xjksB":["xjksB","Hkkuiqjk","esy[ksMk","HkSlksnk","[kMkonk"]},"uhep":{"228- euklk":["';kekizlkn eq[kthZ ¼euklk uxj½","ia- nhun;ky  ¼euklk xzkeh.k½","dqdMs'oj","jkeiqjk","dq'kkHkkÅ Bkdjs ¼euklk½ u;k"],"229- uhep":["ia- nhun;ky ¼uhep flVh½","Hkknokekrk","uhep mRrj","uhep nf{k.k","';kekizlkn eq[kthZ ¼c?kkuk½","dq'kkHkkÅ Bkdjs ¼uhep½ u;k"],"230- tkon":["tkon","eksjou","jrux<","flxksyh"]}};
+    const DISTRICT_DATA = {
+  "मुरैना": {
+    "3. सबलगढ़": [
+      "सबलगढ़ नगर",
+      "सबलगढ़ गामीण",
+      "नेपरी",
+      "टेंटरा नया",
+      "रामपुर कलां नया"
+    ],
+    "4. जौरा": [
+      "कैलारस",
+      "जौरा नगर",
+      "जौरा ग्रामीण",
+      "पहाडगढ़",
+      "सरसैनी"
+    ],
+    "5. सुमावली": [
+      "सुमावली",
+      "छैरा",
+      "मुंगावली",
+      "बागचीनी",
+      "मुरैना गा्रमीण"
+    ],
+    "6. मुरैना": [
+      "मुरैना पूर्व",
+      "मुरैना पश्चिम",
+      "मुरैना दक्षिण",
+      "बानमौर",
+      "रिठौराकलाॅ",
+      "जडेरूआ नया"
+    ],
+    "7. दिमनी": [
+      "दिमनी",
+      "सिहोनियां",
+      "जीगनी",
+      "थरा",
+      "नावली बड़ागांव नया"
+    ],
+    "8. अम्बाह अजा": [
+      "अम्बाह नगर",
+      "अम्बाह ग्रामीण",
+      "पोरसा नगर",
+      "पोरसा ग्रामीण",
+      "नगरा"
+    ]
+  },
+  "भिण्ड": {
+    "9. अटेर": [
+      "अटेर",
+      "फूफ",
+      "पीपरी",
+      "सुरपुरा",
+      "सरायघार नया",
+      "जवासा नया"
+    ],
+    "10. भिण्ड": [
+      "भिण्ड गा्रमीण",
+      "महाराणा प्रताप",
+      "बनखण्डेश्वर",
+      "सुभाषचंद्र बोस",
+      "उमरी ,नयागांव",
+      "उमरी अकोड़ा नया"
+    ],
+    "11. लहार": [
+      "लहार",
+      "आलमपुर",
+      "दबोह",
+      "असवार",
+      "मिहोना",
+      "मछण्ड"
+    ],
+    "12. मेहगांव": [
+      "मेहगांव",
+      "आमायन",
+      "रौन",
+      "गोरमी",
+      "सोनी",
+      "दंदरौआ"
+    ],
+    "13. गोहद अजा": [
+      "गोहद नगर",
+      "गोहद गा्रमीण",
+      "मौ",
+      "चितौरा",
+      "मालनपुर नया"
+    ]
+  },
+  "दतिया": {
+    "20. सेवढ़ा": [
+      "सेवढ़ा नगर",
+      "सेवढ़ा ग्रामीण (बअुआपुरा)",
+      "इन्दरगढ़ नगर",
+      "इन्दरगढ़ ग्रामीण",
+      "थरेट नया"
+    ],
+    "21. भाण्डेर अजा": [
+      "सालौन बी",
+      "भाण्डेर",
+      "उन्नाव बालाजी",
+      "ईमलिया उन्नाव ग्रामीण",
+      "उडीना नया"
+    ],
+    "22. दतिया": [
+      "दतिया नगर",
+      "दतिया ग्रामीण",
+      "बडौनी",
+      "उदगुआ",
+      "बसई",
+      "सीतापुर नया"
+    ]
+  },
+  "ग्वालियर नगर": {
+    "15. ग्वालियर": [
+      "कोटेश्वर महादेव",
+      "संत रविदास",
+      "वीर दुर्गादास राठौर",
+      "रानी लक्ष्मीबाई",
+      "राजा मानसिंह तोमर",
+      "महाराजा अग्रसेन नया"
+    ],
+    "16. ग्वालियर पूर्व": [
+      "पं. दीनदयाल उपाध्याय",
+      "महाराणा प्रताप",
+      "शहीद भगत सिंह",
+      "स्वामी रामकृष्ण",
+      "वीर सावरकर",
+      "बाबासाहेब अंबेडकर नया"
+    ],
+    "17. ग्वालियर दक्षिण": [
+      "अटल बिहारी  वाजपाई",
+      "शहीद हेमू कालोनी",
+      "डाॅ. श्यामा प्रसाद मुखर्जी",
+      "स्वामी विवेकानंद",
+      "गुप्तेश्वर महादेव"
+    ]
+  },
+  "ग्वालियर ग्रा .": {
+    "14. ग्वालियर ग्रामीण": [
+      "तानसेन बेहट",
+      "उटिला",
+      "बेरजा",
+      "पुरानी छावनी",
+      "कैंटोमेंट",
+      "गिरवाई नया"
+    ],
+    "18. भितरवार": [
+      "भितरवार",
+      "आंतरी",
+      "चीनोर",
+      "घाटीगांव",
+      "मोहना",
+      "लखेश्वरी नया"
+    ],
+    "19. डबरा अजा": [
+      "डबरा नं.",
+      "डबरा गा्रं.",
+      "पिछोर",
+      "बिलौआ",
+      "छीमक"
+    ]
+  },
+  "श्योपुर": {
+    "1. श्योपुर": [
+      "श्योपुर",
+      "बडोदा",
+      "मानपुर",
+      "प्रेमसर",
+      "पाण्डोला नया",
+      "श्योपुर ग्रामीण नया",
+      "दांतरदा नया"
+    ],
+    "2.विजयपुर": [
+      "विजयपुर",
+      "वीरपुर",
+      "कराहल",
+      "गोरस",
+      "गसवानी",
+      "अगरा नया",
+      "रघुनाथपुर नया"
+    ]
+  },
+  "शिवपुरी": {
+    "23. करेरा अजा": [
+      "करेरा",
+      "सिरसौद",
+      "करही",
+      "दिनारा",
+      "नरवर"
+    ],
+    "24. पोहरी": [
+      "पोहरी",
+      "बैराड़",
+      "सतनवाड़ा (नरवर ग्रामीण)",
+      "सुभाषपुरा मुडैरी",
+      "झिरी-भटनावर नया",
+      "मुढैरी-कुंवरपुर नया"
+    ],
+    "25. शिवपुरी": [
+      "शिवपुरी नगर",
+      "शिवपुरी ग्रामीण",
+      "शिवपुरी पुरानी",
+      "खोड़",
+      "वीरा-सरवाया नया",
+      "शिवपुरी-फिजिकल नया"
+    ],
+    "26. पिछोर": [
+      "पिछोर",
+      "खनियाधाना",
+      "बामोरकला",
+      "मायापुर",
+      "भौती",
+      "मुहारी नया"
+    ],
+    "27. कोलारस": [
+      "कोलारस",
+      "बदरवास",
+      "रन्नौद",
+      "लुकवासा",
+      "खराई",
+      "खतौरा नया"
+    ]
+  },
+  "गुना": {
+    "28. बामोरी": [
+      "म्याना",
+      "बामोरी",
+      "सिरसी",
+      "झागर नया",
+      "उमरी नया"
+    ],
+    "29. गुना अजा": [
+      "गुना",
+      "गुना कैंट",
+      "बजरंगढ",
+      "पगारा",
+      "बूढे बालाजी नया"
+    ],
+    "30. चाचैड़ा": [
+      "चाचैडा",
+      "कुम्भराज",
+      "मकसूदनगढ़",
+      "रूठियाई",
+      "मृगवास",
+      "तेलीगांव नया"
+    ],
+    "31. राघोगढ़": [
+      "राघोगढ़",
+      "आरोन",
+      "जामनेर",
+      "पनवाडी",
+      "फतेहगढ़"
+    ]
+  },
+  "अशोक नगर": {
+    "32. अशोकनगर अजा": [
+      "अशोकनगर नगर",
+      "अशोकनगर गा्रमीण",
+      "शाढौरा",
+      "राजपुर",
+      "सोनेरा (कचनार)",
+      "पछार नया"
+    ],
+    "33. चंदेरी": [
+      "चंदेरी नगर",
+      "चंदेरी गा्रमीण",
+      "ईसागढ़",
+      "नईसराय",
+      "ढाकोनी (आनंदपुर)"
+    ],
+    "34. मुंगावली": [
+      "मुंगावली",
+      "बहादुरपुर",
+      "पिपरई",
+      "सहराई",
+      "थूवोन",
+      "अथाईखेडा नया"
+    ]
+  },
+  "सागर": {
+    "35. बीना अजा": [
+      "बीना नगर",
+      "बीना गा्रमीण",
+      "भानगढ़ नया",
+      "खिमलासा",
+      "मण्डी बामोरा"
+    ],
+    "36. खुरई": [
+      "खुरई नगर",
+      "खुरई गा्रमीण",
+      "मालथौन",
+      "वांदरी",
+      "धनौरा नया",
+      "बरोदिया कलां नया"
+    ],
+    "37. सुरखी": [
+      "सुरखी नगर",
+      "सिहोरा",
+      "राहतगढ़",
+      "जयसिंह नगर",
+      "बिलहरा",
+      "राहतगढ़ नगर नया"
+    ],
+    "40. नरियावली अजा": [
+      "नरयावली",
+      "सागर गा्रमीण",
+      "सदर",
+      "मकरोनिया नगर",
+      "मकरोनिया ग्रामीण"
+    ],
+    "41. सागर": [
+      "सागर नगर",
+      "डाॅ. हरिसिंह गौर",
+      "डाॅ. भीमराव अम्बेकर",
+      "यमुनाताई ठाकुर नया"
+    ]
+  },
+  "सागर ग्रामीण": {
+    "38. देवरी": [
+      "देवरी नगर",
+      "केसली",
+      "गोरझामर",
+      "महाराजपुर",
+      "सहजपुर",
+      "अनंतपुरा नया"
+    ],
+    "39. रेहली": [
+      "रहेली नगर",
+      "रहेली गा्रमीण",
+      "गढ़ाकोटा नगर",
+      "गढ़ाकोटा गा्रमीण",
+      "शाहपुर",
+      "पटना बुजुर्ग नया",
+      "बलेह नया"
+    ],
+    "42. बण्डा": [
+      "बण्डा नगर",
+      "शाहगढ़",
+      "बरोहल",
+      "दलपतपुर",
+      "बरा",
+      "बरायठा नया",
+      "छापरी नया"
+    ]
+  },
+  "टीकमगढ़": {
+    "43. टीकमगढ़": [
+      "टीकमगढ़ नगर",
+      "टीकमगढ़ गा्रमीण",
+      "बडागांवधसान",
+      "कुण्डेश्वर",
+      "बुडेरा",
+      "सावरकर नया"
+    ],
+    "44. जतारा अजा": [
+      "जतारा",
+      "लिधोरा",
+      "थर बराना",
+      "चंदेरा",
+      "बम्हौरी कलां नया"
+    ],
+    "47. खरगापुर": [
+      "पलेरा",
+      "बल्देवगढ़",
+      "खरगापुर",
+      "कुडीला",
+      "देरी नया"
+    ]
+  },
+  "निवाड़ी": {
+    "45. पृथ्वीपुर": [
+      "पृथ्वीपुर नगर",
+      "पृथ्वीपुर ग्रामीण नया",
+      "मोहनगढ़",
+      "जैरोन",
+      "दिगोड़ा"
+    ],
+    "46. निवाडी": [
+      "निवाडी नगर",
+      "निवाड़ी ग्रामीण नया",
+      "ओरछा",
+      "तरीचकला",
+      "नैगुआ नया"
+    ]
+  },
+  "छतरपुर": {
+    "48. महाराजपुर": [
+      "महाराजपुर",
+      "नौगांव नगर",
+      "हरपालपुर",
+      "लुगासी",
+      "गढ़ीमलहरा नया"
+    ],
+    "49. चन्दला": [
+      "चन्दला",
+      "बारीगढ़",
+      "सरवई",
+      "बाछौन",
+      "गौरीहार नया"
+    ],
+    "50. राजनगर": [
+      "राजनगर",
+      "बमीठा",
+      "लवकुश नगर",
+      "खजुराहो",
+      "विक्रमपुर  नया"
+    ],
+    "51. छतरपुर": [
+      "छतरपुर नगर",
+      "छतरपुर ग्रामीण",
+      "महेवा",
+      "पड़रिया",
+      "निवारी नया"
+    ],
+    "52. बिजावर": [
+      "बिजावर",
+      "सटई",
+      "ईसानगर",
+      "किशनगढ़",
+      "मातगुवां नया"
+    ],
+    "53. बड़ा मलेहरा": [
+      "बड़ामलेहरा नगर",
+      "बड़ामलेहरा ग्रामीण",
+      "घुवारा",
+      "बक्सवाहा",
+      "बाजना नया"
+    ]
+  },
+  "पन्ना": {
+    "58. पवई": [
+      "पवई",
+      "शाहनगर",
+      "रैपुरा",
+      "मोहन्द्रा, मोहर्रा सिमरिया",
+      "कल्दा (आदिवासी)",
+      "बिसानी नया",
+      "सिमरिया नया"
+    ],
+    "59. गुन्नौर अजा": [
+      "अमानगंज",
+      "गुन्नौर",
+      "देवेन्द्र नगर",
+      "सलेहा",
+      "ककरहटी",
+      "महेबा नया"
+    ],
+    "60. पन्ना": [
+      "पन्ना नगर",
+      "पन्ना ग्रा.",
+      "अजयगढ़",
+      "धरमपुर",
+      "बृजपुर",
+      "बीरा नया"
+    ]
+  },
+  "सतना": {
+    "61. चित्रकुट": [
+      "बिरसिंहपुर",
+      "मझगवां",
+      "बरौधा",
+      "जैतवारा",
+      "चित्रकुट नया"
+    ],
+    "62. रैगांव अजा": [
+      "सोहावल",
+      "सिंहपुर",
+      "कोठी",
+      "सेमरवारा",
+      "भरजूना  नया"
+    ],
+    "63. सतना": [
+      "सतना नगर पश्चिमी (कुशाभाऊ ठाकरे)",
+      "सतना पूर्वी  (पं. दीनदयाल उपाध्याय)",
+      "बाबूपुर",
+      "अटल बिहारी वाजपेयी",
+      "डाॅ. श्यामा प्रसाद मुखर्जी नया"
+    ],
+    "64. नागौद": [
+      "नागौद",
+      "उचेहरा",
+      "परसमनिया",
+      "अटरा",
+      "जसो",
+      "भरहुत  नया"
+    ],
+    "67. रामपुर बघेलान": [
+      "रामपुर बघेलान",
+      "मोहारी कटरा",
+      "कोटर",
+      "सज्जनपुर",
+      "छिबौरा"
+    ]
+  },
+  "मैहर  नया जिला": {
+    "65. मैहर": [
+      "मेैहर नगर",
+      "नादन",
+      "बदेरा",
+      "अमदरा",
+      "सोनवारी नया",
+      "बेरमा नया"
+    ],
+    "66. अमरपाटन": [
+      "अमरपाटन",
+      "रामनगर",
+      "ताला",
+      "मर्यादापुर",
+      "कठहा नया",
+      "बड़वार नया"
+    ]
+  },
+  "रीवा": {
+    "68. सिरमौर": [
+      "सिरमौर",
+      "जवा",
+      "डभौरा",
+      "बैकुण्ठपुर नया",
+      "अतरैला नया"
+    ],
+    "69. सेमरिया": [
+      "सेमरिया",
+      "शाहपुर",
+      "बनकुंइया",
+      "मनकहरी  नया"
+    ],
+    "70. त्याथौर": [
+      "त्यौथर",
+      "गढ़ी",
+      "रायपुर सोनौरी",
+      "कटरा नया"
+    ],
+    "73. मनगवां अजा": [
+      "मनगवां",
+      "रामपुर सर्किल",
+      "लालगांव (गढ)",
+      "देवास नया",
+      "सूरा नया"
+    ],
+    "74. रीवा": [
+      "अटल (रीवा नगर)",
+      "रीवा ग्रामीण",
+      "बिछिया",
+      "बोदाबाग (दीनदयाल)"
+    ],
+    "75. गुढ़": [
+      "गुढ़",
+      "गोविन्दगढ़",
+      "रायपुरकुर्चलियान",
+      "महसांव नया"
+    ]
+  },
+  "मऊगंज  नया जिलाा": {
+    "71. मउगंज": [
+      "मउगंज",
+      "हनुमना",
+      "खटकरी",
+      "शाहपुर नया",
+      "पिपराही नया"
+    ],
+    "72. देवतालाब": [
+      "देवतालाब",
+      "रघुराज गढ़",
+      "नईगढ़ी",
+      "सीतापुर",
+      "तमरी नया"
+    ]
+  },
+  "सीधी": {
+    "76. चुरहट": [
+      "चुरहट",
+      "रामपुरनैकिन",
+      "खड्डी",
+      "पटपरा",
+      "चोरगड़ी",
+      "पड़खुरी नया",
+      "हनुमानगढ़ नया"
+    ],
+    "77. सीधी": [
+      "सीधी नगर",
+      "कुचवाही",
+      "सेमरिया",
+      "बरमबाबा",
+      "अमरपुर",
+      "चैफाल"
+    ],
+    "78. सिंहावल": [
+      "सिंहावल",
+      "बहरी",
+      "सोनवर्षा",
+      "अमिलिया नया",
+      "मायापुर नया"
+    ],
+    "82. धौहनी अजजा": [
+      "मझौली",
+      "मडवास",
+      "कुसमी",
+      "पौंडी निवास",
+      "खडौरा नया"
+    ]
+  },
+  "सिंगरौली": {
+    "79. चितरंगी अजजा": [
+      "चितरंगी",
+      "गौरबी",
+      "बगदरा",
+      "कर्थुआ",
+      "मौहरिया",
+      "बगैया"
+    ],
+    "80. सिंगरौली": [
+      "सिंगरौली",
+      "बैढन",
+      "तियरा",
+      "विन्ध्यनगर",
+      "जयन्त नगर"
+    ],
+    "81. देवसर अजा": [
+      "खुटार",
+      "माडा",
+      "सरई",
+      "बरगवां",
+      "लंघाडोल",
+      "रजमिलान"
+    ],
+    "82. धौहनी": [
+      "निवास",
+      "रजनिया  नया"
+    ],
+    "78. सिंहावल": [
+      "देवसर जियावन",
+      "नौड़िया"
+    ]
+  },
+  "शहडोल": {
+    "83. ब्यौहारी अजजा": [
+      "बाणसागर",
+      "ब्यौहारी",
+      "पपौध",
+      "सीधी",
+      "आमडीह (करकी)",
+      "टिकही नया",
+      "मऊ नया"
+    ],
+    "84. जयसिंह नगर अजजा": [
+      "जयसिंह नगर",
+      "गोहपारू",
+      "शहडोल नगर",
+      "सोहागपुर",
+      "सिंहपुर",
+      "चुहरी  नया"
+    ],
+    "85. जैतपुर अजजा": [
+      "बुढार",
+      "खैहरा",
+      "धनपुरी",
+      "केशवाही",
+      "जैतपुर",
+      "बकहो नया"
+    ]
+  },
+  "अनूपपुर": {
+    "86. कोतमा": [
+      "कोतमा नगर",
+      "कोतमा गा्रमीण",
+      "बिजुरी नगर",
+      "राजनगर नगर",
+      "राजनगर ग्रामीण"
+    ],
+    "87. अनूपपुर": [
+      "अनूपपुर नगर",
+      "अनूपपुर गा्रमीण",
+      "फुनगा",
+      "पसान",
+      "जैतहरी"
+    ],
+    "88. पुष्पराजगढ़ अजजा": [
+      "अमरकंटक",
+      "राजेन्द्रगा्रम नगर",
+      "बेनीवारी",
+      "करपा",
+      "वैंकट नगर",
+      "दमेहडी  नया"
+    ]
+  },
+  "उमरिया": {
+    "89. बांधगढ़ अजजा": [
+      "चंदिया",
+      "उमरिया नगर",
+      "उमरिया ग्रामीण",
+      "करकेली",
+      "नौरोजाबाद",
+      "बिलासपुर नया",
+      "कोहका  नया"
+    ],
+    "90. मानपुर अजजा": [
+      "अमरपुर",
+      "मानपुर",
+      "पाली नगर",
+      "पाली ग्रामीण",
+      "पिपरिया",
+      "बिजौरी नया",
+      "इंदवार नया"
+    ]
+  },
+  "जबलपुर नगर": {
+    "97. जबलपुर पूर्व अजा": [
+      "डाॅ. श्याम प्रसाद मुखर्जी",
+      "लोकमान्य बाल गंगाधर तिलक",
+      "शहीद अब्दुल हमीद",
+      "नेता जी सुभाषचंद्र बोस"
+    ],
+    "98. जबलपुर उत्तर": [
+      "शहीद चन्द्रशेखर आजाद",
+      "स्वामी विवेकानंद",
+      "पं. दीनदयाल उपाध्याय",
+      "कुशाभाऊ ठाकरे",
+      "आचार्य विद्यासागर  नया"
+    ],
+    "99. जबलपुर केन्ट": [
+      "वीर सावरकर",
+      "शहीद भगत सिंह",
+      "छत्रपति शिवाजी",
+      "अटल बिहारी वाजपेयी"
+    ],
+    "100. जबलपुर पश्चिम": [
+      "गिरीराज किशोर कपूर",
+      "रानी दुर्गावती",
+      "मां नर्मदा",
+      "महाराणा प्रताप",
+      "महर्षि वाल्मिकी  नया"
+    ]
+  },
+  "जबलपुर गा्र.": {
+    "95. पाटन": [
+      "पाटन",
+      "मझोली पश्चिम",
+      "मझोली पूर्व",
+      "कटंगी",
+      "पोडा",
+      "नुनसर"
+    ],
+    "96. बरगी": [
+      "बरगी",
+      "चरगवां",
+      "शहपुरा",
+      "भेडाघाट",
+      "तिलवारा",
+      "बेलखेड़ा"
+    ],
+    "101. पनागर": [
+      "पनागर नगर",
+      "पनागर पूर्व",
+      "पनागर पश्चिम",
+      "सोहागी करमेता",
+      "बरेला",
+      "महाराजपुर नया",
+      "रानी दुर्गावती"
+    ],
+    "102. सीहोरा अजजा": [
+      "सीहोरा नगर",
+      "गोसलपुर (सीहोरा ग्रा.)",
+      "मझगवां",
+      "बघराजी",
+      "कुण्डम",
+      "चैरई कलां  नया"
+    ]
+  },
+  "कटनी": {
+    "91. बडवारा अजजा": [
+      "बडवारा",
+      "ढीमरखेडा",
+      "सिलोडी",
+      "देवरी हटाई",
+      "कैमोर",
+      "विलायतकला",
+      "पान उमरिया"
+    ],
+    "92. विजयराघोगढ़": [
+      "विजय राघवगढ़",
+      "सिनगोडी",
+      "बरही",
+      "खितौली",
+      "कांटी",
+      "पिपरिया कलां नया"
+    ],
+    "93. मुडवारा": [
+      "मुडवारा (कटनीनगर)",
+      "माधवनगर",
+      "न्यू कटनी",
+      "कटनी गा्रमीण",
+      "निवार",
+      "स्लीमनाबाद",
+      "पं. दीनदयाल उपाध्याय नया"
+    ],
+    "94. बहोरीबंद": [
+      "बहोरीबंद",
+      "रीठी",
+      "बिलहरी",
+      "बाकल",
+      "कुआ",
+      "देवगांव  नया"
+    ]
+  },
+  "डिण्डौरी": {
+    "103. शाहपुरा अजजा": [
+      "मेहंदवानी",
+      "अमरपुर",
+      "शाहपुर",
+      "शहपुरा",
+      "मानिकपुर नया",
+      "सक्का  नया"
+    ],
+    "104. डिण्डौरी अजजा": [
+      "करंजिया",
+      "बजाग",
+      "समनापुर",
+      "डिण्डौरी",
+      "गोपालपुर नया",
+      "गाड़ासरई नया",
+      "बम्हनी नया"
+    ]
+  },
+  "मण्डला": {
+    "105. बिछिया अजजा": [
+      "बिछिया",
+      "मवई",
+      "घुघरी",
+      "अंजनिया",
+      "घुटास नया",
+      "सलवाह नया"
+    ],
+    "106. निवास अजजा": [
+      "निवास",
+      "नारायणगंज",
+      "बीजाहाडी",
+      "बकोरी",
+      "मोहगांव",
+      "बबलिया नया"
+    ],
+    "107. मण्डला अजजा": [
+      "मण्डला नगर",
+      "मण्डला ग्रामीण",
+      "नैनपुर नगर",
+      "नैनपुर ग्रामीण",
+      "चिरई डोंगरी",
+      "बम्हनी बंजर नगर",
+      "पदमी चैराह नया"
+    ]
+  },
+  "बालाघाट": {
+    "108. बैहर अजजा": [
+      "बिरसा",
+      "मलाजखण्ड",
+      "बैहर",
+      "उकवा",
+      "गढ़ी",
+      "मंडई नया"
+    ],
+    "109. लांजी": [
+      "किरनापुर",
+      "लांजी",
+      "भाडरा",
+      "भानेगांव",
+      "कारंजा नया",
+      "माटे नया",
+      "बिसोनी नया"
+    ],
+    "110. परसवाडा": [
+      "हट्टा",
+      "बालाघाट ग्रामीण",
+      "लामटा",
+      "परसवाडा",
+      "मझगांव नया",
+      "समनापुर नया",
+      "रजेगांव नया"
+    ],
+    "111. बालाघाट": [
+      "बालाघाट नगर",
+      "लालबर्रा",
+      "खमरिया",
+      "भरवेली",
+      "बालाघाट उत्तर नया",
+      "मोहगांव नया"
+    ],
+    "112. वारासिवनी": [
+      "वारासिवनी नगर",
+      "वारासिवनी ग्रामीण",
+      "खैरलाजी",
+      "आरंभा नया",
+      "रामपायली नया"
+    ],
+    "113. कटंगी": [
+      "कटंगी",
+      "कटोरी",
+      "तिरोडी",
+      "कटंगी पश्चिम नया",
+      "मिरगपुर नया",
+      "महकेपार नया"
+    ]
+  },
+  "सिवनी": {
+    "114. बरघाट अजजा": [
+      "कुरई",
+      "सुखतरा",
+      "बरघाट",
+      "धारना",
+      "गंगेरूआ"
+    ],
+    "115. सिवनी": [
+      "बारापत्थर (सिवनी उत्तर )",
+      "मंगलीपेठ (सिवनी दक्षिण)",
+      "करकोटी (सिवनी ग्रामीण)",
+      "लखनवाडा नया",
+      "मुगवानी",
+      "बण्डोल",
+      "चमारी",
+      "बीजादेवरी"
+    ],
+    "116. केवलारी": [
+      "केवलारी",
+      "छपारा",
+      "उगली",
+      "धनोरा",
+      "कान्हीवाडा",
+      "पलारी",
+      "छींद खैरलांजी नया"
+    ],
+    "117.लखनादौनअजजा": [
+      "लखनादौन नगर",
+      "आंदेगांव",
+      "घूमा",
+      "कहानी",
+      "घंसोर",
+      "केदारपुर",
+      "नागनदेवरी नया"
+    ]
+  },
+  "नरसिंहपुर": {
+    "118. गोटेंगांव अजा": [
+      "गोटेगांव नगर",
+      "गोटेगांव ग्रामीण",
+      "करकबेल",
+      "मुंगवानी",
+      "श्रीनगर नया",
+      "ढांगीढाना नया"
+    ],
+    "119. नरसिंहपुर": [
+      "नरसिंहपुर नगर",
+      "नरसिंहपुर ग्रामीण",
+      "करेली नगर",
+      "करेली ग्रामीण",
+      "नर्मदा",
+      "सिंहपुर नया"
+    ],
+    "120. तेन्दूखेडा": [
+      "चैगान",
+      "सिहोरा",
+      "चावरपाठा (तेंदूखेड़ा)",
+      "कौड़िया नया",
+      "तेंदूखेड़ा नया"
+    ],
+    "121. गाडरवाडा": [
+      "गाडरवारा नगर",
+      "साईखेडा",
+      "चीचली",
+      "सालीचैका",
+      "आमगांव छोटा नया"
+    ]
+  },
+  "छिंदवाड़ा": {
+    "122. जुन्नारदेव अजजा": [
+      "जुन्नारदेव नगर",
+      "जुन्नारदेव ग्रामीण",
+      "दमुआ नगर",
+      "दमुआ ग्रामीण",
+      "तामिया",
+      "चावलपानी नया"
+    ],
+    "123. अमरवाडा अजजा": [
+      "अमरवाडा नगर",
+      "अमरवाडा ग्रामीण",
+      "सिंगोडी",
+      "बटकाखापा",
+      "हरई",
+      "छिन्दी",
+      "सुरलाखापा"
+    ],
+    "124. चैरई": [
+      "चैरई नगर",
+      "चैरई ग्रामीण",
+      "चांद",
+      "बिछुआ",
+      "कुण्डा",
+      "खमारपानी नया"
+    ],
+    "126. छिन्दवाडा": [
+      "छिन्दवाडा नगर (एक)",
+      "छिन्दवाडा नगर (दो)",
+      "छिन्दवाडा ग्रामीण",
+      "सारना",
+      "धरमटेकड़ी नया",
+      "गुलाबरा नया"
+    ],
+    "127. परासिया अजा": [
+      "परासिया नगर",
+      "पगारा (परासिया ग्रा.)",
+      "उमरेठ",
+      "शिवपुरी",
+      "पटपड़ा नया"
+    ]
+  },
+  "पांढुर्णा नया जिला": {
+    "125. सौसर": [
+      "सौसर",
+      "लोधीखेडा ग्रा.",
+      "पिपल्यानारायणवार",
+      "मोहखेडा",
+      "रामाकोना नया",
+      "लिंगा नया"
+    ],
+    "128. पांढुर्णा अजजा": [
+      "पांढुर्णा नगर",
+      "पांढुर्णा ग्रा.",
+      "नंदनवाडी",
+      "सावरी",
+      "कुशाभाऊ ठाकरे नया",
+      "श्यामाप्रसाद मुखर्जी (देवगढ़) नया"
+    ]
+  },
+  "नर्मदापुरम्": {
+    "136. सिवनी मालवा": [
+      "सिवनीमालवा नगर",
+      "सिवनीमालवा ग्रामीण",
+      "केसला",
+      "शिवपुर",
+      "भीलटदेव",
+      "डोलरिया"
+    ],
+    "137. नर्मदापुरम्": [
+      "नर्मदापुरम् नगर",
+      "नर्मदापुर नगर",
+      "इटारसी नगर",
+      "पुरानी इटारसी",
+      "नर्मदापुरम् ग्रामीण"
+    ],
+    "138. सोहागपुर": [
+      "सोहागपुर",
+      "सेमरी",
+      "माखन नगर (बावई)",
+      "आरी बाबई पश्चिम",
+      "रामपुर",
+      "शोभापुर"
+    ],
+    "139. पिपरिया अजा": [
+      "पिपरिया नगर",
+      "पिपरिया ग्रामीण",
+      "बनखेडी नगर",
+      "पंचमढ़ी",
+      "चांदौन ग्रामीण",
+      "खापरखेड़ा",
+      "बनखेडी ग्रामीण नया"
+    ]
+  },
+  "हरदा": {
+    "134. टिमरनी अजजा": [
+      "टिमरनी",
+      "कायदा नया",
+      "रेहटगांव",
+      "सिराली",
+      "करताना नया",
+      "पहटकलां  नया"
+    ],
+    "135. हरदा": [
+      "हरदा नगर",
+      "हरदा ग्रा.",
+      "खिरकिया",
+      "हाण्डिया",
+      "सोनतलाई नया",
+      "चारूवा नया"
+    ]
+  },
+  "बैतूल": {
+    "129. मुलताईृ": [
+      "मुलताई नगर",
+      "मुलताई ग्रामीण",
+      "प्रभात पटट्नम",
+      "दुनावा",
+      "मासौदा"
+    ],
+    "130. आमला अजा": [
+      "आमला नगर",
+      "आमला ग्रामीण",
+      "सारणी नगर",
+      "सारणी ग्रामीण",
+      "मोरखा"
+    ],
+    "131. बैतूल": [
+      "बैतूल गंज",
+      "बतूल ग्रामीण",
+      "बैतूल बाजार",
+      "आठनेर नगर",
+      "बडोरा",
+      "कोठी बाजार"
+    ],
+    "132. घोडाडोंगरी अजजा": [
+      "घोडाडोंगरी",
+      "चिचोली नगर",
+      "चिचैली ग्रामीण",
+      "शाहपुर",
+      "भौरा",
+      "चोपना",
+      "पाढर"
+    ],
+    "133. भैंसदेही अजजा": [
+      "भैंसदेही नगर",
+      "भैंसदेही ग्रामीण",
+      "आठनेर ग्रामीण",
+      "भीमपुर",
+      "दामजीपुरा",
+      "रतनपुर नया",
+      "सावलमेढ़ा नया"
+    ]
+  },
+  "भोपाल नगर": {
+    "150. भोपाल उत्तर": [
+      "रानी कमलपती (शाहजहानाबाद)",
+      "गुरूनानक(शाहजहानाबाद)",
+      "वीर सावरकर (बस स्टैण्ड)",
+      "राजाभोज (अग्रसेन)",
+      "नवल शाह नया मण्डल"
+    ],
+    "151. नरेला": [
+      "स्टेशन",
+      "सुभाष",
+      "स्वामी विवेकानंद (करोंद)",
+      "शहीद भगत सिंह (करोंद)",
+      "अशोका गार्डन",
+      "महामाई"
+    ],
+    "152. दक्षिण पश्चिम": [
+      "टैगोर  (टी.टी. नगर)",
+      "तात्याटोपे",
+      "करूणाधाम ( नेहरू नगर )",
+      "पंचशील नगर",
+      "माता शबरी नया"
+    ],
+    "153. भोपाल मध्य": [
+      "बरखेडी",
+      "चैक",
+      "अरेरा",
+      "महाराणाप्रताप",
+      "शाहपुरा"
+    ],
+    "154. गोविंदपुरा": [
+      "अवधपुरी",
+      "मिसरोद",
+      "साकेतनगर",
+      "आनंदनगर",
+      "इन्द्रपुरी",
+      "भानपुर"
+    ],
+    "155. हुजुर": [
+      "बैरागढ़ संतहिरदाराम नगर",
+      "गांधीनगर",
+      "डाॅ. श्यामा प्रसाद मुखर्जी नगर (कोलार)",
+      "अटल बिहारी वाजपेयी (कोलार)"
+    ]
+  },
+  "भोपाल ग्रामीण": {
+    "149. बैरसिया अजा": [
+      "नजीराबाद",
+      "हर्राखेडा",
+      "बैरसिया नगर",
+      "बैरसिया ग्रामीण",
+      "हरिसिद्धि",
+      "परवलिया सड़क"
+    ],
+    "155. हुजुर": [
+      "बिलखिरिया",
+      "फन्दा",
+      "पं. दीनदयाल",
+      "नीलबड़ (रातीबड़)"
+    ]
+  },
+  "रायसेन": {
+    "140. उदयपुरा": [
+      "उदयपुरा",
+      "बरेली नगर",
+      "भारकच्छ",
+      "देवरी",
+      "बरेली ग्रामीण",
+      "खरगोन नया मण्डल",
+      "नूरनगर नया मण्डल"
+    ],
+    "141. भोजपुर": [
+      "मंडीदीप नगर",
+      "औबेदुल्लागंज",
+      "बाडी",
+      "सुल्तानपुर",
+      "मण्डीदीप ग्रामीण",
+      "भोजपुर"
+    ],
+    "142. सांची अजा": [
+      "रायसेन",
+      "सांची",
+      "गैरतगंज",
+      "खरबई",
+      "साॅचेत",
+      "देवनगर (देवगांव)",
+      "गैरतगंज ग्रामीण नया",
+      "सलामतपुर नया"
+    ],
+    "143. सिलवानी": [
+      "सिलवानी पूर्व",
+      "सिलवानी पश्चिम",
+      "बेगमगंज नं.",
+      "बेगमगंज ग्रा.",
+      "सुल्तानगंज ग्रामीण",
+      "प्रतापगढ़ नया"
+    ]
+  },
+  "विदिशा": {
+    "144. विदिशा": [
+      "गुलाबगंज",
+      "वैत्रवति (विदिशा नगर)",
+      "दुर्गानगर (विदिशा नगर)",
+      "बैसनगर (विदिशा ग्रामीण)",
+      "अहमदपुर",
+      "ढोलखेड़ी नया"
+    ],
+    "145. बासौदा": [
+      "गंजबासोदा नगर",
+      "गंजबासोदा ग्रामीण",
+      "ग्यारसपुर",
+      "त्योंदा",
+      "सिरनोटा नया"
+    ],
+    "146. कुरवाई अजा": [
+      "कुरवाई",
+      "पथरिया",
+      "मेहलुआ चैराहा",
+      "पठारी",
+      "उदयपुर",
+      "दीपनाखेड़ा नया",
+      "अम्बानगर नया"
+    ],
+    "147. सिरोज": [
+      "सिरोज नगर",
+      "लटेरी",
+      "आनंदपुर",
+      "चितावर",
+      "देवपुर"
+    ],
+    "148. शमशाबाद": [
+      "नटेरन",
+      "शमशाबाद",
+      "खामखेडा",
+      "सतपाडा हाट",
+      "देव खाजूरी नया"
+    ]
+  },
+  "सीहोर": {
+    "156. बुदनी": [
+      "नसरूल्लागंज",
+      "सलकनपुर",
+      "शाहगंज",
+      "बुधनी",
+      "गोपालपुर",
+      "लाड़कुई",
+      "चकल्दी"
+    ],
+    "157. आष्टा अजा": [
+      "आष्टा नगर",
+      "आष्टा ग्रा.",
+      "जावर",
+      "कोठरी",
+      "सिद्विकगंज",
+      "मैना नया",
+      "खाचरोद नया",
+      "डोडी नया"
+    ],
+    "158. इच्छावर": [
+      "इच्छावर",
+      "बिलकिसगंज",
+      "बरखेडी",
+      "गुड़भेला",
+      "दीवड़िया"
+    ],
+    "159. सीहोर": [
+      "सीहोर नगर-1",
+      "श्यामपुर",
+      "दोराहा",
+      "अहमदपुर",
+      "सीहोर नगर - 2 नया"
+    ]
+  },
+  "राजगढ़": {
+    "160. नरसिंहगढ़": [
+      "नरसिंहगढ़",
+      "कुरावर",
+      "तलेन",
+      "बोड़ा",
+      "झाड़ला नया",
+      "मण्डावर नया"
+    ],
+    "161. ब्यावरा": [
+      "ब्यावरा",
+      "गादिया",
+      "सुठालिया",
+      "पिपलहेला",
+      "मलावर नया",
+      "गिन्दौरहाट नया"
+    ],
+    "162. राजगढ़": [
+      "राजगढ़",
+      "खुजनेर",
+      "कालीपीठ",
+      "पपडेल",
+      "करेड़ी नया",
+      "पिपलोदी नया"
+    ],
+    "163. खिलचीपुर": [
+      "खिलचीपुर",
+      "जीरापुर",
+      "माचलपुर",
+      "छापीहेड़ा",
+      "रामगढ़ नया",
+      "भण्डावद नया"
+    ],
+    "164. सांरगपुर अजा": [
+      "सांरगपुर नगर",
+      "संडावता",
+      "पचैर",
+      "गुलावता",
+      "पड़ाना नया"
+    ]
+  },
+  "इंदौर नगर": {
+    "204. इन्दौर-1": [
+      "सुभाषचन्द्र बोस",
+      "लक्ष्मीबाई",
+      "सम्राट अशोक",
+      "चन्द्रशेखर आजाद",
+      "लवकुश",
+      "गुरू टेकचंद  नया"
+    ],
+    "205. इन्दौर-2": [
+      "डाॅ. अम्बेडकर",
+      "रामायण",
+      "पं. दीनदयाल उपाध्याय",
+      "डाॅ. श्यामा प्रसाद मुखर्जी",
+      "संतश्री मोनी बाबा",
+      "संतश्री बालीनाथ",
+      "राजमाता जीजाबाई नया",
+      "संतश्री रविदास  नया"
+    ],
+    "206. इन्दौर-3": [
+      "कुशाभाउ ठाकरे",
+      "देवी अहिल्या बाई",
+      "अटल बिहारी वाजपेयी",
+      "राजेन्द्र धारकर नया"
+    ],
+    "207. इन्दौर-4": [
+      "हेमू कालोनी",
+      "महाराणाप्रताप",
+      "लक्ष्मण सिंह गौड",
+      "शहीद भगत सिंह"
+    ],
+    "208. इन्दौर-5": [
+      "शिवाजी",
+      "सरदार बल्लभ पटेल तिलक",
+      "छत्रसाल",
+      "वीर सावरकर",
+      "ऐ. पी. जे. अब्दुल कलाम",
+      "संत कबीरदास नया",
+      "ज्योतिबा फुले नया"
+    ],
+    "210. राऊ": [
+      "निर्भय सिंह पटेल",
+      "समा्रट चंद्रगुप्त मौर्य",
+      "गुरू गोविंद सिंह"
+    ],
+    "203. देपालपुर": [
+      "सरदार पटेल"
+    ],
+    "211. सांवेर": [
+      "निपानिया"
+    ]
+  },
+  "इंदौर गा्र.": {
+    "209. महू": [
+      "भीमराव अंबेडकर -कोदरिया",
+      "केजी माहेष्वरी- मंहू नगर",
+      "शहीद टंट्यामामा- सिमरोल",
+      "भेरूलाल पाटीदार- मंहूगांव",
+      "भगवान परषुराम- मानपुर"
+    ],
+    "203. देपालपुर": [
+      "चैबीस अवतार- देपालपुर",
+      "धन्नालाल पटैल- गौतमपुरा",
+      "गुरूनानक देव- बेटमा",
+      "महाराज यषवंत राव- हातोद"
+    ],
+    "211. सांवेर": [
+      "प्रकाश सोनकर- सांवेर",
+      "मां षिप्रा- शिप्रा",
+      "मां अहिल्या- पालिया",
+      "मां नर्मदा -खुडेल"
+    ],
+    "210. राऊ": [
+      "राऊ",
+      "कैलाश पाटीदार",
+      "राऊ ग्रामीण नया"
+    ]
+  },
+  "खण्डवा": {
+    "175. मांधाता": [
+      "पुनासा",
+      "किल्लोद",
+      "मूंदी",
+      "ओंकारेश्वर",
+      "कावेरी नया"
+    ],
+    "176. हरसूद": [
+      "हरसूद नगर",
+      "हरसूद ग्रामीण",
+      "रोशनी",
+      "खालवा",
+      "खार",
+      "आशापुर नया"
+    ],
+    "177. खण्डवा अजजा": [
+      "कुशाभाउ ठाकरे  (खण्डवा नगर)",
+      "अटल बिहारी वाजपेयी",
+      "जावर (खण्डवा ग्रा.)",
+      "अमलपुरा",
+      "पं. दीनदयाल उपाध्याय नया"
+    ],
+    "178. पंधाना अजजा": [
+      "पंधाना",
+      "छैगांव माखन",
+      "बोरगांव",
+      "चिचगोहन",
+      "गुडीखेड़ा",
+      "सिंगोठ"
+    ]
+  },
+  "बुरहानपुर": {
+    "179. नेपानगर अजजा": [
+      "नेपानगर नगर.",
+      "नावरा (नेपानगर ग्रा.)",
+      "खकनार",
+      "धुलकोट",
+      "अटलबिहारी बाजपेयी(दर्यापुर)",
+      "कुशाभाऊ ठाकरे"
+    ],
+    "180. बुरहानुपर": [
+      "बहादरपुर (बुरहानपुर नगर)",
+      "डाॅ.श्यामा प्रसाद मुखर्जी लालबाग (बुरहानपुर ग्रा.)",
+      "लोकमान्य तिलक",
+      "सरदार बल्लभ भाई पटेल",
+      "शाहपुर",
+      "पंडित दीनदयाल उपाध्याय",
+      "लोकमाता अहिल्या देवी नया"
+    ]
+  },
+  "खरगौन": {
+    "181.  भीकनगांव अजजा": [
+      "भीकनगांव",
+      "झिरन्या",
+      "चिरिया",
+      "आभापुरी (शिवना) नया",
+      "भीकनगांव (पश्चिम) नया"
+    ],
+    "182. बड़वाह": [
+      "बड़वाह नगर",
+      "बड़वाह ग्रा.",
+      "सनावद नगर",
+      "सनावद ग्रा.",
+      "बैड़िया"
+    ],
+    "183. महेश्वर अजा": [
+      "महेश्वर",
+      "करही",
+      "बलवाड़ा",
+      "मंडलेश्वर"
+    ],
+    "184. कसरावद": [
+      "कसरावद पूर्व",
+      "कसरावद पश्चिम",
+      "अंदड़",
+      "कसरावद दक्षिण नया",
+      "कसरावद नगर नया"
+    ],
+    "185. खरगौन": [
+      "खरगौन नगर (पूर्व)",
+      "खरगौन ग्रा.",
+      "गोगावा",
+      "खरगौन नगर (पश्चिम) नया"
+    ],
+    "186. भगवानपुरा अजजा": [
+      "भगवानपुरा",
+      "बिस्टान",
+      "सैगांव",
+      "बरूड़",
+      "सिरवेल महादेव नया"
+    ]
+  },
+  "बड़वानी": {
+    "187. सेंधवा अजजा": [
+      "सेंधवा नगर",
+      "संेधवा ग्रामीण",
+      "धनोरा",
+      "बलवाड़ी",
+      "चाचरिया",
+      "धवली",
+      "शाहपुरा नया"
+    ],
+    "188. राजपुर अजजा": [
+      "राजपुर",
+      "जुलवानीया",
+      "ठीकरी",
+      "अंजड़",
+      "तलवाडा",
+      "ओझर"
+    ],
+    "189. पानसेमल अजजा": [
+      "पानसेमल नगर",
+      "चाटली",
+      "खेतिया",
+      "पलसूद",
+      "निवाली",
+      "जलगोन नया"
+    ],
+    "190. बड़वानी अजजा": [
+      "बड़वानी नगर",
+      "बड़वानी ग्रामीण",
+      "पाटी",
+      "सिलावद",
+      "गंधावल बोकराटा",
+      "भवती बिजासन",
+      "मेणीमाता"
+    ]
+  },
+  "अलीराजपुर": {
+    "191. अलीराजपुर अजजा": [
+      "अलीराजपुर नगर",
+      "अलीराजपुर ग्रामीण",
+      "सौरवा",
+      "छकतला",
+      "सोण्डवा",
+      "उमराली नया"
+    ],
+    "192. जोबट अजजा": [
+      "चन्द्रशेखर आजाद नगर",
+      "उदयगढ़",
+      "कटटीवाड़ा",
+      "जोबट",
+      "खटटाली",
+      "आम्बुआ",
+      "बरझर"
+    ]
+  },
+  "झाबुआ": {
+    "193. झाबुआ अजजा": [
+      "झाबुआ नगर",
+      "पिटोल (झाबुआ ग्रा.)",
+      "देवझरी नया",
+      "राणापुर",
+      "वन (राणापुर ग्रा.)",
+      "कल्याणपुरा",
+      "बोरी"
+    ],
+    "194. थांदला अजजा": [
+      "थांदला",
+      "काकनवानी  (थांदला ग्रा.)",
+      "मेघनगर",
+      "मदरानी",
+      "नौगांवा",
+      "खवासा"
+    ],
+    "195. पेटलावद अजजा": [
+      "पेटलावद",
+      "सारंगी (पेटलावद ग्रा.)",
+      "रायपुरिया",
+      "पारा",
+      "रामा",
+      "कुंदनपुर",
+      "झकनावद नया"
+    ]
+  },
+  "धार": {
+    "196. सरदारपुर अजजा": [
+      "सरदारपुर",
+      "राजगढ़ नगर",
+      "राजगढ़ ग्रामीण",
+      "अमझेरा दसाई",
+      "लाबरिया (राजोद)"
+    ],
+    "201. धार": [
+      "कुशाभाउ ठाकरे",
+      "धार ग्रामीण",
+      "तिरला",
+      "दिग्ठान",
+      "पीथमपुर",
+      "सेनापति",
+      "सागौर"
+    ],
+    "202. बदनावर": [
+      "बदनावर नगर",
+      "बदनावर ग्रा.",
+      "कानवन",
+      "सादलपुर",
+      "बखतगढ़",
+      "बिडवाल"
+    ]
+  },
+  "धार ग्रामीण": {
+    "197. गंधवानी": [
+      "गंधवानी",
+      "बाग",
+      "कछावदा",
+      "जीराबाद",
+      "टाण्डा"
+    ],
+    "198. कुक्षी अजजा": [
+      "कुक्षी नगर",
+      "कुक्षी ग्रामीण",
+      "निसरपुर",
+      "डही",
+      "बडदा"
+    ],
+    "199. मनावर अजजा": [
+      "मनावर नगर",
+      "मनावर ग्रा.",
+      "उमरबन",
+      "सिंघाना",
+      "बाकानेर"
+    ],
+    "200. धरमपुरी अजजा": [
+      "धरमपुरी",
+      "धामनोद",
+      "नालक्षा",
+      "गुजरी",
+      "बगड़ी नया"
+    ]
+  },
+  "उज्जैन नगर": {
+    "216. उज्जैन उत्तर": [
+      "दौलतगंज",
+      "सराफा",
+      "जीवाजीगंज",
+      "कार्तिक चैक",
+      "विक्रमादित्य",
+      "डाॅ. श्यामा प्रसाद मुखजी  नया"
+    ],
+    "217. उज्जैन दक्षिण": [
+      "माधवनगर",
+      "केशवनगर",
+      "महाराजवाडा",
+      "पं. दीनदयाल",
+      "शहीद राजभाऊ महाकाल  नया"
+    ]
+  },
+  "उज्जैन ग्रा.": {
+    "212. नागदा": [
+      "नागदा नगर",
+      "नागदा ग्रामीण",
+      "खाचरौद नगर",
+      "खाचरौद ग्रामीण",
+      "खाचरौद ग्रामीण (दक्षिण) नया",
+      "नागदा बिरलाग्राम नया"
+    ],
+    "213. महिदपुर": [
+      "महिदपुर नगर",
+      "महिदपुर ग्रामीण",
+      "झारडा",
+      "महिदपुर रोड़"
+    ],
+    "214. तराना अजा": [
+      "तराना नगर",
+      "तराना ग्रामीण",
+      "माकडोन",
+      "कनासिया"
+    ],
+    "215. घटिया अजा": [
+      "घटिया",
+      "ताजपुर",
+      "पानबिहार",
+      "उन्हेल"
+    ],
+    "218. बडनगर": [
+      "बडनगर नगर",
+      "बडनगर ग्रामीण",
+      "इन्गोरिया",
+      "खरसोदकलां",
+      "खरसौद खुर्द नया"
+    ],
+    "217. उज्जैन दक्षिण": [
+      "उज्जैन ग्रामीण (दक्षिण)"
+    ]
+  },
+  "शाजापुर": {
+    "167. शाजापुर": [
+      "शाजापुर नगर",
+      "शाजापुर ग्रामीण",
+      "पनवाडी",
+      "मोहन बडोदिया",
+      "बेरछा",
+      "मक्सी"
+    ],
+    "168. शुजालपुर": [
+      "शुजालपुर नगर",
+      "शुजालपुर ग्रामीण",
+      "अकोदिया",
+      "गुलाना",
+      "सुन्दरसी"
+    ],
+    "169. कालापीपल": [
+      "कालापीपल",
+      "खोकराकलां",
+      "अरनियाकलां",
+      "पोलायकलां",
+      "अवंतीपुर बड़ोदिया  नया",
+      "लसुल्डिया  नया"
+    ]
+  },
+  "आगर": {
+    "165. सुसनेर": [
+      "सुसनेर",
+      "नलखेड़ा",
+      "बड़ागांव",
+      "सोयत",
+      "मोड़ी नया",
+      "मोहना नया",
+      "धरोला नया"
+    ],
+    "166. आगर अजा": [
+      "आगर नगर",
+      "कानड़",
+      "बड़ौद",
+      "बीजानगरी",
+      "आगर ग्रामीण",
+      "तनोड़िया नया",
+      "मदकोटा नया"
+    ]
+  },
+  "देवास": {
+    "170. सोनकच्छ अजा": [
+      "टोकखुर्द नगर",
+      "टोकखुर्द ग्रामीण",
+      "सोनकच्छ नगर",
+      "सोनकच्छ (काशी)",
+      "भौरासा नया"
+    ],
+    "171. देवास": [
+      "देवास सीनियर",
+      "देवास जूनियर",
+      "देवास ग्रामीण",
+      "श्रीमंत महाराजा",
+      "सतगुरू शीलनाथ नया"
+    ],
+    "172. हाटपिपल्या": [
+      "हाटपिपल्या नगर",
+      "हाटपीपल्या ग्रामीण",
+      "बरोठा",
+      "क्षिप्रा",
+      "राजोदा नया"
+    ],
+    "173. खातेगांव": [
+      "खातेगांव",
+      "कन्नौद",
+      "हरनगांव",
+      "नेमावर मंदसौर",
+      "पानीगांव नया"
+    ],
+    "174. बागली अजजा": [
+      "बागली",
+      "सतवास",
+      "उदयनगर",
+      "काॅटाफोड लोहारदा",
+      "कर्णेश्वर नया"
+    ]
+  },
+  "रतलाम": {
+    "219. रतलाम ग्रा. अजा": [
+      "नामली",
+      "धराड",
+      "शबरी",
+      "शहीद चन्द्रशेखर आजाद",
+      "बांगरोद"
+    ],
+    "220. रतलाम सिटी": [
+      "डाॅ. श्यामा प्रसाद मुखर्जी",
+      "पं. दीनदयाल दीनदयाल",
+      "सूरजमल जैन",
+      "डाॅ. अम्बेडकर",
+      "कुशाभाउ ठाकरे"
+    ],
+    "221. सैलाना अजजा": [
+      "बाजना",
+      "रावटी शिवगढ़",
+      "सैलाना",
+      "बेडदा",
+      "राजपुरा"
+    ],
+    "222. जावरा": [
+      "जावरा ग्रामीण",
+      "पिपलोदा",
+      "जावरा नगर",
+      "सूखेडा",
+      "डाॅ. लक्ष्मीनारायण पांडे नया"
+    ],
+    "223. आलोट अजा": [
+      "आलोट",
+      "ताल",
+      "बडावदा",
+      "श्रीमंत राजमाता विजयाराजे सिंधिया",
+      "जोगणिया माता"
+    ]
+  },
+  "मंदसौर": {
+    "224. मंदसौर": [
+      "मंदसौर ग्रामीण",
+      "मंदसौर दक्षिण",
+      "दलौदा",
+      "मंदसौर उत्तर",
+      "मगरा माताजी  नया"
+    ],
+    "225. मल्हारगढ़ अजा": [
+      "मल्हारगढ़",
+      "बूढा बुरहानपुर",
+      "घुन्धडका",
+      "पिपल्यामण्डी",
+      "गुर्जर बर्ड़िया नया"
+    ],
+    "226. सुवासरा": [
+      "सुवासरा",
+      "सीतामउ नगर",
+      "सीतामउ ग्रामीण",
+      "कयामपुर",
+      "शामगढ़",
+      "बसई नया"
+    ],
+    "227. गरोठ": [
+      "गरोठ",
+      "भानपुरा",
+      "मेलखेडा",
+      "भैसोदा",
+      "खडावदा"
+    ]
+  },
+  "नीमच": {
+    "228. मनासा": [
+      "श्यामाप्रसाद मुखर्जी (मनासा नगर)",
+      "पं. दीनदयाल  (मनासा ग्रामीण)",
+      "कुकडेश्वर",
+      "रामपुरा",
+      "कुशाभाऊ ठाकरे (मनासा) नया"
+    ],
+    "229. नीमच": [
+      "पं. दीनदयाल (नीमच सिटी)",
+      "भादवामाता",
+      "नीमच उत्तर",
+      "नीमच दक्षिण",
+      "श्यामाप्रसाद मुखर्जी (बघाना)",
+      "कुशाभाऊ ठाकरे (नीमच) नया"
+    ],
+    "230. जावद": [
+      "जावद",
+      "मोरवन",
+      "रतनगढ",
+      "सिगोली"
+    ]
+  }
+};
     // ===============================
 // LOCATION HELPERS (district -> vidhansabha -> mandal)
 // ===============================
@@ -579,25 +2424,6 @@ function applyLocationAutofill(info) {
 
     let remoteCfg = null;
 
-
-    function setupLiveBrandSync() {
-      try {
-        if (!CID) return;
-        window.addEventListener("storage", async (e) => {
-          if (e.key === `EL_BRAND_PING_${CID}`) {
-            const remoteResp = await loadRemoteConfig(FORM_TYPE);
-            if (remoteResp) {
-              applyBrandingFromResponse(remoteResp, FORM_TYPE);
-              fillProgramNamesFromResponse(remoteResp, FORM_TYPE, "program_name");
-              applyFixedLevelFromResponse(remoteResp, FORM_TYPE);
-            }
-          }
-        });
-      } catch (e) {
-        // ignore
-      }
-    }
-
     async function initAll() {
   // remote config (branding + programs)
   const remoteResp = await loadRemoteConfig(FORM_TYPE);
@@ -607,32 +2433,13 @@ function applyLocationAutofill(info) {
     applyFixedLevelFromResponse(remoteResp, FORM_TYPE);
   }
 
-  // Live sync: when admin saves branding in another tab, refresh automatically
-  setupLiveBrandSync();
-
   // init district cascade after config load (no change)
   initDistrictCascade();
 
 }
 
 
-    
-  // Auto-refresh config when tab regains focus (so latest Programs appear)
-  async function refreshConfigIfVisible() {
-    try {
-      if (document.visibilityState !== "visible") return;
-      const remoteResp = await loadRemoteConfig(FORM_TYPE);
-      if (remoteResp) {
-        applyBrandingFromResponse(remoteResp, FORM_TYPE);
-        fillProgramNamesFromResponse(remoteResp, FORM_TYPE, "program_name");
-        applyFixedLevelFromResponse(remoteResp, FORM_TYPE);
-      }
-    } catch(e) {}
-  }
-  window.addEventListener("focus", refreshConfigIfVisible);
-  document.addEventListener("visibilitychange", refreshConfigIfVisible);
-
-document.addEventListener("DOMContentLoaded", initAll);
+    document.addEventListener("DOMContentLoaded", initAll);
 
     // Mobile Auto-fill
     let mobileTimer = null;

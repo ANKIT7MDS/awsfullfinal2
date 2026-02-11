@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-
 <html lang="hi">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Mandal Reporting - EventLens</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-<script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mandal Reporting - EventLens</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <script>
     tailwind.config = {
       theme: {
         extend: {
@@ -17,7 +16,7 @@
       }
     }
   </script>
-<style>
+  <style>
     :root {
       --c1: #f97316; /* primary */
       --c2: #ef4444; /* secondary */
@@ -67,135 +66,142 @@
     }
     .brand-bg { background-image: linear-gradient(to right, var(--c1), var(--c2)); }
     .brand-ring { box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.16); }
-  
-    /* Ensure Hindi dropdowns render correctly */
-    select#district, select#vidhansabha, select#mandal, select#program_name,
-    #district option, #vidhansabha option, #mandal option, #program_name option {
-      font-family: 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-      letter-spacing: 0;
-    }
-
-</style>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+  </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 font-sans">
-<div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
-<div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
-<!-- Header banner (Admin branding) -->
-<div class="hidden w-full rounded-xl mb-4 overflow-hidden bg-slate-800/40 border border-white/5" id="header-wrap">
-<img alt="Header" class="w-full h-32 sm:h-44 object-cover object-center" id="header-image"/>
-</div>
-<div class="text-center mb-6" id="form-header">
-<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 text-orange-500 mb-3 overflow-hidden border border-white/10">
-<i class="fa-solid fa-flag text-2xl" id="default-icon"></i>
-<img alt="logo" class="w-full h-full object-contain scale-[1.15] hidden" id="custom-logo" src=""/>
-</div>
-<h1 class="text-2xl font-extrabold brand-text" id="org-name">कार्यक्रम रिपोर्टिंग</h1>
-<p class="text-slate-300/80 text-xs mt-1" id="org-subtitle">Program Reporting</p>
-<p class="text-slate-400 text-[11px] mt-2 hidden" id="org-tagline"></p>
-</div>
-<form class="space-y-4" id="f">
-<div>
-<label class="block text-xs font-medium text-slate-300/80 mb-1">Level</label>
-<div class="relative">
-<select class="w-full rounded-lg px-3 py-2.5 text-sm input-field appearance-none" id="level">
-<option value="district">District</option>
-<option value="vidhansabha">Vidhan Sabha</option>
-<option selected="" value="mandal">Mandal</option>
-</select>
-<i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
-</div>
-<p class="text-[10px] text-slate-400 mt-1" id="level-note"></p>
-</div>
-<div>
-<label class="block text-xs font-medium text-slate-300/80 mb-1">कार्यक्रम का नाम</label>
-<div class="relative">
-<select class="w-full rounded-lg px-3 py-2.5 text-sm input-field appearance-none" id="program_name" required="">
-<option value="">— कार्यक्रम चुनें —</option>
-<option value="कार्यक्रम-1">कार्यक्रम-1</option>
-</select>
-<i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
-</div>
-</div>
-<div id="wrap-district">
-<label class="block text-xs font-medium text-slate-300/80 mb-1">जिला</label>
-<select class="w-full rounded-lg px-3 py-2.5 text-sm input-field" id="district">
-<option value="">— जिला चुनें —</option>
-</select>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div id="wrap-vidhansabha">
-<label class="block text-xs font-medium text-slate-300/80 mb-1">विधानसभा</label>
-<select class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled="" id="vidhansabha">
-<option value="">— पहले जिला चुनें —</option>
-</select>
-</div>
-<div id="wrap-mandal">
-<label class="block text-xs font-medium text-slate-300/80 mb-1">मंडल</label>
-<select class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled="" id="mandal">
-<option value="">— पहले विधानसभा चुनें —</option>
-</select>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-xs font-medium text-slate-300/80 mb-1">रिपोर्टर नाम</label>
-<input class="w-full rounded-lg px-3 py-2.5 text-sm input-field" id="reporter_name" placeholder="Name" required="" type="text"/>
-</div>
-<div>
-<label class="block text-xs font-medium text-slate-300/80 mb-1">मोबाइल</label>
-<input class="w-full rounded-lg px-3 py-2.5 text-sm input-field" id="reporter_mobile" inputmode="numeric" pattern="[0-9]{10}" placeholder="10-digit" type="tel"/>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-xs font-medium text-slate-300/80 mb-1">तारीख</label>
-<input class="w-full rounded-lg px-3 py-2.5 text-sm input-field" id="report_date" required="" type="date"/>
-</div>
-<div>
-<label class="block text-xs font-medium text-slate-300/80 mb-1">उपस्थिति (संख्या)</label>
-<input class="w-full rounded-lg px-3 py-2.5 text-sm input-field" id="attendance_count" placeholder="0" type="number"/>
-</div>
-</div>
-<div>
-<label class="block text-xs font-medium text-slate-300/80 mb-1">रिपोर्ट / विवरण</label>
-<textarea class="w-full rounded-lg px-3 py-2.5 text-sm input-field" id="report_summary" placeholder="Report details" required="" rows="4"></textarea>
-</div>
-<!-- Multi Photo -->
-<div class="space-y-2">
-<div class="flex items-center justify-between">
-<label class="block text-xs font-semibold text-slate-200 uppercase tracking-wider">फोटो (Multiple - Optional)</label>
-<button class="text-xs bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg" id="add-photo-btn" type="button">
-<i class="fa-solid fa-plus mr-1"></i> Add
+    <body class="min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
+    <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
+
+    <div id="header-image" class="hidden w-full h-24 rounded-xl mb-4 bg-slate-800/40 border border-white/5 overflow-hidden bg-cover bg-center"></div>
+
+    <div class="text-center mb-6" id="form-header">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 text-orange-500 mb-3 overflow-hidden border border-white/10">
+            <i id="default-icon" class="fa-solid fa-flag text-2xl"></i>
+            <img id="custom-logo" src="" class="w-full h-full object-cover hidden" alt="logo">
+        </div>
+        <h1 id="org-name" class="text-2xl font-extrabold brand-text">कार्यक्रम रिपोर्टिंग</h1>
+        <p id="org-subtitle" class="text-slate-300/80 text-xs mt-1">Program Reporting</p>
+        <p id="org-tagline" class="text-slate-400 text-[11px] mt-2 hidden"></p>
+    </div>
+
+      <form id="f" class="space-y-4">
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300/80 mb-1">Level</label>
+          <div class="relative">
+            <select id="level" class="w-full rounded-lg px-3 py-2.5 text-sm input-field appearance-none">
+              <option value="district">District</option>
+              <option value="vidhansabha">Vidhan Sabha</option>
+              <option value="mandal" selected>Mandal</option>
+            </select>
+            <i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
+          </div>
+          <p id="level-note" class="text-[10px] text-slate-400 mt-1"></p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300/80 mb-1">कार्यक्रम का नाम</label>
+          <div class="relative">
+            <select id="program_name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field appearance-none" required>
+              <option value="">— कार्यक्रम चुनें —</option>
+              <option value="कार्यक्रम-1">कार्यक्रम-1</option>
+            </select>
+            <i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
+          </div>
+        </div>
+
+        <div id="wrap-district">
+          <label class="block text-xs font-medium text-slate-300/80 mb-1">जिला</label>
+          <select id="district" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
+            <option value="">— जिला चुनें —</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div id="wrap-vidhansabha">
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">विधानसभा</label>
+            <select id="vidhansabha" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
+              <option value="">— पहले जिला चुनें —</option>
+            </select>
+          </div>
+          <div id="wrap-mandal">
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">मंडल</label>
+            <select id="mandal" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
+              <option value="">— पहले विधानसभा चुनें —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">रिपोर्टर नाम</label>
+            <input type="text" id="reporter_name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Name" required>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">मोबाइल</label>
+            <input type="tel" id="reporter_mobile" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="10-digit" inputmode="numeric" pattern="[0-9]{10}">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">तारीख</label>
+            <input type="date" id="report_date" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" required>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300/80 mb-1">उपस्थिति (संख्या)</label>
+            <input type="number" id="attendance_count" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="0">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300/80 mb-1">रिपोर्ट / विवरण</label>
+          <textarea id="report_summary" rows="4" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Report details" required></textarea>
+        </div>
+
+        <!-- Multi Photo -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold text-slate-200 uppercase tracking-wider">फोटो (Multiple - Optional)</label>
+            <button type="button" id="add-photo-btn" class="text-xs bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-lg">
+              <i class="fa-solid fa-plus mr-1"></i> Add
             </button>
-</div>
-<input accept="image/*" class="hidden" id="photos" multiple="" type="file"/>
-<div class="text-[11px] text-slate-400 border border-white/10 bg-white/5 rounded-xl p-3" id="photo-hint">
+          </div>
+
+          <input type="file" id="photos" accept="image/*" class="hidden" multiple>
+
+          <div id="photo-hint" class="text-[11px] text-slate-400 border border-white/10 bg-white/5 rounded-xl p-3">
             आप एक से अधिक फोटो जोड़ सकते हैं। (Max 10)
           </div>
-<div class="grid grid-cols-3 gap-3" id="photo-grid"></div>
+
+          <div id="photo-grid" class="grid grid-cols-3 gap-3"></div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full brand-bg text-white font-extrabold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 hover:opacity-95">
+          <span>सुरक्षित करें (Save)</span><i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
+      </form>
+
+    <div id="status" class="mt-4 text-center text-xs font-medium hidden"></div>
+    <div class="mt-4 text-center text-[11px] text-slate-400/80">
+      <span id="footer-text"></span>
+    </div>
 </div>
-<button class="w-full brand-bg text-white font-extrabold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 hover:opacity-95" id="submitBtn" type="submit">
-<span>सुरक्षित करें (Save)</span><i class="fa-solid fa-paper-plane text-xs"></i>
-</button>
-</form>
-<div class="mt-4 text-center text-xs font-medium hidden" id="status"></div>
-<div class="mt-4 text-center text-[11px] text-slate-400/80">
-<span id="footer-text"></span>
-</div>
-</div>
-<!-- SUCCESS SCREEN -->
-<div class="hidden w-full max-w-lg glass rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[420px]" id="success-screen">
-<div class="w-20 h-20 bg-emerald-500/15 text-emerald-400 rounded-full flex items-center justify-center mb-6 text-4xl shadow-lg shadow-emerald-500/10 border border-emerald-500/20">
-<i class="fa-solid fa-check"></i>
-</div>
-<h2 class="text-2xl font-extrabold text-white mb-2">धन्यवाद!</h2>
-<p class="text-slate-200/90 mb-8 leading-relaxed" id="success-msg">रिपोर्टिंग सेव हो गई है।</p>
-<button class="px-6 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-lg text-sm text-white transition" onclick="window.location.reload()">
-<i class="fa-solid fa-rotate-right mr-2"></i> नया फॉर्म
+
+    <!-- SUCCESS SCREEN -->
+<div id="success-screen" class="hidden w-full max-w-lg glass rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[420px]">
+    <div class="w-20 h-20 bg-emerald-500/15 text-emerald-400 rounded-full flex items-center justify-center mb-6 text-4xl shadow-lg shadow-emerald-500/10 border border-emerald-500/20">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <h2 class="text-2xl font-extrabold text-white mb-2">धन्यवाद!</h2>
+    <p id="success-msg" class="text-slate-200/90 mb-8 leading-relaxed">रिपोर्टिंग सेव हो गई है।</p>
+    <button onclick="window.location.reload()" class="px-6 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-lg text-sm text-white transition">
+        <i class="fa-solid fa-rotate-right mr-2"></i> नया फॉर्म
     </button>
 </div>
-<script>
+
+    <script>
     // ===============================
 // COMMON CONFIG & UTILS
 // ===============================
@@ -212,32 +218,8 @@ const debug = (qs("debug") || "").trim() === "1";
 
 function isPublicMode() { return !!token; }
 
-function setThemeVars(c1, c2) {
-  if (c1) document.documentElement.style.setProperty("--c1", c1);
-  if (c2) document.documentElement.style.setProperty("--c2", c2);
-}
-function setBackgroundImage(url, ver) {
-  const finalUrl = cacheBust(url, ver);
-  if (!finalUrl) {
-    document.documentElement.style.setProperty("--bgimg", "none");
-    document.body.style.backgroundImage = "none";
-    return;
-  }
-  const testImg = new Image();
-  testImg.onload = () => {
-    document.documentElement.style.setProperty("--bgimg", `url('${finalUrl}')`);
-    document.body.style.backgroundImage = `url('${finalUrl}')`;
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundPosition = "center";
-    document.body.style.backgroundAttachment = "fixed";
-  };
-  testImg.onerror = () => {
-    document.documentElement.style.setProperty("--bgimg", "none");
-    document.body.style.backgroundImage = "none";
-  };
-  testImg.src = finalUrl;
-}')`);
-}
+
+
 
 function showStatus(msg, isError) {
   const el = $("status");
@@ -266,6 +248,12 @@ async function apiCall(action, payload) {
 function safeStr(v) { return (v === null || v === undefined) ? "" : String(v); }
 
 
+
+function isPresignedUrl(u) {
+  // AWS S3 presigned URLs include X-Amz-* query params; adding our own query breaks the signature
+  return /[?&]x-amz-/i.test(u) || /[?&]X-Amz-/i.test(u) || /X-Amz-Signature/i.test(u) || /X-Amz-Algorithm/i.test(u) || /X-Amz-Credential/i.test(u);
+}
+
 function cacheBust(url, ver) {
   const u = safeStr(url || "").trim();
   if (!u) return "";
@@ -275,6 +263,33 @@ function cacheBust(url, ver) {
   if (!v) return u;
   const sep = u.includes("?") ? "&" : "?";
   return u + sep + "v=" + encodeURIComponent(v);
+}
+
+function setThemeVars(c1, c2) {
+  if (c1) document.documentElement.style.setProperty("--c1", c1);
+  if (c2) document.documentElement.style.setProperty("--c2", c2);
+}
+
+function setBackgroundImage(url, ver) {
+  const finalUrl = cacheBust(url, ver);
+  if (!finalUrl) {
+    document.documentElement.style.setProperty("--bgimg", "none");
+    document.body.style.backgroundImage = "none";
+    return;
+  }
+  const testImg = new Image();
+  testImg.onload = () => {
+    document.documentElement.style.setProperty("--bgimg", `url('${finalUrl}')`);
+    document.body.style.backgroundImage = `url('${finalUrl}')`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundAttachment = "fixed";
+  };
+  testImg.onerror = () => {
+    document.documentElement.style.setProperty("--bgimg", "none");
+    document.body.style.backgroundImage = "none";
+  };
+  testImg.src = finalUrl;
 }
 async function sha256Hex(file) {
   const buffer = await file.arrayBuffer();
@@ -299,15 +314,14 @@ function mergeObj(a, b) {
 // BRANDING + PROGRAMS + FIXED LEVEL
 // ===============================
 async function loadRemoteConfig(formType) {
-  // Returns { branding, programs, fixed_level } or null
   try {
     const payload = isPublicMode()
-      ? { token, form_type: formType }
-      : { collection_id: cidParam, form_type: formType };
+      ? { cid: cidParam, collection_id: cidParam, token, form_type: formType, _ts: Date.now() }
+      : { collection_id: cidParam, form_type: formType, _ts: Date.now() };
 
     const action = isPublicMode() ? "public_get_config" : "admin_get_config";
     const res = await apiCall(action, payload);
-    return res && (res.config || res.data || res);
+    return res || null; // keep full response (settings/config/form)
   } catch (e) {
     if (debug) console.log("config load failed", e);
     return null;
@@ -2626,12 +2640,7 @@ function onPhotosSelected(ev, maxFiles=10) {
         btn.innerHTML = old;
       }
     });
-    
+    </script>
 
-function isPresignedUrl(u) {
-  // AWS S3 presigned URLs include X-Amz-* query params; adding our own query breaks the signature
-  return /[?&]x-amz-/i.test(u) || /[?&]X-Amz-/i.test(u) || /X-Amz-Signature/i.test(u) || /X-Amz-Algorithm/i.test(u) || /X-Amz-Credential/i.test(u);
-}
-</script>
-</body>
-</html>
+    </body>
+    </html>

@@ -389,7 +389,20 @@ function getFixedLevel(cfg, formType) {
   if (fixed && fixed[formType]) return String(fixed[formType]).toLowerCase();
   return "";
 }
-    const FORM_TYPE = "president_tour_form";
+    const FORM_TYPE_RAW = "president_tour_form";
+    function normalizeFormType(ft){
+      ft = (ft||"").toString().trim().toLowerCase();
+      if(!ft) return "president_tour";
+      ft = ft.replace(/^political_/, "");
+      if(ft.endsWith("_form")) ft = ft.slice(0, -5);
+      // normalize common variants
+      if(ft === "president_tour") return ft;
+      if(ft === "president_tour_form") return "president_tour";
+      return ft;
+    }
+    const FT_FROM_QS = (qs("ft")||qs("form_type")||"").trim();
+    const FORM_TYPE = normalizeFormType(FT_FROM_QS || FORM_TYPE_RAW);
+
     const FIELD_IDS = ["program_name","leader_name","leader_designation","tour_date","tour_time","tour_location","district","vidhansabha","mandal","notes"];
 
     const DISTRICT_DATA = {

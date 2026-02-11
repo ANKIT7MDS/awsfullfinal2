@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EventLens – President Tour Importer (No CORS)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,"Noto Sans Devanagari","Mangal",sans-serif}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+  </style>
+</head>
+<body class="bg-slate-50">
+  <div class="max-w-4xl mx-auto p-4 md:p-8">
+    <div class="bg-white rounded-2xl shadow p-5 md:p-7">
+      <h1 class="text-xl md:text-2xl font-bold">President Tour – Import (No CORS)</h1>
+      <p class="text-slate-600 mt-2">
+        Google CSV fetch <b>CORS</b> की वजह से local file (origin: <span class="mono">null</span>) पर block होता है।
+        इसलिए यहाँ आप CSV <b>download करके upload</b> करेंगे (या CSV paste), फिर import चलेगा।
+      </p>
+
+      <div class="mt-5 grid gap-4">
+        <div>
+          <label class="text-sm font-semibold">API Base URL</label>
+          <input id="baseUrl" class="mt-1 w-full border rounded-xl px-3 py-2" value="https://vxid0yoovj.execute-api.ap-south-1.amazonaws.com/prod" />
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold">President Tour Form Token (पूरा token)</label>
+          <input id="token" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="eyJ2IjoxLCJjb2xsZWN0aW9uX2lkIjoi..." />
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-semibold">CSV File Upload (recommended)</label>
+            <input id="csvFile" type="file" accept=".csv,text/csv" class="mt-1 w-full border rounded-xl px-3 py-2 bg-white" />
+            <div class="text-xs text-slate-500 mt-1">
+              Google Sheet → File → Download → <b>Comma-separated values (.csv)</b>
+            </div>
+          </div>
+          <div>
+            <label class="text-sm font-semibold">Rows limit (optional)</label>
+            <input id="limit" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="5 (test)" value="" />
+            <div class="text-xs text-slate-500 mt-1">Blank = all rows.</div>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold">OR: CSV Paste (optional)</label>
+          <textarea id="csvPaste" class="mt-1 w-full border rounded-xl px-3 py-2 h-28" placeholder="अगर file upload नहीं कर सकते तो CSV text यहाँ paste कर दो"></textarea>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm font-semibold">Photo Column Name (Sheet header)</label>
+            <input id="photoCol" class="mt-1 w-full border rounded-xl px-3 py-2" value="कार्यक्रम के फोटो" />
+          </div>
+          <div>
+            <label class="text-sm font-semibold">Allow skip rows without photo?</label>
+            <select id="skipNoPhoto" class="mt-1 w-full border rounded-xl px-3 py-2 bg-white">
+              <option value="no">No (fail)</option>
+              <option value="yes">Yes (skip)</option>
+            </select>
+            <div class="text-xs text-slate-500 mt-1">अगर कुछ rows में photo नहीं है तो skip करवा सकते हो।</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3 mt-2">
+          <button id="btnPreview" class="px-4 py-2 rounded-xl bg-slate-900 text-white">1) Preview CSV</button>
+          <button id="btnRun" class="px-4 py-2 rounded-xl bg-emerald-600 text-white">2) Start Import</button>
+          <button id="btnStop" class="px-4 py-2 rounded-xl bg-rose-600 text-white" disabled>Stop</button>
+        </div>
+
+        <div id="msg" class="mt-3 text-sm"></div>
+
+        <div class="mt-4">
+          <h2 class="font-semibold">Progress</h2>
+          <div class="mt-2 w-full bg-slate-100 rounded-xl overflow-hidden">
+            <div id="bar" class="h-3 bg-emerald-500" style="width:0%"></div>
+          </div>
+          <div class="mt-2 text-sm">
+            <span class="font-semibold">Done:</span> <span id="done">0</span> /
+            <span class="font-semibold">Total:</span> <span id="total">0</span>
+            <span class="ml-3 font-semibold text-emerald-700">OK:</span> <span id="ok">0</span>
+            <span class="ml-3 font-semibold text-rose-700">Fail:</span> <span id="fail">0</span>
+            <span class="ml-3 font-semibold text-slate-700">Skipped:</span> <span id="skipped">0</span>
+          </div>
+        </div>
+
+        <div class="mt-4 overflow-auto border rounded-2xl">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-100">
+              <tr>
+                <th class="text-left px-3 py-2">#</th>
+                <th class="text-left px-3 py-2">Status</th>
+                <th class="text-left px-3 py-2">Entry ID</th>
+                <th class="text-left px-3 py-2">Note</th>
+              </tr>
+            </thead>
+            <tbody id="log"></tbody>
+          </table>
+        </div>
+
+        <details class="mt-4">
+          <summary class="cursor-pointer font-semibold">CSV कैसे डाउनलोड करें?</summary>
+          <div class="text-sm text-slate-600 mt-2 space-y-2">
+            <ol class="list-decimal ml-5 space-y-1">
+              <li>Google Sheet खोलो</li>
+              <li><b>File → Download → Comma-separated values (.csv)</b></li>
+              <li>यह CSV file यहाँ upload करो</li>
+            </ol>
+          </div>
+        </details>
+
+        <details class="mt-2">
+          <summary class="cursor-pointer font-semibold">Photo link note</summary>
+          <div class="text-sm text-slate-600 mt-2">
+            Drive photo links अगर public नहीं हैं (Anyone with link can view) तो download fail होगा।
+          </div>
+        </details>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+let stopFlag = false;
+let cachedRows = null;
+
+function setMsg(html, isErr=false){
+  $("msg").innerHTML = `<div class="${isErr?'text-rose-700':'text-slate-700'}">${html}</div>`;
+}
+
+
+function extractToken(raw){
+  raw = (raw||"").trim();
+  if(!raw) return "";
+  // If user pasted full URL or "?token=..."
+  try{
+    if(raw.includes("token=")){
+      const m = raw.match(/[?&]token=([^&]+)/);
+      if(m && m[1]) return decodeURIComponent(m[1].trim());
+      const m2 = raw.match(/token=([A-Za-z0-9._-]+)/);
+      if(m2 && m2[1]) return m2[1].trim();
+    }
+  }catch(e){}
+  // If pasted starts with "?token="
+  if(raw.startsWith("?token=")) return raw.slice(7).trim();
+  // If pasted starts with "token="
+  if(raw.startsWith("token=")) return raw.slice(6).trim();
+  return raw;
+}
+
+function b64urlToBytes(b64url){
+  const b64 = b64url.replace(/-/g,'+').replace(/_/g,'/');
+  const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
+  const bin = atob(b64 + pad);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function parseTokenPayload(token){
+  try{
+    token = extractToken(token);
+    const parts = token.split(".");
+    if(parts.length < 2) return null;
+    const bytes = b64urlToBytes(parts[0]);
+    const json = new TextDecoder("utf-8").decode(bytes);
+    return JSON.parse(json);
+  }catch(e){ return null; }
+}
+
+
+function parseCSV(text){
+  const rows = [];
+  let cur = [], field = "", i=0, inQ=false;
+  while(i<text.length){
+    const c = text[i];
+    if(inQ){
+      if(c === '"' && text[i+1] === '"'){ field+='"'; i+=2; continue; }
+      if(c === '"'){ inQ=false; i++; continue; }
+      field += c; i++; continue;
+    }else{
+      if(c === '"'){ inQ=true; i++; continue; }
+      if(c === ','){ cur.push(field); field=""; i++; continue; }
+      if(c === '\r'){ i++; continue; }
+      if(c === '\n'){ cur.push(field); rows.push(cur); cur=[]; field=""; i++; continue; }
+      field += c; i++; continue;
+    }
+  }
+  if(field.length || cur.length){ cur.push(field); rows.push(cur); }
+  return rows;
+}
+
+function toObjectRows(csvRows){
+  const header = csvRows[0].map(h=>(h||"").trim());
+  const objs = [];
+  for(let r=1;r<csvRows.length;r++){
+    const row = csvRows[r];
+    if(!row) continue;
+    if(row.every(v => !String(v||"").trim())) continue;
+    const o = {};
+    for(let c=0;c<header.length;c++){
+      o[header[c]] = (row[c] ?? "").trim();
+    }
+    objs.push(o);
+  }
+  return {header, objs};
+}
+
+async function loadCsvText(){
+  // Prefer file upload
+  const f = $("csvFile").files && $("csvFile").files[0];
+  if(f){
+    return await f.text();
+  }
+  const paste = ($("csvPaste").value||"").trim();
+  if(paste) return paste;
+  throw new Error("CSV file upload करो या CSV text paste करो।");
+}
+
+function driveFileId(url){
+  if(!url) return null;
+  const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if(m1) return m1[1];
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m2) return m2[1];
+  return null;
+}
+function normalizePhotoUrl(url){
+  const id = driveFileId(url);
+  if(id) return `https://drive.google.com/uc?export=download&id=${id}`;
+  return url;
+}
+
+async function sha256Hex(blob){
+  const buf = await blob.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function apiCall(baseUrl, action, payload){
+  const url = baseUrl.replace(/\/$/,'') + "/political/forms";
+  const res = await fetch(url, { method:"POST", cache:"no-store", body: JSON.stringify({action, payload: payload||{}}) });
+  const text = await res.text();
+  let data = {};
+  try{ data = JSON.parse(text); }catch(e){ data = { message: text || "Invalid JSON" }; }
+  if(!res.ok) throw new Error(data.message || data.error || ("HTTP "+res.status));
+  return data;
+}
+
+async function putUpload(uploadUrl, blob){
+  const res = await fetch(uploadUrl, { method:"PUT", body: blob });
+  if(!res.ok) throw new Error("S3 upload failed: HTTP "+res.status);
+}
+
+function mapRowToPayload(row){
+  return {
+    program_name: row["कार्यक्रम का नाम"] || row["कार्यक्रम नाम"] || "",
+    tour_date: row["कार्यक्रम दिनांक"] || row["दिनांक"] || "",
+    tour_location: row["कार्यक्रम स्थान"] || row["स्थान"] || "",
+    attendance_count: row["कार्यक्रम में कुल उपस्तिथि"] || "",
+    chief_guests: row["प्रमुख अतिथि/जनप्रतिनिधि"] || "",
+    notes: row["अन्य जानकारी"] || "",
+    mandal: row["मंडल का नाम"] || "",
+    program_type: row["कार्यक्रम का प्रकार"] || "",
+    status: row["Status"] || ""
+  };
+}
+
+function logRow(i, status, entryId, note){
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td class="px-3 py-2 border-t">${i}</td>
+    <td class="px-3 py-2 border-t ${status==='OK'?'text-emerald-700 font-semibold':status==='SKIP'?'text-slate-600 font-semibold':'text-rose-700 font-semibold'}">${status}</td>
+    <td class="px-3 py-2 border-t mono">${entryId||""}</td>
+    <td class="px-3 py-2 border-t">${note||""}</td>
+  `;
+  $("log").appendChild(tr);
+}
+
+$("btnPreview").onclick = async ()=>{
+  try{
+    const text = await loadCsvText();
+    const rows = parseCSV(text);
+    const {header, objs} = toObjectRows(rows);
+    cachedRows = {header, objs};
+    setMsg(`Loaded CSV: <b>${objs.length}</b> rows. Headers: <span class="mono">${header.join(" | ")}</span>`);
+  }catch(e){ setMsg("❌ "+(e.message||e), true); }
+};
+
+$("btnStop").onclick = ()=>{
+  stopFlag = true;
+  $("btnStop").disabled = true;
+  setMsg("⏹ Stop requested. Current row के बाद process रुकेगा।");
+};
+
+$("btnRun").onclick = async ()=>{
+  stopFlag = false;
+  $("log").innerHTML = "";
+  $("done").textContent = "0"; $("total").textContent = "0"; $("ok").textContent="0"; $("fail").textContent="0"; $("skipped").textContent="0";
+  $("bar").style.width = "0%";
+  $("btnStop").disabled = false;
+
+  try{
+    const baseUrl = $("baseUrl").value.trim();
+    const token = extractToken($("token").value);
+    if(!token) throw new Error("Token required");
+    const tp = parseTokenPayload(token);
+    if(!tp) throw new Error("Token parse नहीं हुआ. सही token paste करो (पूरी string).");
+    const cid = tp.cid || tp.collection_id || tp.collectionId;
+    if(!cid) throw new Error("Token में cid नहीं मिला.");
+    let ft = tp.ft || tp.form_type || tp.formType || "president_tour";
+    ft = String(ft||"").trim();
+    if(ft === "president_tour_form" || ft === "political_president_tour_form") ft = "president_tour";
+    const formType = ft;
+
+    let {objs} = cachedRows || {};
+    if(!objs){
+      const text = await loadCsvText();
+      const rows = parseCSV(text);
+      const out = toObjectRows(rows);
+      cachedRows = out;
+      objs = out.objs;
+    }
+
+    let limit = ($("limit").value||"").trim();
+    let n = objs.length;
+    if(limit){
+      const k = parseInt(limit,10);
+      if(!isNaN(k) && k>0) n = Math.min(n,k);
+    }
+    $("total").textContent = String(n);
+
+    setMsg(`Import start… CID: <span class="mono">${cid}</span>, form_type: <span class="mono">${formType}</span>`);
+
+    let ok=0, fail=0, done=0, skipped=0;
+
+    // validate config once
+    await apiCall(baseUrl, "public_get_config", { token, cid, form_type: formType });
+
+    for(let i=0;i<n;i++){
+      if(stopFlag) break;
+      const row = objs[i];
+
+      try{
+        const photoCol = $("photoCol").value.trim() || "कार्यक्रम के फोटो";
+        const photoRaw = (row[photoCol] || "").trim();
+        const firstUrl = photoRaw.split(/[\s,]+/).filter(Boolean)[0] || "";
+
+        if(!firstUrl){
+          if($("skipNoPhoto").value === "yes"){
+            skipped++; done++;
+            $("skipped").textContent = String(skipped);
+            $("done").textContent = String(done);
+            $("bar").style.width = Math.round((done/n)*100) + "%";
+            logRow(i+1, "SKIP", "", "No photo link");
+            continue;
+          }
+          throw new Error("Photo link missing in row");
+        }
+
+        const photoUrl = normalizePhotoUrl(firstUrl);
+        const photoRes = await fetch(photoUrl, { cache:"no-store" });
+        if(!photoRes.ok) throw new Error("Photo fetch failed HTTP "+photoRes.status+" (Drive file public: Anyone with link)");
+        const blob = await photoRes.blob();
+        const mime = blob.type || "image/jpeg";
+
+        const sha = await sha256Hex(blob);
+        const fileName = (crypto.randomUUID ? crypto.randomUUID() : (Date.now()+"_"+Math.random().toString(16).slice(2))) + ".jpg";
+
+        const payload = mapRowToPayload(row);
+        payload._csv_row = i+2;
+        payload._csv_photo_url = firstUrl;
+
+        const created = await apiCall(baseUrl, "public_create_entry", {
+          token,
+          form_type: formType,
+          sha256: sha,
+          file_name: fileName,
+          mime_type: mime,
+          payload
+        });
+
+        if(created.upload_url){
+          await putUpload(created.upload_url, blob);
+        }else{
+          throw new Error("upload_url missing from create response");
+        }
+
+        await apiCall(baseUrl, "public_finalize_entry", {
+          finalize_token: created.finalize_token,
+          entry_id: created.entry_id
+        });
+
+        ok++; done++;
+        $("ok").textContent = String(ok);
+        $("done").textContent = String(done);
+        $("bar").style.width = Math.round((done/n)*100) + "%";
+        logRow(i+1, "OK", created.entry_id, "Imported + indexed");
+      }catch(err){
+        fail++; done++;
+        $("fail").textContent = String(fail);
+        $("done").textContent = String(done);
+        $("bar").style.width = Math.round((done/n)*100) + "%";
+        logRow(i+1, "FAIL", "", (err.message||String(err)).slice(0,220));
+      }
+      await new Promise(r=>setTimeout(r, 120));
+    }
+
+    $("btnStop").disabled = true;
+    if(stopFlag){
+      setMsg(`⏹ Stopped. Done: ${done}/${n}, OK: ${ok}, Fail: ${fail}, Skipped: ${skipped}`);
+    }else{
+      setMsg(`✅ Finished. Done: ${done}/${n}, OK: ${ok}, Fail: ${fail}, Skipped: ${skipped}`);
+    }
+  }catch(e){
+    $("btnStop").disabled = true;
+    setMsg("❌ "+(e.message||e), true);
+  }
+};
+</script>
+</body>
+</html>

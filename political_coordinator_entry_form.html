@@ -217,7 +217,30 @@ const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod
 const $ = (id) => document.getElementById(id);
 const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
 const token = (qs("token") || "").trim();
-const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+
+// NOTE: In Admin Console Live Preview the form may open as a blob: URL (no querystring).
+// So we derive CID from querystring OR from the signed token payload OR from the first config response.
+function decodeTokenJson(t) {
+  try {
+    if (!t) return null;
+    const first = String(t).split(".")[0];
+    if (!first) return null;
+    const b64 = first.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b64 + "===".slice((b64.length + 3) % 4);
+    const jsonStr = decodeURIComponent(escape(window.atob(pad)));
+    const obj = JSON.parse(jsonStr);
+    return obj && typeof obj === "object" ? obj : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+const tokenObj = decodeTokenJson(token) || {};
+let currentCid = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+if (!currentCid) {
+  currentCid = (String(tokenObj.cid || tokenObj.collection_id || "").trim());
+}
+
 const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
 const debug = (qs("debug") || "").trim() === "1";
 
@@ -304,7 +327,7 @@ async function loadRemoteConfig(formType) {
   // Public forms should ALWAYS use public_get_config.
   // Admin console uses admin_get_config on the private/admin page, not here.
   try {
-    const cidClean = safeStr(cidParam).trim();
+    const cidClean = safeStr(currentCid).trim();
     const payload = {
       cid: cidClean,
       collection_id: cidClean,
@@ -313,7 +336,11 @@ async function loadRemoteConfig(formType) {
       _ts: Date.now()
     };
     const res = await apiCall("public_get_config", payload);
-    return res || null; // keep full response (settings/config/form)
+    // If the page is opened without query params (e.g. blob preview), backend may still resolve CID from token.
+    if (!currentCid && res && (res.cid || res.collection_id)) {
+      currentCid = String(res.cid || res.collection_id || "").trim();
+    }
+    return res || null; // keep full response (settings/config/form) // keep full response (settings/config/form)
   } catch (e) {
     if (debug) console.log("config load failed", e);
     return null;

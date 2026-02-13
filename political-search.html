@@ -779,12 +779,17 @@
     const district = get(item, "district", get(data, "district", ""));
     const vidhansabha = get(item, "vidhansabha", get(data, "vidhansabha", ""));
     const createdAtIso = prettyIso(get(item, "created_at_iso", ""));
+    const withLabel = get(item, "with_label", "");
+    const faceCount = Number(get(item, "face_count", 0) || 0);
 
     let title = form || "Event";
     let subtitle = "";
     let icon = "fa-calendar-check";
-    const highlights = []; 
-    const footer = [];     
+    const highlights = [];
+    const footer = [];
+
+    if (withLabel) highlights.push(withLabel);
+    if (faceCount) highlights.push(`${faceCount} faces`);
 
     if (form === "president_tour_form") {
       title = get(data, "program_name", get(data, "program_type", "President Tour"));
@@ -902,6 +907,28 @@
         card.appendChild(grid);
       }
 
+
+      // Thumbnails strip (for event cards)
+      const eventPhotoUrls = Array.isArray(item.photo_urls) ? item.photo_urls : (isNonEmpty(photoUrl) ? [photoUrl] : []);
+      if (eventPhotoUrls.length > 0) {
+        const strip = document.createElement("div");
+        strip.className = "flex flex-wrap gap-2 mb-3";
+        const maxShow = 8;
+        eventPhotoUrls.slice(0, maxShow).forEach((u) => {
+          const im = document.createElement("img");
+          setImgSrcWithRetry(im, u);
+          im.className = "w-12 h-12 rounded object-cover border border-slate-700/70";
+          strip.appendChild(im);
+        });
+        if (eventPhotoUrls.length > maxShow) {
+          const more = document.createElement("div");
+          more.className = "w-12 h-12 rounded flex items-center justify-center text-xs font-semibold bg-slate-900 border border-slate-700 text-slate-200";
+          more.textContent = `+${eventPhotoUrls.length - maxShow}`;
+          strip.appendChild(more);
+        }
+        card.appendChild(strip);
+      }
+
       // Footer
       const footerRow = document.createElement("div");
       footerRow.className = "pt-3 border-t border-slate-800 flex items-center justify-between";
@@ -917,15 +944,31 @@
 
       card.addEventListener("click", () => {
         const body = document.createElement("div");
-        if (isNonEmpty(photoUrl)) {
+        const eventPhotoUrls = Array.isArray(item.photo_urls) ? item.photo_urls : (isNonEmpty(photoUrl) ? [photoUrl] : []);
+        if (eventPhotoUrls.length > 0) {
           const imgCont = document.createElement("div");
           imgCont.className = "w-full bg-black aspect-video flex items-center justify-center relative";
           const img = document.createElement("img");
-          setImgSrcWithRetry(img, getBestThumbUrl(item, photoUrl));
-          img.src = photoUrl;
+          const firstUrl = eventPhotoUrls[0];
+          setImgSrcWithRetry(img, firstUrl);
+          img.src = firstUrl;
           img.className = "max-w-full max-h-full object-contain";
           imgCont.appendChild(img);
           body.appendChild(imgCont);
+
+          // thumbnails inside modal
+          if (eventPhotoUrls.length > 1) {
+            const grid = document.createElement("div");
+            grid.className = "grid grid-cols-4 gap-2 p-3 bg-slate-950/20";
+            eventPhotoUrls.slice(0, 24).forEach((u) => {
+              const t = document.createElement("img");
+              setImgSrcWithRetry(t, u);
+              t.className = "w-full aspect-square rounded object-cover border border-slate-800 cursor-pointer";
+              t.addEventListener("click", () => { img.src = u; setImgSrcWithRetry(img, u); });
+              grid.appendChild(t);
+            });
+            body.appendChild(grid);
+          }
         }
         body.appendChild(makeKVTable(sum.details));
         modal.open(sum.title, body, false);
@@ -1040,7 +1083,7 @@
           setStatus("Success", "success");
           
           // Store global data for filters
-          globalTimelineData = res.timeline || [];
+          globalTimelineData = (res.events && Array.isArray(res.events) && res.events.length) ? res.events : (res.timeline || []);
           
           // Process photos map
           globalPhotoMap = new Map();

@@ -1,2077 +1,2604 @@
 <!DOCTYPE html>
-<html lang="hi" class="dark">
+<html lang="hi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- EventLens admin patched 2026-02-09 06:13:15 -->
-<title>Political Admin Console Pro - EventLens</title>
+  <title>Coordinator Entry - EventLens</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
-          colors: { 
-            brand: { 500: '#f97316', 600: '#ea580c' }, 
-            dark: { 800: '#1e293b', 900: '#0f172a', 950: '#020617' } 
-          },
-          animation: {
-            'fade-in': 'fadeIn 0.3s ease-out forwards',
-            'slide-up': 'slideUp 0.4s ease-out forwards',
-          },
-          keyframes: {
-            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-            slideUp: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
-          }
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }
         }
       }
     }
   </script>
   <style>
+    :root {
+      --c1: #f97316; /* primary */
+      --c2: #ef4444; /* secondary */
+      --bgimg: none;
+    }
     body {
-      background-color: #020617;
-      background-image: 
-        radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, rgba(56, 189, 248, 0.10) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.05) 0px, transparent 50%);
+      background:
+        radial-gradient(circle at top left, rgba(249, 115, 22, 0.14), transparent 50%),
+        radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 50%),
+        linear-gradient(180deg, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.98)),
+        var(--bgimg);
+      background-size: cover;
       background-attachment: fixed;
-      color: #e2e8f0;
-    }
-    
-    /* Glass Effect Enhanced */
-    .glass-panel {
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    }
-    .glass-header {
-      background: rgba(2, 6, 23, 0.8);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    /* Inputs & UI Elements */
-    .input-field {
-      background: rgba(2, 6, 23, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.1);
       color: #fff;
-      transition: all 0.2s;
+    }
+    .glass {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.40);
+    }
+    .input-field {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      color: white;
+      transition: all 0.25s ease;
     }
     .input-field:focus {
+      border-color: var(--c1);
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.18);
       outline: none;
-      border-color: #f97316;
-      background: rgba(2, 6, 23, 0.7);
-      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
     }
-    
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .input-field:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: rgba(15, 23, 42, 0.35);
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 
-    /* Phone Mockup */
-    .phone-mockup {
-      border: 12px solid #1e293b;
-      border-radius: 40px;
-      overflow: hidden;
-      position: relative;
-      background: #000;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    .brand-text {
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      background-image: linear-gradient(to right, var(--c1), var(--c2));
     }
-    .phone-mockup::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 50%;
-      transform: translateX(-50%);
-      width: 120px;
-      height: 24px;
-      background: #1e293b;
-      border-bottom-left-radius: 12px;
-      border-bottom-right-radius: 12px;
-      z-index: 10;
+    .brand-bg { background-image: linear-gradient(to right, var(--c1), var(--c2)); }
+    .brand-ring { box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.16); }
+      select, option {
+      font-family: "Noto Sans Devanagari", "Mangal", "Plus Jakarta Sans", system-ui, sans-serif;
     }
-
-    /* Tab Animations */
-    .nav-btn {
-      transition: all 0.2s ease;
-      border-left: 3px solid transparent;
-    }
-    .nav-btn.active {
-      background: linear-gradient(90deg, rgba(249, 115, 22, 0.15), transparent);
-      border-left-color: #f97316;
-      color: #fff;
-    }
-    .nav-btn:hover:not(.active) {
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    /* Toast Notification */
-    .toast-container {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .toast {
-      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      backdrop-filter: blur(10px);
-    }
-    
-    .loading-spinner {
-      border: 3px solid rgba(255,255,255,0.1);
-      border-radius: 50%;
-      border-top: 3px solid #f97316;
-      width: 20px;
-      height: 20px;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  </style>
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+</style>
 </head>
+    <body class="min-h-screen flex items-center justify-center p-4 font-sans">
 
-<body class="min-h-screen font-sans selection:bg-orange-500/30">
+    <div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
+    <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
 
-  <!-- Toast Container -->
-  <div id="toastContainer" class="toast-container"></div>
+    <div id="header-image" class="hidden w-full h-24 rounded-xl mb-4 bg-slate-800/40 border border-white/5 overflow-hidden bg-cover bg-center"></div>
 
-  <!-- Top bar -->
-  <nav class="sticky top-0 z-50 glass-header h-16">
-    <div class="max-w-[1600px] mx-auto px-4 h-full">
-      <div class="flex items-center justify-between h-full gap-4">
-        
-        <!-- Logo Area -->
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 ring-1 ring-white/10">
-            <i class="fa-solid fa-om"></i>
-          </div>
-          <div>
-            <div class="text-white font-extrabold tracking-tight text-lg leading-none">EventLens <span class="text-orange-500">Pro</span></div>
-            <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Political Admin Console</div>
-          </div>
+    <div class="text-center mb-6" id="form-header">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/5 text-orange-500 mb-3 overflow-hidden border border-white/10">
+            <i id="default-icon" class="fa-solid fa-user-tie text-2xl"></i>
+            <img id="custom-logo" src="" class="w-full h-full object-contain scale-[1.15] hidden" alt="logo">
         </div>
-
-        <!-- Right Actions -->
-        <div class="flex items-center gap-3">
-          <!-- CID Display -->
-          <div id="cidPill" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-300">
-            <i class="fa-solid fa-database text-emerald-500"></i>
-            <span id="cidVal" class="font-bold text-white tracking-wide"></span>
-          </div>
-
-          <div class="h-6 w-px bg-slate-800 mx-1"></div>
-
-          <!-- AUTH BUTTON -->
-          <button id="btnAuth" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-orange-400 hover:text-orange-300 transition-colors border border-transparent hover:border-orange-500/30" title="Update Token">
-            <i class="fa-solid fa-key text-sm"></i>
-          </button>
-
-          <button id="btnReload" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors border border-transparent hover:border-slate-700">
-            <i class="fa-solid fa-rotate-right text-sm group-hover:rotate-180 transition-transform duration-500"></i>
-          </button>
-
-          <button id="btnSave" class="group relative px-5 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-sm font-bold shadow-lg shadow-orange-600/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 overflow-hidden">
-            <span class="relative z-10 flex items-center gap-2">
-              <i class="fa-solid fa-floppy-disk"></i> Save Changes
-            </span>
-            <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-          </button>
-        </div>
-      </div>
+        <h1 id="org-name" class="text-2xl font-extrabold brand-text">संयोजक (Coordinator) फॉर्म</h1>
+        <p id="org-subtitle" class="text-slate-300/80 text-xs mt-1">Coordinator Entry</p>
+        <p id="org-tagline" class="text-slate-400 text-[11px] mt-2 hidden"></p>
     </div>
-  </nav>
 
-  <!-- Main Layout -->
-  <main class="max-w-[1600px] mx-auto px-4 py-6">
-    <div class="grid lg:grid-cols-12 gap-6 items-start">
-
-      <!-- Left Sidebar -->
-      <aside class="lg:col-span-3 space-y-6 sticky top-24">
-        
-        <!-- Context Card -->
-        <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group">
-          <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-            <i class="fa-solid fa-chess-rook text-6xl text-orange-500"></i>
-          </div>
-          
-          <div class="text-xs font-bold text-orange-400 uppercase tracking-widest mb-4">Current Context</div>
-          
-          <div class="space-y-4 relative z-10">
-            <div>
-              <label class="text-[11px] font-bold text-slate-400 uppercase">Collection ID</label>
-              <div class="mt-1 flex gap-2">
-                <input id="cidInput" class="input-field w-full rounded-lg px-3 py-2 text-xs font-mono" placeholder="Enter CID..." />
-                <button id="btnApplyCid" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white transition-colors">
-                  <i class="fa-solid fa-check"></i>
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label class="text-[11px] font-bold text-slate-400 uppercase">Edit Target</label>
-              <div class="relative mt-1">
-                <select id="targetFormSel" class="input-field w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer">
-                  <option value="__defaults__">📡 Defaults (All Forms)</option>
-                  <option disabled>──────────────</option>
-                  <option value="visitor_form">📝 Visitor Form</option>
-                  <option value="party_attendance">🚩 Party Attendance</option>
-                  <option value="president_tour">🚙 President Tour</option>
-                  <option value="mandal_reporting">📊 कार्यक्रम रिपोर्टिंग</option>
-                  <option value="coordinator">👔 Coordinator</option>
-                  <option value="program_info">ℹ️ Program Info</option>
-                </select>
-                <div class="absolute right-3 top-3 text-slate-400 pointer-events-none text-xs">
-                  <i class="fa-solid fa-chevron-down"></i>
-                </div>
-              </div>
-              <div class="text-[10px] text-slate-500 mt-2 leading-relaxed">
-                Changes apply to the selected form only unless "Defaults" is chosen.
-              </div>
-            </div>
-
-            <div class="flex items-center justify-between gap-2 rounded-lg bg-slate-950/40 border border-slate-800 p-3">
-              <div>
-                <div class="text-xs font-bold text-white">Live Preview</div>
-                <div class="text-[10px] text-slate-500">Real-time branding update</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input id="livePreviewToggle" type="checkbox" class="sr-only peer" checked>
-                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-orange-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Navigation -->
-        <nav class="glass-panel rounded-2xl p-2 space-y-1">
-          <button class="nav-btn active w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="branding">
-            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-palette text-orange-400"></i></span>
-            Branding & Preview
-          </button>
-          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="programs">
-            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-list-check text-blue-400"></i></span>
-            Program Names
-          </button>
-          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="levels">
-            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-lock text-rose-400"></i></span>
-            Level Locks
-          </button>
-          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="data">
-            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-table text-emerald-400"></i></span>
-            Data Records
-          </button>
-          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="analytics">
-            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-chart-pie text-purple-400"></i></span>
-            Analytics
-          </button>
-          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="backend">
-            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-plug text-yellow-400"></i></span>
-            API Config
-          </button>
-        </nav>
-
-        <div class="text-center">
-          <p class="text-[10px] text-slate-600">v2.9.0 Pro • EventLens System</p>
-        </div>
-      </aside>
-
-      <!-- Main Content Area -->
-      <div class="lg:col-span-9 min-h-[80vh]">
-        
-        <!-- TAB: Branding -->
-        <section id="tab-branding" class="tab-content animate-fade-in">
-          <div class="grid lg:grid-cols-12 gap-6">
-            
-            <!-- Editor Column -->
-            <div class="lg:col-span-7 space-y-6">
-              <div class="glass-panel rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-6">
-                   <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                     <i class="fa-solid fa-pen-nib text-orange-500"></i> Appearance
-                   </h2>
-                   <div class="flex gap-2">
-                      <button id="btnResetBrand" class="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-lg transition-colors">Reset</button>
-                      <button id="btnCopyToDefaults" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg transition-colors">Copy to All</button>
-                   </div>
-                </div>
-
-                <!-- Text Inputs -->
-                <div class="space-y-4">
-                  <div class="grid md:grid-cols-2 gap-4">
-                    <div class="group">
-                      <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Title / Header</label>
-                      <input id="b_title" class="input-field w-full rounded-xl px-4 py-3 text-sm font-bold" placeholder="e.g. भाजपा कार्यालय मंदसौर" />
-                    </div>
-                    <div class="group">
-                      <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Subtitle</label>
-                      <input id="b_subtitle" class="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. स्वागत" />
-                    </div>
-                  </div>
-                  <div class="group">
-                    <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Tagline</label>
-                    <input id="b_tagline" class="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. सेवा • संगठन • समर्पण" />
-                  </div>
-                </div>
-
-                <!-- Colors -->
-                <div class="mt-6 p-4 bg-slate-950/30 rounded-xl border border-slate-800/50">
-                  <label class="text-xs font-bold text-slate-400 block mb-3">Gradient Theme</label>
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <div class="flex items-center gap-3">
-                        <input id="b_c1" type="color" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-0 p-0" />
-                        <div class="text-xs font-mono text-slate-400">Primary</div>
-                      </div>
-                    </div>
-                    <div>
-                      <div class="flex items-center gap-3">
-                        <input id="b_c2" type="color" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-0 p-0" />
-                        <div class="text-xs font-mono text-slate-400">Secondary</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Assets Upload -->
-              <div class="glass-panel rounded-2xl p-6">
-                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Assets</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <!-- Logo Upload -->
-                  <div class="relative group">
-                    <input id="file_logo" type="file" accept="image/*" class="hidden" />
-                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_logo').click()">
-                      <img id="prev_logo" class="absolute inset-0 w-full h-full object-contain p-2 hidden z-10" />
-                      <i id="icon_logo" class="fa-solid fa-image text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform"></i>
-                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white">Upload Logo</span>
-                    </div>
-                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="logo"><i class="fa-solid fa-xmark text-xs"></i></button>
-                    <div id="name_logo" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
-                  </div>
-
-                  <!-- Header Upload -->
-                  <div class="relative group">
-                    <input id="file_header" type="file" accept="image/*" class="hidden" />
-                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_header').click()">
-                      <img id="prev_header" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
-                      <i id="icon_header" class="fa-solid fa-panorama text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
-                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white z-20 relative">Upload Header</span>
-                    </div>
-                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="header"><i class="fa-solid fa-xmark text-xs"></i></button>
-                    <div id="name_header" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
-                  </div>
-
-                  <!-- BG Upload -->
-                  <div class="relative group">
-                    <input id="file_bg" type="file" accept="image/*" class="hidden" />
-                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_bg').click()">
-                      <img id="prev_bg" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
-                      <i id="icon_bg" class="fa-solid fa-mountain-sun text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
-                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white z-20 relative">Upload BG</span>
-                    </div>
-                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="bg"><i class="fa-solid fa-xmark text-xs"></i></button>
-                    <div id="name_bg" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Preview Column -->
-            <div class="lg:col-span-5">
-              <div class="sticky top-28">
-                <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Mobile Preview</h3>
-                  <div class="flex gap-2">
-                     <button id="btnLoadFormPreview" class="px-3 py-1 text-xs rounded-full bg-orange-600 hover:bg-orange-500 text-white font-bold transition-colors"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
-                     <button id="btnOpenFormPreview" class="px-3 py-1 text-xs rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-colors"><i class="fa-solid fa-up-right-from-square"></i></button>
-                  </div>
-                </div>
-
-
-                <div id="previewTabs" class="mt-3 flex flex-wrap gap-2"></div>
-                <!-- Phone Mockup Container -->
-                <div class="flex justify-center">
-                  <div class="phone-mockup w-[320px] h-[640px] bg-white">
-                    <iframe id="formPreviewIframe" class="w-full h-full bg-white border-0"></iframe>
-                    
-                    <!-- Fallback/Overlay for branding preview (JS controlled opacity) -->
-                    <div id="customPreviewOverlay" class="absolute inset-0 bg-slate-900 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col">
-                       <!-- This overlay is just for quick color feedback if iframe is slow -->
-                       <div id="previewHeaderBar" class="h-1 w-full bg-orange-500"></div>
-                       <div id="previewBg" class="flex-1 bg-cover bg-center relative">
-                         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-                         <div class="relative p-6 flex flex-col items-center justify-center h-full text-center">
-                            <div id="previewHeaderImgWrap" class="w-full h-32 rounded-lg overflow-hidden mb-4 hidden shadow-lg">
-                               <img id="previewHeaderImg" class="w-full h-full object-cover">
-                            </div>
-                            <img id="previewLogo" class="w-20 h-20 rounded-full object-cover border-4 border-white/10 mb-4 hidden shadow-2xl">
-                            <i id="previewLogoIcon" class="fa-solid fa-bolt text-4xl text-orange-500 mb-4"></i>
-                            
-                            <h2 id="previewTitle" class="text-2xl font-bold text-white mb-1">Title</h2>
-                            <p id="previewSubtitle" class="text-sm text-slate-300">Subtitle</p>
-                            <div class="mt-6 flex gap-2 justify-center">
-                               <div id="sw1" class="w-4 h-4 rounded-full bg-orange-500"></div>
-                               <div id="sw2" class="w-4 h-4 rounded-full bg-red-500"></div>
-                            </div>
-                         </div>
-                       </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="text-center mt-4">
-                   <div class="inline-block px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] text-slate-500 font-mono">
-                     <span id="formPreviewUrlTxt" class="max-w-[200px] truncate block">...</span>
-                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        
-          <div class="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="text-sm font-bold text-slate-300">All Forms Live Preview</div>
-                <div class="text-xs text-slate-500 mt-1">हर फॉर्म का प्रीव्यू यहाँ दिखेगा। किसी भी कार्ड पर क्लिक करके उस फॉर्म को चुनें।</div>
-              </div>
-              <button id="btnRefreshSignedUrls" class="px-3 py-2 text-xs rounded-lg bg-white/10 hover:bg-white/15">Refresh Preview</button>
-            </div>
-            <div id="allFormsGrid" style="display:none" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-          </div>
-
-        </section>
-
-        <!-- TAB: Programs -->
-        <section id="tab-programs" class="tab-content hidden animate-fade-in space-y-6">
-          <div class="glass-panel rounded-2xl p-6">
-             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <div>
-                   <h2 class="text-xl font-bold text-white">Program Management</h2>
-                   <p class="text-sm text-slate-400">Manage the list of programs available in dropdowns.</p>
-                </div>
-                <div class="flex items-center gap-2 bg-slate-900/50 p-1 rounded-lg border border-slate-800">
-                   <span class="text-xs font-bold text-slate-400 px-2">Mode:</span>
-                   <select id="progScopeSel" class="bg-transparent text-xs text-white font-bold py-1 pr-2 outline-none">
-                      <option value="current">Current Form Only</option>
-                      <option value="defaults">Defaults (Global)</option>
-                   </select>
-                </div>
-             </div>
-
-             <div class="flex gap-2 mb-8">
-                <input id="progInput" class="input-field flex-1 rounded-xl px-4 py-3 text-sm" placeholder="Type new program name (e.g. बूथ विजय अभियान)..." />
-                <button id="btnAddProg" class="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold shadow-lg shadow-orange-600/20 transition-all active:scale-95">
-                   <i class="fa-solid fa-plus"></i> Add
-                </button>
-             </div>
-
-             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3" id="progList">
-                <!-- Program items injected here -->
-             </div>
-          </div>
-        </section>
-
-        <!-- TAB: Levels -->
-        <section id="tab-levels" class="tab-content hidden animate-fade-in space-y-6">
-          <div class="glass-panel rounded-2xl p-6">
-             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-white">Hierarchical Locks</h2>
-                <select id="levelScopeSel" class="input-field rounded-lg px-3 py-1.5 text-xs">
-                   <option value="current">Current Form</option>
-                   <option value="defaults">Defaults</option>
-                </select>
-             </div>
-             
-             <div class="grid md:grid-cols-3 gap-6">
-                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
-                   <div class="flex items-center gap-3 mb-4">
-                      <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-sitemap"></i></div>
-                      <div class="font-bold text-white text-sm">Reporting Level</div>
-                   </div>
-                   <select id="lvl_mandal_reporting" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                      <option value="">🔓 Unlocked</option>
-                      <option value="district">District Fixed</option>
-                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
-                      <option value="mandal">Mandal Fixed</option>
-                   </select>
-                </div>
-
-                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
-                   <div class="flex items-center gap-3 mb-4">
-                      <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><i class="fa-solid fa-user-tie"></i></div>
-                      <div class="font-bold text-white text-sm">Coordinator</div>
-                   </div>
-                   <select id="lvl_coordinator" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                      <option value="">🔓 Unlocked</option>
-                      <option value="district">District Fixed</option>
-                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
-                      <option value="mandal">Mandal Fixed</option>
-                   </select>
-                </div>
-
-                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
-                   <div class="flex items-center gap-3 mb-4">
-                      <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-info"></i></div>
-                      <div class="font-bold text-white text-sm">Program Info</div>
-                   </div>
-                   <select id="lvl_program_info" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                      <option value="">🔓 Unlocked</option>
-                      <option value="district">District Fixed</option>
-                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
-                      <option value="mandal">Mandal Fixed</option>
-                   </select>
-                </div>
-             </div>
-          </div>
-        </section>
-
-        <!-- TAB: Data -->
-        <section id="tab-data" class="tab-content hidden animate-fade-in space-y-6">
-          <div class="glass-panel rounded-2xl p-6">
-             <!-- Filters -->
-             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
-                <div class="col-span-2 lg:col-span-2">
-                   <input id="dataSearch" class="input-field w-full rounded-xl px-4 py-2.5 text-sm" placeholder="Search name, mobile..." />
-                </div>
-                <div class="col-span-1 lg:col-span-1">
-                   <select id="dataFormSel" class="input-field w-full rounded-xl px-3 py-2.5 text-sm">
-                      <option value="__all__">All Forms</option>
-                      <option value="visitor_form">Visitor</option>
-                      <option value="party_attendance">Attendance</option>
-                      <option value="president_tour">Tour</option>
-                      <option value="mandal_reporting">Reporting</option>
-                      <option value="coordinator">Coordinator</option>
-                      <option value="program_info">Program Info</option>
-                   </select>
-                </div>
-                <div class="col-span-1">
-                   <input id="dateFrom" type="date" class="input-field w-full rounded-xl px-3 py-2.5 text-sm" />
-                </div>
-                <div class="col-span-1">
-                   <input id="dateTo" type="date" class="input-field w-full rounded-xl px-3 py-2.5 text-sm" />
-                </div>
-                <div class="col-span-1">
-                   <button id="btnApplyFilter" class="w-full h-full rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-colors border border-slate-700">Filter</button>
-                </div>
-             </div>
-
-             <!-- Stats -->
-             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800">
-                   <div class="text-[10px] text-slate-500 font-bold uppercase">Total Entries</div>
-                   <div id="kpiTotal" class="text-2xl font-extrabold text-white mt-1">0</div>
-                </div>
-                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800">
-                   <div class="text-[10px] text-slate-500 font-bold uppercase">Today</div>
-                   <div id="kpiToday" class="text-2xl font-extrabold text-orange-500 mt-1">0</div>
-                </div>
-                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800">
-                   <div class="text-[10px] text-slate-500 font-bold uppercase">Unique Mobiles</div>
-                   <div id="kpiUnique" class="text-2xl font-extrabold text-blue-400 mt-1">0</div>
-                </div>
-                <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800">
-                    <div class="grid grid-cols-2 gap-2">
-                       <select id="filterFormType" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200">
-                          <option value="">All Forms</option>
-                          <option value="visitor_form">Visitor</option>
-                          <option value="party_attendance">Party Attendance</option>
-                          <option value="program_info">Program Info</option>
-                          <option value="president_tour">President Tour</option>
-                          <option value="mandal_reporting">Mandal Reporting</option>
-                          <option value="coordinator">Coordinator</option>
-                       </select>
-                       <select id="filterDistrict" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200">
-                          <option value="">All Districts</option>
-                       </select>
-                       <select id="filterAssembly" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200">
-                          <option value="">All Assemblies</option>
-                       </select>
-                       <select id="filterMandal" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200">
-                          <option value="">All Mandals</option>
-                       </select>
-                       <select id="filterProgram" class="col-span-2 w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200">
-                          <option value="">All Programs</option>
-                       </select>
-                    </div>
-
-                    <div class="flex gap-2 mt-3">
-                       <button id="btnLoadData" class="flex-1 py-1.5 rounded-lg bg-orange-600/20 text-orange-500 hover:bg-orange-600 hover:text-white text-xs font-bold transition-all">Load</button>
-                       <button id="btnExportCsv" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-bold transition-all"><i class="fa-solid fa-download"></i> CSV</button>
-                    </div>
-                 </div>
-             </div>
-
-             <!-- Table -->
-             <div class="rounded-xl border border-slate-800 overflow-hidden bg-slate-950/20">
-                <div class="overflow-x-auto">
-                   <table class="w-full text-sm text-left">
-                      <thead class="bg-slate-900/80 text-xs uppercase text-slate-400 font-bold">
-                         <tr>
-                            <th class="px-4 py-3 cursor-pointer hover:text-white" data-sort="created_at">Time <i class="fa-solid fa-sort ml-1"></i></th>
-                            <th class="px-4 py-3">Form</th>
-                            <th class="px-4 py-3 cursor-pointer hover:text-white" data-sort="mobile">Mobile <i class="fa-solid fa-sort ml-1"></i></th>
-                            <th class="px-4 py-3">Name</th>
-                            <th class="px-4 py-3 cursor-pointer hover:text-white" data-sort="district">District <i class="fa-solid fa-sort ml-1"></i></th>
-                            <th class="px-4 py-3">Action</th>
-                         </tr>
-                      </thead>
-                      <tbody id="dataTbody" class="divide-y divide-slate-800 text-slate-300">
-                         <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500 italic">Click "Load" to fetch data</td></tr>
-                      </tbody>
-                   </table>
-                </div>
-                <div class="bg-slate-900/80 px-4 py-2 flex justify-between items-center border-t border-slate-800">
-                   <div class="text-xs text-slate-500">Showing <span id="loadedCount" class="text-white font-bold">0</span> records</div>
-                   <div class="flex gap-2">
-                      <button id="btnPrevPage" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-white disabled:opacity-50">Prev</button>
-                      <button id="btnNextPage" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-white disabled:opacity-50">Next</button>
-                   </div>
-                </div>
-             </div>
-          </div>
-        </section>
-
-        <!-- TAB: Analytics -->
-        <section id="tab-analytics" class="tab-content hidden animate-fade-in space-y-6">
-          <div class="flex justify-end">
-             <button id="btnRefreshCharts" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-colors border border-slate-700"><i class="fa-solid fa-rotate mr-2"></i>Refresh Charts</button>
-          </div>
-          <div class="grid md:grid-cols-2 gap-6">
-             <div class="glass-panel p-5 rounded-2xl">
-                <h4 class="text-sm font-bold text-slate-300 mb-4">Submission Trends (14 Days)</h4>
-                <div class="h-[250px]"><canvas id="chartByDay"></canvas></div>
-             </div>
-             <div class="glass-panel p-5 rounded-2xl">
-                <h4 class="text-sm font-bold text-slate-300 mb-4">By Form Type</h4>
-                <div class="h-[250px]"><canvas id="chartByForm"></canvas></div>
-             </div>
-             <div class="glass-panel p-5 rounded-2xl md:col-span-2">
-                <h4 class="text-sm font-bold text-slate-300 mb-4">Top Districts</h4>
-                <div class="h-[200px]"><canvas id="chartDistrict"></canvas></div>
-             </div>
-          </div>
-        </section>
-        
-        <!-- TAB: Backend Info -->
-        <section id="tab-backend" class="tab-content hidden animate-fade-in">
-           <div class="glass-panel rounded-2xl p-8 text-center">
-              <div class="inline-flex w-16 h-16 rounded-full bg-slate-800 items-center justify-center mb-4">
-                 <i class="fa-solid fa-server text-2xl text-slate-400"></i>
-              </div>
-              <h2 class="text-xl font-bold text-white">Backend Configuration</h2>
-              <p class="text-sm text-slate-400 mt-2 max-w-lg mx-auto">This console connects to the EventLens AWS Lambda infrastructure. Ensure your user account has `political_admin` claims.</p>
-              
-              <div class="mt-8 grid gap-4 max-w-2xl mx-auto text-left">
-                 <div class="bg-slate-950/50 rounded-lg p-4 border border-slate-800 font-mono text-xs text-slate-300">
-                    <span class="text-orange-500">POST</span> /prod/political/forms
-                 </div>
-                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-900/30 p-3 rounded border border-slate-800">
-                       <div class="text-[10px] text-slate-500 uppercase font-bold">Action</div>
-                       <div class="text-sm text-white font-mono mt-1">admin_save_config</div>
-                    </div>
-                    <div class="bg-slate-900/30 p-3 rounded border border-slate-800">
-                        <div class="text-[10px] text-slate-500 uppercase font-bold">Action</div>
-                        <div class="text-sm text-white font-mono mt-1">admin_list_entries</div>
-                     </div>
-                 </div>
-              </div>
-           </div>
-        </section>
-
-      </div>
+      <form id="f" class="space-y-6">
+  <div class="grid gap-5 md:grid-cols-2">
+    <!-- Level -->
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">लेवल *</label>
+      <select id="level" required class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <option value="">Select</option>
+        <option value="mandal">मंडल</option>
+        <option value="vidhansabha">विधानसभा</option>
+        <option value="district">जिला</option>
+        <option value="state">प्रदेश</option>
+      </select>
     </div>
-  </main>
 
-  <!-- Modal -->
-  <div id="modal" class="fixed inset-0 hidden items-center justify-center z-[60] backdrop-blur-sm">
-    <div class="absolute inset-0 bg-black/80" id="modalBackdrop"></div>
-    <div class="relative max-w-2xl w-[90%] rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden animate-slide-up">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
-        <div>
-          <h3 class="text-lg font-bold text-white">Data Details</h3>
-          <div id="modalMeta" class="text-xs text-slate-400 font-mono mt-1">ID: ...</div>
-        </div>
-        <button id="btnCloseModal" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors flex items-center justify-center">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="p-0 overflow-auto max-h-[70vh]">
-        <pre id="modalJson" class="text-xs text-green-400 bg-[#0d1117] p-6 font-mono overflow-auto"></pre>
-      </div>
+    <!-- Program Name -->
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">कार्यक्रम का नाम *</label>
+      <select id="program_name" name="program_name" required class="w-full rounded-xl bg-slate-900/40 border border-slate-700/60 px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+  <option value="">कार्यक्रम का नाम चुनें</option>
+</select>
+    </div>
+
+    <!-- District -->
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">जिला *</label>
+      <select id="district" required class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <option value="">Select</option>
+      </select>
+    </div>
+
+    <!-- Vidhansabha -->
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">विधानसभा *</label>
+      <select id="vidhansabha" required class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <option value="">Select</option>
+      </select>
+    </div>
+
+    <!-- Mandal -->
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">मंडल *</label>
+      <select id="mandal" required class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <option value="">Select</option>
+      </select>
+    </div>
+
+    <!-- Coordinator -->
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">संयोजक *</label>
+      <input id="coordinator_name" required placeholder="संयोजक का नाम"
+        class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">मोबाइल *</label>
+      <input id="coordinator_mobile" required inputmode="numeric" maxlength="10" placeholder="10 digit मोबाइल"
+        class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+    </div>
+
+    <!-- सह संयोजक 1 -->
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">सह संयोजक</label>
+      <input id="assistant_1_name" placeholder="सह संयोजक का नाम"
+        class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">मोबाइल</label>
+      <input id="assistant_1_mobile" inputmode="numeric" maxlength="10" placeholder="10 digit मोबाइल"
+        class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+    </div>
+
+    <!-- सह संयोजक 2 -->
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">सह संयोजक</label>
+      <input id="assistant_2_name" placeholder="सह संयोजक का नाम"
+        class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-200 mb-2">मोबाइल</label>
+      <input id="assistant_2_mobile" inputmode="numeric" maxlength="10" placeholder="10 digit मोबाइल"
+        class="w-full rounded-xl bg-slate-900/60 border border-white/10 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
     </div>
   </div>
 
-  <!-- Auth Modal -->
-  <div id="authModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/80 backdrop-blur-sm">
-    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl">
-      <h3 class="text-lg font-bold text-white mb-2">Update Access Token</h3>
-      <p class="text-xs text-slate-400 mb-4">Your session has expired or the token is invalid. Please paste a new ID Token below.</p>
-      <textarea id="authTokenInput" class="w-full h-24 bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono mb-4 focus:border-orange-500 outline-none" placeholder="Paste id_token here..."></textarea>
-      <div class="flex justify-end gap-3">
-        <button id="btnCancelAuth" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800">Cancel</button>
-        <button id="btnSaveAuth" class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-orange-600 hover:bg-orange-500">Save & Reload</button>
-      </div>
-    </div>
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div id="msg" class="text-sm text-slate-300"></div>
+    <button id="btn" type="submit"
+      class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-500/20 hover:opacity-95 active:opacity-90">
+      Submit
+    </button>
   </div>
+</form>
 
-<script>
-(() => {
-  // --- Constants & Utils ---
-  const API_ID = "vxid0yoovj"; // Replace if needed
-  const REGION = "ap-south-1";
-  const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
-  const FORMS_URL = `${BASE_URL}/political/forms`;
+    <div id="status" class="mt-4 text-center text-xs font-medium hidden"></div>
+    <div class="mt-4 text-center text-[11px] text-slate-400/80">
+      <span id="footer-text"></span>
+    </div>
+</div>
 
-  const FORM_META = {
-    __defaults__: { file: "political_visitor_form.html" },
-    visitor_form: { file: "political_visitor_form.html" },
-    party_attendance: { file: "political_party_attendance_form.html" },
-    president_tour: { file: "political_president_tour_form.html" },
-    mandal_reporting: { file: "political_mandal_reporting_form.html" },
-    coordinator: { file: "political_coordinator_form.html" },
-    program_info: { file: "political_program_info_form.html" },
+    <!-- SUCCESS SCREEN -->
+<div id="success-screen" class="hidden w-full max-w-lg glass rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[420px]">
+    <div class="w-20 h-20 bg-emerald-500/15 text-emerald-400 rounded-full flex items-center justify-center mb-6 text-4xl shadow-lg shadow-emerald-500/10 border border-emerald-500/20">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <h2 class="text-2xl font-extrabold text-white mb-2">धन्यवाद!</h2>
+    <p id="success-msg" class="text-slate-200/90 mb-8 leading-relaxed">संयोजक की जानकारी सेव हो गई है।</p>
+    <button onclick="window.location.reload()" class="px-6 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-lg text-sm text-white transition">
+        <i class="fa-solid fa-rotate-right mr-2"></i> नया फॉर्म
+    </button>
+</div>
+
+    <script>
+    // ===============================
+// COMMON CONFIG & UTILS
+// ===============================
+const API_ID = "vxid0yoovj";
+const AWS_REGION = "ap-south-1";
+const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
+  const URL_TOKEN = (new URLSearchParams(window.location.search)).get('token') || '';
+  const IS_PUBLIC = !!URL_TOKEN; // public link pages use token
+  const FORMS_PATH = '/political/public/forms';
+
+
+const $ = (id) => document.getElementById(id);
+const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
+const token = (qs("token") || "").trim();
+const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
+const debug = (qs("debug") || "").trim() === "1";
+
+function isPublicMode() { return !!token; }
+
+function setThemeVars(c1, c2) {
+  if (c1) document.documentElement.style.setProperty("--c1", c1);
+  if (c2) document.documentElement.style.setProperty("--c2", c2);
+}
+function setBackgroundImage(url) {
+  if (!url) return;
+  document.documentElement.style.setProperty("--bgimg", `url('${url}')`);
+}
+
+function showStatus(msg, isError) {
+  const el = $("status");
+  if (!el) return;
+  el.classList.remove("hidden","text-green-400","text-red-400");
+  el.classList.add(isError ? "text-red-400" : "text-green-400");
+  el.textContent = msg || "";
+  if (!msg) el.classList.add("hidden");
+}
+
+async function apiCall(action, payload) {
+  // IMPORTANT:
+  // - When opened via token, page must call /political/public/forms (no auth)
+  // - Otherwise /political/forms can be used from dashboard (with auth)
+  const path = FORMS_PATH;
+  const url = `${BASE_URL}${path}`;
+  return fetch(url, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action, payload: payload || {} })
+  }).then(async (res) => {
+    const text = await res.text();
+    let data = {};
+    try { data = JSON.parse(text || "{}"); } catch (e) { data = { message: text }; }
+    if (!res.ok) throw Object.assign(new Error(data.message || "Request failed"), { status: res.status, data });
+    return data;
+  });
+}
+
+function safeStr(v) { return (v === null || v === undefined) ? "" : String(v); }
+
+async function sha256Hex(file) {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function uploadToS3(url, file) {
+  await fetch(url, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+}
+
+function mergeObj(a, b) {
+  const out = Object.assign({}, a || {});
+  Object.keys(b || {}).forEach(k => {
+    if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k])) out[k] = mergeObj(out[k], b[k]);
+    else out[k] = b[k];
+  });
+  return out;
+}
+
+
+function normalizeFormType(ft) {
+  const s = safeStr(ft || "").trim();
+  if (!s) return "";
+  const map = {
+    "coordinator": "coordinator_form",
+    "coordinator_entry": "coordinator_form",
+    "coordinator_entry_form": "coordinator_form",
+    "coordinator_form": "coordinator_form",
+    "visitor": "visitor_form",
+    "visitor_form": "visitor_form"
   };
+  return map[s] || s;
+}
 
-  const $ = (id) => document.getElementById(id);
-  const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch(e){ return ""; } };
+// ===============================
+// BRANDING + PROGRAMS + FIXED LEVEL
+// ===============================
+async function loadRemoteConfig(formType) {
+  try {
+    const payload = isPublicMode()
+      ? { cid: safeStr(cidParam).trim(), collection_id: safeStr(cidParam).trim(), token, form_type: normalizeFormType(formType), _ts: Date.now() }
+      : { collection_id: safeStr(cidParam).trim(), form_type: normalizeFormType(formType), _ts: Date.now() };
 
-  // ===== CID SYNC FIX (2026-02-13) =====
-  function normalizeCid(v){
-    return String(v||"").replace(/^\s+|\s+$/g,"");
+    const action = isPublicMode() ? "public_get_config" : "admin_get_config";
+    const res = await apiCall(action, payload);
+    return res || null; // keep full response (settings/config/form)
+  } catch (e) {
+    if (debug) console.log("config load failed", e);
+    return null;
   }
-  function setCid(next, opts){
-    const cid = normalizeCid(next);
-    state.cid = cid;
-    try{ localStorage.setItem("political_admin_cid", cid); }catch(e){}
-    const pill = $("cidPill");
-    const cidVal = $("cidVal");
-    const inp = $("cidInput");
-    if (pill) pill.textContent = cid || "—";
-    if (cidVal) cidVal.textContent = cid || "—";
-    if (inp) inp.value = cid;
-    // refresh preview if live preview enabled
-    try{
-      if (state.livePreview) renderFormPreviewIframe();
-    }catch(e){}
+}
+
+
+function cssUrl(u) {
+  const s = safeStr(u || "");
+  if (!s) return "";
+  return 'url("' + s.replace(/"/g, '\"') + '")';
+}
+
+function getDefaultsNode(resp) {
+  return (resp && resp.settings && resp.settings.defaults) ||
+         (resp && resp.config && resp.config.defaults) ||
+         null;
+}
+function getGlobalNode(resp) {
+  return (resp && resp.settings && resp.settings.global) ||
+         (resp && resp.config && resp.config.global) ||
+         null;
+}
+function getFormNode(resp, formType) {
+  if (!resp) return null;
+
+  if (resp.form && typeof resp.form === "object") return resp.form;
+
+  const raw = formType || resp.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+  const ft = normalizeFormType(raw);
+
+  // Try exact key first
+  if (resp.settings && resp.settings.forms && resp.settings.forms[ft]) return resp.settings.forms[ft];
+  if (resp.config && resp.config.forms && resp.config.forms[ft]) return resp.config.forms[ft];
+
+  // Try common aliases / legacy keys
+  const aliases = [raw, raw && (raw + "_form"), raw && raw.replace(/_form$/, ""), ft && ft.replace(/_form$/, ""), ft && (ft + "_entry")].filter(Boolean);
+  for (const k of aliases) {
+    const nk = normalizeFormType(k);
+    if (resp.settings && resp.settings.forms && resp.settings.forms[nk]) return resp.settings.forms[nk];
+    if (resp.config && resp.config.forms && resp.config.forms[nk]) return resp.config.forms[nk];
   }
 
+  return null;
+}
 
+function pickBranding(resp, formNode) {
+  const defaults = getDefaultsNode(resp) || {};
+  const globalNode = getGlobalNode(resp) || {};
+  // form branding > global branding > defaults branding > empty
+  return (formNode && formNode.branding) || (globalNode && globalNode.branding) || defaults.branding || {};
+}
 
-  function getIdToken(){ return localStorage.getItem("id_token") || localStorage.getItem("idToken") || ""; }
-  function extFromMime(m){ if(!m) return "jpg"; if(m.includes("png")) return "png"; if(m.includes("webp")) return "webp"; return "jpg"; }
-  async function sha256Hex(file){
-    const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-    return Array.from(new Uint8Array(hashBuffer)).map(b=>b.toString(16).padStart(2,"0")).join("");
+function pickAssetUrl(assetObj, fallbackUrl) {
+  if (!assetObj) return safeStr(fallbackUrl || "");
+  if (typeof assetObj === "string") return assetObj;
+  return safeStr(assetObj.url || fallbackUrl || "");
+}
+
+function safeSetImg(imgEl, url, onOk, onFail) {
+  if (!imgEl || !url) { if (onFail) onFail(); return; }
+  const probe = new Image();
+  probe.onload = () => { imgEl.src = url; if (onOk) onOk(); };
+  probe.onerror = () => { if (onFail) onFail(); };
+  probe.src = url;
+}
+
+function safeSetBgDiv(divEl, url) {
+  if (!divEl) return;
+  if (!url) { divEl.classList.add("hidden"); divEl.style.backgroundImage = ""; return; }
+  const probe = new Image();
+  probe.onload = () => {
+    divEl.style.backgroundImage = cssUrl(url);
+    divEl.classList.remove("hidden");
+  };
+  probe.onerror = () => {
+    divEl.classList.add("hidden");
+    divEl.style.backgroundImage = "";
+  };
+  probe.src = url;
+}
+
+function safeSetRootBg(url) {
+  if (!url) return;
+  const probe = new Image();
+  probe.onload = () => setBackgroundImage(url);
+  probe.onerror = () => {};
+  probe.src = url;
+}
+
+function applyBrandingFromResponse(resp, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
+  if (!resp) return;
+
+  const ft = formType || resp.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+  const formNode = getFormNode(resp, ft) || {};
+  const defaultsNode = getDefaultsNode(resp) || {};
+  const globalNode = getGlobalNode(resp) || {};
+  const globalTheme = (globalNode && globalNode.theme) ? globalNode.theme : {};
+
+  // Branding object: form branding > defaults branding
+  const branding = (formNode && formNode.branding) || (defaultsNode && defaultsNode.branding) || {};
+
+  // Text
+  const title = safeStr(formNode.title || branding.title || fallbackTitle || "EventLens Form");
+  const subtitle = safeStr(formNode.subtitle || branding.subtitle || fallbackSubtitle || "");
+  const tagline = safeStr(formNode.tagline || branding.tagline || (globalNode && globalNode.tagline) || fallbackTagline || "");
+
+  if ($("org-name")) $("org-name").textContent = title;
+  if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
+  if ($("org-tagline")) $("org-tagline").textContent = tagline;
+  if ($("org-tagline")) { if (tagline) $("org-tagline").classList.remove("hidden"); else $("org-tagline").classList.add("hidden"); }
+
+  // Footer (global override)
+  if ($("footer-text")) $("footer-text").textContent = safeStr((globalNode && globalNode.tagline) || $("footer-text").textContent || "Powered by EventLens");
+
+  // Assets (new preferred fields + branding nested + legacy fallbacks)
+  let logoUrl = safeStr(pickAssetUrl(branding.logo, formNode.logo_url) || branding.logo_url || (globalNode && globalNode.logo_url) || (globalNode && globalNode.branding && globalNode.branding.logo_url) || "");
+  let headerUrl = safeStr(pickAssetUrl(branding.header, formNode.header_url) || branding.header_image_url || branding.header_url || (globalNode && globalNode.header_url) || (globalNode && globalNode.branding && globalNode.branding.header_url) || "");
+  let bgUrl = safeStr(pickAssetUrl(branding.background, formNode.background_url) || branding.background_image_url || branding.background_url || "" || (globalNode && globalNode.background_url) || (globalNode && globalNode.branding && globalNode.branding.background_url));
+
+  // Legacy branding support (older admin config shape)
+  let legacyBrand = null;
+  if (resp && resp.branding) {
+    const gb = (resp.branding && resp.branding.global) ? resp.branding.global : {};
+    const fb = (resp.branding && resp.branding.forms && resp.branding.forms[ft]) ? resp.branding.forms[ft] : {};
+    legacyBrand = mergeObj(gb, fb);
   }
-  function fileToDataUrl(file){
-    return new Promise((resolve,reject)=>{
-      const r = new FileReader();
-      r.onload = ()=>resolve(String(r.result||""));
-      r.onerror = reject;
-      r.readAsDataURL(file);
+  if (legacyBrand) {
+    if (!logoUrl) logoUrl = safeStr(legacyBrand.logo_url || "");
+    if (!headerUrl) headerUrl = safeStr(legacyBrand.header_image_url || legacyBrand.header_url || "");
+    if (!bgUrl) bgUrl = safeStr(legacyBrand.background_image_url || legacyBrand.background_url || "");
+  }
+
+  // Theme colors
+  const primary = safeStr(branding.color1 || branding.theme_primary || (legacyBrand && (legacyBrand.color1 || legacyBrand.theme_primary)) || globalTheme.primary || "#f97316");
+  const secondary = safeStr(branding.color2 || branding.theme_secondary || (legacyBrand && (legacyBrand.color2 || legacyBrand.theme_secondary)) || globalTheme.secondary || "#ef4444");
+  setThemeVars(primary, secondary);
+
+  // Logo
+  const logoEl = $("custom-logo");
+  if (logoEl && logoUrl) {
+    safeSetImg(logoEl, logoUrl, () => {
+      logoEl.classList.remove("hidden");
+      if ($(defaultIconId)) $(defaultIconId).classList.add("hidden");
+    }, () => {
+      logoEl.classList.add("hidden");
+      if ($(defaultIconId)) $(defaultIconId).classList.remove("hidden");
     });
-  }
-
-  // --- UI Helpers ---
-  function showToast(msg, type = 'info') {
-    const container = $('toastContainer');
-    const el = document.createElement('div');
-    
-    let icon = 'fa-info-circle';
-    let colors = 'bg-slate-800 border-slate-700 text-white';
-    
-    if(type === 'success') { icon = 'fa-circle-check'; colors = 'bg-emerald-900/90 border-emerald-500/30 text-emerald-100'; }
-    if(type === 'error') { icon = 'fa-circle-exclamation'; colors = 'bg-red-900/90 border-red-500/30 text-red-100'; }
-    if(type === 'loading') { icon = 'fa-circle-notch fa-spin'; colors = 'bg-blue-900/90 border-blue-500/30 text-blue-100'; }
-
-    el.className = `toast flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl min-w-[300px] ${colors}`;
-    el.innerHTML = `<i class="fa-solid ${icon}"></i> <span class="text-sm font-medium">${msg}</span>`;
-    
-    container.appendChild(el);
-
-    if(type !== 'loading') {
-      setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(10px)';
-        setTimeout(() => el.remove(), 300);
-      }, 3000);
-    }
-    return el;
-  }
-
-  function openAuthModal() {
-      const modal = $('authModal');
-      if(modal) {
-          modal.classList.remove('hidden');
-          modal.classList.add('flex');
-          $('authTokenInput').focus();
-      }
-  }
-
-  // --- State & Config ---
-  const DEFAULT_CONFIG = {
-    defaults: {
-      branding: { title: "Political Forms", subtitle: "Visitor Entry System", tagline: "", color1: "#f97316", color2: "#ef4444", logo: { kind: "none" }, header: { kind: "none" }, background: { kind: "none" } },
-      programs: ["मंडल बैठक","कार्यकर्ता सम्मेलन","जनसंपर्क","बूथ मीटिंग"],
-      fixed_levels: {}
-    },
-    forms: { visitor_form: {}, party_attendance: {}, president_tour: {}, mandal_reporting: {}, coordinator: {}, program_info: {} }
-  };
-
-  let state = {
-    cid: (qs("cid") || qs("collection_id") || (localStorage.getItem("political_admin_cid")||"") || "").trim(),
-    target: "visitor_form",
-    config: JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
-    pendingAssets: {},
-    cacheBust: Date.now(),
-    lastPreviewDoc: "",
-    allItems: [],
-    viewItems: [],
-    nextToken: null,
-    prevStack: [],
-    sort: { key: "created_at", dir: "desc" },
-    charts: { byForm: null, byDay: null, byDistrict: null }
-  };
-
-  // --- Core Logic ---
-  function ensureFormObj(ft){ if (!state.config.forms[ft]) state.config.forms[ft] = {}; }
-  function deepMerge(base, override){
-    if (!override || typeof override !== "object") return base;
-    const out = Array.isArray(base) ? [...base] : { ...base };
-    Object.keys(override).forEach(k=>{
-      const bv = out[k], ov = override[k];
-      if (Array.isArray(ov)) out[k] = ov;
-      else if (ov && typeof ov === "object" && bv && typeof bv === "object" && !Array.isArray(bv)) out[k] = deepMerge(bv, ov);
-      else out[k] = ov;
-    });
-    return out;
-  }
-
-  function getEffectiveBranding(ft) {
-    const d = state.config.defaults.branding;
-    const o = (ft !== "__defaults__") ? (state.config.forms[ft]?.branding || {}) : {};
-    return { ...d, ...o };
-  }
-
-  
-function srcdocSafeUrl(url) {
-  if (!url) return "";
-  if (String(url).startsWith("blob:")) return "";
-  return url;
-}
-
-function withCacheBust(url) {
-  if (!url) return "";
-  const u = String(url);
-  const lower = u.toLowerCase();
-  // Don't alter blob/data URLs (breaks), and don't alter S3 pre-signed URLs (breaks signature).
-  if (lower.startsWith("blob:") || lower.startsWith("data:")) return u;
-  if (/X-Amz-(Signature|Credential|Algorithm)=/i.test(u)) return u;
-  const sep = u.includes("?") ? "&" : "?";
-  return u + sep + "cb=" + String(state.cacheBust || Date.now());
-}
-
-function escHtml(v) {
-  const s = (v === null || v === undefined) ? "" : String(v);
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-// Collect current branding fields from UI into state.config (defaults or specific form)
-function collectBrandFromUI() {
-  if (!state.config) return;
-  const target = state.target || "__defaults__";
-
-  const title = ($("b_title") && $("b_title").value) ? $("b_title").value.trim() : "";
-  const subtitle = ($("b_subtitle") && $("b_subtitle").value) ? $("b_subtitle").value.trim() : "";
-  const tagline = ($("b_tagline") && $("b_tagline").value) ? $("b_tagline").value.trim() : "";
-  const color1 = ($("b_c1") && $("b_c1").value) ? $("b_c1").value.trim() : "#f97316";
-  const color2 = ($("b_c2") && $("b_c2").value) ? $("b_c2").value.trim() : "#ef4444";
-
-  if (!state.config.defaults) state.config.defaults = {};
-  if (!state.config.defaults.branding) state.config.defaults.branding = {};
-  if (!state.config.forms) state.config.forms = {};
-  if (!state.config.global) state.config.global = { tagline: "Powered by EventLens" };
-
-  const applyTo = (obj) => {
-    if (!obj) return;
-    obj.title = title || obj.title || "";
-    obj.subtitle = subtitle || obj.subtitle || "";
-    obj.tagline = tagline || obj.tagline || "";
-    if (!obj.theme) obj.theme = {};
-    if (!obj.theme.gradient) obj.theme.gradient = "from-orange-500 to-red-500";
-    // keep gradient but set colors for preview + defaults
-    state.config.defaults.branding.color1 = color1 || state.config.defaults.branding.color1 || "#f97316";
-    state.config.defaults.branding.color2 = color2 || state.config.defaults.branding.color2 || "#ef4444";
-  };
-
-  if (target === "__defaults__") {
-    // Update defaults + global fallback
-    applyTo(state.config.defaults);
-    state.config.defaults.branding.color1 = color1;
-    state.config.defaults.branding.color2 = color2;
   } else {
-    if (!state.config.forms[target]) state.config.forms[target] = {};
-    applyTo(state.config.forms[target]);
-  }
-  return { color1, color2 };
-}
-
-
-function getEffectiveForm(ft) {
-  const cfg = state.config || {};
-  const forms = cfg.forms || {};
-  const defaults = cfg.defaults || {};
-  const global = cfg.global || {};
-  const form = (ft && ft !== "__defaults__") ? (forms[ft] || {}) : {};
-  const brandingDefaults = (defaults.branding || {});
-  const brandingForm = (form.branding || {});
-  const branding = deepMerge(brandingDefaults, brandingForm);
-
-  const title = form.title || cfg.form?.title || branding.title || "Form";
-  const subtitle = form.subtitle || cfg.form?.subtitle || branding.subtitle || "";
-  const tagline = (form.tagline ?? cfg.form?.tagline ?? branding.tagline ?? global.tagline ?? "");
-
-  const pend = (state.pendingAssets?.[ft] || {});
-  const logoUrl = pend.logo?.previewUrl || form.logo_url || branding.logo?.url || (typeof branding.logo?.value === "string" && branding.logo.value.startsWith("http") ? branding.logo.value : "");
-  const headerUrl = pend.header?.previewUrl || form.header_url || branding.header?.url || (typeof branding.header?.value === "string" && branding.header.value.startsWith("http") ? branding.header.value : "");
-  const bgUrl = pend.background?.previewUrl || form.background_url || branding.background?.url || (typeof branding.background?.value === "string" && branding.background.value.startsWith("http") ? branding.background.value : "");
-
-  const color1 = branding.color1 || "#f97316";
-  const color2 = branding.color2 || "#ef4444";
-
-  return { ft, form, branding, title, subtitle, tagline, logoUrl, headerUrl, bgUrl, color1, color2 };
-}
-
-
-function renderBrandInputsFromConfig() {
-  if(!state.config) return;
-  const ft = state.target || "visitor_form";
-  const eff = getEffectiveForm(ft);
-
-  // Title/Sub/Tagline inputs (users expect these to change form heading)
-  if($("b_title")) $("b_title").value = eff.title || "";
-  if($("b_subtitle")) $("b_subtitle").value = eff.subtitle || "";
-  if($("b_tagline")) $("b_tagline").value = eff.tagline || "";
-
-  // Colors
-  if($("b_c1")) $("b_c1").value = eff.color1 || "#f97316";
-  if($("b_c2")) $("b_c2").value = eff.color2 || "#ef4444";
-
-  // Current images previews
-  if($("prev_logo")) $("prev_logo").src = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
-  if($("prev_header")) $("prev_header").src = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-  if($("prev_bg")) $("prev_bg").src = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
-}
-
-function renderBrandPreview() {
-  if(!state.config) return;
-  const eff = getEffectiveForm(state.target || "visitor_form");
-
-  const headerImg = $("previewHeaderImg");
-  const logoImg = $("previewLogoImg");
-  const bgImg = $("previewBgImg");
-  const titleEl = $("previewTitle");
-  const subtitleEl = $("previewSubtitle");
-  const taglineEl = $("previewTagline");
-  const btn = $("previewBtn");
-
-  const bg = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
-  if(bgImg) bgImg.src = bg || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='900'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230f172a'/%3E%3Cstop offset='1' stop-color='%23111827'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3C/svg%3E";
-
-  const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-  if(headerImg) {
-    if(header) headerImg.src = header;
-    else {
-      const c1 = eff.color1.replace("#","%23");
-      const c2 = eff.color2.replace("#","%23");
-      headerImg.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='240'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='${c1}'/%3E%3Cstop offset='1' stop-color='${c2}'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)'/%3E%3C/svg%3E`;
-    }
+    if (logoEl) logoEl.classList.add("hidden");
+    if ($(defaultIconId)) $(defaultIconId).classList.remove("hidden");
   }
 
-  const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
-  if(logoImg) logoImg.src = logo || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='100%25' height='100%25' rx='16' fill='%23111827'/%3E%3Ctext x='50%25' y='54%25' font-size='22' text-anchor='middle' fill='%2394a3b8' font-family='Arial'%3ELOGO%3C/text%3E%3C/svg%3E";
+  // Header image (div bg)
+  safeSetBgDiv($("header-image"), headerUrl);
 
-  if(titleEl) titleEl.textContent = eff.title || "";
-  if(subtitleEl) subtitleEl.textContent = eff.subtitle || "";
-  if(taglineEl) taglineEl.textContent = eff.tagline || "";
-  if(btn) btn.style.backgroundImage = `linear-gradient(90deg, ${eff.color1}, ${eff.color2})`;
-
-  renderPreviewTabs();
-  // // // renderAllFormsGrid(); // disabled // disabled // disabled (use dropdown preview)
+  // Background image (css var)
+  if (bgUrl) safeSetRootBg(bgUrl);
 }
 
 
-function buildPreviewSrcDoc(ft) {
-  const eff = getEffectiveForm(ft || "visitor_form");
-  const c1 = eff.color1 || "#f97316";
-  const c2 = eff.color2 || "#ef4444";
-  const bg = eff.bgUrl ? withCacheBust(eff.bgUrl) : "";
-  const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-  const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
+function fillProgramNamesFromResponse(resp, formType, selectId) {
+  const sel = $(selectId);
+  if (!sel) return;
 
-  const rawPrograms =
-    eff.form?.program_options ||
-    eff.form?.programs ||
-    state.config?.defaults?.programs ||
+  const ft = formType || (resp && resp.form_type) || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+  const formNode = (resp && resp.form) ? resp.form
+    : (resp && resp.settings && resp.settings.forms && resp.settings.forms[ft]) ? resp.settings.forms[ft]
+    : (resp && resp.config && resp.config.forms && resp.config.forms[ft]) ? resp.config.forms[ft]
+    : null;
+
+  const list =
+    (formNode && (formNode.programs || formNode.program_options)) ||
+    (resp && resp.programs) ||
+    (resp && resp.data && resp.data.programs) ||
+    (resp && resp.config && resp.config.programs) ||
+    (resp && resp.config && resp.config.data && resp.config.data.programs) ||
     [];
 
-  const programs = Array.isArray(rawPrograms) ? rawPrograms : [];
-  const optionsHtml = programs.slice(0, 40).map(p => `<option>${escHtml(p)}</option>`).join("");
+  const programs = Array.isArray(list) ? list : [];
+  if (!programs.length) return;
 
-  const headerBlock = header
-    ? `<img class="header-img" src="${escHtml(header)}" alt="header" />`
-    : `<div class="header-grad"></div>`;
-
-  const logoBlock = logo
-    ? `<img class="logo" src="${escHtml(logo)}" alt="logo" />`
-    : `<div class="logo ph">LOGO</div>`;
-
-  const bgStyle = bg ? `background-image:url('${escHtml(bg)}');` : "";
-
-  return `<!doctype html>
-<html lang="hi">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Preview</title>
-  <style>
-    :root{--c1:${c1};--c2:${c2};}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#e5e7eb; background:#0b1220; ${bgStyle} background-size:cover; background-position:center;}
-    .overlay{min-height:100vh; background:linear-gradient(180deg, rgba(2,6,23,.92), rgba(2,6,23,.88));}
-    .wrap{max-width:420px;margin:0 auto; padding:14px;}
-    .card{border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06); border-radius:18px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,.35);}
-    .header{position:relative;height:150px; overflow:hidden;}
-    .header-img{width:100%;height:100%;object-fit:cover;display:block;}
-    .header-grad{width:100%;height:100%; background:linear-gradient(135deg,var(--c1),var(--c2));}
-    .logo{position:absolute;left:14px;bottom:-26px;width:58px;height:58px;border-radius:16px;border:2px solid rgba(255,255,255,.35); background:rgba(2,6,23,.7); object-fit:cover; box-shadow:0 10px 18px rgba(0,0,0,.35);}
-    .logo.ph{display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#94a3b8;}
-    .content{padding:44px 14px 16px;}
-    .title{font-size:18px;font-weight:800;line-height:1.2;margin:0;}
-    .sub{margin:6px 0 0 0;font-size:12px;color:#cbd5e1;}
-    .tag{margin:6px 0 0 0;font-size:11px;color:#94a3b8;}
-    .field{margin-top:12px;}
-    label{display:block;font-size:11px;color:#cbd5e1;margin-bottom:6px;}
-    input,select{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.14); background:rgba(2,6,23,.55); color:#e5e7eb; padding:12px 12px; outline:none;}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-    .btn{margin-top:14px;width:100%;border:none;border-radius:14px;padding:12px 14px;font-weight:800;color:white; cursor:pointer;background:linear-gradient(90deg,var(--c1),var(--c2));}
-    .note{margin-top:10px;font-size:10px;color:#64748b;text-align:center;}
-  </style>
-</head>
-<body>
-  <div class="overlay">
-    <div class="wrap">
-      <div class="card">
-        <div class="header">
-          ${headerBlock}
-          ${logoBlock}
-        </div>
-        <div class="content">
-          <h1 class="title">${escHtml(eff.title || "")}</h1>
-          ${eff.subtitle ? `<div class="sub">${escHtml(eff.subtitle)}</div>` : ``}
-          ${eff.tagline ? `<div class="tag">${escHtml(eff.tagline)}</div>` : ``}
-
-          <div class="field">
-            <label>नाम / Name</label>
-            <input placeholder="अपना नाम लिखें" />
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>मोबाइल</label>
-              <input placeholder="10 अंकों का" />
-            </div>
-            <div class="field">
-              <label>जिला</label>
-              <input placeholder="जिला" />
-            </div>
-          </div>
-
-          ${optionsHtml ? `
-          <div class="field">
-            <label>कार्यक्रम / Program</label>
-            <select>
-              <option value="">Select</option>
-              ${optionsHtml}
-            </select>
-          </div>` : ``}
-
-          <div class="field">
-            <label>टिप्पणी</label>
-            <input placeholder="Optional" />
-          </div>
-
-          <button class="btn">Submit</button>
-          <div class="note">Admin Preview • Live Branding</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
-}
-
-function renderFormPreviewIframe() {
-  const iframe = $("formPreviewIframe");
-  if (!iframe) return;
-  const doc = buildPreviewSrcDoc(state.target || "visitor_form");
-  state.lastPreviewDoc = doc;
-
-  // Use a Blob URL (same-origin) instead of srcdoc so blob: preview images also work reliably.
-  try{
-    if (state._previewBlobUrl) URL.revokeObjectURL(state._previewBlobUrl);
-  }catch(e){}
-  try{
-    const blob = new Blob([doc], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    state._previewBlobUrl = url;
-    iframe.removeAttribute("srcdoc");
-    iframe.src = url;
-  }catch(e){
-    // Fallback
-    iframe.srcdoc = doc;
-  }
-}
-
-function openCurrentPreviewInNewTab() {
-  const doc = state.lastPreviewDoc || buildPreviewSrcDoc(state.target || "visitor_form");
-  const blob = new Blob([doc], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank", "noopener");
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
-}
-
-function renderPreviewTabs() {
-  const wrap = $("previewTabs");
-  if(!wrap || !state.config) return;
-  const forms = state.config.forms || {};
-  const keys = Object.keys(forms);
-
-  wrap.innerHTML = "";
-  const makeBtn = (ft, label) => {
-    const b = document.createElement("button");
-    const active = (ft === state.target);
-    b.className = "px-3 py-2 text-xs rounded-lg border " + (active
-      ? "bg-white/15 border-white/25 text-white"
-      : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10");
-    b.textContent = label;
-    b.addEventListener("click", () => {
-      state.target = ft;
-      const sel = $("targetFormSel");
-      if(sel) sel.value = ft;
-      renderAll();
-      renderFormPreviewIframe();
-      renderBrandPreview();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-    return b;
-  };
-
-  wrap.appendChild(makeBtn("__defaults__", "Defaults"));
-
-  keys.forEach(ft => {
-    const label = (forms[ft]?.title || ft).toString().slice(0, 22);
-    wrap.appendChild(makeBtn(ft, label));
+  sel.innerHTML = '<option value="">— कार्यक्रम चुनें —</option>';
+  programs.forEach((p) => {
+    const v = safeStr(p).trim();
+    if (!v) return;
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
   });
 }
 
-function renderAllFormsGrid() {
-  const grid = $("allFormsGrid");
-  if(!grid || !state.config) return;
+function getFixedLevel(resp, formType) {
+  const formNode = getFormNode(resp, formType) || {};
+  const v = safeStr(formNode.fixed_level || "");
+  return v ? v.toLowerCase() : "";
+}
+    const FORM_TYPE = "coordinator_form";
+    const FIELD_IDS = ["level","program_name","district","vidhansabha","mandal","coordinator_name","coordinator_mobile","assistant_1_name","assistant_1_mobile","assistant_2_name","assistant_2_mobile"];
 
-  const forms = state.config.forms || {};
-  const keys = Object.keys(forms);
+    const DISTRICT_DATA = {
+  "मुरैना": {
+    "3. सबलगढ़": [
+      "सबलगढ़ नगर",
+      "सबलगढ़ गामीण",
+      "नेपरी",
+      "टेंटरा नया",
+      "रामपुर कलां नया"
+    ],
+    "4. जौरा": [
+      "कैलारस",
+      "जौरा नगर",
+      "जौरा ग्रामीण",
+      "पहाडगढ़",
+      "सरसैनी"
+    ],
+    "5. सुमावली": [
+      "सुमावली",
+      "छैरा",
+      "मुंगावली",
+      "बागचीनी",
+      "मुरैना गा्रमीण"
+    ],
+    "6. मुरैना": [
+      "मुरैना पूर्व",
+      "मुरैना पश्चिम",
+      "मुरैना दक्षिण",
+      "बानमौर",
+      "रिठौराकलाॅ",
+      "जडेरूआ नया"
+    ],
+    "7. दिमनी": [
+      "दिमनी",
+      "सिहोनियां",
+      "जीगनी",
+      "थरा",
+      "नावली बड़ागांव नया"
+    ],
+    "8. अम्बाह अजा": [
+      "अम्बाह नगर",
+      "अम्बाह ग्रामीण",
+      "पोरसा नगर",
+      "पोरसा ग्रामीण",
+      "नगरा"
+    ]
+  },
+  "भिण्ड": {
+    "9. अटेर": [
+      "अटेर",
+      "फूफ",
+      "पीपरी",
+      "सुरपुरा",
+      "सरायघार नया",
+      "जवासा नया"
+    ],
+    "10. भिण्ड": [
+      "भिण्ड गा्रमीण",
+      "महाराणा प्रताप",
+      "बनखण्डेश्वर",
+      "सुभाषचंद्र बोस",
+      "उमरी ,नयागांव",
+      "उमरी अकोड़ा नया"
+    ],
+    "11. लहार": [
+      "लहार",
+      "आलमपुर",
+      "दबोह",
+      "असवार",
+      "मिहोना",
+      "मछण्ड"
+    ],
+    "12. मेहगांव": [
+      "मेहगांव",
+      "आमायन",
+      "रौन",
+      "गोरमी",
+      "सोनी",
+      "दंदरौआ"
+    ],
+    "13. गोहद अजा": [
+      "गोहद नगर",
+      "गोहद गा्रमीण",
+      "मौ",
+      "चितौरा",
+      "मालनपुर नया"
+    ]
+  },
+  "दतिया": {
+    "20. सेवढ़ा": [
+      "सेवढ़ा नगर",
+      "सेवढ़ा ग्रामीण (बअुआपुरा)",
+      "इन्दरगढ़ नगर",
+      "इन्दरगढ़ ग्रामीण",
+      "थरेट नया"
+    ],
+    "21. भाण्डेर अजा": [
+      "सालौन बी",
+      "भाण्डेर",
+      "उन्नाव बालाजी",
+      "ईमलिया उन्नाव ग्रामीण",
+      "उडीना नया"
+    ],
+    "22. दतिया": [
+      "दतिया नगर",
+      "दतिया ग्रामीण",
+      "बडौनी",
+      "उदगुआ",
+      "बसई",
+      "सीतापुर नया"
+    ]
+  },
+  "ग्वालियर नगर": {
+    "15. ग्वालियर": [
+      "कोटेश्वर महादेव",
+      "संत रविदास",
+      "वीर दुर्गादास राठौर",
+      "रानी लक्ष्मीबाई",
+      "राजा मानसिंह तोमर",
+      "महाराजा अग्रसेन नया"
+    ],
+    "16. ग्वालियर पूर्व": [
+      "पं. दीनदयाल उपाध्याय",
+      "महाराणा प्रताप",
+      "शहीद भगत सिंह",
+      "स्वामी रामकृष्ण",
+      "वीर सावरकर",
+      "बाबासाहेब अंबेडकर नया"
+    ],
+    "17. ग्वालियर दक्षिण": [
+      "अटल बिहारी  वाजपाई",
+      "शहीद हेमू कालोनी",
+      "डाॅ. श्यामा प्रसाद मुखर्जी",
+      "स्वामी विवेकानंद",
+      "गुप्तेश्वर महादेव"
+    ]
+  },
+  "ग्वालियर ग्रा .": {
+    "14. ग्वालियर ग्रामीण": [
+      "तानसेन बेहट",
+      "उटिला",
+      "बेरजा",
+      "पुरानी छावनी",
+      "कैंटोमेंट",
+      "गिरवाई नया"
+    ],
+    "18. भितरवार": [
+      "भितरवार",
+      "आंतरी",
+      "चीनोर",
+      "घाटीगांव",
+      "मोहना",
+      "लखेश्वरी नया"
+    ],
+    "19. डबरा अजा": [
+      "डबरा नं.",
+      "डबरा गा्रं.",
+      "पिछोर",
+      "बिलौआ",
+      "छीमक"
+    ]
+  },
+  "श्योपुर": {
+    "1. श्योपुर": [
+      "श्योपुर",
+      "बडोदा",
+      "मानपुर",
+      "प्रेमसर",
+      "पाण्डोला नया",
+      "श्योपुर ग्रामीण नया",
+      "दांतरदा नया"
+    ],
+    "2.विजयपुर": [
+      "विजयपुर",
+      "वीरपुर",
+      "कराहल",
+      "गोरस",
+      "गसवानी",
+      "अगरा नया",
+      "रघुनाथपुर नया"
+    ]
+  },
+  "शिवपुरी": {
+    "23. करेरा अजा": [
+      "करेरा",
+      "सिरसौद",
+      "करही",
+      "दिनारा",
+      "नरवर"
+    ],
+    "24. पोहरी": [
+      "पोहरी",
+      "बैराड़",
+      "सतनवाड़ा (नरवर ग्रामीण)",
+      "सुभाषपुरा मुडैरी",
+      "झिरी-भटनावर नया",
+      "मुढैरी-कुंवरपुर नया"
+    ],
+    "25. शिवपुरी": [
+      "शिवपुरी नगर",
+      "शिवपुरी ग्रामीण",
+      "शिवपुरी पुरानी",
+      "खोड़",
+      "वीरा-सरवाया नया",
+      "शिवपुरी-फिजिकल नया"
+    ],
+    "26. पिछोर": [
+      "पिछोर",
+      "खनियाधाना",
+      "बामोरकला",
+      "मायापुर",
+      "भौती",
+      "मुहारी नया"
+    ],
+    "27. कोलारस": [
+      "कोलारस",
+      "बदरवास",
+      "रन्नौद",
+      "लुकवासा",
+      "खराई",
+      "खतौरा नया"
+    ]
+  },
+  "गुना": {
+    "28. बामोरी": [
+      "म्याना",
+      "बामोरी",
+      "सिरसी",
+      "झागर नया",
+      "उमरी नया"
+    ],
+    "29. गुना अजा": [
+      "गुना",
+      "गुना कैंट",
+      "बजरंगढ",
+      "पगारा",
+      "बूढे बालाजी नया"
+    ],
+    "30. चाचैड़ा": [
+      "चाचैडा",
+      "कुम्भराज",
+      "मकसूदनगढ़",
+      "रूठियाई",
+      "मृगवास",
+      "तेलीगांव नया"
+    ],
+    "31. राघोगढ़": [
+      "राघोगढ़",
+      "आरोन",
+      "जामनेर",
+      "पनवाडी",
+      "फतेहगढ़"
+    ]
+  },
+  "अशोक नगर": {
+    "32. अशोकनगर अजा": [
+      "अशोकनगर नगर",
+      "अशोकनगर गा्रमीण",
+      "शाढौरा",
+      "राजपुर",
+      "सोनेरा (कचनार)",
+      "पछार नया"
+    ],
+    "33. चंदेरी": [
+      "चंदेरी नगर",
+      "चंदेरी गा्रमीण",
+      "ईसागढ़",
+      "नईसराय",
+      "ढाकोनी (आनंदपुर)"
+    ],
+    "34. मुंगावली": [
+      "मुंगावली",
+      "बहादुरपुर",
+      "पिपरई",
+      "सहराई",
+      "थूवोन",
+      "अथाईखेडा नया"
+    ]
+  },
+  "सागर": {
+    "35. बीना अजा": [
+      "बीना नगर",
+      "बीना गा्रमीण",
+      "भानगढ़ नया",
+      "खिमलासा",
+      "मण्डी बामोरा"
+    ],
+    "36. खुरई": [
+      "खुरई नगर",
+      "खुरई गा्रमीण",
+      "मालथौन",
+      "वांदरी",
+      "धनौरा नया",
+      "बरोदिया कलां नया"
+    ],
+    "37. सुरखी": [
+      "सुरखी नगर",
+      "सिहोरा",
+      "राहतगढ़",
+      "जयसिंह नगर",
+      "बिलहरा",
+      "राहतगढ़ नगर नया"
+    ],
+    "40. नरियावली अजा": [
+      "नरयावली",
+      "सागर गा्रमीण",
+      "सदर",
+      "मकरोनिया नगर",
+      "मकरोनिया ग्रामीण"
+    ],
+    "41. सागर": [
+      "सागर नगर",
+      "डाॅ. हरिसिंह गौर",
+      "डाॅ. भीमराव अम्बेकर",
+      "यमुनाताई ठाकुर नया"
+    ]
+  },
+  "सागर ग्रामीण": {
+    "38. देवरी": [
+      "देवरी नगर",
+      "केसली",
+      "गोरझामर",
+      "महाराजपुर",
+      "सहजपुर",
+      "अनंतपुरा नया"
+    ],
+    "39. रेहली": [
+      "रहेली नगर",
+      "रहेली गा्रमीण",
+      "गढ़ाकोटा नगर",
+      "गढ़ाकोटा गा्रमीण",
+      "शाहपुर",
+      "पटना बुजुर्ग नया",
+      "बलेह नया"
+    ],
+    "42. बण्डा": [
+      "बण्डा नगर",
+      "शाहगढ़",
+      "बरोहल",
+      "दलपतपुर",
+      "बरा",
+      "बरायठा नया",
+      "छापरी नया"
+    ]
+  },
+  "टीकमगढ़": {
+    "43. टीकमगढ़": [
+      "टीकमगढ़ नगर",
+      "टीकमगढ़ गा्रमीण",
+      "बडागांवधसान",
+      "कुण्डेश्वर",
+      "बुडेरा",
+      "सावरकर नया"
+    ],
+    "44. जतारा अजा": [
+      "जतारा",
+      "लिधोरा",
+      "थर बराना",
+      "चंदेरा",
+      "बम्हौरी कलां नया"
+    ],
+    "47. खरगापुर": [
+      "पलेरा",
+      "बल्देवगढ़",
+      "खरगापुर",
+      "कुडीला",
+      "देरी नया"
+    ]
+  },
+  "निवाड़ी": {
+    "45. पृथ्वीपुर": [
+      "पृथ्वीपुर नगर",
+      "पृथ्वीपुर ग्रामीण नया",
+      "मोहनगढ़",
+      "जैरोन",
+      "दिगोड़ा"
+    ],
+    "46. निवाडी": [
+      "निवाडी नगर",
+      "निवाड़ी ग्रामीण नया",
+      "ओरछा",
+      "तरीचकला",
+      "नैगुआ नया"
+    ]
+  },
+  "छतरपुर": {
+    "48. महाराजपुर": [
+      "महाराजपुर",
+      "नौगांव नगर",
+      "हरपालपुर",
+      "लुगासी",
+      "गढ़ीमलहरा नया"
+    ],
+    "49. चन्दला": [
+      "चन्दला",
+      "बारीगढ़",
+      "सरवई",
+      "बाछौन",
+      "गौरीहार नया"
+    ],
+    "50. राजनगर": [
+      "राजनगर",
+      "बमीठा",
+      "लवकुश नगर",
+      "खजुराहो",
+      "विक्रमपुर  नया"
+    ],
+    "51. छतरपुर": [
+      "छतरपुर नगर",
+      "छतरपुर ग्रामीण",
+      "महेवा",
+      "पड़रिया",
+      "निवारी नया"
+    ],
+    "52. बिजावर": [
+      "बिजावर",
+      "सटई",
+      "ईसानगर",
+      "किशनगढ़",
+      "मातगुवां नया"
+    ],
+    "53. बड़ा मलेहरा": [
+      "बड़ामलेहरा नगर",
+      "बड़ामलेहरा ग्रामीण",
+      "घुवारा",
+      "बक्सवाहा",
+      "बाजना नया"
+    ]
+  },
+  "पन्ना": {
+    "58. पवई": [
+      "पवई",
+      "शाहनगर",
+      "रैपुरा",
+      "मोहन्द्रा, मोहर्रा सिमरिया",
+      "कल्दा (आदिवासी)",
+      "बिसानी नया",
+      "सिमरिया नया"
+    ],
+    "59. गुन्नौर अजा": [
+      "अमानगंज",
+      "गुन्नौर",
+      "देवेन्द्र नगर",
+      "सलेहा",
+      "ककरहटी",
+      "महेबा नया"
+    ],
+    "60. पन्ना": [
+      "पन्ना नगर",
+      "पन्ना ग्रा.",
+      "अजयगढ़",
+      "धरमपुर",
+      "बृजपुर",
+      "बीरा नया"
+    ]
+  },
+  "सतना": {
+    "61. चित्रकुट": [
+      "बिरसिंहपुर",
+      "मझगवां",
+      "बरौधा",
+      "जैतवारा",
+      "चित्रकुट नया"
+    ],
+    "62. रैगांव अजा": [
+      "सोहावल",
+      "सिंहपुर",
+      "कोठी",
+      "सेमरवारा",
+      "भरजूना  नया"
+    ],
+    "63. सतना": [
+      "सतना नगर पश्चिमी (कुशाभाऊ ठाकरे)",
+      "सतना पूर्वी  (पं. दीनदयाल उपाध्याय)",
+      "बाबूपुर",
+      "अटल बिहारी वाजपेयी",
+      "डाॅ. श्यामा प्रसाद मुखर्जी नया"
+    ],
+    "64. नागौद": [
+      "नागौद",
+      "उचेहरा",
+      "परसमनिया",
+      "अटरा",
+      "जसो",
+      "भरहुत  नया"
+    ],
+    "67. रामपुर बघेलान": [
+      "रामपुर बघेलान",
+      "मोहारी कटरा",
+      "कोटर",
+      "सज्जनपुर",
+      "छिबौरा"
+    ]
+  },
+  "मैहर  नया जिला": {
+    "65. मैहर": [
+      "मेैहर नगर",
+      "नादन",
+      "बदेरा",
+      "अमदरा",
+      "सोनवारी नया",
+      "बेरमा नया"
+    ],
+    "66. अमरपाटन": [
+      "अमरपाटन",
+      "रामनगर",
+      "ताला",
+      "मर्यादापुर",
+      "कठहा नया",
+      "बड़वार नया"
+    ]
+  },
+  "रीवा": {
+    "68. सिरमौर": [
+      "सिरमौर",
+      "जवा",
+      "डभौरा",
+      "बैकुण्ठपुर नया",
+      "अतरैला नया"
+    ],
+    "69. सेमरिया": [
+      "सेमरिया",
+      "शाहपुर",
+      "बनकुंइया",
+      "मनकहरी  नया"
+    ],
+    "70. त्याथौर": [
+      "त्यौथर",
+      "गढ़ी",
+      "रायपुर सोनौरी",
+      "कटरा नया"
+    ],
+    "73. मनगवां अजा": [
+      "मनगवां",
+      "रामपुर सर्किल",
+      "लालगांव (गढ)",
+      "देवास नया",
+      "सूरा नया"
+    ],
+    "74. रीवा": [
+      "अटल (रीवा नगर)",
+      "रीवा ग्रामीण",
+      "बिछिया",
+      "बोदाबाग (दीनदयाल)"
+    ],
+    "75. गुढ़": [
+      "गुढ़",
+      "गोविन्दगढ़",
+      "रायपुरकुर्चलियान",
+      "महसांव नया"
+    ]
+  },
+  "मऊगंज  नया जिलाा": {
+    "71. मउगंज": [
+      "मउगंज",
+      "हनुमना",
+      "खटकरी",
+      "शाहपुर नया",
+      "पिपराही नया"
+    ],
+    "72. देवतालाब": [
+      "देवतालाब",
+      "रघुराज गढ़",
+      "नईगढ़ी",
+      "सीतापुर",
+      "तमरी नया"
+    ]
+  },
+  "सीधी": {
+    "76. चुरहट": [
+      "चुरहट",
+      "रामपुरनैकिन",
+      "खड्डी",
+      "पटपरा",
+      "चोरगड़ी",
+      "पड़खुरी नया",
+      "हनुमानगढ़ नया"
+    ],
+    "77. सीधी": [
+      "सीधी नगर",
+      "कुचवाही",
+      "सेमरिया",
+      "बरमबाबा",
+      "अमरपुर",
+      "चैफाल"
+    ],
+    "78. सिंहावल": [
+      "सिंहावल",
+      "बहरी",
+      "सोनवर्षा",
+      "अमिलिया नया",
+      "मायापुर नया"
+    ],
+    "82. धौहनी अजजा": [
+      "मझौली",
+      "मडवास",
+      "कुसमी",
+      "पौंडी निवास",
+      "खडौरा नया"
+    ]
+  },
+  "सिंगरौली": {
+    "79. चितरंगी अजजा": [
+      "चितरंगी",
+      "गौरबी",
+      "बगदरा",
+      "कर्थुआ",
+      "मौहरिया",
+      "बगैया"
+    ],
+    "80. सिंगरौली": [
+      "सिंगरौली",
+      "बैढन",
+      "तियरा",
+      "विन्ध्यनगर",
+      "जयन्त नगर"
+    ],
+    "81. देवसर अजा": [
+      "खुटार",
+      "माडा",
+      "सरई",
+      "बरगवां",
+      "लंघाडोल",
+      "रजमिलान"
+    ],
+    "82. धौहनी": [
+      "निवास",
+      "रजनिया  नया"
+    ],
+    "78. सिंहावल": [
+      "देवसर जियावन",
+      "नौड़िया"
+    ]
+  },
+  "शहडोल": {
+    "83. ब्यौहारी अजजा": [
+      "बाणसागर",
+      "ब्यौहारी",
+      "पपौध",
+      "सीधी",
+      "आमडीह (करकी)",
+      "टिकही नया",
+      "मऊ नया"
+    ],
+    "84. जयसिंह नगर अजजा": [
+      "जयसिंह नगर",
+      "गोहपारू",
+      "शहडोल नगर",
+      "सोहागपुर",
+      "सिंहपुर",
+      "चुहरी  नया"
+    ],
+    "85. जैतपुर अजजा": [
+      "बुढार",
+      "खैहरा",
+      "धनपुरी",
+      "केशवाही",
+      "जैतपुर",
+      "बकहो नया"
+    ]
+  },
+  "अनूपपुर": {
+    "86. कोतमा": [
+      "कोतमा नगर",
+      "कोतमा गा्रमीण",
+      "बिजुरी नगर",
+      "राजनगर नगर",
+      "राजनगर ग्रामीण"
+    ],
+    "87. अनूपपुर": [
+      "अनूपपुर नगर",
+      "अनूपपुर गा्रमीण",
+      "फुनगा",
+      "पसान",
+      "जैतहरी"
+    ],
+    "88. पुष्पराजगढ़ अजजा": [
+      "अमरकंटक",
+      "राजेन्द्रगा्रम नगर",
+      "बेनीवारी",
+      "करपा",
+      "वैंकट नगर",
+      "दमेहडी  नया"
+    ]
+  },
+  "उमरिया": {
+    "89. बांधगढ़ अजजा": [
+      "चंदिया",
+      "उमरिया नगर",
+      "उमरिया ग्रामीण",
+      "करकेली",
+      "नौरोजाबाद",
+      "बिलासपुर नया",
+      "कोहका  नया"
+    ],
+    "90. मानपुर अजजा": [
+      "अमरपुर",
+      "मानपुर",
+      "पाली नगर",
+      "पाली ग्रामीण",
+      "पिपरिया",
+      "बिजौरी नया",
+      "इंदवार नया"
+    ]
+  },
+  "जबलपुर नगर": {
+    "97. जबलपुर पूर्व अजा": [
+      "डाॅ. श्याम प्रसाद मुखर्जी",
+      "लोकमान्य बाल गंगाधर तिलक",
+      "शहीद अब्दुल हमीद",
+      "नेता जी सुभाषचंद्र बोस"
+    ],
+    "98. जबलपुर उत्तर": [
+      "शहीद चन्द्रशेखर आजाद",
+      "स्वामी विवेकानंद",
+      "पं. दीनदयाल उपाध्याय",
+      "कुशाभाऊ ठाकरे",
+      "आचार्य विद्यासागर  नया"
+    ],
+    "99. जबलपुर केन्ट": [
+      "वीर सावरकर",
+      "शहीद भगत सिंह",
+      "छत्रपति शिवाजी",
+      "अटल बिहारी वाजपेयी"
+    ],
+    "100. जबलपुर पश्चिम": [
+      "गिरीराज किशोर कपूर",
+      "रानी दुर्गावती",
+      "मां नर्मदा",
+      "महाराणा प्रताप",
+      "महर्षि वाल्मिकी  नया"
+    ]
+  },
+  "जबलपुर गा्र.": {
+    "95. पाटन": [
+      "पाटन",
+      "मझोली पश्चिम",
+      "मझोली पूर्व",
+      "कटंगी",
+      "पोडा",
+      "नुनसर"
+    ],
+    "96. बरगी": [
+      "बरगी",
+      "चरगवां",
+      "शहपुरा",
+      "भेडाघाट",
+      "तिलवारा",
+      "बेलखेड़ा"
+    ],
+    "101. पनागर": [
+      "पनागर नगर",
+      "पनागर पूर्व",
+      "पनागर पश्चिम",
+      "सोहागी करमेता",
+      "बरेला",
+      "महाराजपुर नया",
+      "रानी दुर्गावती"
+    ],
+    "102. सीहोरा अजजा": [
+      "सीहोरा नगर",
+      "गोसलपुर (सीहोरा ग्रा.)",
+      "मझगवां",
+      "बघराजी",
+      "कुण्डम",
+      "चैरई कलां  नया"
+    ]
+  },
+  "कटनी": {
+    "91. बडवारा अजजा": [
+      "बडवारा",
+      "ढीमरखेडा",
+      "सिलोडी",
+      "देवरी हटाई",
+      "कैमोर",
+      "विलायतकला",
+      "पान उमरिया"
+    ],
+    "92. विजयराघोगढ़": [
+      "विजय राघवगढ़",
+      "सिनगोडी",
+      "बरही",
+      "खितौली",
+      "कांटी",
+      "पिपरिया कलां नया"
+    ],
+    "93. मुडवारा": [
+      "मुडवारा (कटनीनगर)",
+      "माधवनगर",
+      "न्यू कटनी",
+      "कटनी गा्रमीण",
+      "निवार",
+      "स्लीमनाबाद",
+      "पं. दीनदयाल उपाध्याय नया"
+    ],
+    "94. बहोरीबंद": [
+      "बहोरीबंद",
+      "रीठी",
+      "बिलहरी",
+      "बाकल",
+      "कुआ",
+      "देवगांव  नया"
+    ]
+  },
+  "डिण्डौरी": {
+    "103. शाहपुरा अजजा": [
+      "मेहंदवानी",
+      "अमरपुर",
+      "शाहपुर",
+      "शहपुरा",
+      "मानिकपुर नया",
+      "सक्का  नया"
+    ],
+    "104. डिण्डौरी अजजा": [
+      "करंजिया",
+      "बजाग",
+      "समनापुर",
+      "डिण्डौरी",
+      "गोपालपुर नया",
+      "गाड़ासरई नया",
+      "बम्हनी नया"
+    ]
+  },
+  "मण्डला": {
+    "105. बिछिया अजजा": [
+      "बिछिया",
+      "मवई",
+      "घुघरी",
+      "अंजनिया",
+      "घुटास नया",
+      "सलवाह नया"
+    ],
+    "106. निवास अजजा": [
+      "निवास",
+      "नारायणगंज",
+      "बीजाहाडी",
+      "बकोरी",
+      "मोहगांव",
+      "बबलिया नया"
+    ],
+    "107. मण्डला अजजा": [
+      "मण्डला नगर",
+      "मण्डला ग्रामीण",
+      "नैनपुर नगर",
+      "नैनपुर ग्रामीण",
+      "चिरई डोंगरी",
+      "बम्हनी बंजर नगर",
+      "पदमी चैराह नया"
+    ]
+  },
+  "बालाघाट": {
+    "108. बैहर अजजा": [
+      "बिरसा",
+      "मलाजखण्ड",
+      "बैहर",
+      "उकवा",
+      "गढ़ी",
+      "मंडई नया"
+    ],
+    "109. लांजी": [
+      "किरनापुर",
+      "लांजी",
+      "भाडरा",
+      "भानेगांव",
+      "कारंजा नया",
+      "माटे नया",
+      "बिसोनी नया"
+    ],
+    "110. परसवाडा": [
+      "हट्टा",
+      "बालाघाट ग्रामीण",
+      "लामटा",
+      "परसवाडा",
+      "मझगांव नया",
+      "समनापुर नया",
+      "रजेगांव नया"
+    ],
+    "111. बालाघाट": [
+      "बालाघाट नगर",
+      "लालबर्रा",
+      "खमरिया",
+      "भरवेली",
+      "बालाघाट उत्तर नया",
+      "मोहगांव नया"
+    ],
+    "112. वारासिवनी": [
+      "वारासिवनी नगर",
+      "वारासिवनी ग्रामीण",
+      "खैरलाजी",
+      "आरंभा नया",
+      "रामपायली नया"
+    ],
+    "113. कटंगी": [
+      "कटंगी",
+      "कटोरी",
+      "तिरोडी",
+      "कटंगी पश्चिम नया",
+      "मिरगपुर नया",
+      "महकेपार नया"
+    ]
+  },
+  "सिवनी": {
+    "114. बरघाट अजजा": [
+      "कुरई",
+      "सुखतरा",
+      "बरघाट",
+      "धारना",
+      "गंगेरूआ"
+    ],
+    "115. सिवनी": [
+      "बारापत्थर (सिवनी उत्तर )",
+      "मंगलीपेठ (सिवनी दक्षिण)",
+      "करकोटी (सिवनी ग्रामीण)",
+      "लखनवाडा नया",
+      "मुगवानी",
+      "बण्डोल",
+      "चमारी",
+      "बीजादेवरी"
+    ],
+    "116. केवलारी": [
+      "केवलारी",
+      "छपारा",
+      "उगली",
+      "धनोरा",
+      "कान्हीवाडा",
+      "पलारी",
+      "छींद खैरलांजी नया"
+    ],
+    "117.लखनादौनअजजा": [
+      "लखनादौन नगर",
+      "आंदेगांव",
+      "घूमा",
+      "कहानी",
+      "घंसोर",
+      "केदारपुर",
+      "नागनदेवरी नया"
+    ]
+  },
+  "नरसिंहपुर": {
+    "118. गोटेंगांव अजा": [
+      "गोटेगांव नगर",
+      "गोटेगांव ग्रामीण",
+      "करकबेल",
+      "मुंगवानी",
+      "श्रीनगर नया",
+      "ढांगीढाना नया"
+    ],
+    "119. नरसिंहपुर": [
+      "नरसिंहपुर नगर",
+      "नरसिंहपुर ग्रामीण",
+      "करेली नगर",
+      "करेली ग्रामीण",
+      "नर्मदा",
+      "सिंहपुर नया"
+    ],
+    "120. तेन्दूखेडा": [
+      "चैगान",
+      "सिहोरा",
+      "चावरपाठा (तेंदूखेड़ा)",
+      "कौड़िया नया",
+      "तेंदूखेड़ा नया"
+    ],
+    "121. गाडरवाडा": [
+      "गाडरवारा नगर",
+      "साईखेडा",
+      "चीचली",
+      "सालीचैका",
+      "आमगांव छोटा नया"
+    ]
+  },
+  "छिंदवाड़ा": {
+    "122. जुन्नारदेव अजजा": [
+      "जुन्नारदेव नगर",
+      "जुन्नारदेव ग्रामीण",
+      "दमुआ नगर",
+      "दमुआ ग्रामीण",
+      "तामिया",
+      "चावलपानी नया"
+    ],
+    "123. अमरवाडा अजजा": [
+      "अमरवाडा नगर",
+      "अमरवाडा ग्रामीण",
+      "सिंगोडी",
+      "बटकाखापा",
+      "हरई",
+      "छिन्दी",
+      "सुरलाखापा"
+    ],
+    "124. चैरई": [
+      "चैरई नगर",
+      "चैरई ग्रामीण",
+      "चांद",
+      "बिछुआ",
+      "कुण्डा",
+      "खमारपानी नया"
+    ],
+    "126. छिन्दवाडा": [
+      "छिन्दवाडा नगर (एक)",
+      "छिन्दवाडा नगर (दो)",
+      "छिन्दवाडा ग्रामीण",
+      "सारना",
+      "धरमटेकड़ी नया",
+      "गुलाबरा नया"
+    ],
+    "127. परासिया अजा": [
+      "परासिया नगर",
+      "पगारा (परासिया ग्रा.)",
+      "उमरेठ",
+      "शिवपुरी",
+      "पटपड़ा नया"
+    ]
+  },
+  "पांढुर्णा नया जिला": {
+    "125. सौसर": [
+      "सौसर",
+      "लोधीखेडा ग्रा.",
+      "पिपल्यानारायणवार",
+      "मोहखेडा",
+      "रामाकोना नया",
+      "लिंगा नया"
+    ],
+    "128. पांढुर्णा अजजा": [
+      "पांढुर्णा नगर",
+      "पांढुर्णा ग्रा.",
+      "नंदनवाडी",
+      "सावरी",
+      "कुशाभाऊ ठाकरे नया",
+      "श्यामाप्रसाद मुखर्जी (देवगढ़) नया"
+    ]
+  },
+  "नर्मदापुरम्": {
+    "136. सिवनी मालवा": [
+      "सिवनीमालवा नगर",
+      "सिवनीमालवा ग्रामीण",
+      "केसला",
+      "शिवपुर",
+      "भीलटदेव",
+      "डोलरिया"
+    ],
+    "137. नर्मदापुरम्": [
+      "नर्मदापुरम् नगर",
+      "नर्मदापुर नगर",
+      "इटारसी नगर",
+      "पुरानी इटारसी",
+      "नर्मदापुरम् ग्रामीण"
+    ],
+    "138. सोहागपुर": [
+      "सोहागपुर",
+      "सेमरी",
+      "माखन नगर (बावई)",
+      "आरी बाबई पश्चिम",
+      "रामपुर",
+      "शोभापुर"
+    ],
+    "139. पिपरिया अजा": [
+      "पिपरिया नगर",
+      "पिपरिया ग्रामीण",
+      "बनखेडी नगर",
+      "पंचमढ़ी",
+      "चांदौन ग्रामीण",
+      "खापरखेड़ा",
+      "बनखेडी ग्रामीण नया"
+    ]
+  },
+  "हरदा": {
+    "134. टिमरनी अजजा": [
+      "टिमरनी",
+      "कायदा नया",
+      "रेहटगांव",
+      "सिराली",
+      "करताना नया",
+      "पहटकलां  नया"
+    ],
+    "135. हरदा": [
+      "हरदा नगर",
+      "हरदा ग्रा.",
+      "खिरकिया",
+      "हाण्डिया",
+      "सोनतलाई नया",
+      "चारूवा नया"
+    ]
+  },
+  "बैतूल": {
+    "129. मुलताईृ": [
+      "मुलताई नगर",
+      "मुलताई ग्रामीण",
+      "प्रभात पटट्नम",
+      "दुनावा",
+      "मासौदा"
+    ],
+    "130. आमला अजा": [
+      "आमला नगर",
+      "आमला ग्रामीण",
+      "सारणी नगर",
+      "सारणी ग्रामीण",
+      "मोरखा"
+    ],
+    "131. बैतूल": [
+      "बैतूल गंज",
+      "बतूल ग्रामीण",
+      "बैतूल बाजार",
+      "आठनेर नगर",
+      "बडोरा",
+      "कोठी बाजार"
+    ],
+    "132. घोडाडोंगरी अजजा": [
+      "घोडाडोंगरी",
+      "चिचोली नगर",
+      "चिचैली ग्रामीण",
+      "शाहपुर",
+      "भौरा",
+      "चोपना",
+      "पाढर"
+    ],
+    "133. भैंसदेही अजजा": [
+      "भैंसदेही नगर",
+      "भैंसदेही ग्रामीण",
+      "आठनेर ग्रामीण",
+      "भीमपुर",
+      "दामजीपुरा",
+      "रतनपुर नया",
+      "सावलमेढ़ा नया"
+    ]
+  },
+  "भोपाल नगर": {
+    "150. भोपाल उत्तर": [
+      "रानी कमलपती (शाहजहानाबाद)",
+      "गुरूनानक(शाहजहानाबाद)",
+      "वीर सावरकर (बस स्टैण्ड)",
+      "राजाभोज (अग्रसेन)",
+      "नवल शाह नया मण्डल"
+    ],
+    "151. नरेला": [
+      "स्टेशन",
+      "सुभाष",
+      "स्वामी विवेकानंद (करोंद)",
+      "शहीद भगत सिंह (करोंद)",
+      "अशोका गार्डन",
+      "महामाई"
+    ],
+    "152. दक्षिण पश्चिम": [
+      "टैगोर  (टी.टी. नगर)",
+      "तात्याटोपे",
+      "करूणाधाम ( नेहरू नगर )",
+      "पंचशील नगर",
+      "माता शबरी नया"
+    ],
+    "153. भोपाल मध्य": [
+      "बरखेडी",
+      "चैक",
+      "अरेरा",
+      "महाराणाप्रताप",
+      "शाहपुरा"
+    ],
+    "154. गोविंदपुरा": [
+      "अवधपुरी",
+      "मिसरोद",
+      "साकेतनगर",
+      "आनंदनगर",
+      "इन्द्रपुरी",
+      "भानपुर"
+    ],
+    "155. हुजुर": [
+      "बैरागढ़ संतहिरदाराम नगर",
+      "गांधीनगर",
+      "डाॅ. श्यामा प्रसाद मुखर्जी नगर (कोलार)",
+      "अटल बिहारी वाजपेयी (कोलार)"
+    ]
+  },
+  "भोपाल ग्रामीण": {
+    "149. बैरसिया अजा": [
+      "नजीराबाद",
+      "हर्राखेडा",
+      "बैरसिया नगर",
+      "बैरसिया ग्रामीण",
+      "हरिसिद्धि",
+      "परवलिया सड़क"
+    ],
+    "155. हुजुर": [
+      "बिलखिरिया",
+      "फन्दा",
+      "पं. दीनदयाल",
+      "नीलबड़ (रातीबड़)"
+    ]
+  },
+  "रायसेन": {
+    "140. उदयपुरा": [
+      "उदयपुरा",
+      "बरेली नगर",
+      "भारकच्छ",
+      "देवरी",
+      "बरेली ग्रामीण",
+      "खरगोन नया मण्डल",
+      "नूरनगर नया मण्डल"
+    ],
+    "141. भोजपुर": [
+      "मंडीदीप नगर",
+      "औबेदुल्लागंज",
+      "बाडी",
+      "सुल्तानपुर",
+      "मण्डीदीप ग्रामीण",
+      "भोजपुर"
+    ],
+    "142. सांची अजा": [
+      "रायसेन",
+      "सांची",
+      "गैरतगंज",
+      "खरबई",
+      "साॅचेत",
+      "देवनगर (देवगांव)",
+      "गैरतगंज ग्रामीण नया",
+      "सलामतपुर नया"
+    ],
+    "143. सिलवानी": [
+      "सिलवानी पूर्व",
+      "सिलवानी पश्चिम",
+      "बेगमगंज नं.",
+      "बेगमगंज ग्रा.",
+      "सुल्तानगंज ग्रामीण",
+      "प्रतापगढ़ नया"
+    ]
+  },
+  "विदिशा": {
+    "144. विदिशा": [
+      "गुलाबगंज",
+      "वैत्रवति (विदिशा नगर)",
+      "दुर्गानगर (विदिशा नगर)",
+      "बैसनगर (विदिशा ग्रामीण)",
+      "अहमदपुर",
+      "ढोलखेड़ी नया"
+    ],
+    "145. बासौदा": [
+      "गंजबासोदा नगर",
+      "गंजबासोदा ग्रामीण",
+      "ग्यारसपुर",
+      "त्योंदा",
+      "सिरनोटा नया"
+    ],
+    "146. कुरवाई अजा": [
+      "कुरवाई",
+      "पथरिया",
+      "मेहलुआ चैराहा",
+      "पठारी",
+      "उदयपुर",
+      "दीपनाखेड़ा नया",
+      "अम्बानगर नया"
+    ],
+    "147. सिरोज": [
+      "सिरोज नगर",
+      "लटेरी",
+      "आनंदपुर",
+      "चितावर",
+      "देवपुर"
+    ],
+    "148. शमशाबाद": [
+      "नटेरन",
+      "शमशाबाद",
+      "खामखेडा",
+      "सतपाडा हाट",
+      "देव खाजूरी नया"
+    ]
+  },
+  "सीहोर": {
+    "156. बुदनी": [
+      "नसरूल्लागंज",
+      "सलकनपुर",
+      "शाहगंज",
+      "बुधनी",
+      "गोपालपुर",
+      "लाड़कुई",
+      "चकल्दी"
+    ],
+    "157. आष्टा अजा": [
+      "आष्टा नगर",
+      "आष्टा ग्रा.",
+      "जावर",
+      "कोठरी",
+      "सिद्विकगंज",
+      "मैना नया",
+      "खाचरोद नया",
+      "डोडी नया"
+    ],
+    "158. इच्छावर": [
+      "इच्छावर",
+      "बिलकिसगंज",
+      "बरखेडी",
+      "गुड़भेला",
+      "दीवड़िया"
+    ],
+    "159. सीहोर": [
+      "सीहोर नगर-1",
+      "श्यामपुर",
+      "दोराहा",
+      "अहमदपुर",
+      "सीहोर नगर - 2 नया"
+    ]
+  },
+  "राजगढ़": {
+    "160. नरसिंहगढ़": [
+      "नरसिंहगढ़",
+      "कुरावर",
+      "तलेन",
+      "बोड़ा",
+      "झाड़ला नया",
+      "मण्डावर नया"
+    ],
+    "161. ब्यावरा": [
+      "ब्यावरा",
+      "गादिया",
+      "सुठालिया",
+      "पिपलहेला",
+      "मलावर नया",
+      "गिन्दौरहाट नया"
+    ],
+    "162. राजगढ़": [
+      "राजगढ़",
+      "खुजनेर",
+      "कालीपीठ",
+      "पपडेल",
+      "करेड़ी नया",
+      "पिपलोदी नया"
+    ],
+    "163. खिलचीपुर": [
+      "खिलचीपुर",
+      "जीरापुर",
+      "माचलपुर",
+      "छापीहेड़ा",
+      "रामगढ़ नया",
+      "भण्डावद नया"
+    ],
+    "164. सांरगपुर अजा": [
+      "सांरगपुर नगर",
+      "संडावता",
+      "पचैर",
+      "गुलावता",
+      "पड़ाना नया"
+    ]
+  },
+  "इंदौर नगर": {
+    "204. इन्दौर-1": [
+      "सुभाषचन्द्र बोस",
+      "लक्ष्मीबाई",
+      "सम्राट अशोक",
+      "चन्द्रशेखर आजाद",
+      "लवकुश",
+      "गुरू टेकचंद  नया"
+    ],
+    "205. इन्दौर-2": [
+      "डाॅ. अम्बेडकर",
+      "रामायण",
+      "पं. दीनदयाल उपाध्याय",
+      "डाॅ. श्यामा प्रसाद मुखर्जी",
+      "संतश्री मोनी बाबा",
+      "संतश्री बालीनाथ",
+      "राजमाता जीजाबाई नया",
+      "संतश्री रविदास  नया"
+    ],
+    "206. इन्दौर-3": [
+      "कुशाभाउ ठाकरे",
+      "देवी अहिल्या बाई",
+      "अटल बिहारी वाजपेयी",
+      "राजेन्द्र धारकर नया"
+    ],
+    "207. इन्दौर-4": [
+      "हेमू कालोनी",
+      "महाराणाप्रताप",
+      "लक्ष्मण सिंह गौड",
+      "शहीद भगत सिंह"
+    ],
+    "208. इन्दौर-5": [
+      "शिवाजी",
+      "सरदार बल्लभ पटेल तिलक",
+      "छत्रसाल",
+      "वीर सावरकर",
+      "ऐ. पी. जे. अब्दुल कलाम",
+      "संत कबीरदास नया",
+      "ज्योतिबा फुले नया"
+    ],
+    "210. राऊ": [
+      "निर्भय सिंह पटेल",
+      "समा्रट चंद्रगुप्त मौर्य",
+      "गुरू गोविंद सिंह"
+    ],
+    "203. देपालपुर": [
+      "सरदार पटेल"
+    ],
+    "211. सांवेर": [
+      "निपानिया"
+    ]
+  },
+  "इंदौर गा्र.": {
+    "209. महू": [
+      "भीमराव अंबेडकर -कोदरिया",
+      "केजी माहेष्वरी- मंहू नगर",
+      "शहीद टंट्यामामा- सिमरोल",
+      "भेरूलाल पाटीदार- मंहूगांव",
+      "भगवान परषुराम- मानपुर"
+    ],
+    "203. देपालपुर": [
+      "चैबीस अवतार- देपालपुर",
+      "धन्नालाल पटैल- गौतमपुरा",
+      "गुरूनानक देव- बेटमा",
+      "महाराज यषवंत राव- हातोद"
+    ],
+    "211. सांवेर": [
+      "प्रकाश सोनकर- सांवेर",
+      "मां षिप्रा- शिप्रा",
+      "मां अहिल्या- पालिया",
+      "मां नर्मदा -खुडेल"
+    ],
+    "210. राऊ": [
+      "राऊ",
+      "कैलाश पाटीदार",
+      "राऊ ग्रामीण नया"
+    ]
+  },
+  "खण्डवा": {
+    "175. मांधाता": [
+      "पुनासा",
+      "किल्लोद",
+      "मूंदी",
+      "ओंकारेश्वर",
+      "कावेरी नया"
+    ],
+    "176. हरसूद": [
+      "हरसूद नगर",
+      "हरसूद ग्रामीण",
+      "रोशनी",
+      "खालवा",
+      "खार",
+      "आशापुर नया"
+    ],
+    "177. खण्डवा अजजा": [
+      "कुशाभाउ ठाकरे  (खण्डवा नगर)",
+      "अटल बिहारी वाजपेयी",
+      "जावर (खण्डवा ग्रा.)",
+      "अमलपुरा",
+      "पं. दीनदयाल उपाध्याय नया"
+    ],
+    "178. पंधाना अजजा": [
+      "पंधाना",
+      "छैगांव माखन",
+      "बोरगांव",
+      "चिचगोहन",
+      "गुडीखेड़ा",
+      "सिंगोठ"
+    ]
+  },
+  "बुरहानपुर": {
+    "179. नेपानगर अजजा": [
+      "नेपानगर नगर.",
+      "नावरा (नेपानगर ग्रा.)",
+      "खकनार",
+      "धुलकोट",
+      "अटलबिहारी बाजपेयी(दर्यापुर)",
+      "कुशाभाऊ ठाकरे"
+    ],
+    "180. बुरहानुपर": [
+      "बहादरपुर (बुरहानपुर नगर)",
+      "डाॅ.श्यामा प्रसाद मुखर्जी लालबाग (बुरहानपुर ग्रा.)",
+      "लोकमान्य तिलक",
+      "सरदार बल्लभ भाई पटेल",
+      "शाहपुर",
+      "पंडित दीनदयाल उपाध्याय",
+      "लोकमाता अहिल्या देवी नया"
+    ]
+  },
+  "खरगौन": {
+    "181.  भीकनगांव अजजा": [
+      "भीकनगांव",
+      "झिरन्या",
+      "चिरिया",
+      "आभापुरी (शिवना) नया",
+      "भीकनगांव (पश्चिम) नया"
+    ],
+    "182. बड़वाह": [
+      "बड़वाह नगर",
+      "बड़वाह ग्रा.",
+      "सनावद नगर",
+      "सनावद ग्रा.",
+      "बैड़िया"
+    ],
+    "183. महेश्वर अजा": [
+      "महेश्वर",
+      "करही",
+      "बलवाड़ा",
+      "मंडलेश्वर"
+    ],
+    "184. कसरावद": [
+      "कसरावद पूर्व",
+      "कसरावद पश्चिम",
+      "अंदड़",
+      "कसरावद दक्षिण नया",
+      "कसरावद नगर नया"
+    ],
+    "185. खरगौन": [
+      "खरगौन नगर (पूर्व)",
+      "खरगौन ग्रा.",
+      "गोगावा",
+      "खरगौन नगर (पश्चिम) नया"
+    ],
+    "186. भगवानपुरा अजजा": [
+      "भगवानपुरा",
+      "बिस्टान",
+      "सैगांव",
+      "बरूड़",
+      "सिरवेल महादेव नया"
+    ]
+  },
+  "बड़वानी": {
+    "187. सेंधवा अजजा": [
+      "सेंधवा नगर",
+      "संेधवा ग्रामीण",
+      "धनोरा",
+      "बलवाड़ी",
+      "चाचरिया",
+      "धवली",
+      "शाहपुरा नया"
+    ],
+    "188. राजपुर अजजा": [
+      "राजपुर",
+      "जुलवानीया",
+      "ठीकरी",
+      "अंजड़",
+      "तलवाडा",
+      "ओझर"
+    ],
+    "189. पानसेमल अजजा": [
+      "पानसेमल नगर",
+      "चाटली",
+      "खेतिया",
+      "पलसूद",
+      "निवाली",
+      "जलगोन नया"
+    ],
+    "190. बड़वानी अजजा": [
+      "बड़वानी नगर",
+      "बड़वानी ग्रामीण",
+      "पाटी",
+      "सिलावद",
+      "गंधावल बोकराटा",
+      "भवती बिजासन",
+      "मेणीमाता"
+    ]
+  },
+  "अलीराजपुर": {
+    "191. अलीराजपुर अजजा": [
+      "अलीराजपुर नगर",
+      "अलीराजपुर ग्रामीण",
+      "सौरवा",
+      "छकतला",
+      "सोण्डवा",
+      "उमराली नया"
+    ],
+    "192. जोबट अजजा": [
+      "चन्द्रशेखर आजाद नगर",
+      "उदयगढ़",
+      "कटटीवाड़ा",
+      "जोबट",
+      "खटटाली",
+      "आम्बुआ",
+      "बरझर"
+    ]
+  },
+  "झाबुआ": {
+    "193. झाबुआ अजजा": [
+      "झाबुआ नगर",
+      "पिटोल (झाबुआ ग्रा.)",
+      "देवझरी नया",
+      "राणापुर",
+      "वन (राणापुर ग्रा.)",
+      "कल्याणपुरा",
+      "बोरी"
+    ],
+    "194. थांदला अजजा": [
+      "थांदला",
+      "काकनवानी  (थांदला ग्रा.)",
+      "मेघनगर",
+      "मदरानी",
+      "नौगांवा",
+      "खवासा"
+    ],
+    "195. पेटलावद अजजा": [
+      "पेटलावद",
+      "सारंगी (पेटलावद ग्रा.)",
+      "रायपुरिया",
+      "पारा",
+      "रामा",
+      "कुंदनपुर",
+      "झकनावद नया"
+    ]
+  },
+  "धार": {
+    "196. सरदारपुर अजजा": [
+      "सरदारपुर",
+      "राजगढ़ नगर",
+      "राजगढ़ ग्रामीण",
+      "अमझेरा दसाई",
+      "लाबरिया (राजोद)"
+    ],
+    "201. धार": [
+      "कुशाभाउ ठाकरे",
+      "धार ग्रामीण",
+      "तिरला",
+      "दिग्ठान",
+      "पीथमपुर",
+      "सेनापति",
+      "सागौर"
+    ],
+    "202. बदनावर": [
+      "बदनावर नगर",
+      "बदनावर ग्रा.",
+      "कानवन",
+      "सादलपुर",
+      "बखतगढ़",
+      "बिडवाल"
+    ]
+  },
+  "धार ग्रामीण": {
+    "197. गंधवानी": [
+      "गंधवानी",
+      "बाग",
+      "कछावदा",
+      "जीराबाद",
+      "टाण्डा"
+    ],
+    "198. कुक्षी अजजा": [
+      "कुक्षी नगर",
+      "कुक्षी ग्रामीण",
+      "निसरपुर",
+      "डही",
+      "बडदा"
+    ],
+    "199. मनावर अजजा": [
+      "मनावर नगर",
+      "मनावर ग्रा.",
+      "उमरबन",
+      "सिंघाना",
+      "बाकानेर"
+    ],
+    "200. धरमपुरी अजजा": [
+      "धरमपुरी",
+      "धामनोद",
+      "नालक्षा",
+      "गुजरी",
+      "बगड़ी नया"
+    ]
+  },
+  "उज्जैन नगर": {
+    "216. उज्जैन उत्तर": [
+      "दौलतगंज",
+      "सराफा",
+      "जीवाजीगंज",
+      "कार्तिक चैक",
+      "विक्रमादित्य",
+      "डाॅ. श्यामा प्रसाद मुखजी  नया"
+    ],
+    "217. उज्जैन दक्षिण": [
+      "माधवनगर",
+      "केशवनगर",
+      "महाराजवाडा",
+      "पं. दीनदयाल",
+      "शहीद राजभाऊ महाकाल  नया"
+    ]
+  },
+  "उज्जैन ग्रा.": {
+    "212. नागदा": [
+      "नागदा नगर",
+      "नागदा ग्रामीण",
+      "खाचरौद नगर",
+      "खाचरौद ग्रामीण",
+      "खाचरौद ग्रामीण (दक्षिण) नया",
+      "नागदा बिरलाग्राम नया"
+    ],
+    "213. महिदपुर": [
+      "महिदपुर नगर",
+      "महिदपुर ग्रामीण",
+      "झारडा",
+      "महिदपुर रोड़"
+    ],
+    "214. तराना अजा": [
+      "तराना नगर",
+      "तराना ग्रामीण",
+      "माकडोन",
+      "कनासिया"
+    ],
+    "215. घटिया अजा": [
+      "घटिया",
+      "ताजपुर",
+      "पानबिहार",
+      "उन्हेल"
+    ],
+    "218. बडनगर": [
+      "बडनगर नगर",
+      "बडनगर ग्रामीण",
+      "इन्गोरिया",
+      "खरसोदकलां",
+      "खरसौद खुर्द नया"
+    ],
+    "217. उज्जैन दक्षिण": [
+      "उज्जैन ग्रामीण (दक्षिण)"
+    ]
+  },
+  "शाजापुर": {
+    "167. शाजापुर": [
+      "शाजापुर नगर",
+      "शाजापुर ग्रामीण",
+      "पनवाडी",
+      "मोहन बडोदिया",
+      "बेरछा",
+      "मक्सी"
+    ],
+    "168. शुजालपुर": [
+      "शुजालपुर नगर",
+      "शुजालपुर ग्रामीण",
+      "अकोदिया",
+      "गुलाना",
+      "सुन्दरसी"
+    ],
+    "169. कालापीपल": [
+      "कालापीपल",
+      "खोकराकलां",
+      "अरनियाकलां",
+      "पोलायकलां",
+      "अवंतीपुर बड़ोदिया  नया",
+      "लसुल्डिया  नया"
+    ]
+  },
+  "आगर": {
+    "165. सुसनेर": [
+      "सुसनेर",
+      "नलखेड़ा",
+      "बड़ागांव",
+      "सोयत",
+      "मोड़ी नया",
+      "मोहना नया",
+      "धरोला नया"
+    ],
+    "166. आगर अजा": [
+      "आगर नगर",
+      "कानड़",
+      "बड़ौद",
+      "बीजानगरी",
+      "आगर ग्रामीण",
+      "तनोड़िया नया",
+      "मदकोटा नया"
+    ]
+  },
+  "देवास": {
+    "170. सोनकच्छ अजा": [
+      "टोकखुर्द नगर",
+      "टोकखुर्द ग्रामीण",
+      "सोनकच्छ नगर",
+      "सोनकच्छ (काशी)",
+      "भौरासा नया"
+    ],
+    "171. देवास": [
+      "देवास सीनियर",
+      "देवास जूनियर",
+      "देवास ग्रामीण",
+      "श्रीमंत महाराजा",
+      "सतगुरू शीलनाथ नया"
+    ],
+    "172. हाटपिपल्या": [
+      "हाटपिपल्या नगर",
+      "हाटपीपल्या ग्रामीण",
+      "बरोठा",
+      "क्षिप्रा",
+      "राजोदा नया"
+    ],
+    "173. खातेगांव": [
+      "खातेगांव",
+      "कन्नौद",
+      "हरनगांव",
+      "नेमावर मंदसौर",
+      "पानीगांव नया"
+    ],
+    "174. बागली अजजा": [
+      "बागली",
+      "सतवास",
+      "उदयनगर",
+      "काॅटाफोड लोहारदा",
+      "कर्णेश्वर नया"
+    ]
+  },
+  "रतलाम": {
+    "219. रतलाम ग्रा. अजा": [
+      "नामली",
+      "धराड",
+      "शबरी",
+      "शहीद चन्द्रशेखर आजाद",
+      "बांगरोद"
+    ],
+    "220. रतलाम सिटी": [
+      "डाॅ. श्यामा प्रसाद मुखर्जी",
+      "पं. दीनदयाल दीनदयाल",
+      "सूरजमल जैन",
+      "डाॅ. अम्बेडकर",
+      "कुशाभाउ ठाकरे"
+    ],
+    "221. सैलाना अजजा": [
+      "बाजना",
+      "रावटी शिवगढ़",
+      "सैलाना",
+      "बेडदा",
+      "राजपुरा"
+    ],
+    "222. जावरा": [
+      "जावरा ग्रामीण",
+      "पिपलोदा",
+      "जावरा नगर",
+      "सूखेडा",
+      "डाॅ. लक्ष्मीनारायण पांडे नया"
+    ],
+    "223. आलोट अजा": [
+      "आलोट",
+      "ताल",
+      "बडावदा",
+      "श्रीमंत राजमाता विजयाराजे सिंधिया",
+      "जोगणिया माता"
+    ]
+  },
+  "मंदसौर": {
+    "224. मंदसौर": [
+      "मंदसौर ग्रामीण",
+      "मंदसौर दक्षिण",
+      "दलौदा",
+      "मंदसौर उत्तर",
+      "मगरा माताजी  नया"
+    ],
+    "225. मल्हारगढ़ अजा": [
+      "मल्हारगढ़",
+      "बूढा बुरहानपुर",
+      "घुन्धडका",
+      "पिपल्यामण्डी",
+      "गुर्जर बर्ड़िया नया"
+    ],
+    "226. सुवासरा": [
+      "सुवासरा",
+      "सीतामउ नगर",
+      "सीतामउ ग्रामीण",
+      "कयामपुर",
+      "शामगढ़",
+      "बसई नया"
+    ],
+    "227. गरोठ": [
+      "गरोठ",
+      "भानपुरा",
+      "मेलखेडा",
+      "भैसोदा",
+      "खडावदा"
+    ]
+  },
+  "नीमच": {
+    "228. मनासा": [
+      "श्यामाप्रसाद मुखर्जी (मनासा नगर)",
+      "पं. दीनदयाल  (मनासा ग्रामीण)",
+      "कुकडेश्वर",
+      "रामपुरा",
+      "कुशाभाऊ ठाकरे (मनासा) नया"
+    ],
+    "229. नीमच": [
+      "पं. दीनदयाल (नीमच सिटी)",
+      "भादवामाता",
+      "नीमच उत्तर",
+      "नीमच दक्षिण",
+      "श्यामाप्रसाद मुखर्जी (बघाना)",
+      "कुशाभाऊ ठाकरे (नीमच) नया"
+    ],
+    "230. जावद": [
+      "जावद",
+      "मोरवन",
+      "रतनगढ",
+      "सिगोली"
+    ]
+  }
+};
+    // ===============================
+// LOCATION HELPERS (district -> vidhansabha -> mandal)
+// ===============================
+  // ==== District / Assembly / Mandal data (MP) ====
+  // NOTE: This dataset comes from your existing dropdown file. If you later replace it with Unicode dataset,
+  // just update DISTRICT_DATA below — rest of the code will remain same.
 
-  grid.innerHTML = "";
+function initDistrictCascade() {
+  const dEl = $("district");
+  const vEl = $("vidhansabha");
+  const mEl = $("mandal");
+  if (!dEl || !vEl || !mEl) return;
 
-  const addCard = (ft, eff) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "text-left rounded-2xl overflow-hidden border " + (ft === state.target
-      ? "border-white/25 bg-white/10"
-      : "border-white/10 bg-white/5 hover:bg-white/10");
+  // Populate Districts
+  dEl.innerHTML = '<option value="">— जिला चुनें —</option>';
+  Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach((d) => {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    dEl.appendChild(opt);
+  });
 
-    const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-    const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
+  dEl.addEventListener("change", () => {
+    const dVal = dEl.value;
+    vEl.innerHTML = '<option value="">— विधानसभा चुनें —</option>';
+    mEl.innerHTML = '<option value="">— पहले विधानसभा चुनें —</option>';
+    vEl.disabled = !dVal;
+    mEl.disabled = true;
 
-    const headerEl = header
-      ? `<img src="${escHtml(header)}" class="w-full h-24 object-cover" />`
-      : `<div class="w-full h-24" style="background:linear-gradient(135deg,${escHtml(eff.color1)},${escHtml(eff.color2)})"></div>`;
+    if (dVal && DISTRICT_DATA[dVal]) {
+      Object.keys(DISTRICT_DATA[dVal]).sort((a,b)=>a.localeCompare(b,"hi")).forEach((v) => {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        vEl.appendChild(opt);
+      });
+    }
+  });
 
-    const logoEl = logo
-      ? `<img src="${escHtml(logo)}" class="w-10 h-10 rounded-xl object-cover border border-white/25 bg-slate-900" />`
-      : `<div class="w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-extrabold border border-white/15 bg-slate-900 text-slate-400">LOGO</div>`;
+  vEl.addEventListener("change", () => {
+    const dVal = dEl.value;
+    const vVal = vEl.value;
+    mEl.innerHTML = '<option value="">— मंडल चुनें —</option>';
+    mEl.disabled = !vVal;
 
-    btn.innerHTML = `
-      ${headerEl}
-      <div class="p-3">
-        <div class="flex items-start gap-3">
-          ${logoEl}
-          <div class="min-w-0">
-            <div class="font-bold text-slate-100 truncate">${escHtml(eff.title || ft)}</div>
-            <div class="text-xs text-slate-400 truncate">${escHtml(eff.subtitle || ft)}</div>
-          </div>
-        </div>
-        <div class="mt-3">
-          <div class="h-2 rounded-full" style="background:linear-gradient(90deg,${escHtml(eff.color1)},${escHtml(eff.color2)})"></div>
-        </div>
-      </div>
-    `;
-
-    btn.addEventListener("click", () => {
-      state.target = ft;
-      const sel = $("targetFormSel");
-      if(sel) sel.value = ft;
-      renderAll();
-      renderFormPreviewIframe();
-      renderBrandPreview();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-
-    grid.appendChild(btn);
-  };
-
-  // Defaults card
-  addCard("__defaults__", getEffectiveForm("__defaults__"));
-
-  keys.forEach(ft => addCard(ft, getEffectiveForm(ft)));
+    if (dVal && vVal && DISTRICT_DATA[dVal] && DISTRICT_DATA[dVal][vVal]) {
+      DISTRICT_DATA[dVal][vVal].slice().sort((a,b)=>a.localeCompare(b,"hi")).forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        mEl.appendChild(opt);
+      });
+    }
+  });
 }
 
-function setPending(kind, file, uiKey) {
-    uiKey = uiKey || kind;
+function applyLocationAutofill(info) {
+  // info: {district, vidhansabha, mandal}
+  if (!info) return;
+  const d = safeStr(info.district).trim();
+  const v = safeStr(info.vidhansabha).trim();
+  const m = safeStr(info.mandal).trim();
 
-    // Ensure container exists
-    if (!state.pendingAssets) state.pendingAssets = {};
-    if (!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
-
-    const nameEl = $(`name_${uiKey}`);
-    const prevImg = $(`prev_${uiKey}`);
-    const iconEl = $(`icon_${uiKey}`);
-
-    // Clear
-    if (!file) {
-      try {
-        if (state.pendingAssets[state.target]?.[kind]?.previewUrl) {
-          URL.revokeObjectURL(state.pendingAssets[state.target][kind].previewUrl);
-        }
-      } catch(e){}
-      if (state.pendingAssets[state.target]) delete state.pendingAssets[state.target][kind];
-
-      if (nameEl) nameEl.textContent = "No file selected";
-      if (prevImg) { prevImg.src = ""; prevImg.classList.add("hidden"); }
-      if (iconEl) iconEl.classList.remove("hidden");
-
-      renderBrandPreview();
-      renderFormPreviewIframe();
-      return;
-    }
-
-    // Set
-    const previewUrl = URL.createObjectURL(file);
-    state.pendingAssets[state.target][kind] = { file, previewUrl };
-
-    if (nameEl) nameEl.textContent = file.name;
-
-    // Immediate preview in thumbnail
-    if (prevImg) {
-      prevImg.src = previewUrl;
-      prevImg.classList.remove('hidden');
-    }
-    if (iconEl) iconEl.classList.add('hidden');
-
-    renderBrandPreview();
-    renderFormPreviewIframe();
-  }
-
-// --- API Calls (Restored Robust Logic) (Restored Robust Logic) ---
-  async function apiCall(action, payload){
-    const token = (getIdToken() || "").trim();
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    let resp;
-    try{
-      resp = await fetch(FORMS_URL, {
-        method: "POST",
-        cache: "no-store",
-        headers,
-        body: JSON.stringify({ action, payload })
-      });
-    }catch(e){
-      throw new Error("Network error calling API. Check internet / CORS.");
-    }
-
-    if (resp.status === 401) {
-      openAuthModal();
-      throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
-    }
-
-    const txt = await resp.text();
-    let json = {};
-    try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
-
-    if (!resp.ok) throw new Error(json.message || json.error || `HTTP ${resp.status}`);
-    return json;
-  }
-
-  
-  async function apiCallCandidates(actions, payload){
-    let lastErr = null;
-    for (const a of actions){
-      try { return await apiCall(a, payload); } catch(e){ lastErr = e; }
-    }
-    throw lastErr || new Error("API call failed");
-  }
-
-  function guessMimeFromName(name){
-    const n = (name || "").toLowerCase();
-    if (n.endsWith(".png")) return "image/png";
-    if (n.endsWith(".webp")) return "image/webp";
-    if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
-    return "";
-  }
-
-  async function initAssetUpload(assetKind, ft, file){
-    const mime = (file && file.type) ? file.type : (guessMimeFromName(file?.name) || "image/jpeg");
-    const fileName = `${crypto.randomUUID()}.${extFromMime(mime)}`;
-    const payload = {
-      collection_id: state.cid,
-      form_type: ft === "__defaults__" ? "visitor_form" : ft,
-      asset_kind: assetKind,
-      file_name: fileName,
-      mime_type: mime
-    };
-
-    const res = await apiCallCandidates(["admin_init_asset_upload","admin_get_upload_url","admin_upload_init"], payload);
-    const uploadUrl = res.upload_url || res.url;
-    if (!uploadUrl) throw new Error("Upload URL missing from backend");
-
-    let putResp;
-    try{
-      putResp = await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": mime } });
-    } catch(e){
-      throw new Error("S3 upload blocked (CORS). S3 bucket CORS में PUT allow करो.");
-    }
-
-    if (!putResp.ok){
-      let t = "";
-      try{ t = await putResp.text(); }catch(e){}
-      throw new Error(`S3 upload failed: HTTP ${putResp.status} ${t ? ("- " + t.slice(0,120)) : ""}`);
-    }
-
-    const previewUrl = res.preview_url || res.public_url || res.asset_url || res.url_public || "";
-    const key = res.s3_key || res.asset_key || res.key || "";
-    if (!key) throw new Error("S3 key missing from backend");
-    return { kind: "s3", key, previewUrl };
-  }
-
-  async function saveConfig() {
-    if(!state.cid) { showToast("CID missing","error"); return; }
-    if(!state.config) { showToast("Config not loaded","error"); return; }
-
-    const btn = $("btnSave");
-    const toast = showToast("Saving...","info",0);
-    if(btn){ btn.disabled = true; btn.textContent = "Saving..."; }
-
-    try {
-      const ft = state.target || "visitor_form";
-
-      // Users expect Title/Sub/Tagline to change the actual form heading.
-      const meta = {
-        title: ($("b_title")?.value || "").trim(),
-        subtitle: ($("b_subtitle")?.value || "").trim(),
-        tagline: ($("b_tagline")?.value || "").trim(),
-      };
-
-      const brand = collectBrandFromUI();
-
-      // Apply local changes into state.config
-      state.config.defaults = state.config.defaults || {};
-      state.config.defaults.branding = state.config.defaults.branding || {};
-      state.config.forms = state.config.forms || {};
-
-      if(ft === "__defaults__") {
-        state.config.defaults.branding = deepMerge(state.config.defaults.branding, brand);
-        if(meta.title) state.config.defaults.branding.title = meta.title;
-        if(meta.subtitle) state.config.defaults.branding.subtitle = meta.subtitle;
-        if(meta.tagline) state.config.defaults.branding.tagline = meta.tagline;
-
-        state.config.global = state.config.global || {};
-        if(meta.tagline) state.config.global.tagline = meta.tagline;
-      } else {
-        const f = state.config.forms[ft] || (state.config.forms[ft] = {});
-        f.title = meta.title || f.title || "";
-        f.subtitle = meta.subtitle || f.subtitle || "";
-        f.tagline = meta.tagline || f.tagline || "";
-
-        f.branding = deepMerge(f.branding || {}, brand);
-
-        const pending = (state.pendingAssets?.[ft] || {});
-        // Upload any pending asset files now (so backend gets NEW keys)
-        for (const kind of ["logo","header","background"]) {
-          if (pending[kind]?.file && !pending[kind]?.key) {
-            const up = await initAssetUpload(kind, ft, pending[kind].file);
-            if (up && up.key) {
-              pending[kind].key = up.key;
-              if (up.previewUrl) {
-                pending[kind].previewUrl = up.previewUrl;
-                // show immediately in admin preview
-                if (kind === "logo") f.logo_url = up.previewUrl;
-                if (kind === "header") f.header_url = up.previewUrl;
-                if (kind === "background") f.background_url = up.previewUrl;
-              }
-            }
-          }
-        }
-
-        if(pending.logo?.key) f.logo_key = pending.logo.key;
-        if(pending.header?.key) f.header_key = pending.header.key;
-        if(pending.background?.key) f.background_key = pending.background.key;
+  if (d && $("district")) {
+    $("district").value = d;
+    $("district").dispatchEvent(new Event("change"));
+    setTimeout(() => {
+      if (v && $("vidhansabha")) {
+        $("vidhansabha").value = v;
+        $("vidhansabha").dispatchEvent(new Event("change"));
+        setTimeout(() => {
+          if (m && $("mandal")) $("mandal").value = m;
+        }, 120);
       }
+    }, 120);
+  }
+}
+    // ===============================
+// LEVEL (optional fixed)
+// ===============================
+const LEVELS = ["district","vidhansabha","mandal"];
 
-      // Save to backend (political module)
-      await apiCall("admin_save_config", {
-          collection_id: state.cid,
-          config_type: "political_forms",
-          config: state.config
-        });
+function setLocationVisibility(level) {
+  const dWrap = $("wrap-district");
+  const vWrap = $("wrap-vidhansabha");
+  const mWrap = $("wrap-mandal");
+  if (!dWrap || !vWrap || !mWrap) return;
 
-      toast.remove?.();
-      showToast("Saved","success");
-      // Reload from backend to confirm persisted + refresh signed URLs
-      await loadConfig({ allowFallback: false, silent: true });
-      // Clear pending for this form (uploaded already)
-      if(state.pendingAssets?.[ft]) delete state.pendingAssets[ft];
+  // default show all
+  dWrap.classList.remove("hidden");
+  vWrap.classList.remove("hidden");
+  mWrap.classList.remove("hidden");
 
-      // Update local cache + notify open form tabs to refresh branding
-      try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(state.config)); }catch(e){}
-      try{ localStorage.setItem(`EL_BRAND_PING_${state.cid}`, String(Date.now())); }catch(e){}
+  if (level === "district") {
+    vWrap.classList.add("hidden");
+    mWrap.classList.add("hidden");
+  } else if (level === "vidhansabha") {
+    mWrap.classList.add("hidden");
+  }
+}
 
-      // Note: we do not auto-reload from backend here (prevents preview reverting to older cached config).
-      // If you need fresh signed URLs later, use "Refresh Signed URLs".
+function initLevelControl(cfg, formType) {
+  const levelEl = $("level");
+  if (!levelEl) return;
 
-    } catch(e) {
-      console.error("Save failed:", e);
-      toast.remove?.();
-      showToast("Save failed: " + (e?.message || e),"error");
-    } finally {
-      if(btn){ btn.disabled = false; btn.textContent = "Save Config"; }
-      state.cacheBust = Date.now();
-      renderBrandInputsFromConfig();
-      renderAll();
-      renderFormPreviewIframe();
-    }
+  // decide fixed: url param > config fixed > none
+  const fixedFromCfg = getFixedLevel(cfg, formType);
+  const fixed = (LEVELS.includes(levelParam) ? levelParam : "") || (LEVELS.includes(fixedFromCfg) ? fixedFromCfg : "");
+
+  if (fixed) {
+    levelEl.value = fixed;
+    levelEl.disabled = true;
+    if ($("level-note")) $("level-note").textContent = `Level locked: ${fixed}`;
+  } else {
+    levelEl.disabled = false;
+    if ($("level-note")) $("level-note").textContent = "Level: आप बदल सकते हैं";
   }
 
-  async function loadConfig(opts = {}) {
-     state.cid = normalizeCid(state.cid);
-     $('cidInput').value = state.cid;
-     const allowFallback = (opts.allowFallback !== false);
-     const silent = !!opts.silent;
+  setLocationVisibility(levelEl.value);
 
-     if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
-     $('cidPill').classList.remove('hidden');
-     $('cidVal').textContent = state.cid;
-
-     const t = silent ? null : showToast("Loading configuration...", "loading");
-     let cfg = null;
-
-     try {
-        // Ask backend for latest config; use current target as form_type so shortcut `form` matches.
-        const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
-            collection_id: state.cid,
-            form_type: (state.target && state.target !== "__defaults__") ? state.target : "visitor_form"
-        });
-        cfg = res.config || res.data || res.item || null;
-     } catch(e) {
-        console.error('admin_get_config failed', e);
-     }
-
-     // Fallback to local cache ONLY when allowed (otherwise keep current state.config to avoid reverting after save)
-     if (!cfg && allowFallback){
-        const local = localStorage.getItem(`EL_CFG_${state.cid}`);
-        if(local) {
-          try{ cfg = JSON.parse(local); } catch(e){}
-        }
-     }
-
-     if (cfg){
-        state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
-        try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(cfg)); }catch(e){}
-     }
-
-     if(t) t.remove?.();
-     renderAll();
-     renderBrandInputsFromConfig();
-     renderFormPreviewIframe();
+  levelEl.addEventListener("change", () => {
+    setLocationVisibility(levelEl.value);
+  });
+}
+    // ===============================
+// COORDINATOR FORM (NO PHOTO)
+  function normalizePhone(v){
+    const s = String(v||'').replace(/\D/g,'').slice(0,10);
+    return s;
   }
 
-  // --- Rendering & Logic ---
-
-  function renderAll() {
-     renderBrandPreview();
-     renderPrograms();
-     renderLevels();
-  }
-
-  function renderPrograms() {
-     const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
-     const scope = $('progScopeSel').value;
-     let list = [];
-     
-     if(scope === 'defaults') list = state.config.defaults.programs || [];
-     else {
-        // Per-form: prefer program_options if present, else programs, else fallback to defaults
-        const node = state.config.forms[ft] || {};
-        const specific =
-          (Array.isArray(node.program_options) && node.program_options.length ? node.program_options :
-           (Array.isArray(node.programs) && node.programs.length ? node.programs : null));
-        list = specific || state.config.defaults.programs || [];
-     }
-
-     const container = $('progList');
-     container.innerHTML = '';
-     list.forEach((p, idx) => {
-        const el = document.createElement('div');
-        el.className = "flex items-center justify-between bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2";
-        el.innerHTML = `<span class="text-sm font-medium text-slate-300 truncate">${p}</span> 
-                        <button class="text-slate-500 hover:text-red-400 p-1" onclick="deleteProg(${idx})"><i class="fa-solid fa-trash"></i></button>`;
-        container.appendChild(el);
-     });
-     
-     window.deleteProg = (idx) => {
-         const newList = [...list];
-         newList.splice(idx, 1);
-         if(scope === 'defaults') state.config.defaults.programs = newList;
-         else {
-             ensureFormObj(ft);
-             state.config.forms[ft].programs = newList;
-             state.config.forms[ft].program_options = newList;
-         }
-         renderPrograms();
-     };
-  }
-  
-  function renderLevels() {
-      const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
-      const src = (ft === "__defaults__") ? state.config.defaults.fixed_levels : (state.config.forms[ft]?.fixed_levels || state.config.defaults.fixed_levels);
-      
-      $('lvl_mandal_reporting').value = src?.mandal_reporting || "";
-      $('lvl_coordinator').value = src?.coordinator || "";
-      $('lvl_program_info').value = src?.program_info || "";
-  }
-
-  // --- Data Loading (Restored Real Logic) ---
-  function normalizeItem(it){
-    const payload = it.payload || it.data || it.fields || {};
-    const createdAt = it.created_at || it.createdAt || it.ts || 0;
-    const ft = it.form_type || it.formType || payload.form_type || "";
+  function collectPayload(){
     return {
-      entry_id: it.entry_id || it.id || "",
-      created_at: createdAt,
-      form_type: ft,
-      payload,
-      mobile: payload.mobile || payload.phone || "",
-      name: payload.name || payload.full_name || "",
-      district: payload.district || "",
-      program_name: payload.program_name || payload.program || payload.karyakram || ""
+      level: byId('level').value || '',
+      program_name: (byId('program_name').value || '').trim(),
+      district: byId('district').value || '',
+      vidhansabha: byId('vidhansabha').value || '',
+      mandal: byId('mandal').value || '',
+      coordinator_name: (byId('coordinator_name').value || '').trim(),
+      coordinator_mobile: normalizePhone(byId('coordinator_mobile').value),
+      assistant_1_name: (byId('assistant_1_name').value || '').trim(),
+      assistant_1_mobile: normalizePhone(byId('assistant_1_mobile').value),
+      assistant_2_name: (byId('assistant_2_name').value || '').trim(),
+      assistant_2_mobile: normalizePhone(byId('assistant_2_mobile').value),
     };
   }
-  function dateKeyFromMs(ms){
-    if (!ms) return "";
-    const x = new Date(Number(ms));
-    return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
-  }
 
-  async function loadData(direction="fresh") {
-     if(!state.cid) return showToast("CID Required", "error");
-     const t = showToast("Fetching records...", "loading");
-     
-     let next_token = null;
-     if (direction === "next") next_token = state.nextToken || null;
-     if (direction === "prev"){ const prev = state.prevStack.pop() || null; next_token = prev; }
+  async function submitNoPhoto(){
+    const payload = collectPayload();
 
-     const payload = {
-       collection_id: state.cid,
-       form_type: $('dataFormSel').value,
-       filters: { q: ($('dataSearch').value||"").trim(), date_from: $('dateFrom').value||"", date_to: $('dateTo').value||"" },
-       limit: 200,
-       next_token
-     };
+    // basic validation
+    if(!payload.level || !payload.program_name || !payload.district || !payload.vidhansabha || !payload.mandal || !payload.coordinator_name || !payload.coordinator_mobile){
+      throw new Error('कृपया सभी * वाले फ़ील्ड भरें।');
+    }
+    if(payload.coordinator_mobile.length !== 10){
+      throw new Error('मोबाइल नंबर 10 digit होना चाहिए।');
+    }
 
-     let res = null;
-     try{
-       res = await apiCallCandidates(["admin_list_entries","admin_query_entries","list_entries_admin","admin_list_data"], payload);
-       state.allItems = (res.items || res.data || res.rows || []).map(normalizeItem);
-       state.nextToken = res.next_token || res.nextToken || null;
-       try{ localStorage.setItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`, JSON.stringify(state.allItems)); }catch(_){}
-       t.remove(); showToast(`Loaded ${state.allItems.length} items`, "success");
-     } catch(e){
-        // Cache fallback
-        try{
-            const raw = localStorage.getItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`);
-            if(raw){ state.allItems = JSON.parse(raw).map(normalizeItem); t.remove(); showToast("Loaded from cache (Offline)", "info"); }
-            else { t.remove(); showToast("Failed to load data", "error"); }
-        }catch(_){ t.remove(); showToast("Failed to load data", "error"); }
-     }
-     
-     state.viewItems = state.allItems;
-     populateFilterOptions();
-     applyClientFilters();
-  }
+    // keep same backend flow: public_create_entry -> (optional) public_finalize_entry
+    const createRes = await apiCall('/political/public/forms', {
+      action: 'public_create_entry',
+      form_type: 'coordinator_form',
+      no_photo: true,
+      payload
+    });
 
-  
-  function getVal(obj, paths){
-     for(const p of paths){
-        const parts = p.split('.');
-        let cur = obj;
-        let ok = true;
-        for(const part of parts){
-           if(cur && Object.prototype.hasOwnProperty.call(cur, part)) cur = cur[part];
-           else { ok = false; break; }
-        }
-        if(ok && cur !== undefined && cur !== null && String(cur).trim() !== "") return cur;
-     }
-     return "";
-  }
-
-  function populateFilterOptions(){
-     const items = state.allItems || [];
-     const dSet = new Set(), aSet = new Set(), mSet = new Set(), pSet = new Set();
-     items.forEach(it=>{
-        const pl = it.payload || it;
-        const d = getVal(pl, ["district","jila","जिला"]);
-        const a = getVal(pl, ["vidhansabha","assembly","विधानसभा"]);
-        const m = getVal(pl, ["mandal","मंडल"]);
-        const pr = getVal(pl, ["program_name","program","कार्यक्रम","कार्यक्रम_नाम"]);
-        if(d) dSet.add(d);
-        if(a) aSet.add(a);
-        if(m) mSet.add(m);
-        if(pr) pSet.add(pr);
-     });
-
-     function fill(selId, set){
-        const sel = $(selId);
-        if(!sel) return;
-        const cur = sel.value;
-        const first = sel.options[0]; // keep "All"
-        sel.innerHTML = "";
-        sel.appendChild(first);
-        Array.from(set).sort((x,y)=>String(x).localeCompare(String(y), 'hi')).forEach(v=>{
-           const opt = document.createElement('option');
-           opt.value = v;
-           opt.textContent = v;
-           sel.appendChild(opt);
-        });
-        sel.value = cur || "";
-     }
-     fill("filterDistrict", dSet);
-     fill("filterAssembly", aSet);
-     fill("filterMandal", mSet);
-     fill("filterProgram", pSet);
-  }
-
-  function applyClientFilters(){
-     const ftSel = $('filterFormType');
-     const d = ($('filterDistrict')?.value || "").trim();
-     const a = ($('filterAssembly')?.value || "").trim();
-     const m = ($('filterMandal')?.value || "").trim();
-     const pr = ($('filterProgram')?.value || "").trim();
-     const ft = ftSel ? ftSel.value : "__all__";
-
-     const from = $('dateFrom')?.value ? new Date($('dateFrom').value + "T00:00:00") : null;
-     const to = $('dateTo')?.value ? new Date($('dateTo').value + "T23:59:59") : null;
-
-     const out = (state.allItems || []).filter(it=>{
-        if(ft && ft !== "__all__" && it.form_type !== ft) return false;
-        const pl = it.payload || it;
-        const dd = getVal(pl, ["district","jila","जिला"]);
-        const aa = getVal(pl, ["vidhansabha","assembly","विधानसभा"]);
-        const mm = getVal(pl, ["mandal","मंडल"]);
-        const pp = getVal(pl, ["program_name","program","कार्यक्रम","कार्यक्रम_नाम"]);
-
-        if(d && dd !== d) return false;
-        if(a && aa !== a) return false;
-        if(m && mm !== m) return false;
-        if(pr && pp !== pr) return false;
-
-        if(from || to){
-          const t = new Date(it.created_at);
-          if(from && t < from) return false;
-          if(to && t > to) return false;
-        }
-        return true;
-     });
-
-     state.viewItems = out;
-     renderTable();
-     updateStats();
-  }
-function renderTable() {
-      const tbody = $('dataTbody');
-      tbody.innerHTML = '';
-      $('loadedCount').textContent = state.viewItems.length;
-
-      state.viewItems.slice(0, 50).forEach(item => {
-          const row = document.createElement('tr');
-          row.className = "hover:bg-slate-800/30 transition-colors border-b border-slate-800/50";
-          row.innerHTML = `
-             <td class="px-4 py-3 text-slate-400 font-mono text-xs">${new Date(item.created_at).toLocaleDateString()}</td>
-             <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 border border-slate-700 text-slate-300">${item.form_type}</span></td>
-             <td class="px-4 py-3 text-white font-mono text-xs">${item.payload.mobile || '-'}</td>
-             <td class="px-4 py-3 text-white font-medium">${item.payload.name || '-'}</td>
-             <td class="px-4 py-3 text-slate-400">${item.payload.district || '-'}</td>
-             <td class="px-4 py-3">
-                <button class="text-orange-500 hover:text-orange-400 text-xs font-bold" onclick='openModal(${JSON.stringify(item)})'>View</button>
-             </td>
-          `;
-          tbody.appendChild(row);
+    // some lambdas may still return finalize_token; safe to call finalize.
+    if(createRes && createRes.finalize_token){
+      await apiCall('/political/public/forms', {
+        action: 'public_finalize_entry',
+        finalize_token: createRes.finalize_token
       });
+    }
+
+    return createRes;
   }
 
-  function updateStats() {
-      $('kpiTotal').textContent = state.allItems.length;
-      $('kpiUnique').textContent = new Set(state.allItems.map(i => i.payload.mobile)).size;
-      buildCharts();
-  }
+  f.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    setMsg('');
+    setLoading(true);
 
-  window.openModal = (item) => {
-      $('modal').classList.remove('hidden');
-      $('modal').classList.add('flex');
-      $('modalJson').textContent = JSON.stringify(item, null, 2);
-  };
-  $('btnCloseModal').onclick = () => { $('modal').classList.add('hidden'); $('modal').classList.remove('flex'); };
-  $('modalBackdrop').onclick = $('btnCloseModal').onclick;
-
-  // Auth Button Handlers
-  $('btnAuth').onclick = openAuthModal;
-  $('btnCancelAuth').onclick = () => { $('authModal').classList.remove('flex'); $('authModal').classList.add('hidden'); };
-  $('btnSaveAuth').onclick = () => {
-      const t = $('authTokenInput').value.trim();
-      if(t) {
-          localStorage.setItem("id_token", t);
-          showToast("Token updated! Reloading...", "success");
-          setTimeout(() => location.reload(), 800);
-      }
-  };
-
-  // --- Charts ---
-  function buildCharts() {
-     const items = state.viewItems.length ? state.viewItems : state.allItems;
-
-     const byForm = {}; items.forEach(x=>{ const k=x.form_type||"unknown"; byForm[k]=(byForm[k]||0)+1; });
-     const formLabels = Object.keys(byForm); const formVals = formLabels.map(k=>byForm[k]);
-
-     const dayMap = {}; items.forEach(x=>{ const k=dateKeyFromMs(x.created_at); if(!k) return; dayMap[k]=(dayMap[k]||0)+1; });
-     const days = Object.keys(dayMap).sort(); const last14 = days.slice(-14); const dayVals = last14.map(k=>dayMap[k]);
-
-     const dist = {}; items.forEach(x=>{ const k=(x.district||"").trim()||"Unknown"; dist[k]=(dist[k]||0)+1; });
-     const distPairs = Object.entries(dist).sort((a,b)=>b[1]-a[1]).slice(0,10);
-     const distLabels = distPairs.map(p=>p[0]); const distVals = distPairs.map(p=>p[1]);
-
-     if(state.charts.byDay) state.charts.byDay.destroy();
-     if(state.charts.byForm) state.charts.byForm.destroy();
-     if(state.charts.district) state.charts.district.destroy();
-
-     const common = { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false} }, scales: { x: { display: false }, y: { display: false } } };
-
-     state.charts.byDay = new Chart($('chartByDay'), { type: 'line', data: { labels: last14, datasets: [{ data: dayVals, borderColor: '#f97316', tension: 0.4 }] }, options: common });
-     state.charts.byForm = new Chart($('chartByForm'), { type: 'bar', data: { labels: formLabels, datasets: [{ data: formVals, backgroundColor: '#3b82f6' }] }, options: common });
-     state.charts.district = new Chart($('chartDistrict'), { type: 'bar', data: { labels: distLabels, datasets: [{ data: distVals, backgroundColor: '#a855f7' }] }, options: common });
-  }
-
-  // --- Event Listeners ---
-  $('btnSave').onclick = saveConfig;
-
-  // Preview controls
-  if($('btnLoadFormPreview')) $('btnLoadFormPreview').onclick = () => { state.cacheBust = Date.now(); renderBrandPreview(); renderFormPreviewIframe(); };
-  if($('btnOpenFormPreview')) $('btnOpenFormPreview').onclick = () => { state.cacheBust = Date.now(); openCurrentPreviewInNewTab(); };
-  if($('btnRefreshSignedUrls')) $('btnRefreshSignedUrls').onclick = () => { state.cacheBust = Date.now(); loadConfig(); };
-  $('btnReload').onclick = loadConfig;
-  $('btnApplyCid').onclick = () => { setCid($('cidInput').value); loadConfig(); renderFormPreviewIframe(); };
-  
-  // Tab Switching
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn.onclick = () => {
-          document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-          $(`tab-${btn.dataset.tab}`).classList.remove('hidden');
-      };
+    try{
+      const r = await submitNoPhoto();
+      setMsg('✅ सबमिट हो गया। Entry ID: ' + (r.entry_id || ''), 'ok');
+      f.reset();
+      // repopulate district dropdown (reset clears options)
+      try{ initDistrictCascade(); }catch(_e){}
+    }catch(err){
+      setMsg('❌ ' + (err?.message || 'Error'), 'err');
+      console.error(err);
+    }finally{
+      setLoading(false);
+    }
   });
 
-  // Target Change
-  $('targetFormSel').onchange = () => {
-      state.target = $('targetFormSel').value;
-      renderBrandInputsFromConfig();
-      renderAll();
-      renderFormPreviewIframe();
-  };
-  // Client-side filters (no backend change)
-  ['filterDistrict','filterAssembly','filterMandal','filterProgram'].forEach(id=>{
-     const el = $(id);
-     if(el) el.onchange = applyClientFilters;
-  });
-  { const el = $('filterFormType'); if(el) el.onchange = applyClientFilters; }
+// ---- AUTO BOOT (added) ----
+async function bootPage(){
+  try{
+    initDistrictCascade();
+  }catch(e){ console.log("boot initDistrictCascade error", e); }
+  try{
+    const cfg = await loadRemoteConfig(FORM_TYPE);
+    if(cfg){
+      try{ applyBrandingFromResponse(cfg); }catch(e){ console.log("boot applyBranding error", e); }
+      try{ fillProgramNamesFromResponse(cfg); }catch(e){ console.log("boot fillProgramNames error", e); }
+    }
+  }catch(e){ console.log("boot loadRemoteConfig error", e); }
+}
+document.addEventListener("DOMContentLoaded", bootPage);
+// ---- END AUTO BOOT ----
 
-
-  // Asset Inputs
-
-  // --- Image Fit / Crop (Client-side, does NOT change backend logic) ---
-  let __cropper = null;
-  let __cropCtx = null; // { kind, uiKey, fileName, mime }
-  function openCropperModal(kind, file, uiKey){
-     uiKey = uiKey || kind;
-     if(!file) return;
-     const modal = $('cropModal');
-     const img = $('cropImage');
-     const hint = $('cropHint');
-
-     // Decide preset
-     const preset = {
-       logo: { aspect: 1, outW: 512, outH: 512, mime: "image/png", quality: 0.92, hint: "Logo: square crop (drag + zoom)" },
-       header: { aspect: 16/5, outW: 1600, outH: 500, mime: "image/jpeg", quality: 0.9, hint: "Header: wide crop (drag + zoom)" },
-       background: { aspect: 16/9, outW: 1920, outH: 1080, mime: "image/jpeg", quality: 0.88, hint: "Background: 16:9 crop (drag + zoom)" },
-     }[kind] || { aspect: NaN, outW: 1400, outH: 800, mime: "image/jpeg", quality: 0.9, hint: "Drag + zoom" };
-
-     hint.textContent = preset.hint;
-
-     // Build image URL
-     const url = URL.createObjectURL(file);
-     img.src = url;
-     __cropCtx = { kind, uiKey, fileName: file.name || (kind + ".jpg"), preset };
-
-     modal.classList.remove("hidden");
-
-     // Initialize cropper after image load
-     img.onload = () => {
-        try{ if(__cropper){ __cropper.destroy(); __cropper = null; } }catch(_){}
-        const aspectSel = $('cropAspect');
-        aspectSel.value = "preset";
-        __cropper = new Cropper(img, {
-           viewMode: 1,
-           dragMode: "move",
-           autoCropArea: 1,
-           movable: true,
-           zoomable: true,
-           scalable: false,
-           rotatable: false,
-           responsive: true,
-           background: false,
-           aspectRatio: preset.aspect,
-           checkOrientation: true,
-        });
-     };
-
-     // Close handlers
-     $('btnCropClose').onclick = closeCropperModal;
-     $('btnCropCancel').onclick = closeCropperModal;
-
-     // Tools
-     $('btnZoomIn').onclick = () => __cropper && __cropper.zoom(0.1);
-     $('btnZoomOut').onclick = () => __cropper && __cropper.zoom(-0.1);
-     $('btnMoveLeft').onclick = () => __cropper && __cropper.move(-10, 0);
-     $('btnMoveRight').onclick = () => __cropper && __cropper.move(10, 0);
-     $('btnMoveUp').onclick = () => __cropper && __cropper.move(0, -10);
-     $('btnMoveDown').onclick = () => __cropper && __cropper.move(0, 10);
-
-     // Aspect toggle
-     $('cropAspect').onchange = (e) => {
-        if(!__cropper) return;
-        const v = e.target.value;
-        if(v === "free") __cropper.setAspectRatio(NaN);
-        else __cropper.setAspectRatio(preset.aspect);
-     };
-
-     $('btnCropApply').onclick = async () => {
-        if(!__cropper || !__cropCtx) return;
-        const { preset } = __cropCtx;
-        const canvas = __cropper.getCroppedCanvas({ width: preset.outW, height: preset.outH, imageSmoothingEnabled: true, imageSmoothingQuality: "high" });
-        if(!canvas){ showToast("Crop failed", "error"); return; }
-
-        const blob = await new Promise(res => canvas.toBlob(res, preset.mime, preset.quality));
-        if(!blob){ showToast("Crop failed", "error"); return; }
-
-        // Create a new File so existing upload logic stays same
-        const safeName = (__cropCtx.fileName || (kind + ".jpg")).replace(/\s+/g,'_');
-        const newFile = new File([blob], safeName, { type: preset.mime });
-
-        // push into pending assets (existing logic)
-        setPending(kind, newFile, uiKey);
-
-        closeCropperModal();
-     };
-  }
-
-  function closeCropperModal(){
-     const modal = $('cropModal');
-     const img = $('cropImage');
-     try{ if(__cropper){ __cropper.destroy(); __cropper = null; } }catch(_){}
-     try{ if(img && img.src && img.src.startsWith("blob:")) URL.revokeObjectURL(img.src); }catch(_){}
-     if(modal) modal.classList.add("hidden");
-     __cropCtx = null;
-  }
-
-// UI keys: logo, header, bg
-// Backend keys: logo, header, background (IMPORTANT!)
-[
-  { ui: "logo", kind: "logo" },
-  { ui: "header", kind: "header" },
-  { ui: "bg", kind: "background" },
-].forEach(({ui, kind}) => {
-   const inp = $(`file_${ui}`);
-   if (inp){
-     inp.onchange = (e) => {
-       const f = e?.target?.files?.[0];
-       if (f) { openCropperModal(kind, f, ui); e.target.value=''; }
-     };
-   }
-
-   const clearBtn = document.querySelector(`[data-clear="${ui}"]`);
-   if(clearBtn) clearBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (inp) inp.value = "";
-      setPending(kind, null, ui);
-   };
-});
-
-  // Input Live Sync
-  ['input','change'].forEach(ev => {
-      $('b_title').addEventListener(ev, renderBrandPreview);
-      $('b_subtitle').addEventListener(ev, renderBrandPreview);
-      $('b_tagline').addEventListener(ev, renderBrandPreview);
-      $('b_c1').addEventListener(ev, renderBrandPreview);
-      $('b_c2').addEventListener(ev, renderBrandPreview);
-  });
-
-  $('btnAddProg').onclick = () => {
-      const v = $('progInput').value.trim();
-      if(!v) return;
-      const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
-      const scope = $('progScopeSel').value;
-      if(scope === 'defaults') {
-          state.config.defaults.programs = [v, ...(state.config.defaults.programs||[])];
-      } else {
-          ensureFormObj(ft);
-          const base = (state.config.forms[ft].program_options || state.config.forms[ft].programs || []);
-          const arr = [v, ...base];
-          state.config.forms[ft].program_options = arr;
-          state.config.forms[ft].programs = arr;
-      }
-      $('progInput').value = "";
-      renderPrograms();
-      showToast("Program Added", "success");
-  };
-
-  $('btnLoadData').onclick = () => loadData("fresh");
-  $('btnApplyFilter').onclick = async () => { await loadData("fresh"); populateFilterOptions(); applyClientFilters(); };
-  $('btnNextPage').onclick = () => loadData("next");
-  $('btnPrevPage').onclick = () => loadData("prev");
-  $('btnExportCsv').onclick = () => {
-     const rows = (state.viewItems || []).map(e => (e.payload || e));
-     if(!rows.length){ showToast("No rows to export", "info"); return; }
-     const colsSet = new Set();
-     rows.forEach(r => Object.keys(r||{}).forEach(k=>colsSet.add(k)));
-     const cols = Array.from(colsSet);
-
-     function esc(v){
-       const x = (v===undefined||v===null) ? "" : String(v).replace(/\r?\n/g, " ");
-       return '"' + x.replace(/"/g,'""') + '"';
-     }
-
-     const lines = [];
-     lines.push(cols.map(esc).join(","));
-     rows.forEach(r => {
-        lines.push(cols.map(k => esc(r[k])).join(","));
-     });
-
-     const csvContent = "data:text/csv;charset=utf-8," + lines.join("\n");
-     const encodedUri = encodeURI(csvContent);
-     const link = document.createElement("a");
-     link.setAttribute("href", encodedUri);
-     link.setAttribute("download", `data_${state.cid || "export"}_${Date.now()}.csv`);
-     document.body.appendChild(link);
-     link.click();
-     document.body.removeChild(link);
-  };
-
-  // Init
-  loadConfig();
-  renderFormPreviewIframe();
-
-})();
 </script>
 
-<!-- Cropper Modal -->
-<div id="cropModal" class="fixed inset-0 z-[9999] hidden">
-  <div class="absolute inset-0 bg-black/70"></div>
-  <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl glass-panel rounded-2xl border border-slate-700 overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
-        <div>
-          <div class="text-sm font-extrabold text-white">Image Fit / Crop</div>
-          <div id="cropHint" class="text-xs text-slate-400 mt-0.5">Drag to move • Scroll / pinch to zoom</div>
-        </div>
-        <button id="btnCropClose" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="p-4">
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div class="lg:col-span-4">
-            <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950/30">
-              <img id="cropImage" class="max-h-[62vh] w-full object-contain" />
-            </div>
-          </div>
-          <div class="lg:col-span-1 space-y-3">
-            <div class="text-xs font-bold text-slate-300 uppercase tracking-wider">Tools</div>
-            <div class="grid grid-cols-2 gap-2">
-              <button id="btnZoomIn" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">Zoom +</button>
-              <button id="btnZoomOut" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">Zoom −</button>
-              <button id="btnMoveLeft" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-left"></i></button>
-              <button id="btnMoveRight" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-right"></i></button>
-              <button id="btnMoveUp" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-up"></i></button>
-              <button id="btnMoveDown" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-down"></i></button>
-            </div>
-
-            <div class="mt-2">
-              <div class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Aspect</div>
-              <select id="cropAspect" class="input-field w-full rounded-xl px-3 py-2 text-sm">
-                <option value="preset">Preset</option>
-                <option value="free">Free</option>
-              </select>
-              <div class="text-[11px] text-slate-400 mt-1">Preset: Logo = Square • Header = Wide • BG = 16:9</div>
-            </div>
-
-            <div class="pt-2 border-t border-slate-800">
-              <button id="btnCropApply" class="w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold">Apply</button>
-              <button id="btnCropCancel" class="w-full mt-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold">Cancel</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-</body>
-</html>
+    </body>
+    </html>

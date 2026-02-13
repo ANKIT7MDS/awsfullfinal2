@@ -400,7 +400,7 @@ function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSub
   // Text
   const title = safeStr((resolvedForm && resolvedForm.title) || branding.title || fallbackTitle || "EventLens Form");
   const subtitle = safeStr((resolvedForm && resolvedForm.subtitle) || branding.subtitle || fallbackSubtitle || "");
-  const tagline = safeStr((resolvedForm && resolvedForm.tagline) || branding.tagline || fallbackTagline || "");
+  const tagline = safeStr((resolvedForm && resolvedForm.tagline) || branding.tagline || (resolvedGlobal && resolvedGlobal.tagline) || fallbackTagline || "");
 
   if ($("org-name")) $("org-name").textContent = title;
   if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
@@ -435,7 +435,7 @@ function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSub
   }
 
   // Cache busting (important when S3 URLs are cached)
-  const ver = safeStr(obj.updated_at_ms || (resolvedGlobal && resolvedGlobal.updated_at_ms) || Date.now());
+  const ver = safeStr(obj.updated_at_ms || (obj.settings && obj.settings.updated_at_ms) || (obj.config && obj.config.updated_at_ms) || (resolvedGlobal && resolvedGlobal.updated_at_ms) || Date.now());
   function bust(u) {
     const s = safeStr(u || "");
     if (!s) return "";

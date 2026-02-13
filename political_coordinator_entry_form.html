@@ -242,11 +242,15 @@ function showStatus(msg, isError) {
 }
 
 async function apiCall(action, payload) {
-  const path = "/political/forms";
+  // IMPORTANT:
+  // - When opened via token, page must call /political/public/forms (no auth)
+  // - Otherwise /political/forms can be used from dashboard (with auth)
+  const path = FORMS_PATH;
   const url = `${BASE_URL}${path}`;
   return fetch(url, {
     method: "POST",
     cache: "no-store",
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({ action, payload: payload || {} })
   }).then(async (res) => {
     const text = await res.text();

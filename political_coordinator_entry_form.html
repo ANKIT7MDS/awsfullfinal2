@@ -215,60 +215,9 @@ const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod
 
 
 const $ = (id) => document.getElementById(id);
-function setStatus(msg, kind) {
-  const el = $("status");
-  if (!el) return;
-  el.classList.remove("hidden");
-  el.textContent = msg || "";
-  // kind: "ok" | "warn" | "error"
-  el.className = "mt-4 text-center text-xs font-medium";
-  if (kind === "ok") el.classList.add("text-emerald-300");
-  else if (kind === "warn") el.classList.add("text-amber-300");
-  else el.classList.add("text-rose-300");
-}
 const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
 const token = (qs("token") || "").trim();
-
-function b64urlDecodeToString(b64url) {
-  try {
-    const pad = b64url.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = pad + "===".slice((pad.length + 3) % 4);
-    const bin = atob(padded);
-    // handle utf-8
-    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-    return new TextDecoder("utf-8").decode(bytes);
-  } catch (e) { return ""; }
-}
-
-function extractCidFromToken(tok) {
-  // Supports tokens like: <b64url(json)>.<sig> OR plain b64url(json)
-  try {
-    if (!tok) return "";
-    const part = tok.includes(".") ? tok.split(".")[0] : tok;
-    const s = b64urlDecodeToString(part);
-    if (!s) return "";
-    const obj = JSON.parse(s);
-    return (obj.cid || obj.collection_id || obj.collectionId || obj.id || "").toString().trim();
-  } catch (e) { return ""; }
-}
-
-function extractCidFromHash() {
-  // supports URLs like ...html#cid=xxxx or #/cid/xxxx
-  try {
-    const h = (window.location.hash || "").replace(/^#/, "");
-    if (!h) return "";
-    if (h.includes("cid=")) {
-      const sp = new URLSearchParams(h.startsWith("?") ? h.slice(1) : h);
-      return (sp.get("cid") || sp.get("collection_id") || "").trim();
-    }
-    const parts = h.split("/").filter(Boolean);
-    const idx = parts.findIndex(p => p.toLowerCase() === "cid" || p.toLowerCase() === "collection_id");
-    if (idx >= 0 && parts[idx+1]) return decodeURIComponent(parts[idx+1]).trim();
-  } catch (e) {}
-  return "";
-}
-
-const cidParam = (qs("cid") || qs("collection_id") || qs("id") || extractCidFromToken(token) || extractCidFromHash() || "").trim();
+const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
 const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
 const debug = (qs("debug") || "").trim() === "1";
 
@@ -333,19 +282,29 @@ function mergeObj(a, b) {
   return out;
 }
 
+
+function normalizeFormType(ft) {
+  const s = safeStr(ft || "").trim();
+  if (!s) return "";
+  const map = {
+    "coordinator": "coordinator_form",
+    "coordinator_entry": "coordinator_form",
+    "coordinator_entry_form": "coordinator_form",
+    "coordinator_form": "coordinator_form",
+    "visitor": "visitor_form",
+    "visitor_form": "visitor_form"
+  };
+  return map[s] || s;
+}
+
 // ===============================
 // BRANDING + PROGRAMS + FIXED LEVEL
 // ===============================
 async function loadRemoteConfig(formType) {
   try {
-    if (!cidParam) {
-      setStatus("❌ इस लिंक में cid/collection_id missing है। कृपया Admin Dashboard से link दुबारा generate करें (cid के साथ) या URL में ?cid=YOUR_COLLECTION_ID जोड़ें।", "error");
-      return null;
-    }
-
     const payload = isPublicMode()
-      ? { cid: cidParam, collection_id: cidParam, token, form_type: formType, _ts: Date.now() }
-      : { collection_id: cidParam, form_type: formType, _ts: Date.now() };
+      ? { cid: safeStr(cidParam).trim(), collection_id: safeStr(cidParam).trim(), token, form_type: normalizeFormType(formType), _ts: Date.now() }
+      : { collection_id: safeStr(cidParam).trim(), form_type: normalizeFormType(formType), _ts: Date.now() };
 
     const action = isPublicMode() ? "public_get_config" : "admin_get_config";
     const res = await apiCall(action, payload);
@@ -378,18 +337,29 @@ function getFormNode(resp, formType) {
 
   if (resp.form && typeof resp.form === "object") return resp.form;
 
-  const ft = formType || resp.form_type || FORM_TYPE;
+  const raw = formType || resp.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+  const ft = normalizeFormType(raw);
 
+  // Try exact key first
   if (resp.settings && resp.settings.forms && resp.settings.forms[ft]) return resp.settings.forms[ft];
   if (resp.config && resp.config.forms && resp.config.forms[ft]) return resp.config.forms[ft];
+
+  // Try common aliases / legacy keys
+  const aliases = [raw, raw && (raw + "_form"), raw && raw.replace(/_form$/, ""), ft && ft.replace(/_form$/, ""), ft && (ft + "_entry")].filter(Boolean);
+  for (const k of aliases) {
+    const nk = normalizeFormType(k);
+    if (resp.settings && resp.settings.forms && resp.settings.forms[nk]) return resp.settings.forms[nk];
+    if (resp.config && resp.config.forms && resp.config.forms[nk]) return resp.config.forms[nk];
+  }
 
   return null;
 }
 
 function pickBranding(resp, formNode) {
   const defaults = getDefaultsNode(resp) || {};
-  // form branding > defaults branding > empty
-  return (formNode && formNode.branding) || defaults.branding || {};
+  const globalNode = getGlobalNode(resp) || {};
+  // form branding > global branding > defaults branding > empty
+  return (formNode && formNode.branding) || (globalNode && globalNode.branding) || defaults.branding || {};
 }
 
 function pickAssetUrl(assetObj, fallbackUrl) {
@@ -429,59 +399,41 @@ function safeSetRootBg(url) {
   probe.src = url;
 }
 
-function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
-  const obj = cfgOrResp || {};
+function applyBrandingFromResponse(resp, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
+  if (!resp) return;
 
-  // Support both shapes:
-  // 1) {settings:{global,defaults,forms}, form:{...}}
-  // 2) {config:{global,defaults,forms}, form:{...}}
-  const defaultsNode = (obj.settings && obj.settings.defaults) || (obj.config && obj.config.defaults) || null;
-  const globalNode = (obj.settings && obj.settings.global) || (obj.config && obj.config.global) || null;
+  const ft = formType || resp.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+  const formNode = getFormNode(resp, ft) || {};
+  const defaultsNode = getDefaultsNode(resp) || {};
+  const globalNode = getGlobalNode(resp) || {};
+  const globalTheme = (globalNode && globalNode.theme) ? globalNode.theme : {};
 
-  const ft = formType || obj.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
-  const formNode =
-    (obj.form && typeof obj.form === "object" && (!obj.form_type || obj.form_type === ft)) ? obj.form :
-    (obj.settings && obj.settings.forms && obj.settings.forms[ft]) ? obj.settings.forms[ft] :
-    (obj.config && obj.config.forms && obj.config.forms[ft]) ? obj.config.forms[ft] :
-    null;
-
-  // Fallback: old helper based extraction
-  const resolvedForm = formNode || getFormNode(obj, ft) || {};
-  const resolvedDefaults = defaultsNode || getDefaultsNode(obj) || {};
-  const resolvedGlobal = globalNode || getGlobalNode(obj) || {};
-  const globalTheme = (resolvedGlobal && resolvedGlobal.theme) ? resolvedGlobal.theme : {};
-
-  const branding = (resolvedForm && resolvedForm.branding) || (resolvedDefaults && resolvedDefaults.branding) || {};
+  // Branding object: form branding > defaults branding
+  const branding = (formNode && formNode.branding) || (defaultsNode && defaultsNode.branding) || {};
 
   // Text
-  const title = safeStr((resolvedForm && resolvedForm.title) || branding.title || fallbackTitle || "EventLens Form");
-  const subtitle = safeStr((resolvedForm && resolvedForm.subtitle) || branding.subtitle || fallbackSubtitle || "");
-  const tagline = safeStr((resolvedForm && resolvedForm.tagline) || branding.tagline || (resolvedGlobal && resolvedGlobal.tagline) || fallbackTagline || "");
+  const title = safeStr(formNode.title || branding.title || fallbackTitle || "EventLens Form");
+  const subtitle = safeStr(formNode.subtitle || branding.subtitle || fallbackSubtitle || "");
+  const tagline = safeStr(formNode.tagline || branding.tagline || (globalNode && globalNode.tagline) || fallbackTagline || "");
 
   if ($("org-name")) $("org-name").textContent = title;
   if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
-
-  const tagEl = $("org-tagline");
-  if (tagEl) {
-    tagEl.textContent = tagline;
-    if (tagline) tagEl.classList.remove("hidden");
-    else tagEl.classList.add("hidden");
-  }
+  if ($("org-tagline")) $("org-tagline").textContent = tagline;
+  if ($("org-tagline")) { if (tagline) $("org-tagline").classList.remove("hidden"); else $("org-tagline").classList.add("hidden"); }
 
   // Footer (global override)
-  const footerEl = $("footer-text");
-  if (footerEl) footerEl.textContent = safeStr((resolvedGlobal && resolvedGlobal.tagline) || branding.footer_text || footerEl.textContent || "Powered by EventLens");
+  if ($("footer-text")) $("footer-text").textContent = safeStr((globalNode && globalNode.tagline) || $("footer-text").textContent || "Powered by EventLens");
 
-  // Assets (preferred nested + legacy flat)
-  let logoUrl = safeStr((resolvedForm && resolvedForm.logo_url) || (branding.logo && branding.logo.url) || branding.logo_url || "");
-  let headerUrl = safeStr((resolvedForm && resolvedForm.header_url) || (branding.header && branding.header.url) || branding.header_image_url || branding.header_url || "");
-  let bgUrl = safeStr((resolvedForm && resolvedForm.background_url) || (branding.background && branding.background.url) || branding.background_image_url || branding.background_url || "");
+  // Assets (new preferred fields + branding nested + legacy fallbacks)
+  let logoUrl = safeStr(pickAssetUrl(branding.logo, formNode.logo_url) || branding.logo_url || (globalNode && globalNode.logo_url) || (globalNode && globalNode.branding && globalNode.branding.logo_url) || "");
+  let headerUrl = safeStr(pickAssetUrl(branding.header, formNode.header_url) || branding.header_image_url || branding.header_url || (globalNode && globalNode.header_url) || (globalNode && globalNode.branding && globalNode.branding.header_url) || "");
+  let bgUrl = safeStr(pickAssetUrl(branding.background, formNode.background_url) || branding.background_image_url || branding.background_url || "" || (globalNode && globalNode.background_url) || (globalNode && globalNode.branding && globalNode.branding.background_url));
 
   // Legacy branding support (older admin config shape)
   let legacyBrand = null;
-  if (obj && obj.branding) {
-    const gb = (obj.branding && obj.branding.global) ? obj.branding.global : {};
-    const fb = (obj.branding && obj.branding.forms && obj.branding.forms[ft]) ? obj.branding.forms[ft] : {};
+  if (resp && resp.branding) {
+    const gb = (resp.branding && resp.branding.global) ? resp.branding.global : {};
+    const fb = (resp.branding && resp.branding.forms && resp.branding.forms[ft]) ? resp.branding.forms[ft] : {};
     legacyBrand = mergeObj(gb, fb);
   }
   if (legacyBrand) {
@@ -490,61 +442,32 @@ function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSub
     if (!bgUrl) bgUrl = safeStr(legacyBrand.background_image_url || legacyBrand.background_url || "");
   }
 
-  // Cache busting (important when S3 URLs are cached)
-  const ver = safeStr(obj.updated_at_ms || (obj.settings && obj.settings.updated_at_ms) || (obj.config && obj.config.updated_at_ms) || (resolvedGlobal && resolvedGlobal.updated_at_ms) || Date.now());
-  function bust(u) {
-    const s = safeStr(u || "");
-    if (!s) return "";
-    try {
-      const url = new URL(s, window.location.href);
-      url.searchParams.set("v", ver);
-      return url.toString();
-    } catch (e) {
-      // fallback for relative/invalid URL
-      const join = s.includes("?") ? "&" : "?";
-      return s + join + "v=" + encodeURIComponent(ver);
-    }
-  }
-  logoUrl = bust(logoUrl);
-  headerUrl = bust(headerUrl);
-  bgUrl = bust(bgUrl);
-
   // Theme colors
-  const primary = safeStr(
-    branding.color1 || branding.theme_primary ||
-    (legacyBrand && (legacyBrand.color1 || legacyBrand.theme_primary)) ||
-    globalTheme.primary || "#f97316"
-  );
-  const secondary = safeStr(
-    branding.color2 || branding.theme_secondary ||
-    (legacyBrand && (legacyBrand.color2 || legacyBrand.theme_secondary)) ||
-    globalTheme.secondary || "#ef4444"
-  );
+  const primary = safeStr(branding.color1 || branding.theme_primary || (legacyBrand && (legacyBrand.color1 || legacyBrand.theme_primary)) || globalTheme.primary || "#f97316");
+  const secondary = safeStr(branding.color2 || branding.theme_secondary || (legacyBrand && (legacyBrand.color2 || legacyBrand.theme_secondary)) || globalTheme.secondary || "#ef4444");
   setThemeVars(primary, secondary);
 
   // Logo
   const logoEl = $("custom-logo");
-  const defIcon = defaultIconId ? $(defaultIconId) : null;
   if (logoEl && logoUrl) {
     safeSetImg(logoEl, logoUrl, () => {
       logoEl.classList.remove("hidden");
-      if (defIcon) defIcon.classList.add("hidden");
+      if ($(defaultIconId)) $(defaultIconId).classList.add("hidden");
     }, () => {
       logoEl.classList.add("hidden");
-      if (defIcon) defIcon.classList.remove("hidden");
+      if ($(defaultIconId)) $(defaultIconId).classList.remove("hidden");
     });
   } else {
     if (logoEl) logoEl.classList.add("hidden");
-    if (defIcon) defIcon.classList.remove("hidden");
+    if ($(defaultIconId)) $(defaultIconId).classList.remove("hidden");
   }
 
   // Header image (div bg)
   safeSetBgDiv($("header-image"), headerUrl);
 
-  // Background image
+  // Background image (css var)
   if (bgUrl) safeSetRootBg(bgUrl);
 }
-
 
 
 function fillProgramNamesFromResponse(resp, formType, selectId) {
@@ -2667,7 +2590,7 @@ async function bootPage(){
   try{
     const cfg = await loadRemoteConfig(FORM_TYPE);
     if(cfg){
-      try{ applyBrandingFromConfig(cfg, FORM_TYPE, "संयोजक (Coordinator) फॉर्म", "Coordinator Entry", "", "default-icon"); }catch(e){ console.log("boot applyBranding error", e); }
+      try{ applyBrandingFromResponse(cfg); }catch(e){ console.log("boot applyBranding error", e); }
       try{ fillProgramNamesFromResponse(cfg); }catch(e){ console.log("boot fillProgramNames error", e); }
     }
   }catch(e){ console.log("boot loadRemoteConfig error", e); }

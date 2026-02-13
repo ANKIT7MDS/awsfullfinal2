@@ -749,6 +749,28 @@
   const $ = (id) => document.getElementById(id);
   const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch(e){ return ""; } };
 
+  // ===== CID SYNC FIX (2026-02-13) =====
+  function normalizeCid(v){
+    return String(v||"").replace(/^\s+|\s+$/g,"");
+  }
+  function setCid(next, opts){
+    const cid = normalizeCid(next);
+    state.cid = cid;
+    try{ localStorage.setItem("political_admin_cid", cid); }catch(e){}
+    const pill = $("cidPill");
+    const cidVal = $("cidVal");
+    const inp = $("cidInput");
+    if (pill) pill.textContent = cid || "—";
+    if (cidVal) cidVal.textContent = cid || "—";
+    if (inp) inp.value = cid;
+    // refresh preview if live preview enabled
+    try{
+      if (state.livePreview) renderFormPreviewIframe();
+    }catch(e){}
+  }
+
+
+
   function getIdToken(){ return localStorage.getItem("id_token") || localStorage.getItem("idToken") || ""; }
   function extFromMime(m){ if(!m) return "jpg"; if(m.includes("png")) return "png"; if(m.includes("webp")) return "webp"; return "jpg"; }
   async function sha256Hex(file){
@@ -812,7 +834,7 @@
   };
 
   let state = {
-    cid: (qs("cid") || qs("collection_id") || "").trim(),
+    cid: (qs("cid") || qs("collection_id") || (localStorage.getItem("political_admin_cid")||"") || "").trim(),
     target: "visitor_form",
     config: JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
     pendingAssets: {},
@@ -1462,6 +1484,8 @@ function setPending(kind, file, uiKey) {
   }
 
   async function loadConfig(opts = {}) {
+     state.cid = normalizeCid(state.cid);
+     $('cidInput').value = state.cid;
      const allowFallback = (opts.allowFallback !== false);
      const silent = !!opts.silent;
 
@@ -1784,7 +1808,7 @@ function renderTable() {
   if($('btnOpenFormPreview')) $('btnOpenFormPreview').onclick = () => { state.cacheBust = Date.now(); openCurrentPreviewInNewTab(); };
   if($('btnRefreshSignedUrls')) $('btnRefreshSignedUrls').onclick = () => { state.cacheBust = Date.now(); loadConfig(); };
   $('btnReload').onclick = loadConfig;
-  $('btnApplyCid').onclick = () => { state.cid = $('cidInput').value; loadConfig(); };
+  $('btnApplyCid').onclick = () => { setCid($('cidInput').value); loadConfig(); renderFormPreviewIframe(); };
   
   // Tab Switching
   document.querySelectorAll('.nav-btn').forEach(btn => {

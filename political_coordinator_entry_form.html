@@ -215,9 +215,60 @@ const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod
 
 
 const $ = (id) => document.getElementById(id);
+function setStatus(msg, kind) {
+  const el = $("status");
+  if (!el) return;
+  el.classList.remove("hidden");
+  el.textContent = msg || "";
+  // kind: "ok" | "warn" | "error"
+  el.className = "mt-4 text-center text-xs font-medium";
+  if (kind === "ok") el.classList.add("text-emerald-300");
+  else if (kind === "warn") el.classList.add("text-amber-300");
+  else el.classList.add("text-rose-300");
+}
 const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
 const token = (qs("token") || "").trim();
-const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+
+function b64urlDecodeToString(b64url) {
+  try {
+    const pad = b64url.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = pad + "===".slice((pad.length + 3) % 4);
+    const bin = atob(padded);
+    // handle utf-8
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return new TextDecoder("utf-8").decode(bytes);
+  } catch (e) { return ""; }
+}
+
+function extractCidFromToken(tok) {
+  // Supports tokens like: <b64url(json)>.<sig> OR plain b64url(json)
+  try {
+    if (!tok) return "";
+    const part = tok.includes(".") ? tok.split(".")[0] : tok;
+    const s = b64urlDecodeToString(part);
+    if (!s) return "";
+    const obj = JSON.parse(s);
+    return (obj.cid || obj.collection_id || obj.collectionId || obj.id || "").toString().trim();
+  } catch (e) { return ""; }
+}
+
+function extractCidFromHash() {
+  // supports URLs like ...html#cid=xxxx or #/cid/xxxx
+  try {
+    const h = (window.location.hash || "").replace(/^#/, "");
+    if (!h) return "";
+    if (h.includes("cid=")) {
+      const sp = new URLSearchParams(h.startsWith("?") ? h.slice(1) : h);
+      return (sp.get("cid") || sp.get("collection_id") || "").trim();
+    }
+    const parts = h.split("/").filter(Boolean);
+    const idx = parts.findIndex(p => p.toLowerCase() === "cid" || p.toLowerCase() === "collection_id");
+    if (idx >= 0 && parts[idx+1]) return decodeURIComponent(parts[idx+1]).trim();
+  } catch (e) {}
+  return "";
+}
+
+const cidParam = (qs("cid") || qs("collection_id") || qs("id") || extractCidFromToken(token) || extractCidFromHash() || "").trim();
 const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
 const debug = (qs("debug") || "").trim() === "1";
 
@@ -287,6 +338,11 @@ function mergeObj(a, b) {
 // ===============================
 async function loadRemoteConfig(formType) {
   try {
+    if (!cidParam) {
+      setStatus("❌ इस लिंक में cid/collection_id missing है। कृपया Admin Dashboard से link दुबारा generate करें (cid के साथ) या URL में ?cid=YOUR_COLLECTION_ID जोड़ें।", "error");
+      return null;
+    }
+
     const payload = isPublicMode()
       ? { cid: cidParam, collection_id: cidParam, token, form_type: formType, _ts: Date.now() }
       : { collection_id: cidParam, form_type: formType, _ts: Date.now() };

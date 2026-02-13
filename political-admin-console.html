@@ -228,9 +228,9 @@
                   <option disabled>──────────────</option>
                   <option value="visitor_form">📝 Visitor Form</option>
                   <option value="party_attendance">🚩 Party Attendance</option>
-                  <option value="president_tour">🚙 President Tour</option>
+                  <option value="president_tour_form">🚙 President Tour</option>
                   <option value="mandal_reporting">📊 कार्यक्रम रिपोर्टिंग</option>
-                  <option value="coordinator">👔 Coordinator</option>
+                  <option value="coordinator_form">👔 Coordinator</option>
                   <option value="program_info">ℹ️ Program Info</option>
                 </select>
                 <div class="absolute right-3 top-3 text-slate-400 pointer-events-none text-xs">
@@ -551,9 +551,9 @@
                       <option value="__all__">All Forms</option>
                       <option value="visitor_form">Visitor</option>
                       <option value="party_attendance">Attendance</option>
-                      <option value="president_tour">Tour</option>
+                      <option value="president_tour_form">Tour</option>
                       <option value="mandal_reporting">Reporting</option>
-                      <option value="coordinator">Coordinator</option>
+                      <option value="coordinator_form">Coordinator</option>
                       <option value="program_info">Program Info</option>
                    </select>
                 </div>
@@ -589,9 +589,9 @@
                           <option value="visitor_form">Visitor</option>
                           <option value="party_attendance">Party Attendance</option>
                           <option value="program_info">Program Info</option>
-                          <option value="president_tour">President Tour</option>
+                          <option value="president_tour_form">President Tour</option>
                           <option value="mandal_reporting">Mandal Reporting</option>
-                          <option value="coordinator">Coordinator</option>
+                          <option value="coordinator_form">Coordinator</option>
                        </select>
                        <select id="filterDistrict" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-200">
                           <option value="">All Districts</option>
@@ -740,9 +740,9 @@
     __defaults__: { file: "political_visitor_form.html" },
     visitor_form: { file: "political_visitor_form.html" },
     party_attendance: { file: "political_party_attendance_form.html" },
-    president_tour: { file: "political_president_tour_form.html" },
+    president_tour_form: { file: "political_president_tour_form.html" },
     mandal_reporting: { file: "political_mandal_reporting_form.html" },
-    coordinator: { file: "political_coordinator_form.html" },
+    coordinator_form: { file: "political_coordinator_entry_form.html" },
     program_info: { file: "political_program_info_form.html" },
   };
 
@@ -808,7 +808,7 @@
       programs: ["मंडल बैठक","कार्यकर्ता सम्मेलन","जनसंपर्क","बूथ मीटिंग"],
       fixed_levels: {}
     },
-    forms: { visitor_form: {}, party_attendance: {}, president_tour: {}, mandal_reporting: {}, coordinator: {}, program_info: {} }
+    forms: { visitor_form: {}, party_attendance: {}, president_tour_form: {}, mandal_reporting: {}, coordinator_form: {}, program_info: {} }
   };
 
   let state = {
@@ -1465,16 +1465,6 @@ function setPending(kind, file, uiKey) {
      const allowFallback = (opts.allowFallback !== false);
      const silent = !!opts.silent;
 
-     // Ensure CID is available (from state, input, URL, or last cache)
-     if(!state.cid){
-        const sp = new URLSearchParams(location.search || "");
-        const fromUrl = (sp.get("cid") || sp.get("collection_id") || sp.get("collectionId") || "").trim();
-        const fromInput = (($('cidInput') && $('cidInput').value) ? $('cidInput').value : "").trim();
-        const fromCache = (localStorage.getItem('EL_LAST_CID') || "").trim();
-        state.cid = fromUrl || fromInput || fromCache || "";
-        if($('cidInput') && state.cid && !$('cidInput').value) $('cidInput').value = state.cid;
-     }
-
      if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
      $('cidPill').classList.remove('hidden');
      $('cidVal').textContent = state.cid;
@@ -1794,15 +1784,7 @@ function renderTable() {
   if($('btnOpenFormPreview')) $('btnOpenFormPreview').onclick = () => { state.cacheBust = Date.now(); openCurrentPreviewInNewTab(); };
   if($('btnRefreshSignedUrls')) $('btnRefreshSignedUrls').onclick = () => { state.cacheBust = Date.now(); loadConfig(); };
   $('btnReload').onclick = loadConfig;
-  $('btnApplyCid').onclick = () => {
-    const v = ($('cidInput').value || '').trim();
-    state.cid = v;
-    // Sync pill
-    if(v){ $('cidPill').classList.remove('hidden'); $('cidVal').textContent = v; }
-    else { $('cidPill').classList.add('hidden'); }
-    try{ localStorage.setItem('EL_LAST_CID', v); }catch(e){}
-    loadConfig();
-  };
+  $('btnApplyCid').onclick = () => { state.cid = $('cidInput').value; loadConfig(); };
   
   // Tab Switching
   document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -2014,25 +1996,6 @@ function renderTable() {
   renderFormPreviewIframe();
 
 })();
-
-  // --- Bootstrap CID from URL on first load ---
-  (function bootstrapCid(){
-    try{
-      const sp = new URLSearchParams(location.search || "");
-      const cid = (sp.get("cid") || sp.get("collection_id") || sp.get("collectionId") || "").trim();
-      const cached = (localStorage.getItem('EL_LAST_CID') || "").trim();
-      const finalCid = cid || cached || "";
-      if(finalCid){
-        state.cid = finalCid;
-        if($('cidInput')) $('cidInput').value = finalCid;
-        $('cidPill').classList.remove('hidden');
-        $('cidVal').textContent = finalCid;
-        try{ localStorage.setItem('EL_LAST_CID', finalCid); }catch(e){}
-        // Auto-load config once
-        setTimeout(()=>loadConfig({silent:true}), 50);
-      }
-    }catch(e){}
-  })();
 </script>
 
 <!-- Cropper Modal -->

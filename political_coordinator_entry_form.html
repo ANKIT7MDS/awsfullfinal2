@@ -301,19 +301,25 @@ function normalizeFormType(ft) {
 // BRANDING + PROGRAMS + FIXED LEVEL
 // ===============================
 async function loadRemoteConfig(formType) {
+  // Public forms should ALWAYS use public_get_config.
+  // Admin console uses admin_get_config on the private/admin page, not here.
   try {
-    const payload = isPublicMode()
-      ? { cid: safeStr(cidParam).trim(), collection_id: safeStr(cidParam).trim(), token, form_type: normalizeFormType(formType), _ts: Date.now() }
-      : { collection_id: safeStr(cidParam).trim(), form_type: normalizeFormType(formType), _ts: Date.now() };
-
-    const action = isPublicMode() ? "public_get_config" : "admin_get_config";
-    const res = await apiCall(action, payload);
+    const cidClean = safeStr(cidParam).trim();
+    const payload = {
+      cid: cidClean,
+      collection_id: cidClean,
+      token: safeStr(token).trim(),
+      form_type: normalizeFormType(formType),
+      _ts: Date.now()
+    };
+    const res = await apiCall("public_get_config", payload);
     return res || null; // keep full response (settings/config/form)
   } catch (e) {
     if (debug) console.log("config load failed", e);
     return null;
   }
 }
+
 
 
 function cssUrl(u) {

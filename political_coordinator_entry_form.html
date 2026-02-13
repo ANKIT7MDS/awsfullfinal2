@@ -2534,7 +2534,7 @@ function initLevelControl(cfg, formType) {
       setMsg('✅ सबमिट हो गया। Entry ID: ' + (r.entry_id || ''), 'ok');
       f.reset();
       // repopulate district dropdown (reset clears options)
-      try{ initLocationDropdowns(); }catch(_e){}
+      try{ initDistrictCascade(); }catch(_e){}
     }catch(err){
       setMsg('❌ ' + (err?.message || 'Error'), 'err');
       console.error(err);
@@ -2542,6 +2542,23 @@ function initLevelControl(cfg, formType) {
       setLoading(false);
     }
   });
+
+// ---- AUTO BOOT (added) ----
+async function bootPage(){
+  try{
+    initDistrictCascade();
+  }catch(e){ console.log("boot initDistrictCascade error", e); }
+  try{
+    const cfg = await loadRemoteConfig(FORM_TYPE);
+    if(cfg){
+      try{ applyBrandingFromResponse(cfg); }catch(e){ console.log("boot applyBranding error", e); }
+      try{ fillProgramNamesFromResponse(cfg); }catch(e){ console.log("boot fillProgramNames error", e); }
+    }
+  }catch(e){ console.log("boot loadRemoteConfig error", e); }
+}
+document.addEventListener("DOMContentLoaded", bootPage);
+// ---- END AUTO BOOT ----
+
 </script>
 
     </body>

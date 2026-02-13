@@ -749,28 +749,6 @@
   const $ = (id) => document.getElementById(id);
   const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch(e){ return ""; } };
 
-  // ===== CID SYNC FIX (2026-02-13) =====
-  function normalizeCid(v){
-    return String(v||"").replace(/^\s+|\s+$/g,"");
-  }
-  function setCid(next, opts){
-    const cid = normalizeCid(next);
-    state.cid = cid;
-    try{ localStorage.setItem("political_admin_cid", cid); }catch(e){}
-    const pill = $("cidPill");
-    const cidVal = $("cidVal");
-    const inp = $("cidInput");
-    if (pill) pill.textContent = cid || "—";
-    if (cidVal) cidVal.textContent = cid || "—";
-    if (inp) inp.value = cid;
-    // refresh preview if live preview enabled
-    try{
-      if (state.livePreview) renderFormPreviewIframe();
-    }catch(e){}
-  }
-
-
-
   function getIdToken(){ return localStorage.getItem("id_token") || localStorage.getItem("idToken") || ""; }
   function extFromMime(m){ if(!m) return "jpg"; if(m.includes("png")) return "png"; if(m.includes("webp")) return "webp"; return "jpg"; }
   async function sha256Hex(file){
@@ -834,7 +812,7 @@
   };
 
   let state = {
-    cid: (qs("cid") || qs("collection_id") || (localStorage.getItem("political_admin_cid")||"") || "").trim(),
+    cid: (qs("cid") || qs("collection_id") || "").trim(),
     target: "visitor_form",
     config: JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
     pendingAssets: {},
@@ -1484,10 +1462,18 @@ function setPending(kind, file, uiKey) {
   }
 
   async function loadConfig(opts = {}) {
-     state.cid = normalizeCid(state.cid);
-     $('cidInput').value = state.cid;
      const allowFallback = (opts.allowFallback !== false);
      const silent = !!opts.silent;
+
+     // Ensure CID is available (from state, input, URL, or last cache)
+     if(!state.cid){
+        const sp = new URLSearchParams(location.search || "");
+        const fromUrl = (sp.get("cid") || sp.get("collection_id") || sp.get("collectionId") || "").trim();
+        const fromInput = (($('cidInput') && $('cidInput').value) ? $('cidInput').value : "").trim();
+        const fromCache = (localStorage.getItem('EL_LAST_CID') || "").trim();
+        state.cid = fromUrl || fromInput || fromCache || "";
+        if($('cidInput') && state.cid && !$('cidInput').value) $('cidInput').value = state.cid;
+     }
 
      if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
      $('cidPill').classList.remove('hidden');
@@ -1808,7 +1794,15 @@ function renderTable() {
   if($('btnOpenFormPreview')) $('btnOpenFormPreview').onclick = () => { state.cacheBust = Date.now(); openCurrentPreviewInNewTab(); };
   if($('btnRefreshSignedUrls')) $('btnRefreshSignedUrls').onclick = () => { state.cacheBust = Date.now(); loadConfig(); };
   $('btnReload').onclick = loadConfig;
-  $('btnApplyCid').onclick = () => { setCid($('cidInput').value); loadConfig(); renderFormPreviewIframe(); };
+  $('btnApplyCid').onclick = () => {
+    const v = ($('cidInput').value || '').trim();
+    state.cid = v;
+    // Sync pill
+    if(v){ $('cidPill').classList.remove('hidden'); $('cidVal').textContent = v; }
+    else { $('cidPill').classList.add('hidden'); }
+    try{ localStorage.setItem('EL_LAST_CID', v); }catch(e){}
+    loadConfig();
+  };
   
   // Tab Switching
   document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -2020,6 +2014,25 @@ function renderTable() {
   renderFormPreviewIframe();
 
 })();
+
+  // --- Bootstrap CID from URL on first load ---
+  (function bootstrapCid(){
+    try{
+      const sp = new URLSearchParams(location.search || "");
+      const cid = (sp.get("cid") || sp.get("collection_id") || sp.get("collectionId") || "").trim();
+      const cached = (localStorage.getItem('EL_LAST_CID') || "").trim();
+      const finalCid = cid || cached || "";
+      if(finalCid){
+        state.cid = finalCid;
+        if($('cidInput')) $('cidInput').value = finalCid;
+        $('cidPill').classList.remove('hidden');
+        $('cidVal').textContent = finalCid;
+        try{ localStorage.setItem('EL_LAST_CID', finalCid); }catch(e){}
+        // Auto-load config once
+        setTimeout(()=>loadConfig({silent:true}), 50);
+      }
+    }catch(e){}
+  })();
 </script>
 
 <!-- Cropper Modal -->

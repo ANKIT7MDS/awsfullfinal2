@@ -508,26 +508,38 @@ function fillProgramNamesFromResponse(resp, formType, selectId) {
   if (!sel) return;
 
   const ft = formType || (resp && resp.form_type) || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+
+  // Try to find form node (new + legacy response shapes)
   const formNode = (resp && resp.form) ? resp.form
     : (resp && resp.settings && resp.settings.forms && resp.settings.forms[ft]) ? resp.settings.forms[ft]
     : (resp && resp.config && resp.config.forms && resp.config.forms[ft]) ? resp.config.forms[ft]
     : null;
 
-  const list =
-    (formNode && (formNode.programs || formNode.program_options)) ||
-    (resp && resp.programs) ||
-    (resp && resp.data && resp.data.programs) ||
-    (resp && resp.config && resp.config.programs) ||
-    (resp && resp.config && resp.config.data && resp.config.data.programs) ||
-    [];
+  // Collect programs from multiple places (Admin Console saves mostly in defaults.programs or form.program_options)
+  const arrs = [];
+  if (formNode) {
+    if (Array.isArray(formNode.program_options)) arrs.push(formNode.program_options);
+    if (Array.isArray(formNode.programs)) arrs.push(formNode.programs);
+  }
+  if (resp) {
+    if (Array.isArray(resp.programs)) arrs.push(resp.programs);
+    if (resp.data && Array.isArray(resp.data.programs)) arrs.push(resp.data.programs);
 
-  const programs = Array.isArray(list) ? list : [];
+    // defaults in response
+    if (resp.defaults && Array.isArray(resp.defaults.programs)) arrs.push(resp.defaults.programs);
+    if (resp.settings && resp.settings.defaults && Array.isArray(resp.settings.defaults.programs)) arrs.push(resp.settings.defaults.programs);
+    if (resp.config && resp.config.defaults && Array.isArray(resp.config.defaults.programs)) arrs.push(resp.config.defaults.programs);
+
+    // global/programs (legacy)
+    if (resp.config && Array.isArray(resp.config.programs)) arrs.push(resp.config.programs);
+    if (resp.config && resp.config.data && Array.isArray(resp.config.data.programs)) arrs.push(resp.config.data.programs);
+  }
+
+  const programs = Array.from(new Set(arrs.flat().map(p => safeStr(p).trim()).filter(Boolean)));
   if (!programs.length) return;
 
   sel.innerHTML = '<option value="">— कार्यक्रम चुनें —</option>';
-  programs.forEach((p) => {
-    const v = safeStr(p).trim();
-    if (!v) return;
+  programs.forEach((v) => {
     const opt = document.createElement("option");
     opt.value = v;
     opt.textContent = v;

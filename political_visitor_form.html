@@ -1,538 +1,1350 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visitor Form - EventLens</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }
-        }
-      }
-    }
-  </script>
-  <style>
-    :root {
-      --c1: #f97316; /* primary */
-      --c2: #ef4444; /* secondary */
-      --bgimg: none;
-    }
-    body {
-      background:
-        radial-gradient(circle at top left, rgba(249, 115, 22, 0.14), transparent 50%),
-        radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 50%),
-        linear-gradient(180deg, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.98)),
-        var(--bgimg);
-      background-size: cover;
-      background-attachment: fixed;
-      color: #fff;
-    }
-    .glass {
-      background: rgba(30, 41, 59, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.40);
-    }
-    .input-field {
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      color: white;
-      transition: all 0.25s ease;
-    }
-    .input-field:focus {
-      border-color: var(--c1);
-      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.18);
-      outline: none;
-    }
-    .input-field:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      background: rgba(15, 23, 42, 0.35);
-    }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Visitor Entry — EventLens</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+/* ═══════════════════ RESET & BASE ═══════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --o1:#ea580c; --o2:#c2410c; --o3:#fb923c;
+  --o1a:rgba(234,88,12,0.15); --o1b:rgba(234,88,12,0.25);
+  --bg:#080b12; --glass:rgba(16,12,8,0.80);
+  --text:#f1f0ee; --muted:rgba(200,190,180,0.55);
+}
+html,body{min-height:100%;background:var(--bg);}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(ellipse 80% 45% at 15% -5%,rgba(234,88,12,0.18) 0%,transparent 55%),
+    radial-gradient(ellipse 60% 50% at 85% 95%,rgba(194,65,12,0.12) 0%,transparent 55%),
+    var(--bg);
+  background-attachment:fixed;
+}
+.deva{font-family:'Noto Sans Devanagari','Plus Jakarta Sans',sans-serif;}
 
-    .brand-text {
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      background-image: linear-gradient(to right, var(--c1), var(--c2));
-    }
-    .brand-bg { background-image: linear-gradient(to right, var(--c1), var(--c2)); }
-    .brand-ring { box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.16); }
-  
-    /* Ensure Hindi dropdowns render correctly */
-    select#district, select#vidhansabha, select#mandal, select#program_name,
-    #district option, #vidhansabha option, #mandal option, #program_name option {
-      font-family: 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-      letter-spacing: 0;
-    }
+/* ═══════════════════ GLASS CARD ═══════════════════ */
+.card{
+  background:var(--glass);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(234,88,12,0.14);
+  border-radius:22px;
+  box-shadow:0 4px 40px rgba(0,0,0,0.55),inset 0 1px 0 rgba(234,88,12,0.06);
+}
+.card-top{border-top:2px solid var(--o1);}
 
+/* ═══════════════════ BRAND ═══════════════════ */
+.brand{background:linear-gradient(130deg,var(--o3),var(--o1));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.brand-bg{background:linear-gradient(130deg,var(--o1),var(--o2));}
+
+/* ═══════════════════ INPUTS ═══════════════════ */
+.inp{
+  width:100%;padding:11px 14px;border-radius:11px;
+  font-size:13.5px;font-family:inherit;
+  background:rgba(8,11,18,0.7);
+  border:1px solid rgba(234,88,12,0.18);
+  color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.inp::placeholder{color:rgba(180,170,160,0.38);}
+.inp:focus{border-color:var(--o1);box-shadow:0 0 0 3px rgba(234,88,12,0.12);}
+.inp:disabled{opacity:.45;cursor:not-allowed;}
+select.inp option{background:#100d08;color:var(--text);}
+
+/* ═══════════════════ BUTTONS ═══════════════════ */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:13px 20px;border-radius:13px;border:none;
+  font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:opacity .15s,transform .12s;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(130deg,var(--o1),var(--o2));color:#fff;box-shadow:0 6px 22px rgba(234,88,12,0.38);}
+.btn-primary:hover{opacity:.9;}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.btn-ghost{background:var(--o1a);border:1px solid var(--o1b);color:var(--o3);font-size:13px;padding:10px;}
+
+/* ═══════════════════ LABEL ═══════════════════ */
+.lbl{display:block;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(234,88,12,0.65);margin-bottom:6px;}
+
+/* ═══════════════════ CAMERA SECTION — ENHANCED ═══════════════════ */
+/* Outer glow ring around camera card */
+.cam-card-wrap{
+  position:relative;
+  border-radius:26px;
+  padding:3px;
+  background:linear-gradient(135deg,rgba(234,88,12,.5),rgba(194,65,12,.15),rgba(234,88,12,.4));
+  box-shadow:0 0 40px rgba(234,88,12,.22),0 20px 60px rgba(0,0,0,.7);
+  margin-bottom:10px;
+}
+.cam-card-inner{
+  background:rgba(8,11,18,.95);
+  border-radius:24px;
+  padding:16px;
+}
+
+/* Scan title bar */
+.scan-title-bar{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-bottom:14px;
+}
+.scan-title-icon{
+  width:32px;height:32px;border-radius:10px;
+  background:linear-gradient(135deg,var(--o1),var(--o2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;
+  box-shadow:0 4px 12px rgba(234,88,12,.4);
+}
+.scan-title-text{font-size:13px;font-weight:800;color:var(--text);}
+.scan-title-sub{font-size:10px;color:var(--muted);font-weight:500;}
+
+#cam-box{
+  position:relative;width:100%;aspect-ratio:1/1;
+  border-radius:20px;overflow:hidden;background:#000;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.8);
+}
+#cam-video{width:100%;height:100%;object-fit:cover;display:block;}
+#cam-canvas{display:none;}
+
+/* Radial vignette overlay */
+.cam-vignette{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 70% 80% at 50% 50%,transparent 38%,rgba(0,0,0,.72) 100%);
+}
+
+/* Oval guide */
+#oval-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+#oval-el{
+  cx:50%;cy:50%;rx:35%;ry:42%;
+  fill:none;stroke:var(--o1);stroke-width:2;
+  stroke-dasharray:12 5;
+  filter:drop-shadow(0 0 8px rgba(234,88,12,0.7));
+  transition:stroke .35s,filter .35s,stroke-dasharray .35s;
+  animation:oval-rotate 8s linear infinite;
+}
+@keyframes oval-rotate{
+  0%{stroke-dashoffset:0}
+  100%{stroke-dashoffset:100}
+}
+#oval-el.s{
+  stroke:#10b981;stroke-dasharray:none;stroke-width:2.5;
+  filter:drop-shadow(0 0 14px rgba(16,185,129,.85));
+  animation:opulse 1s ease-in-out infinite,oval-rotate 8s linear infinite;
+}
+#oval-el.m{
+  stroke:#60a5fa;stroke-dasharray:none;stroke-width:2.5;
+  filter:drop-shadow(0 0 16px rgba(96,165,250,.9));
+  animation:none;
+}
+@keyframes opulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Face guide dots at oval boundary */
+.face-dot{
+  position:absolute;width:6px;height:6px;border-radius:50%;
+  background:var(--o1);opacity:.7;
+  box-shadow:0 0 8px rgba(234,88,12,.8);
+  animation:fdot 2s ease-in-out infinite;
+}
+.face-dot:nth-child(1){top:8%;left:50%;transform:translateX(-50%);animation-delay:0s;}
+.face-dot:nth-child(2){top:50%;right:15%;transform:translateY(-50%);animation-delay:.5s;}
+.face-dot:nth-child(3){bottom:8%;left:50%;transform:translateX(-50%);animation-delay:1s;}
+.face-dot:nth-child(4){top:50%;left:15%;transform:translateY(-50%);animation-delay:1.5s;}
+@keyframes fdot{0%,100%{opacity:.7;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.5)}}
+
+/* Scan line — enhanced */
+#scanline{
+  position:absolute;left:14%;right:14%;height:2px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(234,88,12,.9),rgba(251,146,60,1),rgba(234,88,12,.9),transparent);
+  box-shadow:0 0 12px rgba(234,88,12,.6),0 0 24px rgba(234,88,12,.3);
+  border-radius:2px;
+  animation:scan 2.4s ease-in-out infinite;
+}
+#scanline.hidden{display:none;}
+@keyframes scan{0%{top:12%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:82%;opacity:0}}
+
+/* Corner brackets — bigger & bolder */
+.cn{position:absolute;width:28px;height:28px;border-color:rgba(234,88,12,.8);border-style:solid;}
+.cn.tl{top:12px;left:12px;border-width:3px 0 0 3px;border-radius:8px 0 0 0;}
+.cn.tr{top:12px;right:12px;border-width:3px 3px 0 0;border-radius:0 8px 0 0;}
+.cn.bl{bottom:12px;left:12px;border-width:0 0 3px 3px;border-radius:0 0 0 8px;}
+.cn.br{bottom:12px;right:12px;border-width:0 3px 3px 0;border-radius:0 0 8px 0;}
+.cn::after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:var(--o1);box-shadow:0 0 8px rgba(234,88,12,.9);}
+.cn.tl::after{top:-3px;left:-3px;}
+.cn.tr::after{top:-3px;right:-3px;}
+.cn.bl::after{bottom:-3px;left:-3px;}
+.cn.br::after{bottom:-3px;right:-3px;}
+
+/* Status chip on camera */
+#cam-chip{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:99px;font-size:11px;font-weight:700;
+  background:rgba(4,6,12,.88);border:1px solid rgba(234,88,12,.35);
+  color:var(--o3);white-space:nowrap;z-index:10;backdrop-filter:blur(12px);
+  transition:border-color .3s,color .3s,background .3s;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+#chip-dot{width:7px;height:7px;border-radius:50%;background:var(--o1);flex-shrink:0;transition:background .3s;box-shadow:0 0 6px currentColor;}
+#chip-dot.s{background:#10b981;animation:blink .85s infinite;}
+#chip-dot.m{background:#60a5fa;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
+
+/* Scan progress bar at bottom of camera */
+#scan-progress-bar{
+  position:absolute;bottom:0;left:0;right:0;height:3px;z-index:15;
+  background:rgba(0,0,0,.5);
+  display:none;
+}
+#scan-progress-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--o2),var(--o1),var(--o3));
+  transition:width .4s ease;
+  box-shadow:0 0 8px rgba(234,88,12,.8);
+}
+
+/* Biometric label */
+#bio-label{
+  position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
+  font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+  color:rgba(234,88,12,.6);white-space:nowrap;z-index:10;
+  text-shadow:0 0 10px rgba(234,88,12,.5);
+  display:none;
+}
+
+/* Capture button — premium ring design */
+#cap-btn{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,var(--o1),var(--o2));
+  border:none;
+  box-shadow:
+    0 0 0 3px rgba(8,11,18,1),
+    0 0 0 6px rgba(234,88,12,.5),
+    0 0 0 9px rgba(234,88,12,.15),
+    0 12px 32px rgba(234,88,12,.5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;cursor:pointer;z-index:20;
+  transition:transform .15s,box-shadow .15s;
+}
+#cap-btn:hover{
+  transform:translateX(-50%) scale(1.07);
+  box-shadow:0 0 0 3px rgba(8,11,18,1),0 0 0 7px rgba(234,88,12,.65),0 0 0 12px rgba(234,88,12,.2),0 16px 40px rgba(234,88,12,.6);
+}
+#cap-btn:active{transform:translateX(-50%) scale(.92);}
+#cap-btn::before{
+  content:"";position:absolute;inset:-4px;border-radius:50%;
+  border:1px solid rgba(234,88,12,.3);
+  animation:cap-ring 2s ease-in-out infinite;
+}
+@keyframes cap-ring{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.12);opacity:0}}
+
+/* Flip button */
+#flip-btn{
+  position:absolute;top:12px;right:12px;z-index:20;
+  width:38px;height:38px;border-radius:50%;cursor:pointer;
+  background:rgba(4,6,12,.8);border:1px solid rgba(234,88,12,.28);
+  color:var(--o3);font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:background .2s,transform .15s;
+  backdrop-filter:blur(8px);
+}
+#flip-btn:hover{background:rgba(234,88,12,.18);transform:rotate(180deg);}
+
+/* Step indicators */
+.step-dots{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin:12px 0 4px;
+}
+.step-dot{width:6px;height:6px;border-radius:50%;background:rgba(234,88,12,.25);transition:all .3s;}
+.step-dot.active{width:20px;border-radius:3px;background:var(--o1);box-shadow:0 0 8px rgba(234,88,12,.5);}
+
+/* Preview */
+#prev-box{position:relative;width:100%;aspect-ratio:1/1;border-radius:20px;overflow:hidden;display:none;}
+#prev-img{width:100%;height:100%;object-fit:cover;}
+#retake-btn{
+  position:absolute;top:12px;right:12px;
+  background:rgba(239,68,68,.9);color:#fff;border:none;border-radius:10px;
+  padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;gap:5px;
+  backdrop-filter:blur(6px);
+  box-shadow:0 4px 12px rgba(239,68,68,.4);
+}
+
+/* ═══════════════════ WELCOME POPUP ═══════════════════ */
+#popup-bg{
+  position:fixed;inset:0;z-index:9000;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(2,4,10,.92);backdrop-filter:blur(20px);
+}
+#popup-bg.open{display:flex;}
+
+#popup-sheet{
+  width:calc(100% - 28px);max-width:400px;max-height:92vh;overflow-y:auto;
+  position:relative;
+  background:linear-gradient(155deg,rgba(22,14,8,1) 0%,rgba(8,11,18,1) 100%);
+  border-radius:28px;
+  padding:0 20px 28px;
+  box-shadow:
+    0 0 0 1px rgba(234,88,12,.25),
+    0 0 60px rgba(234,88,12,.18),
+    0 40px 100px rgba(0,0,0,.85);
+  animation:popIn .38s cubic-bezier(.18,.89,.32,1.28);
+}
+@keyframes popIn{
+  from{transform:scale(.82) translateY(20px);opacity:0}
+  to{transform:scale(1) translateY(0);opacity:1}
+}
+#popup-sheet::before{
+  content:"";
+  position:absolute;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,transparent,var(--o2),var(--o1),var(--o3),var(--o1),var(--o2),transparent);
+  border-radius:28px 28px 0 0;
+}
+.drag-handle{width:36px;height:4px;background:rgba(234,88,12,.2);border-radius:2px;margin:14px auto 20px;}
+.welcome-hero{text-align:center;padding:0 0 20px;border-bottom:1px solid rgba(234,88,12,.1);margin-bottom:18px;}
+.party-ornament{font-size:32px;line-height:1;margin-bottom:12px;animation:ornament-pulse 2s ease-in-out infinite;}
+@keyframes ornament-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.welcome-avatar{
+  width:72px;height:72px;border-radius:50%;margin:0 auto 14px;
+  background:rgba(234,88,12,.08);border:3px solid rgba(234,88,12,.35);
+  display:flex;align-items:center;justify-content:center;font-size:30px;
+  position:relative;box-shadow:0 0 0 6px rgba(234,88,12,.06),0 0 30px rgba(234,88,12,.2);
+}
+.welcome-avatar::after{
+  content:"✅";position:absolute;bottom:-4px;right:-4px;
+  width:24px;height:24px;border-radius:50%;
+  background:rgba(16,185,129,.9);font-size:12px;display:flex;align-items:center;justify-content:center;
+  border:2px solid rgba(8,11,18,1);
+}
+.welcome-namaskar{font-size:13px;font-weight:700;color:rgba(234,88,12,.75);letter-spacing:.04em;margin-bottom:4px;}
+.welcome-name{font-size:22px;font-weight:900;color:#fff;line-height:1.2;margin-bottom:6px;}
+.welcome-party-line{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:99px;
+  background:linear-gradient(135deg,rgba(234,88,12,.15),rgba(194,65,12,.08));
+  border:1px solid rgba(234,88,12,.25);font-size:11px;font-weight:700;color:var(--o3);margin-bottom:14px;
+}
+.welcome-swagat{font-size:15px;font-weight:800;color:var(--text);line-height:1.5;margin-bottom:4px;}
+.welcome-visit-badge{
+  display:inline-flex;align-items:center;gap:10px;padding:10px 20px;border-radius:14px;margin-top:10px;
+  background:linear-gradient(135deg,rgba(234,88,12,.18),rgba(194,65,12,.1));
+  border:1px solid rgba(234,88,12,.3);
+}
+.welcome-visit-num{
+  font-size:32px;font-weight:900;
+  background:linear-gradient(130deg,var(--o3),var(--o1));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1;
+}
+.welcome-visit-label{font-size:11px;font-weight:700;color:var(--muted);text-align:left;}
+.welcome-visit-label span{display:block;font-size:10px;color:rgba(234,88,12,.6);font-weight:600;}
+.welcome-events-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(234,88,12,.6);margin-bottom:10px;}
+.welcome-event-row{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;
+  background:rgba(234,88,12,.04);border:1px solid rgba(234,88,12,.08);margin-bottom:6px;
+}
+.welcome-event-dot{width:8px;height:8px;border-radius:50%;background:var(--o1);flex-shrink:0;box-shadow:0 0 6px rgba(234,88,12,.6);}
+.welcome-event-name{font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.welcome-event-date{font-size:10px;color:var(--muted);flex-shrink:0;}
+.welcome-cta-text{text-align:center;font-size:11px;color:rgba(180,170,160,.5);margin-bottom:12px;margin-top:16px;}
+
+/* Stat bubble */
+.stat-b{
+  text-align:center;padding:12px 8px;border-radius:13px;
+  background:rgba(234,88,12,.07);border:1px solid rgba(234,88,12,.14);
+}
+.stat-n{font-size:22px;font-weight:900;line-height:1;}
+.stat-l{font-size:9px;margin-top:3px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+/* ═══════════════════ SCREENS ═══════════════════ */
+#scr-cam{display:block;}
+#scr-form{display:none;}
+#scr-ok{display:none;}
+
+/* ═══════════════════ AUTOFILL STRIP ═══════════════════ */
+#autofill-strip{
+  display:none;padding:9px 12px;border-radius:11px;margin-bottom:12px;
+  background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.2);
+  color:#7db4f8;font-size:11px;font-weight:600;
+}
+
+/* ═══════════════════ MISC ═══════════════════ */
+#offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:8000;
+  background:rgba(234,88,12,.92);color:#fff;font-size:11px;font-weight:700;
+  padding:7px 16px;text-align:center;}
+#offline-banner.on{display:block;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:rgba(234,88,12,.25);border-radius:2px;}
+.spin{animation:sp 1s linear infinite;}@keyframes sp{to{transform:rotate(360deg)}}
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
-    <body class="min-h-screen flex items-center justify-center p-4 font-sans">
+<body>
 
-    <div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
-        <!-- Top Accent -->
-        <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
+<div id="offline-banner">
+  <i class="fa-solid fa-wifi-slash mr-2"></i>Offline — फॉर्म सेव है, नेट आने पर upload होगा
+</div>
 
-        <!-- Optional Header Image -->
-        <!-- Header banner (Admin branding) -->
-    <div id="header-wrap" class="hidden w-full rounded-xl mb-4 overflow-hidden bg-slate-800/40 border border-white/5">
-      <img id="header-image" alt="Header" class="w-full h-32 sm:h-44 object-cover object-center" />
+<div style="display:flex;flex-direction:column;align-items:center;padding:16px 12px 48px;min-height:100vh;">
+
+<!-- ══════════════ CAMERA SCREEN ══════════════ -->
+<div id="scr-cam" style="width:100%;max-width:400px;">
+
+  <!-- Header -->
+  <div class="card card-top" style="padding:16px 18px 14px;margin-bottom:12px;overflow:hidden;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 90% 10%,rgba(234,88,12,0.1),transparent 60%);pointer-events:none;"></div>
+    <div id="hdr-cam-img-wrap" style="display:none;margin-bottom:10px;border-radius:12px;overflow:hidden;">
+      <img id="hdr-cam-img" style="width:100%;height:90px;object-fit:cover;" alt=""/>
     </div>
-
-        <!-- Header -->
-        <div class="text-center mb-6" id="form-header">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 text-orange-500 mb-3 overflow-hidden border border-white/10">
-                <i id="default-icon" class="fa-solid fa-building-user text-2xl"></i>
-                <img id="custom-logo" src="" class="w-full h-full object-contain scale-[1.15] hidden" alt="logo">
-            </div>
-            <h1 id="org-name" class="text-2xl font-extrabold brand-text">कार्यालय आगंतुक फॉर्म</h1>
-            <p id="org-subtitle" class="text-slate-300/80 text-xs mt-1">Visitor Entry System</p>
-            <p id="org-tagline" class="text-slate-400 text-[11px] mt-2 hidden"></p>
-        </div>
-
-        <!-- FORM -->
-        <form id="f" class="space-y-4">
-            <!-- Mobile -->
-            <div>
-                <label class="block text-xs font-medium text-slate-300/80 mb-1">मोबाइल नंबर (Mobile)</label>
-                <div class="relative">
-                    <input type="tel" id="mobile" class="w-full rounded-lg px-3 py-2.5 text-sm input-field pl-10" placeholder="10-digit Number" inputmode="numeric" pattern="[0-9]{10}" required>
-                    <i class="fa-solid fa-phone absolute left-3 top-3 text-slate-500 text-xs"></i>
-                    <div id="mobile-loader" class="absolute right-3 top-3 hidden">
-                        <i class="fa-solid fa-circle-notch fa-spin text-orange-400"></i>
-                    </div>
-                </div>
-                <p id="user-found-msg" class="text-[10px] text-emerald-400 mt-1 hidden">
-                  <i class="fa-solid fa-check-circle mr-1"></i> डेटा मिला! विवरण भर दिया गया है।
-                </p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300/80 mb-1">नाम (Name)</label>
-                    <input type="text" id="name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Visitor Name" required>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300/80 mb-1">पद (Designation)</label>
-                    <input type="text" id="designation" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="e.g. मंडल अध्यक्ष">
-                </div>
-            </div>
-
-            <!-- Location -->
-            <div>
-                <label class="block text-xs font-medium text-slate-300/80 mb-1">जिला (District)</label>
-                <select id="district" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
-                    <option value="">— जिला चुनें —</option>
-                </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300/80 mb-1">विधानसभा (Vidhan Sabha)</label>
-                    <select id="vidhansabha" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
-                        <option value="">— पहले जिला चुनें —</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-300/80 mb-1">मंडल (Mandal)</label>
-                    <select id="mandal" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
-                        <option value="">— पहले विधानसभा चुनें —</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-medium text-slate-300/80 mb-1">पता / वार्ड / बूथ</label>
-                <input type="text" id="address" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Address Details">
-            </div>
-
-            <div>
-                <label class="block text-xs font-medium text-slate-300/80 mb-1">आने का कारण (Purpose)</label>
-                <div class="relative">
-                    <select id="reason" class="w-full rounded-lg px-3 py-2.5 text-sm input-field appearance-none" required>
-                        <option value="">— कारण चुनें —</option>
-                        <option value="Meet District President">जिला अध्यक्ष जी से भेट</option>
-                        <option value="Transfer/Complaint/Govt Work">ट्रान्सफर / शिकायत / शासकीय कार्य</option>
-                        <option value="Office Meeting">कार्यालय पर बैठक</option>
-                        <option value="General Visit">सामान्य उपस्तिथि / शिष्टाचार भेंट</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
-                </div>
-            </div>
-
-            <!-- Selfie -->
-            <div class="space-y-2">
-                <label class="block text-xs font-semibold text-slate-200 uppercase tracking-wider">सेल्फी (Selfie) <span class="text-red-400">*</span></label>
-                <div class="relative group">
-                    <input type="file" id="selfie" accept="image/*" capture="user" class="hidden" onchange="previewImage(event)">
-                    <label for="selfie" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/15 rounded-xl cursor-pointer hover:border-orange-400 hover:bg-white/5 transition-all overflow-hidden" id="dropzone">
-                        <div id="preview-container" class="hidden w-full h-full relative">
-                            <img id="preview" class="w-full h-full object-cover" alt="preview">
-                            <button type="button" onclick="clearImage(event)" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 w-7 h-7 flex items-center justify-center shadow-lg hover:scale-110 transition">
-                              <i class="fa-solid fa-times text-xs"></i>
-                            </button>
-                        </div>
-                        <div id="upload-placeholder" class="text-center p-4">
-                            <i class="fa-solid fa-camera text-2xl text-slate-400 mb-2 group-hover:text-orange-300 transition"></i>
-                            <p class="text-xs text-slate-300/80">फोटो लें / Upload Photo</p>
-                            <p class="text-[10px] text-slate-400 mt-1">JPG / PNG</p>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <button type="submit" id="submitBtn" class="w-full brand-bg text-white font-extrabold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 hover:opacity-95">
-                <span>सुरक्षित करें (Save)</span>
-                <i class="fa-solid fa-paper-plane text-xs"></i>
-            </button>
-        </form>
-
-        <div id="status" class="mt-4 text-center text-xs font-medium hidden"></div>
-
-        <div class="mt-4 text-center text-[11px] text-slate-400/80">
-          <span id="footer-text"></span>
-        </div>
+    <div style="display:flex;align-items:center;gap:12px;position:relative;">
+      <div id="logo-wrap" style="width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(234,88,12,.1);border:1px solid rgba(234,88,12,.22);overflow:hidden;">
+        <i id="default-icon" class="fa-solid fa-building-user" style="font-size:18px;color:var(--o1)"></i>
+        <img id="logo-img" style="width:100%;height:100%;object-fit:contain;display:none;" alt=""/>
+      </div>
+      <div>
+        <div id="org-name" class="brand deva" style="font-size:17px;font-weight:800;line-height:1.15;">कार्यालय आगंतुक</div>
+        <div id="org-sub" style="font-size:11px;color:var(--muted);margin-top:2px;">Visitor Entry System</div>
+      </div>
     </div>
+  </div>
 
-    <!-- SUCCESS SCREEN -->
-    <div id="success-screen" class="hidden w-full max-w-lg glass rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[420px]">
-        <div class="w-20 h-20 bg-emerald-500/15 text-emerald-400 rounded-full flex items-center justify-center mb-6 text-4xl shadow-lg shadow-emerald-500/10 border border-emerald-500/20">
-            <i class="fa-solid fa-check"></i>
+  <!-- Camera Card — Enhanced Scan UI -->
+  <div class="cam-card-wrap">
+    <div class="cam-card-inner">
+
+      <!-- Scan title bar -->
+      <div class="scan-title-bar">
+        <div class="scan-title-icon">🔍</div>
+        <div>
+          <div class="scan-title-text deva">चेहरा स्कैन करें</div>
+          <div class="scan-title-sub">Face Recognition • Biometric Entry</div>
         </div>
-        <h2 class="text-2xl font-extrabold text-white mb-2">धन्यवाद!</h2>
-        <p id="success-msg" class="text-slate-200/90 mb-8 leading-relaxed">
-            आपकी जानकारी सफलतापूर्वक दर्ज कर ली गई है।
-        </p>
-        <button onclick="window.location.reload()" class="px-6 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-lg text-sm text-white transition">
-            <i class="fa-solid fa-user-plus mr-2"></i> नई एंट्री करें
+      </div>
+
+      <!-- Step dots -->
+      <div class="step-dots">
+        <div class="step-dot active" id="sdot1"></div>
+        <div class="step-dot" id="sdot2"></div>
+        <div class="step-dot" id="sdot3"></div>
+      </div>
+
+      <!-- Live video -->
+      <div id="cam-box" style="margin-top:12px;">
+        <video id="cam-video" autoplay muted playsinline></video>
+        <canvas id="cam-canvas"></canvas>
+        <!-- Vignette -->
+        <div class="cam-vignette"></div>
+        <!-- SVG oval -->
+        <svg id="oval-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <ellipse id="oval-el" cx="50" cy="50" rx="35" ry="42"/>
+        </svg>
+        <!-- Face dots -->
+        <div class="face-dot"></div>
+        <div class="face-dot"></div>
+        <div class="face-dot"></div>
+        <div class="face-dot"></div>
+        <div id="scanline"></div>
+        <div class="cn tl"></div><div class="cn tr"></div>
+        <div class="cn bl"></div><div class="cn br"></div>
+        <div id="cam-chip"><span id="chip-dot"></span><span id="chip-txt">कैमरा खुल रहा है...</span></div>
+        <div id="bio-label">BIOMETRIC SCAN</div>
+        <!-- Scan progress -->
+        <div id="scan-progress-bar"><div id="scan-progress-fill"></div></div>
+        <button id="cap-btn" onclick="doCapture()">📸</button>
+        <button id="flip-btn" onclick="flipCam()"><i class="fa-solid fa-rotate"></i></button>
+      </div>
+
+      <!-- Captured preview -->
+      <div id="prev-box">
+        <img id="prev-img" src="" alt=""/>
+        <button id="retake-btn" onclick="doRetake()"><i class="fa-solid fa-rotate-left"></i> Retake</button>
+      </div>
+
+      <!-- Hint -->
+      <p id="cam-hint" style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:14px;">
+        <i class="fa-solid fa-face-smile" style="color:rgba(234,88,12,.55);margin-right:4px;"></i>
+        चेहरा oval में रखें और 📸 दबाएं — <b style="color:var(--o3);">Face Scan चालू है</b>
+      </p>
+
+      <!-- Processing pill -->
+      <div id="proc-pill" style="display:none;margin-top:10px;"></div>
+
+      <!-- Proceed button (after no-match) -->
+      <div id="proceed-wrap" style="display:none;margin-top:10px;">
+        <div id="proceed-msg" style="text-align:center;font-size:11.5px;font-weight:600;color:#34d399;margin-bottom:8px;"></div>
+        <button class="btn btn-primary" onclick="gotoForm()">
+          <i class="fa-solid fa-arrow-right"></i><span class="deva">फॉर्म भरें</span>
         </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Gallery fallback -->
+  <label class="btn btn-ghost" style="border-radius:13px;cursor:pointer;">
+    <input id="gal-input" type="file" accept="image/*" capture="user" style="display:none;" onchange="galUpload(event)"/>
+    <i class="fa-solid fa-image"></i><span class="deva">गैलरी से फोटो</span>
+  </label>
+
+  <div id="footer-cam" style="text-align:center;font-size:10px;color:rgba(100,90,80,.5);margin-top:14px;">Powered by EventLens</div>
+</div>
+
+
+<!-- ══════════════ FORM SCREEN ══════════════ -->
+<div id="scr-form" style="width:100%;max-width:400px;">
+  <div class="card card-top" style="padding:18px;">
+
+    <!-- Header row -->
+    <div id="form-hdr-img-wrap" style="display:none;border-radius:12px;overflow:hidden;margin-bottom:12px;">
+      <img id="form-hdr-img" style="width:100%;height:90px;object-fit:cover;" alt=""/>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button onclick="goCam()" style="width:34px;height:34px;border-radius:10px;border:1px solid rgba(234,88,12,.22);background:rgba(234,88,12,.08);color:var(--o3);cursor:pointer;font-size:13px;flex-shrink:0;">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <div>
+        <div class="brand deva" style="font-size:15px;font-weight:800;">विवरण भरें</div>
+        <div style="font-size:10px;color:var(--muted);">Visitor Details</div>
+      </div>
+      <div id="match-badge" style="display:none;margin-left:auto;padding:4px 10px;border-radius:99px;font-size:9.5px;font-weight:700;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);color:#7db4f8;">
+        <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:3px;"></i>Auto-filled
+      </div>
     </div>
 
-    <script>
-    // ===============================
-// COMMON CONFIG & UTILS
-// ===============================
-const API_ID = "vxid0yoovj";
-const AWS_REGION = "ap-south-1";
-const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
+    <!-- Autofill strip -->
+    <div id="autofill-strip"><i class="fa-solid fa-circle-check" style="margin-right:5px;"></i><span id="autofill-txt">पिछला डेटा auto-fill हो गया</span></div>
 
-const $ = (id) => document.getElementById(id);
-const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
-const token = (qs("token") || "").trim();
-const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
-const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
-const debug = (qs("debug") || "").trim() === "1";
+    <form id="vform" onsubmit="doSubmit(event)">
+      <div style="display:flex;flex-direction:column;gap:11px;">
 
-function isPublicMode() { return !!token; }
+        <!-- Mobile -->
+        <div>
+          <label class="lbl deva">मोबाइल नंबर *</label>
+          <div style="position:relative;">
+            <i class="fa-solid fa-phone" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:11px;color:rgba(234,88,12,.4);"></i>
+            <input id="f-mobile" type="tel" class="inp" style="padding-left:34px;" placeholder="10 अंक" inputmode="numeric" maxlength="10" required/>
+            <div id="mob-spin" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);"><i class="fa-solid fa-circle-notch spin" style="color:var(--o1);font-size:11px;"></i></div>
+          </div>
+          <div id="mob-found" style="display:none;font-size:10px;font-weight:600;color:#34d399;margin-top:4px;"><i class="fa-solid fa-check-circle mr-1"></i>मोबाइल से डेटा मिला!</div>
+        </div>
 
-function setThemeVars(c1, c2) {
-  if (c1) document.documentElement.style.setProperty("--c1", c1);
-  if (c2) document.documentElement.style.setProperty("--c2", c2);
-}
-function setBackgroundImage(url, ver) {
-  const finalUrl = cacheBust(url, ver);
-  if (!finalUrl) {
-    document.documentElement.style.setProperty("--bgimg", "none");
-    document.body.style.backgroundImage = "none";
-    return;
-  }
-  const testImg = new Image();
-  testImg.onload = () => {
-    document.documentElement.style.setProperty("--bgimg", `url('${finalUrl}')`);
-    document.body.style.backgroundImage = `url('${finalUrl}')`;
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundPosition = "center";
-    document.body.style.backgroundAttachment = "fixed";
-  };
-  testImg.onerror = () => {
-    document.documentElement.style.setProperty("--bgimg", "none");
-    document.body.style.backgroundImage = "none";
-  };
-  testImg.src = finalUrl;
-}
+        <!-- Name + Designation -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label class="lbl deva">नाम *</label>
+            <input id="f-name" type="text" class="inp" placeholder="पूरा नाम" required/>
+          </div>
+          <div>
+            <label class="lbl deva">पद</label>
+            <input id="f-desig" type="text" class="inp" placeholder="Designation"/>
+          </div>
+        </div>
 
-function showStatus(msg, isError) {
-  const el = $("status");
-  if (!el) return;
-  el.classList.remove("hidden","text-green-400","text-red-400");
-  el.classList.add(isError ? "text-red-400" : "text-green-400");
-  el.textContent = msg || "";
-  if (!msg) el.classList.add("hidden");
-}
+        <!-- District -->
+        <div>
+          <label class="lbl deva">जिला</label>
+          <select id="f-dist" class="inp"><option value="">— जिला चुनें —</option></select>
+        </div>
 
-async function apiCall(action, payload) {
-  // IMPORTANT: use same endpoint as admin to avoid CORS/preflight issues
-  const url = `${BASE_URL}/political/forms`;
-  const res = await fetch(url, {
-    method: "POST",
-    cache: "no-store",
-    body: JSON.stringify({ action, payload: payload || {} })
+        <!-- Vidhan + Mandal -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label class="lbl deva">विधानसभा</label>
+            <select id="f-vidhan" class="inp" disabled><option value="">— पहले जिला —</option></select>
+          </div>
+          <div>
+            <label class="lbl deva">मंडल</label>
+            <select id="f-mandal" class="inp" disabled><option value="">— पहले विधान —</option></select>
+          </div>
+        </div>
+
+        <!-- Address -->
+        <div>
+          <label class="lbl deva">पता / वार्ड / बूथ</label>
+          <input id="f-addr" type="text" class="inp" placeholder="पता लिखें"/>
+        </div>
+
+        <!-- Reason -->
+        <div>
+          <label class="lbl deva">आने का कारण *</label>
+          <select id="f-reason" class="inp" required>
+            <option value="">— कारण चुनें —</option>
+            <option value="Meet District President">जिला अध्यक्ष जी से भेट</option>
+            <option value="Transfer/Complaint/Govt Work">ट्रान्सफर / शिकायत / शासकीय कार्य</option>
+            <option value="Office Meeting">कार्यालय पर बैठक</option>
+            <option value="General Visit">सामान्य उपस्थिति / शिष्टाचार भेंट</option>
+            <option value="Other">अन्य</option>
+          </select>
+        </div>
+
+        <div id="f-status" style="display:none;text-align:center;font-size:12px;font-weight:600;padding:9px 12px;border-radius:10px;"></div>
+
+        <button id="submit-btn" type="submit" class="btn btn-primary" style="margin-top:4px;">
+          <i class="fa-solid fa-paper-plane"></i><span class="deva">सुरक्षित करें</span>
+        </button>
+      </div>
+    </form>
+    <div style="text-align:center;font-size:10px;color:rgba(100,90,80,.4);margin-top:14px;" id="footer-form">Powered by EventLens</div>
+  </div>
+</div>
+
+
+<!-- ══════════════ SUCCESS SCREEN ══════════════ -->
+<div id="scr-ok" style="width:100%;max-width:400px;">
+  <div class="card" style="padding:36px 24px;text-align:center;border-top:2px solid rgba(16,185,129,.4);">
+    <div style="width:76px;height:76px;border-radius:50%;background:rgba(16,185,129,.1);border:2px solid rgba(16,185,129,.3);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 18px;">✅</div>
+    <div class="deva" style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px;">धन्यवाद!</div>
+    <div id="ok-msg" class="deva" style="font-size:13px;color:var(--muted);margin-bottom:24px;">जानकारी दर्ज हो गई।</div>
+    <button id="timeline-btn" onclick="openTimeline()" class="btn btn-primary" style="margin-bottom:10px;display:none;">
+      <i class="fa-solid fa-clock-rotate-left"></i><span class="deva">Timeline देखें</span>
+    </button>
+    <button onclick="doNewEntry()" class="btn btn-ghost">
+      <i class="fa-solid fa-user-plus"></i><span class="deva">नई एंट्री</span>
+    </button>
+  </div>
+</div>
+
+</div><!-- /wrapper -->
+
+
+<!-- ══════════════ WELCOME POPUP ══════════════ -->
+<div id="popup-bg">
+  <div id="popup-sheet">
+    <div class="drag-handle"></div>
+
+    <!-- Welcome Hero -->
+    <div class="welcome-hero">
+      <div class="party-ornament">🪷</div>
+      <div class="welcome-avatar" id="pp-avatar">👤</div>
+      <div class="welcome-namaskar deva">🙏 नमस्कार</div>
+      <div id="pp-name" class="welcome-name deva">—</div>
+      <div class="welcome-party-line">
+        <span>🔶</span>
+        <span class="deva" id="pp-office-label">भाजपा कार्यालय</span>
+        <span>🔶</span>
+      </div>
+      <div class="welcome-swagat deva" id="pp-swagat-msg">आपका स्वागत है!</div>
+
+      <!-- Visit badge -->
+      <div class="welcome-visit-badge">
+        <div class="welcome-visit-num" id="pp-vi">—</div>
+        <div class="welcome-visit-label deva">
+          वीं विजिट
+          <span id="pp-vi-sub">इस कार्यालय पर आपकी उपस्थिति</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats row (events & photos) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+      <div class="stat-b">
+        <div id="pp-ev" class="stat-n brand">0</div>
+        <div class="stat-l deva">कार्यक्रम</div>
+      </div>
+      <div class="stat-b">
+        <div id="pp-ph" class="stat-n brand">0</div>
+        <div class="stat-l deva">फ़ोटो</div>
+      </div>
+    </div>
+
+    <!-- Recent events — "आप निम्न कार्यक्रमों में सम्मिलित हुए हैं" -->
+    <div id="pp-ev-wrap" style="display:none;margin-bottom:16px;">
+      <div class="welcome-events-title deva">
+        <i class="fa-solid fa-calendar-check" style="color:var(--o1);margin-right:5px;"></i>
+        आप निम्न कार्यक्रमों में भी सम्मिलित हुए हैं
+      </div>
+      <div id="pp-ev-list"></div>
+    </div>
+
+    <!-- Autofill info (hidden, still used by JS) -->
+    <div id="pp-fill-wrap" style="display:none;">
+      <div id="pp-fill-list"></div>
+    </div>
+    <!-- Hidden fields still referenced by JS -->
+    <span id="pp-mob" style="display:none;"></span>
+    <span id="pp-loc" style="display:none;"></span>
+    <span id="pp-sim" style="display:none;"></span>
+
+    <div class="welcome-cta-text deva">
+      <i class="fa-solid fa-hand-pointer" style="color:rgba(234,88,12,.5);margin-right:4px;"></i>
+      आज की उपस्थिति दर्ज करने के लिए नीचे क्लिक कर आगे बढ़ें
+    </div>
+
+    <button class="btn btn-primary" onclick="acceptMatch()" style="margin-bottom:10px;">
+      <i class="fa-solid fa-check-circle"></i><span class="deva">उपस्थिति दर्ज करें — Auto-fill के साथ</span>
+    </button>
+    <button onclick="skipMatch()" style="width:100%;padding:10px;background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;">
+      Skip — नया Visitor
+    </button>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
+const API_ID  = "vxid0yoovj";
+const REGION  = "ap-south-1";
+const BASE    = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+const FTYPE   = "visitor_form";
+const SURL    = "political-search.html";
+
+const _qs = k => { try { return new URLSearchParams(location.search).get(k)||""; } catch(e){return "";} };
+const _$  = id => document.getElementById(id);
+const DBG = _qs("debug") === "1";
+
+const TOK = _qs("token");
+let   CID = (_qs("cid")||_qs("collection_id")).trim();
+const isPub = () => !!TOK;
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let camFile=null, camDataUrl=null, searchResp=null;
+let entryId=null, finalTok=null, upUrl=null, s3k=null, faceS3k=null; // faceS3k = selfie key for search
+let facingMode="user", mobTimer=null, remoteCfg=null;
+
+// ═══════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════
+async function api(action, payload){
+  const r = await fetch(`${BASE}/political/forms`,{
+    method:"POST", cache:"no-store",
+    body: JSON.stringify({action, payload:payload||{}})
   });
-  const text = await res.text();
-  let data = {};
-  try { data = JSON.parse(text); } catch (e) { data = { message: text || "Invalid JSON" }; }
-  if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
-  return data;
+  const txt = await r.text();
+  let d={}; try{d=JSON.parse(txt);}catch(e){d={message:txt};}
+  if(!r.ok) throw new Error(d.message||d.error||`HTTP ${r.status}`);
+  return d;
+}
+async function sha256(file){
+  const b=await file.arrayBuffer();
+  const h=await crypto.subtle.digest("SHA-256",b);
+  return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
-
-function safeStr(v) { return (v === null || v === undefined) ? "" : String(v); }
-
-
-function isPresignedUrl(u) {
-  // AWS S3 presigned URLs include X-Amz-* query params; adding our own query breaks the signature
-  return /[?&]x-amz-/i.test(u) || /[?&]X-Amz-/i.test(u) || /X-Amz-Signature/i.test(u) || /X-Amz-Algorithm/i.test(u) || /X-Amz-Credential/i.test(u);
-}
-function cacheBust(url, ver) {
-  const u = safeStr(url || "").trim();
-  if (!u) return "";
-  // Never append cache-bust to presigned URLs (it invalidates the signature and causes ORB/403 XML)
-  if (isPresignedUrl(u)) return u;
-  const v = safeStr(ver || "").trim();
-  if (!v) return u;
-  const sep = u.includes("?") ? "&" : "?";
-  return u + sep + "v=" + encodeURIComponent(v);
-}
-async function sha256Hex(file) {
-  const buffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+// ═══════════════════════════════════════════════════
+// RESOLVE CID FROM TOKEN
+// ═══════════════════════════════════════════════════
+async function resolveCid(){
+  if(CID||!TOK) return;
+  try{
+    const r = await api("public_get_config",{token:TOK, form_type:FTYPE});
+    const c = r.collection_id||r.cid||(r.config&&(r.config.collection_id||r.config.cid))||(r.settings&&(r.settings.collection_id||r.settings.cid))||"";
+    if(c){ CID=c.trim(); if(DBG) console.log("✅ CID resolved:",CID); }
+  }catch(e){ if(DBG) console.warn("resolveCid fail",e); }
 }
 
-async function uploadToS3(url, file) {
-  await fetch(url, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+// ═══════════════════════════════════════════════════
+// BRANDING
+// ═══════════════════════════════════════════════════
+async function loadBranding(){
+  try{
+    const payload = TOK ? {token:TOK,form_type:FTYPE} : {collection_id:CID,form_type:FTYPE};
+    const action  = TOK ? "public_get_config" : "admin_get_config";
+    const res = await api(action, payload);
+    // Grab CID if missing
+    if(!CID){
+      const c=res.collection_id||res.cid||(res.config&&(res.config.collection_id||res.config.cid))||(res.settings&&(res.settings.collection_id||res.settings.cid))||"";
+      if(c) CID=c.trim();
+    }
+    const cfg = res.config||res.settings||res.data||res;
+    remoteCfg=cfg;
+    const forms=cfg.forms||{}; const ft=forms[FTYPE]||{}; const def=cfg.defaults||cfg.branding||{}; const gl=cfg.global||{};
+    const title=ft.title||def.title||gl.title||"";
+    const sub=ft.subtitle||def.subtitle||"";
+    const logo=(ft.branding&&ft.branding.logo&&ft.branding.logo.url)||(def.logo_url)||"";
+    const hdr=ft.header_url||"";
+    const c1=(ft.branding&&ft.branding.color1)||(def.color1)||"";
+    const c2=(ft.branding&&ft.branding.color2)||(def.color2)||"";
+    const foot=gl.tagline||"Powered by EventLens";
+    if(title){ _$("org-name").textContent=title; }
+    if(sub) _$("org-sub").textContent=sub;
+    _$("footer-cam").textContent=foot; _$("footer-form").textContent=foot;
+    if(c1) document.documentElement.style.setProperty("--o1",c1);
+    if(c2) document.documentElement.style.setProperty("--o2",c2);
+    if(logo){ _$("logo-img").src=logo; _$("logo-img").style.display="block"; _$("default-icon").style.display="none"; }
+    if(hdr){
+      _$("hdr-cam-img").src=hdr; _$("hdr-cam-img-wrap").style.display="block";
+      _$("form-hdr-img").src=hdr; _$("form-hdr-img-wrap").style.display="block";
+    }
+  }catch(e){ if(DBG) console.warn("branding fail",e); }
 }
 
-function mergeObj(a, b) {
-  const out = Object.assign({}, a || {});
-  Object.keys(b || {}).forEach(k => {
-    if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k])) out[k] = mergeObj(out[k], b[k]);
-    else out[k] = b[k];
-  });
-  return out;
-}
-
-// ===============================
-// BRANDING + PROGRAMS + FIXED LEVEL
-// ===============================
-async function loadRemoteConfig(formType) {
-  try {
-    const payload = isPublicMode()
-      ? { cid: cidParam, collection_id: cidParam, token, form_type: formType, _ts: Date.now() }
-      : { collection_id: cidParam, form_type: formType, _ts: Date.now() };
-
-    const action = isPublicMode() ? "public_get_config" : "admin_get_config";
-    const res = await apiCall(action, payload);
-    return res || null; // keep full response (settings/config/form)
-  } catch (e) {
-    if (debug) console.log("config load failed", e);
-    return null;
+// ═══════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════
+async function startCam(mode="user"){
+  facingMode=mode;
+  setChip("idle","कैमरा खुल रहा है...");
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:mode,width:{ideal:720},height:{ideal:720}}});
+    _$("cam-video").srcObject = stream;
+    _$("cam-video").onloadedmetadata = ()=>{ _$("cam-video").play(); setChip("idle","चेहरा oval में रखें — 📸 दबाएं"); };
+  }catch(e){
+    _$("cam-box").innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px;gap:10px;"><i class="fa-solid fa-camera-slash" style="font-size:48px;color:rgba(234,88,12,.35);"></i><p style="font-size:13px;font-weight:700;color:#fff;">कैमरा उपलब्ध नहीं</p><p style="font-size:11px;color:var(--muted);">नीचे से गैलरी से फोटो चुनें</p></div>`;
+    _$("cap-btn").style.display="none";
   }
 }
-
-
-function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
-  const obj = cfgOrResp || {};
-
-  // -------- NEW response shape support (preferred) --------
-  const defaultsNode = (obj.settings && obj.settings.defaults) || (obj.config && obj.config.defaults) || null;
-  const globalNode = (obj.settings && obj.settings.global) || (obj.config && obj.config.global) || null;
-
-  // Form node
-  const ft = formType || obj.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
-  const formNode =
-    (obj.form && typeof obj.form === "object" && (!obj.form_type || obj.form_type === ft)) ? obj.form :
-    (obj.settings && obj.settings.forms && obj.settings.forms[ft]) ? obj.settings.forms[ft] :
-    (obj.config && obj.config.forms && obj.config.forms[ft]) ? obj.config.forms[ft] :
-    null;
-
-  // If we have new nodes, apply using them
-  if (defaultsNode || globalNode || formNode) {
-    const branding = (formNode && formNode.branding) || (defaultsNode && defaultsNode.branding) || {};
-    const theme = (globalNode && globalNode.theme) || {};
-
-    const title = safeStr((formNode && formNode.title) || fallbackTitle || "EventLens Form");
-    const subtitle = safeStr((formNode && formNode.subtitle) || fallbackSubtitle || "");
-    const tagline = safeStr((formNode && formNode.tagline) || branding.tagline || fallbackTagline || "");
-    const footerText = safeStr((globalNode && globalNode.tagline) || branding.footer_text || "Powered by EventLens");
-
-    // Signed URLs from backend (preferred)
-    const logoUrl = safeStr((formNode && formNode.logo_url) || (branding.logo && branding.logo.url) || branding.logo_url || "");
-    const headerUrl = safeStr((formNode && formNode.header_url) || (branding.header && branding.header.url) || branding.header_image_url || "");
-    const bgUrl = safeStr((formNode && formNode.background_url) || (branding.background && branding.background.url) || branding.background_image_url || "");
-
-    // Cache bust (use updated_at if present, else Date.now)
-    const ver = safeStr(obj.updated_at_ms || (globalNode && globalNode.updated_at_ms) || Date.now());
-
-    if ($("org-name")) $("org-name").textContent = title;
-    if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
-    if ($("org-tagline")) $("org-tagline").textContent = tagline;
-    if ($("footer-text")) $("footer-text").textContent = footerText;
-
-    // Theme colors -> our CSS uses --c1/--c2
-    const primary = safeStr(branding.color1 || theme.primary || "#f97316");
-    const secondary = safeStr(branding.color2 || theme.secondary || "#ef4444");
-    setThemeVars(primary, secondary);
-    setBackgroundImage(bgUrl, ver);
-
-    // Logo
-    const logoEl = $("custom-logo");
-    const iconEl = $(defaultIconId);
-    const logoFinal = cacheBust(logoUrl, ver);
-    if (logoEl && logoFinal) {
-      logoEl.src = logoFinal;
-      logoEl.classList.remove("hidden");
-      if (iconEl) iconEl.classList.add("hidden");
-      try { logoEl.onerror = () => { logoEl.classList.add("hidden"); if (iconEl) iconEl.classList.remove("hidden"); }; } catch(e) {}
-    } else {
-      if (logoEl) logoEl.classList.add("hidden");
-      if (iconEl) iconEl.classList.remove("hidden");
-    }
-
-    // Header
-    const headerWrap = $("header-wrap");
-    const headerEl = $("header-image");
-    const headerFinal = cacheBust(headerUrl, ver);
-    if (headerWrap && headerEl && headerFinal) {
-      headerEl.src = headerFinal;
-      headerWrap.classList.remove("hidden");
-      try { headerEl.onerror = () => { headerWrap.classList.add("hidden"); }; } catch(e) {}
-    } else if (headerWrap) {
-      headerWrap.classList.add("hidden");
-    }
-
-    return;
-  }
-
-  // -------- OLD config shape fallback --------
-  const globalBrand = (obj && obj.branding && obj.branding.global) ? obj.branding.global : {};
-  const perForm = (obj && obj.branding && obj.branding.forms && obj.branding.forms[formType]) ? obj.branding.forms[formType] : {};
-  const brand = mergeObj(globalBrand, perForm);
-
-  const title = brand.title || fallbackTitle || "EventLens Form";
-  const subtitle = brand.subtitle || fallbackSubtitle || "";
-  const tagline = brand.tagline || fallbackTagline || "";
-  const logoUrl = brand.logo_url || "";
-  const headerImg = brand.header_image_url || "";
-  const footerText = brand.footer_text || "";
-  const bgImg = brand.background_image_url || "";
-  const ver = (obj && (obj.updated_at_ms || obj.updatedAtMs || obj.updated_at_iso)) || Date.now();
-
-  if ($("org-name")) $("org-name").textContent = title;
-  if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
-  if ($("org-tagline")) $("org-tagline").textContent = tagline;
-  if ($("footer-text")) $("footer-text").textContent = footerText;
-
-  setThemeVars(brand.theme_primary, brand.theme_secondary);
-  setBackgroundImage(bgImg, ver);
-
-  const logoEl = $("custom-logo");
-  const iconEl = $(defaultIconId);
-  const logoFinal = cacheBust(logoUrl, ver);
-  if (logoEl && logoFinal) {
-    logoEl.src = logoFinal;
-    logoEl.classList.remove("hidden");
-    if (iconEl) iconEl.classList.add("hidden");
-    try { logoEl.onerror = () => { logoEl.classList.add("hidden"); if (iconEl) iconEl.classList.remove("hidden"); }; } catch(e) {}
+function flipCam(){
+  const v=_$("cam-video"); if(v.srcObject) v.srcObject.getTracks().forEach(t=>t.stop());
+  startCam(facingMode==="user"?"environment":"user");
+}
+function setChip(type,txt){
+  _$("chip-txt").textContent=txt;
+  const dot=_$("chip-dot"); dot.className="";
+  const oval=_$("oval-el"); oval.className="";
+  const bioL=_$("bio-label");
+  const progBar=_$("scan-progress-bar");
+  const progFill=_$("scan-progress-fill");
+  if(type==="scanning"){
+    dot.className="s";oval.className="s";
+    bioL.style.display="block";
+    progBar.style.display="block";
+    // Animate progress
+    progFill.style.width="0%";
+    setTimeout(()=>{progFill.style.width="60%";},100);
+    setTimeout(()=>{progFill.style.width="85%";},800);
+  } else if(type==="match"){
+    dot.className="m";oval.className="m";
+    bioL.style.display="none";
+    if(progFill){progFill.style.width="100%";}
+    setTimeout(()=>{progBar.style.display="none";progFill.style.width="0%";},600);
   } else {
-    if (logoEl) logoEl.classList.add("hidden");
-    if (iconEl) iconEl.classList.remove("hidden");
-  }
-  const headerWrap = $("header-wrap");
-  const headerEl = $("header-image");
-  const headerFinal = cacheBust(headerImg, ver);
-  if (headerWrap && headerEl && headerFinal) {
-    headerEl.src = headerFinal;
-    headerWrap.classList.remove("hidden");
-    try { headerEl.onerror = () => { headerWrap.classList.add("hidden"); }; } catch(e) {}
-  } else if (headerWrap) {
-    headerWrap.classList.add("hidden");
+    bioL.style.display="none";
+    progBar.style.display="none";
+    progFill.style.width="0%";
   }
 }
+function setPill(html){
+  const p=_$("proc-pill");
+  if(!html){p.style.display="none";p.innerHTML="";return;}
+  p.style.display="block"; p.innerHTML=html;
+}
+function pill(icon,text,bg,cl){
+  return `<div style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:11px;background:${bg};font-size:12px;font-weight:700;color:${cl};"><i class="${icon}"></i><span class="deva">${text}</span></div>`;
+}
 
-
-function fillProgramNames(cfgOrResp, selectId) {
-  const sel = $(selectId);
-  if (!sel) return;
-
-  const obj = cfgOrResp || {};
-
-  // NEW shape: use formNode.program_options / formNode.programs / defaults.programs
-  const formType = (typeof FORM_TYPE !== "undefined") ? FORM_TYPE : (obj.form_type || "");
-  const formNode = (obj.form && typeof obj.form === "object") ? obj.form :
-    (obj.settings && obj.settings.forms && obj.settings.forms[formType]) ? obj.settings.forms[formType] :
-    (obj.config && obj.config.forms && obj.config.forms[formType]) ? obj.config.forms[formType] :
-    null;
-
-  const defaults = (obj.settings && obj.settings.defaults) || (obj.config && obj.config.defaults) || {};
-  let list = [];
-  if (formNode) {
-    if (Array.isArray(formNode.program_options)) list = list.concat(formNode.program_options);
-    if (Array.isArray(formNode.programs)) list = list.concat(formNode.programs);
+// ═══════════════════════════════════════════════════
+// TIMING LOGGER
+// ═══════════════════════════════════════════════════
+const T = {
+  _m:{},
+  start(l){ this._m[l]=performance.now(); console.log(`⏱️  [START] ${l}`); },
+  end(l){
+    const ms=performance.now()-(this._m[l]||0);
+    const e=ms<300?"🟢":ms<800?"🟡":"🔴";
+    console.log(`${e} [END] ${l} → ${ms.toFixed(0)}ms`);
+    return ms;
   }
-  if (Array.isArray(defaults.programs)) list = list.concat(defaults.programs);
+};
 
-  // OLD shape fallback
-  if (!list.length) {
-    const legacy = (obj && (obj.programs || (obj.data && obj.data.programs))) || [];
-    if (Array.isArray(legacy)) list = legacy.slice();
-  }
-
-  // De-dup & clean
-  const programs = Array.from(new Set((list || []).map(x => safeStr(x).trim()).filter(Boolean)));
-  if (!programs.length) return;
-
-  // If first option exists, keep placeholder
-  sel.innerHTML = '<option value="">— कार्यक्रम चुनें —</option>';
-  programs.forEach(p => {
-    const opt = document.createElement("option");
-    opt.value = p;
-    opt.textContent = p;
-    sel.appendChild(opt);
+// ═══════════════════════════════════════════════════
+// IMAGE COMPRESSION — MAX 640px, ~80-150KB output
+// ═══════════════════════════════════════════════════
+function compressImage(blob, maxPx=640, quality=0.82){
+  return new Promise(resolve=>{
+    const img=new Image(), url=URL.createObjectURL(blob);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let w=img.width, h=img.height;
+      if(w>maxPx||h>maxPx){
+        if(w>h){h=Math.round(h*(maxPx/w));w=maxPx;}
+        else{w=Math.round(w*(maxPx/h));h=maxPx;}
+      }
+      const c=document.createElement("canvas");
+      c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      c.toBlob(out=>{
+        console.log(`🗜️  ${(blob.size/1024).toFixed(0)}KB → ${(out.size/1024).toFixed(0)}KB (${Math.round(out.size/blob.size*100)}%)`);
+        resolve(out);
+      },"image/jpeg",quality);
+    };
+    img.src=url;
   });
 }
 
+// ═══════════════════════════════════════════════════
+// CAPTURE
+// ═══════════════════════════════════════════════════
+async function doCapture(){
+  const v=_$("cam-video"), cnv=_$("cam-canvas");
+  const w=v.videoWidth||640, h=v.videoHeight||640;
+  cnv.width=w; cnv.height=h;
+  const ctx=cnv.getContext("2d");
+  if(facingMode==="user"){ctx.translate(w,0);ctx.scale(-1,1);}
+  ctx.drawImage(v,0,0,w,h);
+  if(v.srcObject) v.srcObject.getTracks().forEach(t=>t.stop());
 
-function getFixedLevel(cfgOrResp, formType) {
-  // Supports both old config shape and new response shape
-  const obj = cfgOrResp || {};
-  // NEW: resp.settings.global.fixed_levels OR resp.config.global.fixed_levels
-  const globalNode =
-    (obj.settings && obj.settings.global) ||
-    (obj.config && obj.config.global) ||
-    {};
-  let fixed = globalNode.fixed_levels;
-
-  // Sometimes fixed_levels stored under defaults/global in older data
-  if (!fixed) {
-    const defaults = (obj.settings && obj.settings.defaults) || (obj.config && obj.config.defaults) || {};
-    fixed = defaults.fixed_levels || defaults.fixedLevels || null;
-  }
-
-  // OLD: cfg.fixed_levels or cfg.data.fixed_levels
-  if (!fixed) {
-    fixed = (obj.fixed_levels) ? obj.fixed_levels : (obj.data && obj.data.fixed_levels) ? obj.data.fixed_levels : {};
-  }
-
-  if (fixed && typeof fixed === "object" && fixed[formType]) return String(fixed[formType]).toLowerCase();
-  return "";
+  cnv.toBlob(async rawBlob=>{
+    // Preview — original quality for UI
+    camDataUrl=URL.createObjectURL(rawBlob);
+    _$("prev-img").src=camDataUrl;
+    _$("cam-box").style.display="none";
+    _$("prev-box").style.display="block";
+    _$("cam-hint").style.display="none";
+    // Compress before upload
+    const compressed=await compressImage(rawBlob,640,0.82);
+    camFile=new File([compressed],"selfie.jpg",{type:"image/jpeg"});
+    await runMatch(camFile);
+  },"image/jpeg",.92);
+}
+async function galUpload(e){
+  const raw=e.target.files&&e.target.files[0]; if(!raw) return;
+  camDataUrl=URL.createObjectURL(raw);
+  _$("prev-img").src=camDataUrl;
+  _$("cam-box").style.display="none";
+  _$("prev-box").style.display="block";
+  _$("cam-hint").style.display="none";
+  const compressed=await compressImage(raw,640,0.82);
+  camFile=new File([compressed],"selfie.jpg",{type:"image/jpeg"});
+  await runMatch(camFile);
+}
+function doRetake(){
+  camFile=null; camDataUrl=null; searchResp=null;
+  entryId=null; finalTok=null; upUrl=null; s3k=null;
+  _$("prev-box").style.display="none";
+  _$("cam-box").style.display="block";
+  _$("cam-hint").style.display="block";
+  _$("proceed-wrap").style.display="none";
+  setPill("");
+  setChip("idle","चेहरा oval में रखें — 📸 दबाएं");
+  startCam(facingMode);
 }
 
+// ═══════════════════════════════════════════════════
+// FACE MATCH — optimized with timing logs
+// ═══════════════════════════════════════════════════
+async function runMatch(file){
+  const t0 = performance.now();
+  setChip("scanning","पहचाना जा रहा है...");
+  setPill(pill("fa-solid fa-circle-notch spin","चेहरा पहचाना जा रहा है...","rgba(234,88,12,.1)","var(--o3)"));
+  try{
+    if(!CID && TOK) await resolveCid();
 
-    const FORM_TYPE = "visitor_form";
-    const FIELD_IDS = ["mobile","name","designation","district","vidhansabha","mandal","address","reason"];
+    // STEP 1: sha256 (local, fast)
+    T.start("1_sha256");
+    const sha = await sha256(file);
+    const t1 = T.end("1_sha256");
 
-    const DISTRICT_DATA = {
+    // STEP 2: create_entry (API)
+    T.start("2_create_entry");
+    const cp = {form_type:FTYPE, sha256:sha, file_name:"selfie.jpg", mime_type:"image/jpeg", payload:{}};
+    if(TOK) cp.token=TOK;
+    if(CID)  cp.collection_id=CID;
+    const cr = await api(isPub()?"public_create_entry":"create_entry", cp);
+    const t2 = T.end("2_create_entry");
+    entryId=cr.entry_id; finalTok=cr.finalize_token; upUrl=cr.upload_url; s3k=cr.s3_key; faceS3k=cr.s3_key;
+
+    // STEP 3+4: Upload to S3 AND Search — PARALLEL if not duplicate!
+    // यही main optimization है — upload wait किए बिना search शुरू
+    T.start("3_s3_upload");
+    T.start("4_face_search");
+
+    const sp = {s3_key:s3k, days:730};
+    if(TOK) sp.token=TOK;
+    if(CID)  sp.collection_id=CID;
+
+    const uploadPromise = (upUrl && !cr.duplicate)
+      ? fetch(upUrl,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}}).then(r=>{ T.end("3_s3_upload"); return r; })
+      : Promise.resolve().then(()=>{ console.log("⏭️  Upload skipped (duplicate)"); T.end("3_s3_upload"); });
+
+    // Note: search needs S3 file to exist — so we wait for upload first
+    // लेकिन अगर duplicate है तो file already exists — parallel चला सकते हैं
+    let sd;
+    if(cr.duplicate){
+      // File already on S3 — upload + search parallel चलाओ
+      const searchPromise = fetch(`${BASE}/political/search`,{method:"POST",cache:"no-store",
+        body:JSON.stringify({action:"public_search",payload:sp})}).then(r=>r.json());
+      const [,searchData] = await Promise.all([uploadPromise, searchPromise]);
+      T.end("4_face_search");
+      sd = searchData;
+    } else {
+      // New file — upload पहले, फिर search (Rekognition को file चाहिए)
+      await uploadPromise;
+      const sr = await fetch(`${BASE}/political/search`,{method:"POST",cache:"no-store",
+        body:JSON.stringify({action:"public_search",payload:sp})});
+      sd = await sr.json();
+      T.end("4_face_search");
+    }
+
+    // Summary
+    const total = performance.now()-t0;
+    const emoji = total<2000?"🟢":total<3500?"🟡":"🔴";
+    console.log(`
+${emoji} ══ TOTAL: ${total.toFixed(0)}ms ══`);
+    console.log(`  sha256:       ${t1.toFixed(0)}ms`);
+    console.log(`  create_entry: ${t2.toFixed(0)}ms`);
+    console.log(`  (see above for upload + search)`);
+    console.log(`  file_size:    ${(file.size/1024).toFixed(0)}KB`);
+    console.log(`  duplicate:    ${!!cr.duplicate}`);
+
+    if(DBG) console.log("🟢 FULL SEARCH RESPONSE:", JSON.stringify(sd));
+
+    if(sd.message==="OK" && (sd.face_id||sd.matched)){
+      searchResp=sd; onMatch(sd);
+    }else{
+      onNoMatch();
+    }
+  }catch(err){
+    if(DBG) console.error("Match error:",err);
+    setChip("idle","Error — फिर try करें");
+    setPill(pill("fa-solid fa-triangle-exclamation",err.message||"Server Error","rgba(239,68,68,.1)","#f87171"));
+    _$("proceed-wrap").style.display="block";
+    _$("proceed-msg").textContent="सर्वर error — फिर भी फॉर्म भरें";
+  }
+}
+
+function onMatch(sd){
+  setChip("match",`✅ पहचाना गया! ${Math.round(sd.similarity||0)}%`);
+  setPill(pill("fa-solid fa-user-check",`मैच मिला — ${Math.round(sd.similarity||0)}% similarity`,"rgba(96,165,250,.1)","#7db4f8"));
+  openPopup(sd);
+}
+function onNoMatch(){
+  setChip("idle","नया Visitor");
+  setPill(pill("fa-solid fa-user-plus","पहचाना नहीं गया — नया Visitor","rgba(16,185,129,.1)","#34d399"));
+  _$("proceed-wrap").style.display="block";
+  _$("proceed-msg").textContent="पहचाना नहीं गया — विवरण भरें";
+}
+
+// ═══════════════════════════════════════════════════
+// EXTRACT PROFILE — THE CRITICAL FUNCTION
+// ═══════════════════════════════════════════════════
+function extractProfile(sd){
+  if(!sd) return {};
+  if(DBG) console.log("🔎 extractProfile from:", JSON.stringify(sd));
+
+  // Collect all candidate objects — search everywhere
+  const cands = [];
+  if(sd.profile)   cands.push(sd.profile);
+  if(sd.identity)  cands.push(sd.identity);
+  if(sd.data)      cands.push(sd.data);
+  // From events array — visitor_form events have the real data
+  const evs = sd.events||sd.timeline||[];
+  // Sort: visitor_form events first (most relevant)
+  const sorted = [...evs].sort((a,b)=>{
+    const at = (a.form_type||"").includes("visitor") ? 0 : 1;
+    const bt = (b.form_type||"").includes("visitor") ? 0 : 1;
+    return at-bt;
+  });
+  for(const ev of sorted){
+    if(ev.data && typeof ev.data==="object") cands.push(ev.data);
+    if(ev.profile) cands.push(ev.profile);
+    // Sometimes event itself has name/mobile at top level
+    cands.push(ev);
+  }
+  // Also try top-level searchData itself
+  cands.push(sd);
+
+  const g = (obj, ...keys)=>{
+    for(const k of keys){
+      if(!obj) continue;
+      const v=obj[k];
+      if(v && typeof v==="string" && v.trim()) return v.trim();
+    }
+    return "";
+  };
+
+  const p={};
+  for(const c of cands){
+    if(!c || typeof c!=="object") continue;
+    if(!p.name)    p.name    = g(c,"name","नाम","full_name","visitor_name","person_name","naam");
+    if(!p.mobile)  p.mobile  = g(c,"mobile","phone","mobile_no","मोबाइल","phone_number","contact","mob");
+    if(!p.desig)   p.desig   = g(c,"designation","पद","post","role","position","desg","pad");
+    if(!p.dist)    p.dist    = g(c,"district","जिला","dist","district_name","jila");
+    if(!p.vidhan)  p.vidhan  = g(c,"vidhansabha","विधानसभा","vidhan_sabha","constituency","vidhan");
+    if(!p.mandal)  p.mandal  = g(c,"mandal","मंडल","mandal_name");
+    if(!p.addr)    p.addr    = g(c,"address","पता","ward","booth","addr","address_detail");
+    if(!p.reason)  p.reason  = g(c,"reason","कारण","purpose","visit_reason","cause");
+  }
+  if(DBG) console.log("✅ Extracted profile:", JSON.stringify(p));
+  return p;
+}
+
+// ═══════════════════════════════════════════════════
+// MATCH POPUP
+// ═══════════════════════════════════════════════════
+function openPopup(sd){
+  const p = extractProfile(sd);
+  const name = p.name||"कार्यकर्ता";
+  const evs=(sd.events||sd.timeline||[]);
+  const vis=evs.filter(e=>(e.form_type||"").includes("visitor")).length;
+
+  // Name with "श्री/श्रीमती" prefix if not already
+  const displayName = name.startsWith("श्री") || name.startsWith("श्रीमती") ? name : `श्री ${name}`;
+  _$("pp-name").textContent = displayName;
+
+  // Visit count
+  _$("pp-vi").textContent = vis || evs.length || 1;
+  _$("pp-vi-sub").textContent = `इस कार्यालय पर आपकी उपस्थिति`;
+
+  // Swagat message
+  _$("pp-swagat-msg").innerHTML = `भाजपा कार्यालय पर <b style="color:var(--o3)">आपका स्वागत है!</b><br>
+    <span style="font-size:13px;color:var(--muted);">हम यह आपकी <b style="color:var(--o1)">${vis||evs.length||1}वीं</b> विजिट है।</span>`;
+
+  // Stats
+  _$("pp-ev").textContent = evs.length;
+  _$("pp-ph").textContent = (sd.photo_urls||[]).length;
+
+  // Hidden refs (still needed by acceptMatch)
+  _$("pp-mob").textContent  = p.mobile ? `📱 ${p.mobile}` : "";
+  _$("pp-loc").textContent  = [p.dist,p.vidhan].filter(Boolean).join(" › ");
+  _$("pp-sim").textContent  = `${Math.round(sd.similarity||0)}%`;
+
+  // Autofill preview (hidden but populated for acceptMatch)
+  const fillLines=[];
+  if(p.name)   fillLines.push(`<div>• नाम: <b>${p.name}</b></div>`);
+  if(p.mobile) fillLines.push(`<div>• मोबाइल: <b>${p.mobile}</b></div>`);
+  if(p.desig)  fillLines.push(`<div>• पद: <b>${p.desig}</b></div>`);
+  if(p.dist)   fillLines.push(`<div>• जिला: <b>${p.dist}</b></div>`);
+  if(p.vidhan) fillLines.push(`<div>• विधानसभा: <b>${p.vidhan}</b></div>`);
+  if(p.mandal) fillLines.push(`<div>• मंडल: <b>${p.mandal}</b></div>`);
+  if(p.addr)   fillLines.push(`<div>• पता: <b>${p.addr}</b></div>`);
+  _$("pp-fill-list").innerHTML=fillLines.join("");
+
+  // Recent events — styled for welcome popup
+  if(evs.length){
+    _$("pp-ev-wrap").style.display="block";
+    _$("pp-ev-list").innerHTML=evs.slice(0,4).map(ev=>{
+      const d=ev.data||{}; const date=d.tour_date||d.attendance_date||ev.created_at_iso||"";
+      const ds=date?new Date(date).toLocaleDateString("hi-IN",{day:"numeric",month:"short",year:"numeric"}):"";
+      const nm=d.program_name||ev.form_type||"Event";
+      return `<div class="welcome-event-row">
+        <span class="welcome-event-dot"></span>
+        <span class="welcome-event-name deva">${nm}</span>
+        <span class="welcome-event-date">${ds}</span>
+      </div>`;
+    }).join("");
+  }
+
+  _$("popup-bg").classList.add("open");
+}
+function closePopup(){ _$("popup-bg").classList.remove("open"); }
+
+function acceptMatch(){
+  closePopup();
+  if(searchResp){
+    window._autofillProfile = extractProfile(searchResp);
+    if(DBG) console.log("💾 Saved autofill profile:", JSON.stringify(window._autofillProfile));
+  }
+  gotoForm();
+}
+function skipMatch(){
+  closePopup();
+  window._autofillProfile = null;
+  gotoForm();
+}
+
+// ═══════════════════════════════════════════════════
+// FORM SCREEN
+// ═══════════════════════════════════════════════════
+function gotoForm(){
+  _$("scr-cam").style.display="none";
+  _$("scr-form").style.display="block";
+  initCascade();
+  setupMobLookup();
+  // Apply autofill AFTER cascade initialized
+  setTimeout(()=>{
+    if(window._autofillProfile){
+      fillForm(window._autofillProfile);
+      window._autofillProfile=null;
+    }
+  }, 200);
+}
+function goCam(){
+  _$("scr-form").style.display="none";
+  _$("scr-cam").style.display="block";
+  startCam(facingMode);
+}
+
+function fillForm(p){
+  if(!p) return;
+  if(DBG) console.log("📝 fillForm:", JSON.stringify(p));
+  if(p.name)   _$("f-name").value   = p.name;
+  if(p.mobile) _$("f-mobile").value = p.mobile;
+  if(p.desig)  _$("f-desig").value  = p.desig;
+  if(p.addr)   _$("f-addr").value   = p.addr;
+  if(p.reason){
+    const s=_$("f-reason");
+    if([...s.options].some(o=>o.value===p.reason)) s.value=p.reason;
+  }
+  // Show badge
+  const filled=[]; if(p.name) filled.push("नाम"); if(p.mobile) filled.push("मोबाइल");
+  if(p.desig) filled.push("पद"); if(p.dist) filled.push("जिला");
+  if(filled.length){ _$("match-badge").style.display="block"; _$("autofill-strip").style.display="flex"; _$("autofill-txt").textContent=`Auto-fill: ${filled.join(", ")}${p.dist?" + Location":""}`; }
+  // Location
+  fillLocation(p);
+}
+
+function fillLocation(p){
+  const d=(p.dist||"").trim(), v=(p.vidhan||"").trim(), m=(p.mandal||"").trim();
+  if(DBG) console.log("📍 fillLocation:",d,v,m);
+  if(!d) return;
+  const dSel=_$("f-dist");
+  const opts=[...dSel.options].map(o=>o.value);
+  if(DBG) console.log("District options:",opts.length,"looking for:",d);
+  dSel.value=d;
+  dSel.dispatchEvent(new Event("change"));
+  if(v){
+    setTimeout(()=>{
+      const vSel=_$("f-vidhan");
+      if(DBG) console.log("Vidhan options:",[...vSel.options].map(o=>o.value).slice(0,5));
+      vSel.value=v; vSel.dispatchEvent(new Event("change"));
+      if(m){ setTimeout(()=>{ _$("f-mandal").value=m; if(DBG) console.log("Mandal set:",m,"actual:",_$("f-mandal").value); },250); }
+    },250);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// DISTRICT CASCADE
+// ═══════════════════════════════════════════════════
+function initCascade(){
+  const d=_$("f-dist"),v=_$("f-vidhan"),m=_$("f-mandal");
+  if(!d || d.options.length>2) return;
+  d.innerHTML='<option value="">— जिला चुनें —</option>';
+  Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+    const o=document.createElement("option"); o.value=k; o.textContent=k; d.appendChild(o);
+  });
+  d.addEventListener("change",()=>{
+    v.innerHTML='<option value="">— विधानसभा चुनें —</option>'; m.innerHTML='<option value="">— मंडल चुनें —</option>';
+    v.disabled=!d.value; m.disabled=true;
+    if(d.value) Object.keys(DISTRICT_DATA[d.value]||{}).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+      const o=document.createElement("option"); o.value=k; o.textContent=k; v.appendChild(o);
+    });
+  });
+  v.addEventListener("change",()=>{
+    m.innerHTML='<option value="">— मंडल चुनें —</option>'; m.disabled=true;
+    const ms=(DISTRICT_DATA[d.value]||{})[v.value]||[];
+    if(ms.length){ m.disabled=false; ms.sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k;m.appendChild(o);}); }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// MOBILE LOOKUP
+// ═══════════════════════════════════════════════════
+function setupMobLookup(){
+  const mob=_$("f-mobile"); if(!mob||mob._ls) return; mob._ls=true;
+  mob.addEventListener("input",()=>{
+    clearTimeout(mobTimer); _$("mob-found").style.display="none";
+    if((mob.value||"").trim().length===10) mobTimer=setTimeout(doMobLookup,700);
+  });
+}
+async function doMobLookup(){
+  const mobile=(_$("f-mobile").value||"").trim(); if(mobile.length!==10) return;
+  _$("mob-spin").style.display="block";
+  try{
+    const pl={form_type:FTYPE, mobile};
+    if(TOK) pl.token=TOK; if(CID) pl.collection_id=CID;
+    const res=await api(isPub()?"public_lookup_mobile":"lookup_mobile",pl);
+    if(DBG) console.log("📱 mob lookup:",JSON.stringify(res));
+    // Mobile lookup response may have profile or data directly
+    const p=extractProfile({profile:res.profile,data:res.data,events:res.events,...res});
+    if(p.name||p.dist){
+      fillForm(p);
+      _$("mob-found").style.display="block";
+    }
+  }catch(e){ if(DBG) console.warn("mob lookup fail",e); }
+  finally{ _$("mob-spin").style.display="none"; }
+}
+
+// ═══════════════════════════════════════════════════
+// SUBMIT
+// ═══════════════════════════════════════════════════
+async function doSubmit(e){
+  e.preventDefault();
+  if(!camFile){ showFStatus("❌ सेल्फी जरूरी है",true); return; }
+  const btn=_$("submit-btn"); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner spin"></i><span class="deva">सेव हो रहा है...</span>';
+  showFStatus("",false);
+  try{
+    const fd={
+      mobile:(_$("f-mobile").value||"").trim(),
+      name:(_$("f-name").value||"").trim(),
+      designation:(_$("f-desig").value||"").trim(),
+      district:(_$("f-dist").value||"").trim(),
+      vidhansabha:(_$("f-vidhan").value||"").trim(),
+      mandal:(_$("f-mandal").value||"").trim(),
+      address:(_$("f-addr").value||"").trim(),
+      reason:(_$("f-reason").value||"").trim(),
+    };
+    await doSave(fd, camFile);
+    showSuccess(fd);
+  }catch(err){ showFStatus("❌ "+(err.message||"Error"),true); btn.disabled=false; btn.innerHTML=old; }
+}
+
+async function doSave(formData, file){
+  const sha=await sha256(file);
+  if(!entryId||!finalTok){
+    const cp={form_type:FTYPE,sha256:sha,file_name:"selfie.jpg",mime_type:"image/jpeg",payload:formData};
+    if(TOK) cp.token=TOK; if(CID) cp.collection_id=CID;
+    const cr=await api(isPub()?"public_create_entry":"create_entry",cp);
+    entryId=cr.entry_id; finalTok=cr.finalize_token; upUrl=cr.upload_url; s3k=cr.s3_key;
+    if(upUrl&&!cr.duplicate) await fetch(upUrl,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
+  }else{
+    const up={form_type:FTYPE,sha256:sha,file_name:"selfie.jpg",mime_type:"image/jpeg",payload:formData};
+    if(TOK) up.token=TOK; if(CID) up.collection_id=CID;
+    const ur=await api(isPub()?"public_create_entry":"create_entry",up);
+    finalTok=ur.finalize_token; entryId=ur.entry_id;
+    if(ur.upload_url&&!ur.duplicate) await fetch(ur.upload_url,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
+  }
+  await api(isPub()?"public_finalize_entry":"finalize_entry",{finalize_token:finalTok,entry_id:entryId});
+}
+
+function showFStatus(msg,isErr){
+  const el=_$("f-status");
+  if(!msg){el.style.display="none";return;}
+  el.style.display="block";
+  el.style.background=isErr?"rgba(239,68,68,.1)":"rgba(16,185,129,.1)";
+  el.style.border=isErr?"1px solid rgba(239,68,68,.3)":"1px solid rgba(16,185,129,.3)";
+  el.style.color=isErr?"#f87171":"#34d399";
+  el.textContent=msg;
+}
+
+// ═══════════════════════════════════════════════════
+// SUCCESS
+// ═══════════════════════════════════════════════════
+function showSuccess(fd){
+  _$("scr-form").style.display="none";
+  _$("scr-ok").style.display="block";
+  _$("ok-msg").textContent=`${fd.name||"आपकी"} की जानकारी दर्ज हो गई।`;
+  if(TOK||CID) _$("timeline-btn").style.display="flex";
+}
+function openTimeline(){
+  const p=new URLSearchParams();
+  if(TOK) p.set("token",TOK); else if(CID) p.set("cid",CID);
+  const n=(_$("f-name")&&_$("f-name").value)||"";
+  const mb=(_$("f-mobile")&&_$("f-mobile").value)||"";
+  if(n) p.set("autosearch_name",n);
+  if(mb) p.set("autosearch_mobile",mb);
+  if(faceS3k) p.set("autosearch_s3key",faceS3k);  // use selfie key, not submit entry key
+  location.href=`${SURL}?${p.toString()}`;
+}
+function doNewEntry(){
+  camFile=null; camDataUrl=null; searchResp=null;
+  entryId=null; finalTok=null; upUrl=null; s3k=null; faceS3k=null; window._autofillProfile=null;
+  _$("scr-ok").style.display="none";
+  _$("scr-cam").style.display="block";
+  if(_$("vform")) _$("vform").reset();
+  _$("autofill-strip").style.display="none";
+  _$("match-badge").style.display="none";
+  _$("prev-box").style.display="none";
+  _$("cam-box").style.display="block";
+  _$("cam-hint").style.display="block";
+  _$("proceed-wrap").style.display="none";
+  setPill("");
+  startCam(facingMode);
+}
+
+// ═══════════════════════════════════════════════════
+// OFFLINE
+// ═══════════════════════════════════════════════════
+window.addEventListener("offline",()=>_$("offline-banner").classList.add("on"));
+window.addEventListener("online", ()=>_$("offline-banner").classList.remove("on"));
+
+// ═══════════════════════════════════════════════════
+// DISTRICT DATA
+// ═══════════════════════════════════════════════════
+const DISTRICT_DATA = {
   "मुरैना": {
     "3. सबलगढ़": [
       "सबलगढ़ नगर",
@@ -2409,247 +3221,13 @@ function getFixedLevel(cfgOrResp, formType) {
   }
 };
 
-    // ===============================
-// LOCATION HELPERS (district -> vidhansabha -> mandal)
-// ===============================
-function initDistrictCascade() {
-  const dEl = $("district");
-  const vEl = $("vidhansabha");
-  const mEl = $("mandal");
-  if (!dEl || !vEl || !mEl) return;
-
-  // Populate Districts
-  dEl.innerHTML = '<option value="">— जिला चुनें —</option>';
-  Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach((d) => {
-    const opt = document.createElement("option");
-    opt.value = d;
-    opt.textContent = d;
-    dEl.appendChild(opt);
-  });
-
-  dEl.addEventListener("change", () => {
-    const dVal = dEl.value;
-    vEl.innerHTML = '<option value="">— विधानसभा चुनें —</option>';
-    mEl.innerHTML = '<option value="">— पहले विधानसभा चुनें —</option>';
-    vEl.disabled = !dVal;
-    mEl.disabled = true;
-
-    if (dVal && DISTRICT_DATA[dVal]) {
-      Object.keys(DISTRICT_DATA[dVal]).sort((a,b)=>a.localeCompare(b,"hi")).forEach((v) => {
-        const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
-        vEl.appendChild(opt);
-      });
-    }
-  });
-
-  vEl.addEventListener("change", () => {
-    const dVal = dEl.value;
-    const vVal = vEl.value;
-    mEl.innerHTML = '<option value="">— मंडल चुनें —</option>';
-    mEl.disabled = !vVal;
-
-    if (dVal && vVal && DISTRICT_DATA[dVal] && DISTRICT_DATA[dVal][vVal]) {
-      DISTRICT_DATA[dVal][vVal].slice().sort((a,b)=>a.localeCompare(b,"hi")).forEach((m) => {
-        const opt = document.createElement("option");
-        opt.value = m;
-        opt.textContent = m;
-        mEl.appendChild(opt);
-      });
-    }
-  });
-}
-
-function applyLocationAutofill(info) {
-  // info: {district, vidhansabha, mandal}
-  if (!info) return;
-  const d = safeStr(info.district).trim();
-  const v = safeStr(info.vidhansabha).trim();
-  const m = safeStr(info.mandal).trim();
-
-  if (d && $("district")) {
-    $("district").value = d;
-    $("district").dispatchEvent(new Event("change"));
-    setTimeout(() => {
-      if (v && $("vidhansabha")) {
-        $("vidhansabha").value = v;
-        $("vidhansabha").dispatchEvent(new Event("change"));
-        setTimeout(() => {
-          if (m && $("mandal")) $("mandal").value = m;
-        }, 120);
-      }
-    }, 120);
-  }
-}
-
-    // -----------------------
-    // Branding + Programs load
-    // -----------------------
-    let remoteCfg = null;
-
-    async function initBrandingAndData() {
-      initDistrictCascade();
-
-      remoteCfg = await loadRemoteConfig(FORM_TYPE);
-
-      applyBrandingFromConfig(
-        remoteCfg,
-        FORM_TYPE,
-        "कार्यालय आगंतुक फॉर्म",
-        "Visitor Entry System",
-        "",
-        "default-icon"
-      );
-
-      // tagline show/hide
-      if ($("org-tagline") && $("org-tagline").textContent.trim()) {
-        $("org-tagline").classList.remove("hidden");
-      }
-      if ($("footer-text") && $("footer-text").textContent.trim() === "") {
-        $("footer-text").textContent = "Powered by EventLens";
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", initBrandingAndData);
-
-    // -----------------------
-    // Mobile Auto-fill
-    // -----------------------
-    let mobileTimer = null;
-    async function tryLookupMobile() {
-      const mobile = ($("mobile").value || "").trim();
-      if (mobile.length !== 10) return;
-
-      $("mobile-loader").classList.remove("hidden");
-      $("user-found-msg").classList.add("hidden");
-
-      try {
-        const payload = isPublicMode()
-          ? { token, form_type: FORM_TYPE, mobile }
-          : { collection_id: cidParam, form_type: FORM_TYPE, mobile };
-
-        const action = isPublicMode() ? "public_lookup_mobile" : "lookup_mobile";
-        const res = await apiCall(action, payload);
-
-        const info = res && (res.profile || res.data || res);
-        if (info && (info.name || info.designation || info.district || info.vidhansabha || info.mandal || info.address)) {
-          if (info.name) $("name").value = info.name;
-          if (info.designation) $("designation").value = info.designation;
-          if (info.address) $("address").value = info.address;
-          applyLocationAutofill(info);
-          $("user-found-msg").classList.remove("hidden");
-        }
-      } catch (e) {
-        if (debug) console.log("lookup failed", e);
-      } finally {
-        $("mobile-loader").classList.add("hidden");
-      }
-    }
-
-    $("mobile").addEventListener("input", () => {
-      clearTimeout(mobileTimer);
-      $("user-found-msg").classList.add("hidden");
-      const m = ($("mobile").value || "").trim();
-      if (m.length === 10) {
-        mobileTimer = setTimeout(tryLookupMobile, 500);
-      }
-    });
-    $("mobile").addEventListener("blur", () => {
-      clearTimeout(mobileTimer);
-      tryLookupMobile();
-    });
-
-    // -----------------------
-    // Image preview
-    // -----------------------
-    function previewImage(event) {
-      const file = event.target.files && event.target.files[0];
-      if (!file) return;
-      const src = URL.createObjectURL(file);
-      $("preview").src = src;
-      $("preview-container").classList.remove("hidden");
-      $("upload-placeholder").classList.add("hidden");
-      $("dropzone").classList.add("brand-ring");
-    }
-    function clearImage(e) {
-      if (e) e.stopPropagation();
-      $("selfie").value = "";
-      $("preview").src = "";
-      $("preview-container").classList.add("hidden");
-      $("upload-placeholder").classList.remove("hidden");
-      $("dropzone").classList.remove("brand-ring");
-    }
-
-    // -----------------------
-    // Submit
-    // -----------------------
-    $("f").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const btn = $("submitBtn");
-      const old = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-      showStatus("", false);
-
-      try {
-        const file = $("selfie").files && $("selfie").files[0];
-        if (!file) throw new Error("Selfie/Photo अनिवार्य है (Photo Required)");
-
-        const data = {};
-        FIELD_IDS.forEach((id) => {
-          const el = $(id);
-          if (el) data[id] = (el.value || "").trim();
-        });
-
-        if (!data.district) throw new Error("कृपया जिला चुनें");
-        if (!data.vidhansabha) throw new Error("कृपया विधानसभा चुनें");
-
-        const sha = await sha256Hex(file);
-        const fileName = `${crypto.randomUUID()}.jpg`;
-
-        let res;
-        if (isPublicMode()) {
-          res = await apiCall("public_create_entry", {
-            token,
-            form_type: FORM_TYPE,
-            sha256: sha,
-            file_name: fileName,
-            mime_type: file.type || "image/jpeg",
-            payload: data
-          });
-        } else {
-          if (!cidParam) throw new Error("Missing Collection ID (cid)");
-          res = await apiCall("create_entry", {
-            collection_id: cidParam,
-            form_type: FORM_TYPE,
-            sha256: sha,
-            file_name: fileName,
-            mime_type: file.type || "image/jpeg",
-            payload: data
-          });
-        }
-
-        if (res && res.upload_url) {
-          await uploadToS3(res.upload_url, file);
-        }
-
-        const finalizeAction = isPublicMode() ? "public_finalize_entry" : "finalize_entry";
-        await apiCall(finalizeAction, { finalize_token: res.finalize_token, entry_id: res.entry_id });
-
-        // success screen
-        $("main-container").classList.add("hidden");
-        $("success-screen").classList.remove("hidden");
-
-        $("f").reset();
-        clearImage(null);
-
-      } catch (err) {
-        showStatus("❌ " + (err.message || "Error"), true);
-        btn.disabled = false;
-        btn.innerHTML = old;
-      }
-    });
-    </script>
-    </body>
-    </html>
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+(async()=>{
+  await loadBranding();
+  await startCam("user");
+})();
+</script>
+</body>
+</html>

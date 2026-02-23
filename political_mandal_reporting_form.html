@@ -1,10 +1,51 @@
 <!DOCTYPE html>
+
+<!-- EventLens build: 2026-02-17 04:08:31 -->
 <html lang="hi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mandal Reporting - EventLens</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com">
+
+    // === EventLens Admin Console Live Preview Bridge (2026-02-17) ===
+    (function() {
+      const __ft = (typeof FORM_TYPE !== "undefined") ? FORM_TYPE : ((typeof FORM_TYPE_RAW !== "undefined") ? FORM_TYPE_RAW : "");
+      const __cid = (qs("cid") || qs("collection_id") || qs("cid") || "").trim();
+
+      function __applyPreview(payload) {
+        try {
+          const fb = window.__EL_PREVIEW_FALLBACKS || {};
+          applyBrandingFromConfig(payload, __ft, fb.title || "", fb.subtitle || "", fb.tagline || "", fb.iconId || "default-icon");
+
+          // Keep tagline visibility consistent
+          const tg = document.getElementById("org-tagline");
+          if (tg) {
+            if ((tg.textContent || "").trim()) tg.classList.remove("hidden");
+            else tg.classList.add("hidden");
+          }
+        } catch(e) {}
+      }
+
+      window.addEventListener("message", (ev) => {
+        const d = ev && ev.data;
+        if (!d || typeof d !== "object") return;
+        if (d.type !== "EL_PREVIEW_SETTINGS") return;
+        if (d.form_type && __ft && d.form_type !== __ft) return;
+        if (d.cid && __cid && d.cid !== __cid) return;
+        __applyPreview(d.payload || {});
+      });
+
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "EL_PREVIEW_READY", cid: __cid, form_type: __ft }, "*");
+        }
+      } catch(e) {}
+
+      window.__EL_applyPreviewSettings = __applyPreview;
+    })();
+
+</script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   <script>
@@ -66,9 +107,75 @@
     }
     .brand-bg { background-image: linear-gradient(to right, var(--c1), var(--c2)); }
     .brand-ring { box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.16); }
-  </style>
+  
+
+    /* === EventLens Embed/Light/Preview Patch (2026-02-17) === */
+    html, body { height: 100%; }
+    body.el-embed {
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow-x: hidden;
+      background-attachment: scroll !important;
+    }
+    body.el-embed [class*="max-w-"] {
+      max-width: 100% !important;
+    }
+    body.el-embed img {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+    /* Light mode (optional via ?theme=light) */
+    body.el-light {
+      color: #0f172a !important;
+      background: #f8fafc !important;
+    }
+    body.el-light .glass {
+      background: rgba(255, 255, 255, 0.88) !important;
+      border: 1px solid rgba(15, 23, 42, 0.10) !important;
+      box-shadow: 0 14px 28px rgba(2, 6, 23, 0.10) !important;
+    }
+    body.el-light .input-field {
+      background: rgba(255, 255, 255, 0.96) !important;
+      color: #0f172a !important;
+      border: 1px solid rgba(15, 23, 42, 0.18) !important;
+    }
+    body.el-light .input-field::placeholder {
+      color: rgba(15, 23, 42, 0.45) !important;
+    }
+
+
+/* ===== EventLens: Light mode visibility fixes (auto) ===== */
+body.mode-light{ color:#0f172a !important; }
+body.mode-light .card,
+body.mode-light .panel,
+body.mode-light .section,
+body.mode-light .container,
+body.mode-light .wrap,
+body.mode-light .box{
+  background: rgba(255,255,255,.92) !important;
+  border-color: rgba(15,23,42,.14) !important;
+}
+body.mode-light input,
+body.mode-light select,
+body.mode-light textarea{
+  background: rgba(255,255,255,.96) !important;
+  color:#0f172a !important;
+  border-color: rgba(15,23,42,.18) !important;
+}
+body.mode-light input::placeholder,
+body.mode-light textarea::placeholder{
+  color: rgba(15,23,42,.45) !important;
+}
+body.mode-light label,
+body.mode-light .label{ color: rgba(15,23,42,.85) !important; }
+body.mode-light .muted,
+body.mode-light .hint,
+body.mode-light .help{ color: rgba(15,23,42,.65) !important; }
+body.mode-light select option{ background:#ffffff; color:#0f172a; }
+/* ===== /EventLens: Light mode visibility fixes ===== */
+</style>
 </head>
-    <body class="min-h-screen flex items-center justify-center p-4 font-sans">
+    <body class="min-h-screen flex items-center justify-center p-4 font-sans mode-dark">
 
     <div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
     <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
@@ -211,6 +318,18 @@ const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod
 
 const $ = (id) => document.getElementById(id);
 const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
+
+  // === Embed / Preview flags (2026-02-17) ===
+  const __EL_PREVIEW_MODE = (qs("preview") === "1");
+  const __EL_EMBED_MODE = (qs("embed") === "1") || (window.self !== window.top);
+  const __EL_THEME_MODE = (qs("theme") || "").toLowerCase();
+  try {
+    if (__EL_EMBED_MODE) document.body.classList.add("el-embed");
+    if (__EL_PREVIEW_MODE) document.body.classList.add("el-preview");
+    if (__EL_THEME_MODE === "light") document.body.classList.add("el-light");
+  } catch(e) {}
+
+
 const token = (qs("token") || "").trim();
 const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
 const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
@@ -2521,6 +2640,17 @@ function onPhotosSelected(ev, maxFiles=10) {
 
       remoteCfg = await loadRemoteConfig(FORM_TYPE);
       applyBrandingFromConfig(remoteCfg, FORM_TYPE, "कार्यक्रम रिपोर्टिंग", "Program Reporting", "", "default-icon");
+      // === Admin Console iframe live preview fallback snapshot (2026-02-17)
+      try {
+        window.__EL_PREVIEW_FALLBACKS = {
+          title: (document.getElementById("org-name")?.textContent || "").trim(),
+          subtitle: (document.getElementById("org-subtitle")?.textContent || "").trim(),
+          tagline: (document.getElementById("org-tagline")?.textContent || "").trim(),
+          iconId: "default-icon"
+        };
+      } catch(e) {}
+
+
 
       if ($("org-tagline") && $("org-tagline").textContent.trim()) $("org-tagline").classList.remove("hidden");
       if ($("footer-text") && $("footer-text").textContent.trim() === "") $("footer-text").textContent = "Powered by EventLens";
@@ -2581,32 +2711,36 @@ function onPhotosSelected(ev, maxFiles=10) {
         return;
       }
 
-      // Multi upload
-      const filesMeta = [];
-      for (const f of files) {
+      // Multi upload (President form style): upload + finalize each photo as separate entry (backend unchanged)
+      const btnEl = $("submitBtn");
+      for (let idx = 0; idx < files.length; idx++) {
+        const f = files[idx];
+        if (btnEl) btnEl.innerHTML = `<i class=\"fa-solid fa-spinner fa-spin\"></i> Uploading ${idx + 1}/${files.length}...`;
         const sha = await sha256Hex(f);
-        filesMeta.push({ sha256: sha, file_name: `${crypto.randomUUID()}.jpg`, mime_type: f.type || "image/jpeg" });
+        const fileExt = (f.type && f.type.includes("png")) ? "png" : "jpg";
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+        // Optional: store photo index in payload (non-breaking)
+        const payloadWithIdx = Object.assign({}, data, { photo_index: idx + 1, photo_total: files.length });
+
+        const res = isPublicMode()
+          ? await apiCall("public_create_entry", { token, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: f.type || "image/jpeg", payload: payloadWithIdx })
+          : await apiCall("create_entry", { collection_id: cidParam, form_type: FORM_TYPE, sha256: sha, file_name: fileName, mime_type: f.type || "image/jpeg", payload: payloadWithIdx });
+
+        if (res && res.upload_url) await uploadToS3(res.upload_url, f);
+
+        const finalizeAction = isPublicMode() ? "public_finalize_entry" : "finalize_entry";
+        await apiCall(finalizeAction, { finalize_token: res.finalize_token, entry_id: res.entry_id });
       }
-
-      const res = isPublicMode()
-        ? await apiCall("public_create_entry_multi", { token, form_type: FORM_TYPE, files: filesMeta, payload: data })
-        : await apiCall("create_entry_multi", { collection_id: cidParam, form_type: FORM_TYPE, files: filesMeta, payload: data });
-
-      if (Array.isArray(res.upload_urls)) {
-        for (let i = 0; i < res.upload_urls.length; i++) {
-          if (res.upload_urls[i]) await uploadToS3(res.upload_urls[i], files[i]);
-        }
-      } else if (res.upload_url) {
-        // fallback (should not happen in multi)
-        await uploadToS3(res.upload_url, files[0]);
-      }
-
-      const finalizeAction = isPublicMode() ? "public_finalize_entry" : "finalize_entry";
-      await apiCall(finalizeAction, { finalize_token: res.finalize_token, entry_id: res.entry_id });
     }
 
     $("f").addEventListener("submit", async (e) => {
       e.preventDefault();
+        if (typeof __EL_PREVIEW_MODE !== "undefined" && __EL_PREVIEW_MODE) {
+          try { showStatus("🔎 Preview Mode: submit disabled", false); } catch(e) {}
+          return;
+        }
+
       const btn = $("submitBtn");
       const old = btn.innerHTML;
       btn.disabled = true;

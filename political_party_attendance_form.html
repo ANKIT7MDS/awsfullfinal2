@@ -1,478 +1,821 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Party Attendance - EventLens</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }
-        }
-      }
-    }
-  </script>
-  <style>
-select, option { font-family: "Noto Sans Devanagari", "Mangal", "Plus Jakarta Sans", system-ui, sans-serif; }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Party Attendance — EventLens</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --o1:#ea580c; --o2:#c2410c; --o3:#fb923c;
+  --o1a:rgba(234,88,12,0.15); --o1b:rgba(234,88,12,0.25);
+  --bg:#080b12; --glass:rgba(16,12,8,0.80);
+  --text:#f1f0ee; --muted:rgba(200,190,180,0.55);
+}
+html,body{min-height:100%;background:var(--bg);}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);
+  background:
+    radial-gradient(ellipse 80% 45% at 15% -5%,rgba(234,88,12,0.18),transparent 55%),
+    radial-gradient(ellipse 60% 50% at 85% 95%,rgba(194,65,12,0.12),transparent 55%),
+    var(--bg);
+  background-attachment:fixed;
+}
+.deva{font-family:'Noto Sans Devanagari','Plus Jakarta Sans',sans-serif;}
+.card{background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(234,88,12,0.14);border-radius:22px;box-shadow:0 4px 40px rgba(0,0,0,0.55),inset 0 1px 0 rgba(234,88,12,0.06);}
+.card-top{border-top:2px solid var(--o1);}
+.brand{background:linear-gradient(130deg,var(--o3),var(--o1));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.brand-bg{background:linear-gradient(130deg,var(--o1),var(--o2));}
+.inp{width:100%;padding:11px 14px;border-radius:11px;font-size:13.5px;font-family:inherit;background:rgba(8,11,18,0.7);border:1px solid rgba(234,88,12,0.18);color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;}
+.inp::placeholder{color:rgba(180,170,160,0.38);}
+.inp:focus{border-color:var(--o1);box-shadow:0 0 0 3px rgba(234,88,12,0.12);}
+.inp:disabled{opacity:.45;cursor:not-allowed;}
+select.inp option{background:#100d08;color:var(--text);}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 20px;border-radius:13px;border:none;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;transition:opacity .15s,transform .12s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(130deg,var(--o1),var(--o2));color:#fff;box-shadow:0 6px 22px rgba(234,88,12,0.38);}
+.btn-primary:hover{opacity:.9;}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.btn-ghost{background:var(--o1a);border:1px solid var(--o1b);color:var(--o3);font-size:13px;padding:10px;}
+.lbl{display:block;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(234,88,12,0.65);margin-bottom:6px;}
 
-    :root {
-      --c1: #f97316; /* primary */
-      --c2: #ef4444; /* secondary */
-      --bgimg: none;
-    }
-    body {
-      background:
-        radial-gradient(circle at top left, rgba(249, 115, 22, 0.14), transparent 50%),
-        radial-gradient(circle at bottom right, rgba(234, 88, 12, 0.10), transparent 50%),
-        linear-gradient(180deg, rgba(2, 6, 23, 0.92), rgba(2, 6, 23, 0.98)),
-        var(--bgimg);
-      background-size: cover;
-      background-attachment: fixed;
-      color: #fff;
-    }
-    .glass {
-      background: rgba(30, 41, 59, 0.75);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.40);
-    }
-    .input-field {
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      color: white;
-      transition: all 0.25s ease;
-    }
-    .input-field:focus {
-      border-color: var(--c1);
-      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.18);
-      outline: none;
-    }
-    .input-field:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      background: rgba(15, 23, 42, 0.35);
-    }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+/* CAMERA */
+#cam-box{position:relative;width:100%;aspect-ratio:1/1;border-radius:22px;overflow:hidden;background:#000;box-shadow:0 0 0 2px rgba(234,88,12,0.22),0 16px 48px rgba(0,0,0,0.7);}
+#cam-video{width:100%;height:100%;object-fit:cover;display:block;}
+#cam-canvas{display:none;}
+#oval-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+#oval-el{cx:50%;cy:50%;rx:35%;ry:42%;fill:none;stroke:var(--o1);stroke-width:2.5;filter:drop-shadow(0 0 7px rgba(234,88,12,0.6));transition:stroke .35s,filter .35s;}
+#oval-el.s{stroke:#10b981;filter:drop-shadow(0 0 12px rgba(16,185,129,.75));animation:opulse 1.1s ease-in-out infinite;}
+#oval-el.m{stroke:#60a5fa;filter:drop-shadow(0 0 14px rgba(96,165,250,.8));}
+@keyframes opulse{0%,100%{opacity:1}50%{opacity:.45}}
+#scanline{position:absolute;left:15%;right:15%;height:1.5px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(234,88,12,.85),transparent);animation:scan 2.2s linear infinite;}
+@keyframes scan{0%{top:18%}100%{top:80%}}
+.cn{position:absolute;width:20px;height:20px;border-color:rgba(234,88,12,.65);border-style:solid;}
+.cn.tl{top:10px;left:10px;border-width:2px 0 0 2px;border-radius:5px 0 0 0;}
+.cn.tr{top:10px;right:10px;border-width:2px 2px 0 0;border-radius:0 5px 0 0;}
+.cn.bl{bottom:10px;left:10px;border-width:0 0 2px 2px;border-radius:0 0 0 5px;}
+.cn.br{bottom:10px;right:10px;border-width:0 2px 2px 0;border-radius:0 0 5px 0;}
+#cam-chip{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:5px 13px;border-radius:99px;font-size:11px;font-weight:700;background:rgba(8,11,18,.82);border:1px solid rgba(234,88,12,.28);color:var(--o3);white-space:nowrap;z-index:10;backdrop-filter:blur(8px);transition:border-color .3s,color .3s;}
+#chip-dot{width:7px;height:7px;border-radius:50%;background:var(--o1);flex-shrink:0;transition:background .3s;}
+#chip-dot.s{background:#10b981;animation:blink .85s infinite;}
+#chip-dot.m{background:#60a5fa;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+#cap-btn{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--o1),var(--o2));border:4px solid rgba(255,255,255,.22);box-shadow:0 0 0 5px rgba(234,88,12,.18),0 10px 28px rgba(234,88,12,.45);display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;z-index:20;transition:transform .15s,box-shadow .15s;}
+#cap-btn:hover{transform:translateX(-50%) scale(1.06);}
+#cap-btn:active{transform:translateX(-50%) scale(.93);}
+#flip-btn{position:absolute;top:10px;right:10px;z-index:20;width:36px;height:36px;border-radius:50%;cursor:pointer;background:rgba(8,11,18,.75);border:1px solid rgba(234,88,12,.25);color:var(--o3);font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+#flip-btn:hover{background:rgba(234,88,12,.15);}
+#prev-box{position:relative;width:100%;aspect-ratio:1/1;border-radius:22px;overflow:hidden;display:none;}
+#prev-img{width:100%;height:100%;object-fit:cover;}
+#retake-btn{position:absolute;top:10px;right:10px;background:rgba(239,68,68,.88);color:#fff;border:none;border-radius:9px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
 
-    .brand-text {
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      background-image: linear-gradient(to right, var(--c1), var(--c2));
-    }
-    .brand-bg { background-image: linear-gradient(to right, var(--c1), var(--c2)); }
-    .brand-ring { box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.16); }
-  </style>
+/* MATCH POPUP */
+#popup-bg{position:fixed;inset:0;z-index:9000;display:none;align-items:flex-end;justify-content:center;background:rgba(4,6,12,.88);backdrop-filter:blur(14px);}
+#popup-bg.open{display:flex;}
+#popup-sheet{width:100%;max-width:430px;max-height:88vh;overflow-y:auto;background:linear-gradient(180deg,rgba(18,12,7,.98),rgba(8,11,18,.98));border:1px solid rgba(234,88,12,.2);border-radius:26px 26px 0 0;padding:0 20px 36px;box-shadow:0 -24px 80px rgba(0,0,0,.75);animation:sup .32s cubic-bezier(.22,.8,.28,1);}
+@keyframes sup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.drag-handle{width:36px;height:4px;background:rgba(234,88,12,.28);border-radius:2px;margin:14px auto 22px;}
+.stat-b{text-align:center;padding:12px 8px;border-radius:13px;background:rgba(234,88,12,.07);border:1px solid rgba(234,88,12,.14);}
+.stat-n{font-size:22px;font-weight:900;line-height:1;}
+.stat-l{font-size:9px;margin-top:3px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+/* SCREENS */
+#scr-cam{display:block;}#scr-form{display:none;}#scr-ok{display:none;}
+
+/* MISC */
+#autofill-strip{display:none;padding:9px 12px;border-radius:11px;margin-bottom:12px;background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.2);color:#7db4f8;font-size:11px;font-weight:600;}
+#offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:8000;background:rgba(234,88,12,.92);color:#fff;font-size:11px;font-weight:700;padding:7px 16px;text-align:center;}
+#offline-banner.on{display:block;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:rgba(234,88,12,.25);border-radius:2px;}
+.spin{animation:sp 1s linear infinite;}@keyframes sp{to{transform:rotate(360deg)}}
+</style>
 </head>
-    <body class="min-h-screen flex items-center justify-center p-4 font-sans">
+<body>
 
-    <div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
-    <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
+<div id="offline-banner"><i class="fa-solid fa-wifi-slash mr-2"></i>Offline — फॉर्म सेव है</div>
 
-    <!-- Header banner (Admin branding) -->
-    <div id="header-wrap" class="hidden w-full rounded-xl mb-4 overflow-hidden bg-slate-800/40 border border-white/5">
-      <img id="header-image" alt="Header" class="w-full h-32 sm:h-44 object-contain object-center" />
+<div style="display:flex;flex-direction:column;align-items:center;padding:16px 12px 48px;min-height:100vh;">
+
+<!-- ══ CAMERA SCREEN ══ -->
+<div id="scr-cam" style="width:100%;max-width:400px;">
+  <!-- Header -->
+  <div class="card card-top" style="padding:16px 18px 14px;margin-bottom:12px;overflow:hidden;position:relative;">
+    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 90% 10%,rgba(234,88,12,0.1),transparent 60%);pointer-events:none;"></div>
+    <div id="hdr-cam-img-wrap" style="display:none;margin-bottom:10px;border-radius:12px;overflow:hidden;">
+      <img id="hdr-cam-img" style="width:100%;height:90px;object-fit:cover;" alt=""/>
     </div>
-
-    <div class="text-center mb-6" id="form-header">
-        <!-- Logo (Admin branding) -->
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 text-orange-500 mb-3 overflow-hidden border border-white/10 p-2">
-            <i id="default-icon" class="fa-solid fa-people-group text-2xl"></i>
-            <img id="custom-logo" src="" class="w-full h-full object-contain hidden" alt="logo">
-        </div>
-        <h1 id="org-name" class="text-2xl font-extrabold brand-text">पार्टी उपस्थिति फॉर्म</h1>
-        <p id="org-subtitle" class="text-slate-300/80 text-xs mt-1">Party Attendance</p>
-        <p id="org-tagline" class="text-slate-400 text-[11px] mt-2 hidden"></p>
+    <div style="display:flex;align-items:center;gap:12px;position:relative;">
+      <div id="logo-wrap" style="width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(234,88,12,.1);border:1px solid rgba(234,88,12,.22);overflow:hidden;">
+        <i id="default-icon" class="fa-solid fa-people-group" style="font-size:18px;color:var(--o1)"></i>
+        <img id="logo-img" style="width:100%;height:100%;object-fit:contain;display:none;" alt=""/>
+      </div>
+      <div>
+        <div id="org-name" class="brand deva" style="font-size:17px;font-weight:800;line-height:1.15;">पार्टी उपस्थिति</div>
+        <div id="org-sub" style="font-size:11px;color:var(--muted);margin-top:2px;">Party Attendance</div>
+      </div>
     </div>
+  </div>
 
-      <form id="f" class="space-y-4">
-        <div>
-          <label class="block text-xs font-medium text-slate-300/80 mb-1">मोबाइल नंबर (Mobile)</label>
-          <div class="relative">
-            <input type="tel" id="mobile" class="w-full rounded-lg px-3 py-2.5 text-sm input-field pl-10" placeholder="10-digit Number" inputmode="numeric" pattern="[0-9]{10}" required>
-            <i class="fa-solid fa-phone absolute left-3 top-3 text-slate-500 text-xs"></i>
-            <div id="mobile-loader" class="absolute right-3 top-3 hidden">
-              <i class="fa-solid fa-circle-notch fa-spin text-orange-400"></i>
-            </div>
-          </div>
-          <p id="user-found-msg" class="text-[10px] text-emerald-400 mt-1 hidden">
-            <i class="fa-solid fa-check-circle mr-1"></i> डेटा मिला! विवरण भर दिया गया है।
-          </p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-slate-300/80 mb-1">नाम</label>
-            <input type="text" id="name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Name" required>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300/80 mb-1">पद</label>
-            <input type="text" id="designation" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Designation">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300/80 mb-1">कार्यक्रम का नाम</label>
-          <div class="relative">
-            <select id="program_name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field appearance-none" required>
-              <option value="">— कार्यक्रम चुनें —</option>
-              <option value="कार्यक्रम-1">कार्यक्रम-1</option>
-            </select>
-            <i class="fa-solid fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
-          </div>
-          <p class="text-[10px] text-slate-400 mt-1">नये कार्यक्रम का नाम एडमिन कंसोल से सेट होगा।</p>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300/80 mb-1">जिला</label>
-          <select id="district" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
-            <option value="">— जिला चुनें —</option>
-          </select>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-slate-300/80 mb-1">विधानसभा</label>
-            <select id="vidhansabha" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
-              <option value="">— पहले जिला चुनें —</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300/80 mb-1">मंडल</label>
-            <select id="mandal" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
-              <option value="">— पहले विधानसभा चुनें —</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-slate-300/80 mb-1">तारीख</label>
-            <input type="date" id="attendance_date" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300/80 mb-1">समय</label>
-            <input type="time" id="attendance_time" class="w-full rounded-lg px-3 py-2.5 text-sm input-field">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300/80 mb-1">टिप्पणी</label>
-          <textarea id="remarks" rows="3" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Remarks / Notes"></textarea>
-        </div>
-
-        <button type="submit" id="submitBtn" class="w-full brand-bg text-white font-extrabold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 hover:opacity-95">
-          <span>सुरक्षित करें (Save)</span><i class="fa-solid fa-paper-plane text-xs"></i>
+  <!-- Camera Card -->
+  <div class="card" style="overflow:hidden;margin-bottom:10px;">
+    <div style="padding:14px;">
+      <div id="cam-box">
+        <video id="cam-video" autoplay muted playsinline></video>
+        <canvas id="cam-canvas"></canvas>
+        <svg id="oval-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <ellipse id="oval-el" cx="50" cy="50" rx="35" ry="42"/>
+        </svg>
+        <div id="scanline"></div>
+        <div class="cn tl"></div><div class="cn tr"></div>
+        <div class="cn bl"></div><div class="cn br"></div>
+        <div id="cam-chip"><span id="chip-dot"></span><span id="chip-txt">कैमरा खुल रहा है...</span></div>
+        <button id="cap-btn" onclick="doCapture()">📸</button>
+        <button id="flip-btn" onclick="flipCam()"><i class="fa-solid fa-rotate"></i></button>
+      </div>
+      <div id="prev-box">
+        <img id="prev-img" src="" alt=""/>
+        <button id="retake-btn" onclick="doRetake()"><i class="fa-solid fa-rotate-left"></i> Retake</button>
+      </div>
+      <p id="cam-hint" style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:11px;">
+        <i class="fa-solid fa-circle-info" style="color:rgba(234,88,12,.55);margin-right:4px;"></i>
+        चेहरा oval में रखें और 📸 दबाएं
+      </p>
+      <div id="proc-pill" style="display:none;margin-top:10px;"></div>
+      <div id="proceed-wrap" style="display:none;margin-top:10px;">
+        <div id="proceed-msg" style="text-align:center;font-size:11.5px;font-weight:600;color:#34d399;margin-bottom:8px;"></div>
+        <button class="btn btn-primary" onclick="gotoForm()">
+          <i class="fa-solid fa-arrow-right"></i><span class="deva">फॉर्म भरें</span>
         </button>
-      </form>
-
-    <div id="status" class="mt-4 text-center text-xs font-medium hidden"></div>
-    <div class="mt-4 text-center text-[11px] text-slate-400/80">
-      <span id="footer-text"></span>
+      </div>
     </div>
+  </div>
+
+  <!-- Gallery fallback -->
+  <label class="btn btn-ghost" style="border-radius:13px;cursor:pointer;">
+    <input id="gal-input" type="file" accept="image/*" capture="user" style="display:none;" onchange="galUpload(event)"/>
+    <i class="fa-solid fa-image"></i><span class="deva">गैलरी से फोटो</span>
+  </label>
+  <div id="footer-cam" style="text-align:center;font-size:10px;color:rgba(100,90,80,.5);margin-top:14px;">Powered by EventLens</div>
 </div>
 
-    <!-- SUCCESS SCREEN -->
-<div id="success-screen" class="hidden w-full max-w-lg glass rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[420px]">
-    <div class="w-20 h-20 bg-emerald-500/15 text-emerald-400 rounded-full flex items-center justify-center mb-6 text-4xl shadow-lg shadow-emerald-500/10 border border-emerald-500/20">
-        <i class="fa-solid fa-check"></i>
+
+<!-- ══ FORM SCREEN ══ -->
+<div id="scr-form" style="width:100%;max-width:400px;">
+  <div class="card card-top" style="padding:18px;">
+
+    <div id="form-hdr-img-wrap" style="display:none;border-radius:12px;overflow:hidden;margin-bottom:12px;">
+      <img id="form-hdr-img" style="width:100%;height:90px;object-fit:cover;" alt=""/>
     </div>
-    <h2 class="text-2xl font-extrabold text-white mb-2">धन्यवाद!</h2>
-    <p id="success-msg" class="text-slate-200/90 mb-8 leading-relaxed">उपस्थिति की जानकारी सेव कर ली गई है।</p>
-    <button onclick="window.location.reload()" class="px-6 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-lg text-sm text-white transition">
-        <i class="fa-solid fa-rotate-right mr-2"></i> नया फॉर्म
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button onclick="goCam()" style="width:34px;height:34px;border-radius:10px;border:1px solid rgba(234,88,12,.22);background:rgba(234,88,12,.08);color:var(--o3);cursor:pointer;font-size:13px;flex-shrink:0;">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <div>
+        <div class="brand deva" style="font-size:15px;font-weight:800;">उपस्थिति भरें</div>
+        <div style="font-size:10px;color:var(--muted);">Party Attendance</div>
+      </div>
+      <div id="match-badge" style="display:none;margin-left:auto;padding:4px 10px;border-radius:99px;font-size:9.5px;font-weight:700;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);color:#7db4f8;">
+        <i class="fa-solid fa-wand-magic-sparkles" style="margin-right:3px;"></i>Auto-filled
+      </div>
+    </div>
+
+    <div id="autofill-strip"><i class="fa-solid fa-circle-check" style="margin-right:5px;"></i><span id="autofill-txt">पिछला डेटा auto-fill हो गया</span></div>
+
+    <form id="vform" onsubmit="doSubmit(event)">
+      <div style="display:flex;flex-direction:column;gap:11px;">
+
+        <!-- Mobile -->
+        <div>
+          <label class="lbl deva">मोबाइल नंबर *</label>
+          <div style="position:relative;">
+            <i class="fa-solid fa-phone" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:11px;color:rgba(234,88,12,.4);"></i>
+            <input id="f-mobile" type="tel" class="inp" style="padding-left:34px;" placeholder="10 अंक" inputmode="numeric" maxlength="10" required/>
+            <div id="mob-spin" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);"><i class="fa-solid fa-circle-notch spin" style="color:var(--o1);font-size:11px;"></i></div>
+          </div>
+          <div id="mob-found" style="display:none;font-size:10px;font-weight:600;color:#34d399;margin-top:4px;"><i class="fa-solid fa-check-circle mr-1"></i>मोबाइल से डेटा मिला!</div>
+        </div>
+
+        <!-- Name + Designation -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label class="lbl deva">नाम *</label>
+            <input id="f-name" type="text" class="inp" placeholder="पूरा नाम" required/>
+          </div>
+          <div>
+            <label class="lbl deva">पद</label>
+            <input id="f-desig" type="text" class="inp" placeholder="Designation"/>
+          </div>
+        </div>
+
+        <!-- Program Name -->
+        <div>
+          <label class="lbl deva">कार्यक्रम का नाम *</label>
+          <select id="f-program" class="inp" required>
+            <option value="">— कार्यक्रम चुनें —</option>
+          </select>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">नया कार्यक्रम Admin Console से सेट होगा</div>
+        </div>
+
+        <!-- District -->
+        <div>
+          <label class="lbl deva">जिला</label>
+          <select id="f-dist" class="inp"><option value="">— जिला चुनें —</option></select>
+        </div>
+
+        <!-- Vidhan + Mandal -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label class="lbl deva">विधानसभा</label>
+            <select id="f-vidhan" class="inp" disabled><option value="">— पहले जिला —</option></select>
+          </div>
+          <div>
+            <label class="lbl deva">मंडल</label>
+            <select id="f-mandal" class="inp" disabled><option value="">— पहले विधान —</option></select>
+          </div>
+        </div>
+
+        <!-- Date + Time -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label class="lbl deva">तारीख</label>
+            <input id="f-date" type="date" class="inp"/>
+          </div>
+          <div>
+            <label class="lbl deva">समय</label>
+            <input id="f-time" type="time" class="inp"/>
+          </div>
+        </div>
+
+        <!-- Remarks -->
+        <div>
+          <label class="lbl deva">टिप्पणी</label>
+          <textarea id="f-remarks" rows="2" class="inp" placeholder="Remarks / Notes" style="resize:none;"></textarea>
+        </div>
+
+        <div id="f-status" style="display:none;text-align:center;font-size:12px;font-weight:600;padding:9px 12px;border-radius:10px;"></div>
+
+        <button id="submit-btn" type="submit" class="btn btn-primary" style="margin-top:4px;">
+          <i class="fa-solid fa-paper-plane"></i><span class="deva">सुरक्षित करें</span>
+        </button>
+      </div>
+    </form>
+    <div style="text-align:center;font-size:10px;color:rgba(100,90,80,.4);margin-top:14px;" id="footer-form">Powered by EventLens</div>
+  </div>
+</div>
+
+
+<!-- ══ SUCCESS SCREEN ══ -->
+<div id="scr-ok" style="width:100%;max-width:400px;">
+  <div class="card" style="padding:36px 24px;text-align:center;border-top:2px solid rgba(16,185,129,.4);">
+    <div style="width:76px;height:76px;border-radius:50%;background:rgba(16,185,129,.1);border:2px solid rgba(16,185,129,.3);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 18px;">✅</div>
+    <div class="deva" style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px;">धन्यवाद!</div>
+    <div id="ok-msg" class="deva" style="font-size:13px;color:var(--muted);margin-bottom:24px;">उपस्थिति दर्ज हो गई।</div>
+    <button onclick="doNewEntry()" class="btn btn-primary">
+      <i class="fa-solid fa-rotate-right"></i><span class="deva">नई एंट्री</span>
     </button>
+  </div>
 </div>
 
-    <script>
-    // ===============================
-// COMMON CONFIG & UTILS
-// ===============================
-const API_ID = "vxid0yoovj";
-const AWS_REGION = "ap-south-1";
-const BASE_URL = `https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/prod`;
+</div>
 
-const $ = (id) => document.getElementById(id);
-const qs = (n) => { try { return (new URL(window.location.href)).searchParams.get(n) || ""; } catch (e) { return ""; } };
-const token = (qs("token") || "").trim();
-const cidParam = (qs("cid") || qs("collection_id") || qs("id") || "").trim();
+<!-- ══ MATCH POPUP ══ -->
+<div id="popup-bg">
+  <div id="popup-sheet">
+    <div class="drag-handle"></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+      <div style="width:54px;height:54px;border-radius:16px;flex-shrink:0;background:rgba(234,88,12,.1);border:2px solid rgba(234,88,12,.25);display:flex;align-items:center;justify-content:center;font-size:24px;">👤</div>
+      <div style="flex:1;min-width:0;">
+        <div id="pp-name" class="deva" style="font-size:18px;font-weight:900;color:#fff;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</div>
+        <div id="pp-mob" style="font-size:12px;color:var(--muted);margin-top:2px;"></div>
+        <div id="pp-loc" style="font-size:11px;color:rgba(234,88,12,.75);margin-top:2px;"></div>
+      </div>
+      <div style="text-align:center;flex-shrink:0;">
+        <div id="pp-sim" class="brand" style="font-size:24px;font-weight:900;">—</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Match</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;">
+      <div class="stat-b"><div id="pp-ev" class="stat-n brand">0</div><div class="stat-l deva">Events</div></div>
+      <div class="stat-b"><div id="pp-vi" class="stat-n brand">0</div><div class="stat-l deva">Visits</div></div>
+      <div class="stat-b"><div id="pp-ph" class="stat-n brand">0</div><div class="stat-l deva">Photos</div></div>
+    </div>
+    <div id="pp-fill-wrap" style="display:none;margin-bottom:16px;padding:12px;border-radius:13px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.15);">
+      <div style="font-size:9.5px;font-weight:700;color:rgba(96,165,250,.7);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Auto-fill होगा</div>
+      <div id="pp-fill-list" style="font-size:12px;color:rgba(200,190,180,.75);line-height:1.8;"></div>
+    </div>
+    <button class="btn btn-primary" onclick="acceptMatch()" style="margin-bottom:10px;">
+      <i class="fa-solid fa-check-circle"></i><span class="deva">फॉर्म भरें — Auto-fill के साथ</span>
+    </button>
+    <button onclick="skipMatch()" style="width:100%;padding:10px;background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;">
+      Skip — नया Visitor
+    </button>
+  </div>
+</div>
 
-// Backward compatible globals expected by older helpers
-const TOKEN = token || "";
-let CID = cidParam || "";
+<script>
+// ═══════════════════════════════
+// CONFIG
+// ═══════════════════════════════
+const API_ID  = "vxid0yoovj";
+const REGION  = "ap-south-1";
+const BASE    = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+const FTYPE   = "party_attendance";
+const SURL    = "political-search.html";
 
-// If cid/collection_id is not present in URL, derive it from token payload
-function _b64urlDecode(str) {
-  try {
-    str = (str || "").replace(/-/g, "+").replace(/_/g, "/");
-    const pad = str.length % 4;
-    if (pad) str += "=".repeat(4 - pad);
-    return atob(str);
-  } catch (_) {
-    return null;
-  }
-}
+const _qs = k => { try { return new URLSearchParams(location.search).get(k)||""; } catch(e){return "";} };
+const _$  = id => document.getElementById(id);
+const DBG = _qs("debug")==="1";
 
-function parseTokenClaims(tok) {
-  try {
-    const part = (tok || "").split(".")[0];
-    const decoded = _b64urlDecode(part);
-    if (!decoded) return null;
-    return JSON.parse(decoded);
-  } catch (_) {
-    return null;
-  }
-}
+const TOK = _qs("token");
+let   CID = (_qs("cid")||_qs("collection_id")).trim();
 
-if (!CID && TOKEN) {
-  const claims = parseTokenClaims(TOKEN);
-  if (claims) {
-    CID = claims.cid || claims.collection_id || claims.collectionId || "";
-  }
-}
-const levelParam = (qs("level") || "").trim().toLowerCase(); // district | vidhansabha | mandal
-const debug = (qs("debug") || "").trim() === "1";
+function isPub(){ return !!TOK; }
 
-function isPublicMode() { return !!token; }
+// ═══════════════════════════════
+// STATE
+// ═══════════════════════════════
+let camFile=null, searchResp=null;
+let entryId=null, finalTok=null, upUrl=null, s3k=null, faceS3k=null;
+let facingMode="user", mobTimer=null, remoteCfg=null;
 
-function setThemeVars(c1, c2) {
-  if (c1) document.documentElement.style.setProperty("--c1", c1);
-  if (c2) document.documentElement.style.setProperty("--c2", c2);
-}
-function setBackgroundImage(url) {
-  if (!url) return;
-  document.documentElement.style.setProperty("--bgimg", `url('${url}')`);
-}
-
-function showStatus(msg, isError) {
-  const el = $("status");
-  if (!el) return;
-  el.classList.remove("hidden","text-green-400","text-red-400");
-  el.classList.add(isError ? "text-red-400" : "text-green-400");
-  el.textContent = msg || "";
-  if (!msg) el.classList.add("hidden");
-}
-
-async function apiCall(action, payload) {
-  const path = isPublicMode() ? "/political/public/forms" : "/political/forms";
-  const url = `${BASE_URL}${path}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, payload: payload || {} })
+// ═══════════════════════════════
+// API
+// ═══════════════════════════════
+async function api(action, payload){
+  const r = await fetch(`${BASE}/political/forms`,{
+    method:"POST",cache:"no-store",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action, payload:payload||{}})
   });
-  const text = await res.text();
-  let data = {};
-  try { data = JSON.parse(text); } catch(e) { data = { message: text || "Invalid JSON" }; }
-  if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
-  return data;
+  const txt = await r.text();
+  let d={}; try{d=JSON.parse(txt);}catch(e){d={message:txt};}
+  if(!r.ok) throw new Error(d.message||d.error||`HTTP ${r.status}`);
+  return d;
+}
+async function sha256(file){
+  const b=await file.arrayBuffer();
+  const h=await crypto.subtle.digest("SHA-256",b);
+  return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");
 }
 
+// ═══════════════════════════════
+// RESOLVE CID FROM TOKEN
+// ═══════════════════════════════
+async function resolveCid(){
+  if(CID||!TOK) return;
+  try{
+    const r = await api("public_get_config",{token:TOK, form_type:FTYPE});
+    const c = r.collection_id||r.cid||
+      (r.config&&(r.config.collection_id||r.config.cid))||
+      (r.settings&&(r.settings.collection_id||r.settings.cid))||"";
+    if(c){ CID=c.trim(); if(DBG) console.log("✅ CID:",CID); }
+  }catch(e){ if(DBG) console.warn("resolveCid fail",e); }
+}
 
-  // Backward compat: some older form templates call apiCallPublic()
-  async function apiCallPublic(action, payload) {
-    return apiCall(action, payload);
+// ═══════════════════════════════
+// BRANDING
+// ═══════════════════════════════
+async function loadBranding(){
+  try{
+    const payload = TOK ? {token:TOK,form_type:FTYPE} : {collection_id:CID,form_type:FTYPE};
+    const action  = TOK ? "public_get_config" : "admin_get_config";
+    const res = await api(action, payload);
+
+    // Extract CID if missing
+    if(!CID){
+      const c=res.collection_id||res.cid||
+        (res.config&&(res.config.collection_id||res.config.cid))||
+        (res.settings&&(res.settings.collection_id||res.settings.cid))||"";
+      if(c) CID=c.trim();
+    }
+
+    const cfg = res.config||res.settings||res.data||res;
+    remoteCfg=cfg;
+
+    const forms=cfg.forms||{}; const ft=forms[FTYPE]||forms["party_attendance"]||{};
+    const def=cfg.defaults||cfg.branding||{}; const gl=cfg.global||{};
+
+    const title=ft.title||def.title||gl.title||"";
+    const sub=ft.subtitle||def.subtitle||"";
+    const logo=(ft.branding&&ft.branding.logo&&ft.branding.logo.url)||(def.logo_url)||"";
+    const hdr=ft.header_url||"";
+    const c1=(ft.branding&&ft.branding.color1)||(def.color1)||"";
+    const c2=(ft.branding&&ft.branding.color2)||(def.color2)||"";
+    const foot=gl.tagline||"Powered by EventLens";
+
+    if(title) _$("org-name").textContent=title;
+    if(sub) _$("org-sub").textContent=sub;
+    _$("footer-cam").textContent=foot; _$("footer-form").textContent=foot;
+    if(c1) document.documentElement.style.setProperty("--o1",c1);
+    if(c2) document.documentElement.style.setProperty("--o2",c2);
+    if(logo){ _$("logo-img").src=logo; _$("logo-img").style.display="block"; _$("default-icon").style.display="none"; }
+    if(hdr){
+      _$("hdr-cam-img").src=hdr; _$("hdr-cam-img-wrap").style.display="block";
+      _$("form-hdr-img").src=hdr; _$("form-hdr-img-wrap").style.display="block";
+    }
+
+    // Fill program names from config
+    fillProgramNames(cfg);
+  }catch(e){ if(DBG) console.warn("branding fail",e); }
+}
+
+function fillProgramNames(cfg){
+  const sel=_$("f-program"); if(!sel) return;
+  const forms=cfg.forms||{}; const ft=forms[FTYPE]||forms["party_attendance"]||{};
+  const programs = ft.programs || ft.program_names || ft.program_list ||
+    (cfg.global && cfg.global.programs) || [];
+  if(programs && programs.length){
+    sel.innerHTML='<option value="">— कार्यक्रम चुनें —</option>';
+    programs.forEach(p=>{
+      const o=document.createElement("option");
+      o.value=typeof p==="string"?p:(p.value||p.name||p);
+      o.textContent=typeof p==="string"?p:(p.label||p.name||p);
+      sel.appendChild(o);
+    });
   }
-
-
-function safeStr(v) { return (v === null || v === undefined) ? "" : String(v); }
-
-async function sha256Hex(file) {
-  const buffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-async function uploadToS3(url, file) {
-  await fetch(url, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+// ═══════════════════════════════
+// CAMERA
+// ═══════════════════════════════
+async function startCam(mode="user"){
+  facingMode=mode;
+  setChip("idle","कैमरा खुल रहा है...");
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:mode,width:{ideal:720},height:{ideal:720}}});
+    _$("cam-video").srcObject=stream;
+    _$("cam-video").onloadedmetadata=()=>{ _$("cam-video").play(); setChip("idle","चेहरा oval में रखें — 📸 दबाएं"); };
+  }catch(e){
+    _$("cam-box").innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px;gap:10px;"><i class="fa-solid fa-camera-slash" style="font-size:48px;color:rgba(234,88,12,.35);"></i><p style="font-size:13px;font-weight:700;color:#fff;">कैमरा उपलब्ध नहीं</p><p style="font-size:11px;color:var(--muted);">नीचे से गैलरी से फोटो चुनें</p></div>`;
+    _$("cap-btn").style.display="none";
+  }
+}
+function flipCam(){
+  const v=_$("cam-video"); if(v.srcObject) v.srcObject.getTracks().forEach(t=>t.stop());
+  startCam(facingMode==="user"?"environment":"user");
+}
+function setChip(type,txt){
+  _$("chip-txt").textContent=txt;
+  const dot=_$("chip-dot"); dot.className="";
+  const oval=_$("oval-el"); oval.className="";
+  if(type==="scanning"){dot.className="s";oval.className="s";}
+  else if(type==="match"){dot.className="m";oval.className="m";}
+}
+function setPill(html){
+  const p=_$("proc-pill"); if(!html){p.style.display="none";p.innerHTML="";return;}
+  p.style.display="block"; p.innerHTML=html;
+}
+function pill(icon,text,bg,cl){
+  return `<div style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:11px;background:${bg};font-size:12px;font-weight:700;color:${cl};"><i class="${icon}"></i><span class="deva">${text}</span></div>`;
 }
 
-function mergeObj(a, b) {
-  const out = Object.assign({}, a || {});
-  Object.keys(b || {}).forEach(k => {
-    if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k])) out[k] = mergeObj(out[k], b[k]);
-    else out[k] = b[k];
+// ═══════════════════════════════
+// CAPTURE
+// ═══════════════════════════════
+async function doCapture(){
+  const v=_$("cam-video"),cnv=_$("cam-canvas");
+  const w=v.videoWidth||640,h=v.videoHeight||640;
+  cnv.width=w; cnv.height=h;
+  const ctx=cnv.getContext("2d");
+  if(facingMode==="user"){ctx.translate(w,0);ctx.scale(-1,1);}
+  ctx.drawImage(v,0,0,w,h);
+  if(v.srcObject) v.srcObject.getTracks().forEach(t=>t.stop());
+  cnv.toBlob(async blob=>{
+    const file=new File([blob],"selfie.jpg",{type:"image/jpeg"});
+    camFile=file;
+    _$("prev-img").src=URL.createObjectURL(blob);
+    _$("cam-box").style.display="none";
+    _$("prev-box").style.display="block";
+    _$("cam-hint").style.display="none";
+    await runMatch(file);
+  },"image/jpeg",.88);
+}
+async function galUpload(e){
+  const file=e.target.files&&e.target.files[0]; if(!file) return;
+  camFile=file;
+  _$("prev-img").src=URL.createObjectURL(file);
+  _$("cam-box").style.display="none";
+  _$("prev-box").style.display="block";
+  _$("cam-hint").style.display="none";
+  await runMatch(file);
+}
+function doRetake(){
+  camFile=null; searchResp=null; entryId=null; finalTok=null; upUrl=null; s3k=null; faceS3k=null;
+  _$("prev-box").style.display="none";
+  _$("cam-box").style.display="block";
+  _$("cam-hint").style.display="block";
+  _$("proceed-wrap").style.display="none";
+  setPill("");
+  setChip("idle","चेहरा oval में रखें — 📸 दबाएं");
+  startCam(facingMode);
+}
+
+// ═══════════════════════════════
+// FACE MATCH
+// ═══════════════════════════════
+async function runMatch(file){
+  setChip("scanning","पहचाना जा रहा है...");
+  setPill(pill("fa-solid fa-circle-notch spin","चेहरा पहचाना जा रहा है...","rgba(234,88,12,.1)","var(--o3)"));
+  try{
+    if(!CID && TOK) await resolveCid();
+    const sha=await sha256(file);
+    const cp={form_type:FTYPE,sha256:sha,file_name:"selfie.jpg",mime_type:"image/jpeg",payload:{}};
+    if(TOK) cp.token=TOK;
+    if(CID) cp.collection_id=CID;
+    if(DBG) console.log("📤 create payload:",JSON.stringify(cp));
+    const cr=await api(isPub()?"public_create_entry":"create_entry",cp);
+    entryId=cr.entry_id; finalTok=cr.finalize_token; upUrl=cr.upload_url;
+    s3k=cr.s3_key; faceS3k=cr.s3_key;
+    if(DBG) console.log("📥 create resp:",JSON.stringify(cr));
+    if(upUrl&&!cr.duplicate) await fetch(upUrl,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
+
+    const sp={s3_key:s3k,days:730};
+    if(TOK) sp.token=TOK;
+    if(CID) sp.collection_id=CID;
+    const sr=await fetch(`${BASE}/political/search`,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"public_search",payload:sp})});
+    const sd=await sr.json();
+    if(DBG) console.log("🟢 SEARCH RESPONSE:",JSON.stringify(sd));
+
+    if(sd.message==="OK"&&(sd.face_id||sd.matched)){
+      searchResp=sd; onMatch(sd);
+    }else{ onNoMatch(); }
+  }catch(err){
+    if(DBG) console.error("Match error:",err);
+    setChip("idle","Error — फिर try करें");
+    setPill(pill("fa-solid fa-triangle-exclamation",err.message||"Server Error","rgba(239,68,68,.1)","#f87171"));
+    _$("proceed-wrap").style.display="block";
+    _$("proceed-msg").textContent="Error — फिर भी फॉर्म भरें";
+  }
+}
+function onMatch(sd){
+  setChip("match",`✅ पहचाना गया! ${Math.round(sd.similarity||0)}%`);
+  setPill(pill("fa-solid fa-user-check",`मैच मिला — ${Math.round(sd.similarity||0)}%`,"rgba(96,165,250,.1)","#7db4f8"));
+  openPopup(sd);
+}
+function onNoMatch(){
+  setChip("idle","नया Visitor");
+  setPill(pill("fa-solid fa-user-plus","पहचाना नहीं गया — नया visitor","rgba(16,185,129,.1)","#34d399"));
+  _$("proceed-wrap").style.display="block";
+  _$("proceed-msg").textContent="पहचाना नहीं गया — विवरण भरें";
+}
+
+// ═══════════════════════════════
+// EXTRACT PROFILE — searches all possible locations
+// ═══════════════════════════════
+function extractProfile(sd){
+  if(!sd) return {};
+  if(DBG) console.log("🔎 extractProfile from:",JSON.stringify(sd));
+  const cands=[];
+  if(sd.profile) cands.push(sd.profile);
+  if(sd.identity) cands.push(sd.identity);
+  if(sd.data) cands.push(sd.data);
+  const evs=sd.events||sd.timeline||[];
+  // Prioritize party_attendance events
+  [...evs].sort((a,b)=>{
+    const at=(a.form_type||"").includes("attendance")?0:1;
+    const bt=(b.form_type||"").includes("attendance")?0:1;
+    return at-bt;
+  }).forEach(ev=>{ if(ev.data&&typeof ev.data==="object") cands.push(ev.data); if(ev.profile) cands.push(ev.profile); cands.push(ev); });
+  cands.push(sd);
+  const g=(obj,...keys)=>{ for(const k of keys){ if(!obj) continue; const v=obj[k]; if(v&&typeof v==="string"&&v.trim()) return v.trim(); } return ""; };
+  const p={};
+  for(const c of cands){
+    if(!c||typeof c!=="object") continue;
+    if(!p.name)    p.name    = g(c,"name","नाम","full_name","visitor_name","person_name");
+    if(!p.mobile)  p.mobile  = g(c,"mobile","phone","mobile_no","मोबाइल","contact");
+    if(!p.desig)   p.desig   = g(c,"designation","पद","post","role","position","desg");
+    if(!p.dist)    p.dist    = g(c,"district","जिला","dist","district_name");
+    if(!p.vidhan)  p.vidhan  = g(c,"vidhansabha","विधानसभा","vidhan_sabha","constituency");
+    if(!p.mandal)  p.mandal  = g(c,"mandal","मंडल","mandal_name");
+    if(!p.addr)    p.addr    = g(c,"address","पता","ward","booth","addr");
+    if(!p.program) p.program = g(c,"program_name","कार्यक्रम","program","event_name");
+  }
+  if(DBG) console.log("✅ Extracted:",JSON.stringify(p));
+  return p;
+}
+
+// ═══════════════════════════════
+// MATCH POPUP
+// ═══════════════════════════════
+function openPopup(sd){
+  const p=extractProfile(sd);
+  _$("pp-name").textContent=p.name||"पहचाना गया";
+  _$("pp-mob").textContent=p.mobile?`📱 ${p.mobile}`:"";
+  _$("pp-loc").textContent=[p.dist,p.vidhan].filter(Boolean).join(" › ");
+  _$("pp-sim").textContent=`${Math.round(sd.similarity||0)}%`;
+  const evs=sd.events||sd.timeline||[];
+  _$("pp-ev").textContent=evs.length;
+  _$("pp-vi").textContent=evs.filter(e=>(e.form_type||"").includes("attendance")).length;
+  _$("pp-ph").textContent=(sd.photo_urls||[]).length;
+  const fl=[];
+  if(p.name)    fl.push(`<div>• नाम: <b>${p.name}</b></div>`);
+  if(p.mobile)  fl.push(`<div>• मोबाइल: <b>${p.mobile}</b></div>`);
+  if(p.desig)   fl.push(`<div>• पद: <b>${p.desig}</b></div>`);
+  if(p.dist)    fl.push(`<div>• जिला: <b>${p.dist}</b></div>`);
+  if(p.vidhan)  fl.push(`<div>• विधानसभा: <b>${p.vidhan}</b></div>`);
+  if(p.mandal)  fl.push(`<div>• मंडल: <b>${p.mandal}</b></div>`);
+  if(fl.length){ _$("pp-fill-wrap").style.display="block"; _$("pp-fill-list").innerHTML=fl.join(""); }
+  _$("popup-bg").classList.add("open");
+}
+function closePopup(){ _$("popup-bg").classList.remove("open"); }
+function acceptMatch(){ closePopup(); if(searchResp) window._autofill=extractProfile(searchResp); gotoForm(); }
+function skipMatch(){ closePopup(); window._autofill=null; gotoForm(); }
+
+// ═══════════════════════════════
+// FORM
+// ═══════════════════════════════
+function gotoForm(){
+  _$("scr-cam").style.display="none";
+  _$("scr-form").style.display="block";
+  // Set today's date and current time
+  const now=new Date();
+  if(!_$("f-date").value) _$("f-date").value=now.toISOString().split("T")[0];
+  if(!_$("f-time").value) _$("f-time").value=now.toTimeString().slice(0,5);
+  initCascade();
+  setupMobLookup();
+  setTimeout(()=>{ if(window._autofill){ fillForm(window._autofill); window._autofill=null; } },200);
+}
+function goCam(){
+  _$("scr-form").style.display="none";
+  _$("scr-cam").style.display="block";
+  startCam(facingMode);
+}
+
+function fillForm(p){
+  if(!p) return;
+  if(DBG) console.log("📝 fillForm:",JSON.stringify(p));
+  if(p.name)    _$("f-name").value    = p.name;
+  if(p.mobile)  _$("f-mobile").value  = p.mobile;
+  if(p.desig)   _$("f-desig").value   = p.desig;
+  // Try to select program if it matches
+  if(p.program){
+    const ps=_$("f-program");
+    const found=[...ps.options].find(o=>o.value===p.program||o.textContent===p.program);
+    if(found) ps.value=found.value;
+  }
+  const filled=[]; if(p.name) filled.push("नाम"); if(p.mobile) filled.push("मोबाइल");
+  if(p.desig) filled.push("पद"); if(p.dist) filled.push("जिला");
+  if(filled.length){
+    _$("match-badge").style.display="block";
+    _$("autofill-strip").style.display="flex";
+    _$("autofill-txt").textContent=`Auto-fill: ${filled.join(", ")}${p.dist?" + Location":""}`;
+  }
+  fillLocation(p);
+}
+
+function fillLocation(p){
+  const d=(p.dist||"").trim(),v=(p.vidhan||"").trim(),m=(p.mandal||"").trim();
+  if(DBG) console.log("📍 fillLocation:",d,v,m);
+  if(!d) return;
+  const dSel=_$("f-dist");
+  dSel.value=d; dSel.dispatchEvent(new Event("change"));
+  if(v){
+    setTimeout(()=>{
+      const vSel=_$("f-vidhan"); vSel.value=v; vSel.dispatchEvent(new Event("change"));
+      if(m){ setTimeout(()=>{ _$("f-mandal").value=m; },250); }
+    },250);
+  }
+}
+
+// ═══════════════════════════════
+// CASCADE
+// ═══════════════════════════════
+function initCascade(){
+  const d=_$("f-dist"),v=_$("f-vidhan"),m=_$("f-mandal");
+  if(!d||d.options.length>2) return;
+  d.innerHTML='<option value="">— जिला चुनें —</option>';
+  Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+    const o=document.createElement("option"); o.value=k; o.textContent=k; d.appendChild(o);
   });
-  return out;
+  d.addEventListener("change",()=>{
+    v.innerHTML='<option value="">— विधानसभा चुनें —</option>'; m.innerHTML='<option value="">— मंडल चुनें —</option>';
+    v.disabled=!d.value; m.disabled=true;
+    if(d.value) Object.keys(DISTRICT_DATA[d.value]||{}).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+      const o=document.createElement("option"); o.value=k; o.textContent=k; v.appendChild(o);
+    });
+  });
+  v.addEventListener("change",()=>{
+    m.innerHTML='<option value="">— मंडल चुनें —</option>'; m.disabled=true;
+    const ms=(DISTRICT_DATA[d.value]||{})[v.value]||[];
+    if(ms.length){ m.disabled=false; ms.sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k;m.appendChild(o);}); }
+  });
 }
 
-// ===============================
-// BRANDING + PROGRAMS + FIXED LEVEL
-// ===============================
-async function loadRemoteConfig(formType) {
-  try {
-    const payload = {
-      cid: CID,
-      collection_id: CID,
-      form_type: formType,
-      token: TOKEN,
+// ═══════════════════════════════
+// MOBILE LOOKUP
+// ═══════════════════════════════
+function setupMobLookup(){
+  const mob=_$("f-mobile"); if(!mob||mob._ls) return; mob._ls=true;
+  mob.addEventListener("input",()=>{
+    clearTimeout(mobTimer); _$("mob-found").style.display="none";
+    if((mob.value||"").trim().length===10) mobTimer=setTimeout(doMobLookup,700);
+  });
+}
+async function doMobLookup(){
+  const mobile=(_$("f-mobile").value||"").trim(); if(mobile.length!==10) return;
+  _$("mob-spin").style.display="block";
+  try{
+    const pl={form_type:FTYPE,mobile};
+    if(TOK) pl.token=TOK; if(CID) pl.collection_id=CID;
+    const res=await api(isPub()?"public_lookup_mobile":"lookup_mobile",pl);
+    if(DBG) console.log("📱 mob lookup:",JSON.stringify(res));
+    const p=extractProfile({profile:res.profile,data:res.data,events:res.events,...res});
+    if(p.name||p.dist){ fillForm(p); _$("mob-found").style.display="block"; }
+  }catch(e){ if(DBG) console.warn("mob lookup fail",e); }
+  finally{ _$("mob-spin").style.display="none"; }
+}
+
+// ═══════════════════════════════
+// SUBMIT
+// ═══════════════════════════════
+async function doSubmit(e){
+  e.preventDefault();
+  if(!camFile){ showFStatus("❌ फोटो जरूरी है",true); return; }
+  const btn=_$("submit-btn"); const old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner spin"></i><span class="deva">सेव हो रहा है...</span>';
+  showFStatus("",false);
+  try{
+    if(!CID) await resolveCid();
+    if(!CID) throw new Error("Collection ID नहीं मिली — URL में ?cid= या ?token= जोड़ें");
+    const fd={
+      mobile:(_$("f-mobile").value||"").trim(),
+      name:(_$("f-name").value||"").trim(),
+      designation:(_$("f-desig").value||"").trim(),
+      program_name:(_$("f-program").value||"").trim(),
+      district:(_$("f-dist").value||"").trim(),
+      vidhansabha:(_$("f-vidhan").value||"").trim(),
+      mandal:(_$("f-mandal").value||"").trim(),
+      attendance_date:(_$("f-date").value||"").trim(),
+      attendance_time:(_$("f-time").value||"").trim(),
+      remarks:(_$("f-remarks").value||"").trim(),
     };
-    // IMPORTANT: return FULL response (it contains: settings, config, form, form_type)
-    const res = await apiCallPublic("public_get_config", payload);
-    return res || null;
-  } catch (e) {
-    console.error("loadRemoteConfig failed:", e);
-    return null;
+    await doSave(fd, camFile);
+    showSuccess(fd);
+  }catch(err){ showFStatus("❌ "+(err.message||"Error"),true); btn.disabled=false; btn.innerHTML=old; }
+}
+
+async function doSave(formData, file){
+  const sha=await sha256(file);
+  if(!entryId||!finalTok){
+    const cp={form_type:FTYPE,sha256:sha,file_name:"selfie.jpg",mime_type:"image/jpeg",payload:formData};
+    if(TOK) cp.token=TOK; if(CID) cp.collection_id=CID;
+    const cr=await api(isPub()?"public_create_entry":"create_entry",cp);
+    entryId=cr.entry_id; finalTok=cr.finalize_token; upUrl=cr.upload_url; s3k=cr.s3_key;
+    if(upUrl&&!cr.duplicate) await fetch(upUrl,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
+  }else{
+    // Update existing entry with form data
+    const up={form_type:FTYPE,sha256:sha,file_name:"selfie.jpg",mime_type:"image/jpeg",payload:formData};
+    if(TOK) up.token=TOK; if(CID) up.collection_id=CID;
+    const ur=await api(isPub()?"public_create_entry":"create_entry",up);
+    finalTok=ur.finalize_token; entryId=ur.entry_id;
+    if(ur.upload_url&&!ur.duplicate) await fetch(ur.upload_url,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
   }
+  await api(isPub()?"public_finalize_entry":"finalize_entry",{finalize_token:finalTok,entry_id:entryId});
 }
 
-function safeStr(x) {
-  return (x === undefined || x === null) ? "" : String(x);
+function showFStatus(msg,isErr){
+  const el=_$("f-status");
+  if(!msg){el.style.display="none";return;}
+  el.style.display="block";
+  el.style.background=isErr?"rgba(239,68,68,.1)":"rgba(16,185,129,.1)";
+  el.style.border=isErr?"1px solid rgba(239,68,68,.3)":"1px solid rgba(16,185,129,.3)";
+  el.style.color=isErr?"#f87171":"#34d399";
+  el.textContent=msg;
 }
 
-// ---------- Helpers to read NEW API shape ----------
-function getDefaultsNode(resp) {
-  return (resp && resp.settings && resp.settings.defaults) ||
-         (resp && resp.config && resp.config.defaults) ||
-         null;
+// ═══════════════════════════════
+// SUCCESS
+// ═══════════════════════════════
+function showSuccess(fd){
+  _$("scr-form").style.display="none";
+  _$("scr-ok").style.display="block";
+  _$("ok-msg").textContent=`${fd.name||"आपकी"} की उपस्थिति दर्ज हो गई।`;
+}
+function doNewEntry(){
+  camFile=null; searchResp=null; entryId=null; finalTok=null; upUrl=null; s3k=null; faceS3k=null;
+  window._autofill=null;
+  _$("scr-ok").style.display="none";
+  _$("scr-cam").style.display="block";
+  if(_$("vform")) _$("vform").reset();
+  _$("autofill-strip").style.display="none";
+  _$("match-badge").style.display="none";
+  _$("prev-box").style.display="none";
+  _$("cam-box").style.display="block";
+  _$("cam-hint").style.display="block";
+  _$("proceed-wrap").style.display="none";
+  _$("pp-fill-wrap").style.display="none";
+  _$("pp-ev-wrap") && (_$("pp-ev-wrap").style.display="none");
+  setPill("");
+  startCam(facingMode);
 }
 
-function getGlobalNode(resp) {
-  return (resp && resp.settings && resp.settings.global) ||
-         (resp && resp.config && resp.config.global) ||
-         null;
-}
+window.addEventListener("offline",()=>_$("offline-banner").classList.add("on"));
+window.addEventListener("online", ()=>_$("offline-banner").classList.remove("on"));
 
-function getFormNode(resp, formType) {
-  if (!resp) return null;
-
-  // Backend already returns resolved `form`
-  if (resp.form && typeof resp.form === "object") return resp.form;
-
-  const ft = formType || resp.form_type || FORM_TYPE;
-
-  if (resp.settings && resp.settings.forms && resp.settings.forms[ft]) return resp.settings.forms[ft];
-  if (resp.config && resp.config.forms && resp.config.forms[ft]) return resp.config.forms[ft];
-
-  return null;
-}
-
-function pickAssetUrl(assetObj, fallbackUrl) {
-  if (!assetObj) return safeStr(fallbackUrl || "");
-  if (typeof assetObj === "string") return assetObj;
-  return safeStr(assetObj.url || fallbackUrl || "");
-}
-
-function pickBranding(resp, formNode) {
-  const defaults = getDefaultsNode(resp) || {};
-  // form branding > defaults branding > empty
-  return (formNode && formNode.branding) || defaults.branding || {};
-}
-
-function applyBrandingFromResponse(resp, formType) {
-  const formNode = getFormNode(resp, formType) || {};
-  const branding = pickBranding(resp, formNode);
-  const globalNode = getGlobalNode(resp) || {};
-  const globalTheme = globalNode.theme || {};
-
-  // Text
-  const orgNameEl = $("org-name");
-  const orgSubtitleEl = $("org-subtitle");
-  const orgTaglineEl = $("org-tagline");
-  if (orgNameEl) orgNameEl.textContent = safeStr(formNode.title || orgNameEl.textContent);
-  if (orgSubtitleEl) orgSubtitleEl.textContent = safeStr(formNode.subtitle || orgSubtitleEl.textContent);
-  if (orgTaglineEl) orgTaglineEl.textContent = safeStr(formNode.tagline || branding.tagline || orgTaglineEl.textContent);
-
-  // Footer
-  const footerTextEl = $("footer-text");
-  if (footerTextEl) footerTextEl.textContent = safeStr(globalNode.tagline || "Powered by EventLens");
-
-  // Images (use signed URLs if present)
-  const logoUrl = pickAssetUrl(branding.logo, formNode.logo_url);
-  const headerUrl = pickAssetUrl(branding.header, formNode.header_url);
-  const bgUrl = pickAssetUrl(branding.background, formNode.background_url);
-
-  const logoEl = $("custom-logo");
-  if (logoEl && logoUrl) {
-    logoEl.src = logoUrl;
-    logoEl.classList.remove("hidden");
-  }
-
-  // Header banner (show wrapper only when we have a URL)
-  const headerWrap = $("header-wrap");
-  const headerImg = $("header-image");
-  if (headerWrap && headerImg && headerUrl) {
-    headerImg.src = headerUrl;
-    headerWrap.classList.remove("hidden");
-  } else if (headerWrap) {
-    headerWrap.classList.add("hidden");
-  }
-
-  // Optional background image
-  if (bgUrl) {
-    document.body.style.backgroundImage = `url('${bgUrl}')`;
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundPosition = "center";
-    document.body.style.backgroundAttachment = "fixed";
-  }
-
-  // Optional theme colors: if you later wire CSS vars, these are ready
-  const primary = branding.color1 || globalTheme.primary || "#f97316";
-  const secondary = branding.color2 || globalTheme.secondary || "#ef4444";
-  const background = globalTheme.background || "#0f172a";
-  document.documentElement.style.setProperty("--brand-primary", primary);
-  document.documentElement.style.setProperty("--brand-secondary", secondary);
-  document.documentElement.style.setProperty("--brand-background", background);
-}
-
-function fillProgramNamesFromResponse(resp, formType, selectId) {
-  const select = $(selectId);
-  if (!select) return;
-
-  const firstOpt = select.querySelector("option") ? select.querySelector("option").outerHTML : '<option value="">Select Program</option>';
-  select.innerHTML = firstOpt;
-
-  const formNode = getFormNode(resp, formType) || {};
-  const defaults = getDefaultsNode(resp) || {};
-
-  const list =
-    (Array.isArray(formNode.program_options) && formNode.program_options) ||
-    (Array.isArray(formNode.programs) && formNode.programs) ||
-    (Array.isArray(defaults.programs) && defaults.programs) ||
-    [];
-
-  const uniq = [...new Set(list.map(x => safeStr(x).trim()).filter(Boolean))];
-  uniq.forEach(p => {
-    const opt = document.createElement("option");
-    opt.value = p;
-    opt.textContent = p;
-    select.appendChild(opt);
-  });
-}
-
-// Kept for compatibility (if you add fixed_level dropdown later)
-function getFixedLevelFromResponse(resp, formType) {
-  const formNode = getFormNode(resp, formType) || {};
-  if (formNode.fixed_level) return safeStr(formNode.fixed_level);
-
-  const defaults = getDefaultsNode(resp) || {};
-  const fixedLevels = defaults.fixed_levels || {};
-  return safeStr(fixedLevels[formType] || fixedLevels["party_attendance"] || "");
-}
-
-function applyFixedLevelFromResponse(resp, formType) {
-  const levelSelect = $("fixed_level");
-  if (!levelSelect) return;
-
-  const level = getFixedLevelFromResponse(resp, formType);
-  if (level) {
-    levelSelect.value = level;
-    levelSelect.disabled = true;
-  }
-}
-
-
-const FORM_TYPE = "party_attendance";
-    const FIELD_IDS = ["mobile","name","designation","program_name","district","vidhansabha","mandal","attendance_date","attendance_time","remarks"];
-
-    const DISTRICT_DATA = {
+const DISTRICT_DATA = {
   "मुरैना": {
     "3. सबलगढ़": [
       "सबलगढ़ नगर",
@@ -2348,189 +2691,14 @@ const FORM_TYPE = "party_attendance";
     ]
   }
 };
-    // ===============================
-// LOCATION HELPERS (district -> vidhansabha -> mandal)
-// ===============================
-function initDistrictCascade() {
-  const dEl = $("district");
-  const vEl = $("vidhansabha");
-  const mEl = $("mandal");
-  if (!dEl || !vEl || !mEl) return;
 
-  // Populate Districts
-  dEl.innerHTML = '<option value="">— जिला चुनें —</option>';
-  Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach((d) => {
-    const opt = document.createElement("option");
-    opt.value = d;
-    opt.textContent = d;
-    dEl.appendChild(opt);
-  });
-
-  dEl.addEventListener("change", () => {
-    const dVal = dEl.value;
-    vEl.innerHTML = '<option value="">— विधानसभा चुनें —</option>';
-    mEl.innerHTML = '<option value="">— पहले विधानसभा चुनें —</option>';
-    vEl.disabled = !dVal;
-    mEl.disabled = true;
-
-    if (dVal && DISTRICT_DATA[dVal]) {
-      Object.keys(DISTRICT_DATA[dVal]).sort((a,b)=>a.localeCompare(b,"hi")).forEach((v) => {
-        const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
-        vEl.appendChild(opt);
-      });
-    }
-  });
-
-  vEl.addEventListener("change", () => {
-    const dVal = dEl.value;
-    const vVal = vEl.value;
-    mEl.innerHTML = '<option value="">— मंडल चुनें —</option>';
-    mEl.disabled = !vVal;
-
-    if (dVal && vVal && DISTRICT_DATA[dVal] && DISTRICT_DATA[dVal][vVal]) {
-      DISTRICT_DATA[dVal][vVal].slice().sort((a,b)=>a.localeCompare(b,"hi")).forEach((m) => {
-        const opt = document.createElement("option");
-        opt.value = m;
-        opt.textContent = m;
-        mEl.appendChild(opt);
-      });
-    }
-  });
-}
-
-function applyLocationAutofill(info) {
-  // info: {district, vidhansabha, mandal}
-  if (!info) return;
-  const d = safeStr(info.district).trim();
-  const v = safeStr(info.vidhansabha).trim();
-  const m = safeStr(info.mandal).trim();
-
-  if (d && $("district")) {
-    $("district").value = d;
-    $("district").dispatchEvent(new Event("change"));
-    setTimeout(() => {
-      if (v && $("vidhansabha")) {
-        $("vidhansabha").value = v;
-        $("vidhansabha").dispatchEvent(new Event("change"));
-        setTimeout(() => {
-          if (m && $("mandal")) $("mandal").value = m;
-        }, 120);
-      }
-    }, 120);
-  }
-}
-
-    let remoteCfg = null;
-
-    async function initAll() {
-  // remote config (branding + programs)
-  const remoteResp = await loadRemoteConfig(FORM_TYPE);
-  if (remoteResp) {
-    applyBrandingFromResponse(remoteResp, FORM_TYPE);
-    fillProgramNamesFromResponse(remoteResp, FORM_TYPE, "program_name");
-    applyFixedLevelFromResponse(remoteResp, FORM_TYPE);
-  }
-
-  // init district cascade after config load (no change)
-  initDistrictCascade();
-
-}
-
-
-    document.addEventListener("DOMContentLoaded", initAll);
-
-    // Mobile Auto-fill
-    let mobileTimer = null;
-    async function tryLookupMobile() {
-      const mobile = ($("mobile").value || "").trim();
-      if (mobile.length !== 10) return;
-
-      $("mobile-loader").classList.remove("hidden");
-      $("user-found-msg").classList.add("hidden");
-
-      try {
-        const payload = isPublicMode()
-          ? { token, form_type: FORM_TYPE, mobile }
-          : { collection_id: cidParam, form_type: FORM_TYPE, mobile };
-        const action = isPublicMode() ? "public_lookup_mobile" : "lookup_mobile";
-        const res = await apiCall(action, payload);
-
-        const info = res && (res.profile || res.data || res);
-        if (info && (info.name || info.designation || info.district || info.vidhansabha || info.mandal)) {
-          if (info.name) $("name").value = info.name;
-          if (info.designation) $("designation").value = info.designation;
-          applyLocationAutofill(info);
-          $("user-found-msg").classList.remove("hidden");
-        }
-      } catch (e) {
-        if (debug) console.log("lookup failed", e);
-      } finally {
-        $("mobile-loader").classList.add("hidden");
-      }
-    }
-
-    $("mobile").addEventListener("input", () => {
-      clearTimeout(mobileTimer);
-      $("user-found-msg").classList.add("hidden");
-      const m = ($("mobile").value || "").trim();
-      if (m.length === 10) mobileTimer = setTimeout(tryLookupMobile, 500);
-    });
-    $("mobile").addEventListener("blur", () => {
-      clearTimeout(mobileTimer);
-      tryLookupMobile();
-    });
-
-    // Submit (NO PHOTO)
-    $("f").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const btn = $("submitBtn");
-      const old = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-      showStatus("", false);
-
-      try {
-        const data = {};
-        FIELD_IDS.forEach((id) => {
-          const el = $(id);
-          if (el) data[id] = (el.value || "").trim();
-        });
-
-        if (!data.program_name) throw new Error("कृपया कार्यक्रम चुनें");
-        if (!data.district) throw new Error("कृपया जिला चुनें");
-        if (!data.vidhansabha) throw new Error("कृपया विधानसभा चुनें");
-
-        let res;
-        if (isPublicMode()) {
-          res = await apiCall("public_create_entry", {
-            token,
-            form_type: FORM_TYPE,
-            file_kind: "none",
-            payload: data
-          });
-        } else {
-          if (!cidParam) throw new Error("Missing Collection ID (cid)");
-          res = await apiCall("create_entry", {
-            collection_id: cidParam,
-            form_type: FORM_TYPE,
-            file_kind: "none",
-            payload: data
-          });
-        }
-
-        const finalizeAction = isPublicMode() ? "public_finalize_entry" : "finalize_entry";
-        await apiCall(finalizeAction, { finalize_token: res.finalize_token, entry_id: res.entry_id });
-
-        $("main-container").classList.add("hidden");
-        $("success-screen").classList.remove("hidden");
-      } catch (err) {
-        showStatus("❌ " + (err.message || "Error"), true);
-        btn.disabled = false;
-        btn.innerHTML = old;
-      }
-    });
-    </script>
-    </body>
-    </html>
+// ═══════════════════════════════
+// INIT
+// ═══════════════════════════════
+(async()=>{
+  await loadBranding();
+  await startCam("user");
+})();
+</script>
+</body>
+</html>

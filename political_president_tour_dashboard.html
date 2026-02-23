@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<!-- EventLens Political - President Tour Dashboard v1.0 -->
+<html lang="hi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>President Tour Dashboard — EventLens</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+tailwind.config = {
+  theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"','sans-serif'], dev: ['"Noto Sans Devanagari"','sans-serif'] } } }
+}
+</script>
+<style>
+:root {
+  --c1:#f97316; --c2:#ef4444;
+  --navy:#020617; --card:rgba(15,23,42,0.7);
+  --gold:#f59e0b; --jade:#10b981;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;min-height:100vh;background:#020617;color:#e2e8f0;font-family:'Plus Jakarta Sans',sans-serif}
+body{
+  background-image:
+    radial-gradient(ellipse 80% 50% at 10% 0%,rgba(249,115,22,.12),transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%,rgba(239,68,68,.07),transparent 50%);
+  background-attachment:fixed;
+}
+.glass{background:rgba(15,23,42,.75);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.glass-dark{background:rgba(2,6,23,.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.06)}
+.brand-text{background:linear-gradient(135deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-bg{background:linear-gradient(135deg,var(--c1),var(--c2))}
+.input-field{background:rgba(2,6,23,.5);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;width:100%;transition:all .2s}
+.input-field:focus{outline:none;border-color:var(--c1);box-shadow:0 0 0 2px rgba(249,115,22,.18)}
+.input-field option{background:#0f172a;color:#fff}
+.stat-card{background:rgba(15,23,42,.8);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;transition:all .3s;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--c1),var(--c2))}
+.stat-card:hover{border-color:rgba(249,115,22,.25);transform:translateY(-2px)}
+.tour-card{background:rgba(15,23,42,.7);border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden;transition:all .3s;cursor:pointer}
+.tour-card:hover{border-color:rgba(249,115,22,.3);box-shadow:0 8px 32px rgba(249,115,22,.1)}
+.photo-grid img{width:100%;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;transition:all .2s}
+.photo-grid img:hover{transform:scale(1.05)}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600}
+.pill-orange{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);color:#f97316}
+.pill-blue{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);color:#60a5fa}
+.pill-green{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#10b981}
+.pill-red{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+.tab-btn{padding:8px 16px;font-size:13px;font-weight:600;border-radius:10px;transition:all .2s;border:none;cursor:pointer}
+.tab-active{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff}
+.tab-inactive{background:transparent;color:#64748b}
+.tab-inactive:hover{color:#94a3b8;background:rgba(255,255,255,.05)}
+
+/* Slideshow overlay */
+#slideshowOverlay{position:fixed;inset:0;z-index:9999;background:rgba(2,6,23,.97);display:none;flex-direction:column}
+#slideshowOverlay.active{display:flex}
+#ssBar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(2,6,23,.9);flex-shrink:0}
+#ssMain{flex:1;display:flex;overflow:hidden;min-height:0}
+#ssPhoto{flex:1;display:flex;align-items:center;justify-content:center;position:relative;padding:16px}
+#ssPhoto img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#ssDetail{width:320px;flex-shrink:0;background:rgba(2,6,23,.9);border-left:1px solid rgba(249,115,22,.12);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+#ssThumbs{height:72px;display:flex;gap:6px;padding:8px 12px;background:rgba(2,6,23,.95);border-top:1px solid rgba(255,255,255,.05);overflow-x:auto;flex-shrink:0}
+#ssThumbs img{height:56px;width:56px;object-fit:cover;border-radius:7px;cursor:pointer;border:2px solid transparent;opacity:.55;transition:all .2s;flex-shrink:0}
+#ssThumbs img.active{border-color:var(--c1);opacity:1}
+.ss-nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(2,6,23,.8);border:1px solid rgba(249,115,22,.3);color:var(--c1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s;z-index:10}
+.ss-nav-btn:hover{background:rgba(249,115,22,.15);border-color:var(--c1)}
+#ssProgress{height:3px;background:rgba(255,255,255,.08);flex-shrink:0}
+#ssProgressBar{height:100%;background:linear-gradient(90deg,var(--c1),var(--c2));transition:width .3s}
+@media(max-width:767px){
+  #ssMain{flex-direction:column}
+  #ssDetail{width:100%;max-height:220px;border-left:none;border-top:1px solid rgba(249,115,22,.1)}
+}
+
+/* Loading skeleton */
+.skeleton{background:linear-gradient(90deg,rgba(255,255,255,.06) 25%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.06) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Print/PDF styles */
+@media print{
+  body{background:#fff!important;color:#000!important}
+  .no-print{display:none!important}
+  .glass,.stat-card,.tour-card{background:#f8f9fa!important;border:1px solid #dee2e6!important;box-shadow:none!important}
+  nav,.filters-bar,#actionBar{display:none!important}
+}
+
+.animate-in{animation:fadeSlideUp .4s ease both}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.chart-container{position:relative;height:200px}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="glass-dark sticky top-0 z-40 border-b border-white/5">
+  <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div id="nav-logo-wrap" class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,var(--c1),var(--c2))">
+        <img id="nav-logo" src="" alt="" class="w-full h-full object-contain rounded-xl hidden">
+        <i id="nav-icon" class="fa-solid fa-route text-white text-sm"></i>
+      </div>
+      <div>
+        <div class="text-white font-bold text-sm" id="nav-title">President Tour Dashboard</div>
+        <div class="text-slate-500 text-[10px]" id="nav-subtitle">EventLens Political</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 no-print">
+      <button onclick="exportPDF()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3)">
+        <i class="fa-solid fa-file-pdf text-red-400"></i><span class="hidden sm:inline">PDF</span>
+      </button>
+      <button onclick="exportPPT()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style="background:rgba(249,115,22,.2);border:1px solid rgba(249,115,22,.3)">
+        <i class="fa-solid fa-file-powerpoint text-orange-400"></i><span class="hidden sm:inline">PPT</span>
+      </button>
+      <button onclick="startSlideshow()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white brand-bg">
+        <i class="fa-solid fa-play"></i><span class="hidden sm:inline">Slideshow</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- FILTERS BAR -->
+<div class="max-w-7xl mx-auto px-4 py-4 no-print">
+  <div class="glass rounded-2xl p-4" style="border-top:2px solid var(--c1)">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+      <div>
+        <label class="block text-[10px] text-slate-400 mb-1 uppercase tracking-wide">दिनांक से</label>
+        <input type="date" id="f-from" class="input-field">
+      </div>
+      <div>
+        <label class="block text-[10px] text-slate-400 mb-1 uppercase tracking-wide">दिनांक तक</label>
+        <input type="date" id="f-to" class="input-field">
+      </div>
+      <div>
+        <label class="block text-[10px] text-slate-400 mb-1 uppercase tracking-wide">Level</label>
+        <select id="f-level" class="input-field appearance-none">
+          <option value="">सभी Level</option>
+          <option value="जिला">जिला</option>
+          <option value="विधानसभा">विधानसभा</option>
+          <option value="मंडल">मंडल</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[10px] text-slate-400 mb-1 uppercase tracking-wide">जिला</label>
+        <select id="f-district" class="input-field appearance-none">
+          <option value="">सभी जिले</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-[10px] text-slate-400 mb-1 uppercase tracking-wide">प्रकार</label>
+        <select id="f-type" class="input-field appearance-none">
+          <option value="">सभी प्रकार</option>
+        </select>
+      </div>
+      <div>
+        <button onclick="applyFilters()" class="w-full brand-bg text-white font-semibold rounded-xl py-2 text-sm flex items-center justify-center gap-2">
+          <i class="fa-solid fa-filter text-xs"></i> फिल्टर
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="max-w-7xl mx-auto px-4 pb-10 space-y-6">
+
+  <!-- STAT CARDS -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-in" id="statCards">
+    <div class="stat-card">
+      <div class="text-slate-400 text-xs mb-1 flex items-center gap-1"><i class="fa-solid fa-calendar-check text-orange-400"></i> कुल टूर</div>
+      <div class="text-3xl font-extrabold brand-text" id="s-total">—</div>
+      <div class="text-slate-500 text-[11px] mt-1" id="s-range">सभी</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-slate-400 text-xs mb-1 flex items-center gap-1"><i class="fa-solid fa-users text-blue-400"></i> कुल उपस्थिति</div>
+      <div class="text-3xl font-extrabold text-blue-400" id="s-attendance">—</div>
+      <div class="text-slate-500 text-[11px] mt-1">Total Attendance</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-slate-400 text-xs mb-1 flex items-center gap-1"><i class="fa-solid fa-map-pin text-emerald-400"></i> जिले</div>
+      <div class="text-3xl font-extrabold text-emerald-400" id="s-districts">—</div>
+      <div class="text-slate-500 text-[11px] mt-1">Districts Covered</div>
+    </div>
+    <div class="stat-card">
+      <div class="text-slate-400 text-xs mb-1 flex items-center gap-1"><i class="fa-solid fa-images text-purple-400"></i> फोटो</div>
+      <div class="text-3xl font-extrabold text-purple-400" id="s-photos">—</div>
+      <div class="text-slate-500 text-[11px] mt-1">Total Photos</div>
+    </div>
+  </div>
+
+  <!-- CHARTS + VIEW TABS -->
+  <div class="flex items-center justify-between">
+    <div class="flex gap-2 no-print">
+      <button class="tab-btn tab-active" id="tab-grid" onclick="switchView('grid')"><i class="fa-solid fa-grid-2 mr-1"></i>Cards</button>
+      <button class="tab-btn tab-inactive" id="tab-list" onclick="switchView('list')"><i class="fa-solid fa-list mr-1"></i>List</button>
+      <button class="tab-btn tab-inactive" id="tab-chart" onclick="switchView('chart')"><i class="fa-solid fa-chart-bar mr-1"></i>Charts</button>
+    </div>
+    <div class="text-slate-500 text-xs" id="result-count"></div>
+  </div>
+
+  <!-- CHART VIEW -->
+  <div id="view-chart" class="hidden space-y-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="glass rounded-2xl p-5">
+        <h3 class="text-sm font-bold text-white mb-4">📊 टूर by Level</h3>
+        <div class="chart-container"><canvas id="chartLevel"></canvas></div>
+      </div>
+      <div class="glass rounded-2xl p-5">
+        <h3 class="text-sm font-bold text-white mb-4">📍 जिलेवार टूर</h3>
+        <div class="chart-container"><canvas id="chartDistrict"></canvas></div>
+      </div>
+      <div class="glass rounded-2xl p-5">
+        <h3 class="text-sm font-bold text-white mb-4">📅 मासिक Activity</h3>
+        <div class="chart-container"><canvas id="chartMonthly"></canvas></div>
+      </div>
+      <div class="glass rounded-2xl p-5">
+        <h3 class="text-sm font-bold text-white mb-4">🎯 प्रकारवार टूर</h3>
+        <div class="chart-container"><canvas id="chartType"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRID VIEW -->
+  <div id="view-grid">
+    <div id="tourGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    <div id="skeleton-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="skeleton h-64 rounded-2xl"></div>
+      <div class="skeleton h-64 rounded-2xl"></div>
+      <div class="skeleton h-64 rounded-2xl"></div>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="view-list" class="hidden">
+    <div class="glass rounded-2xl overflow-hidden">
+      <table class="w-full text-sm" id="tourTable">
+        <thead>
+          <tr class="border-b border-white/5 text-left">
+            <th class="px-4 py-3 text-slate-400 text-xs font-semibold">#</th>
+            <th class="px-4 py-3 text-slate-400 text-xs font-semibold">दिनांक</th>
+            <th class="px-4 py-3 text-slate-400 text-xs font-semibold">स्थान</th>
+            <th class="px-4 py-3 text-slate-400 text-xs font-semibold">Level</th>
+            <th class="px-4 py-3 text-slate-400 text-xs font-semibold">जिला</th>
+            <th class="px-4 py-3 text-slate-400 text-xs font-semibold">प्रकार</th>
+            <th class="px-4 py-3 text-slate-400 text-xs font-semibold">उपस्थिति</th>
+            <th class="px-4 py-3 text-slate-400 text-xs font-semibold">Photos</th>
+            <th class="px-4 py-3 no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="tourTableBody"></tbody>
+      </table>
+      <div id="emptyTable" class="hidden text-center py-12 text-slate-500"><i class="fa-solid fa-inbox text-3xl mb-3 block"></i>कोई रिकॉर्ड नहीं</div>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState" class="hidden text-center py-16">
+    <i class="fa-solid fa-route text-5xl text-slate-700 mb-4 block"></i>
+    <p class="text-slate-500 text-sm">कोई टूर रिकॉर्ड नहीं मिला।</p>
+    <p class="text-slate-600 text-xs mt-1">फिल्टर बदलें या CID/Token जांचें।</p>
+  </div>
+
+  <!-- LOAD MORE -->
+  <div id="loadMoreWrap" class="hidden text-center no-print">
+    <button onclick="loadMore()" class="px-6 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/5 transition">
+      <i class="fa-solid fa-chevron-down mr-2"></i>और लोड करें
+    </button>
+  </div>
+</div>
+
+<!-- SLIDESHOW OVERLAY -->
+<div id="slideshowOverlay">
+  <div id="ssBar">
+    <button onclick="closeSlideshow()" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition"><i class="fa-solid fa-xmark"></i></button>
+    <div id="ssTitle" class="flex-1 text-white font-semibold text-sm truncate ml-2">Tour</div>
+    <div id="ssCounter" class="text-slate-400 text-xs mr-2"></div>
+    <button id="ssAutoBtn" onclick="toggleAutoplay()" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition"><i class="fa-solid fa-play text-xs"></i></button>
+    <button onclick="exportCurrentSlide()" class="w-9 h-9 rounded-lg flex items-center justify-center text-orange-400 hover:bg-orange-400/10 transition no-print"><i class="fa-solid fa-download text-xs"></i></button>
+  </div>
+  <div id="ssProgress"><div id="ssProgressBar" style="width:0%"></div></div>
+  <div id="ssMain">
+    <div id="ssPhoto">
+      <button class="ss-nav-btn" id="ssPrev" onclick="navSlide(-1)" style="left:12px"><i class="fa-solid fa-chevron-left"></i></button>
+      <img id="ssImg" src="" alt="">
+      <div id="ssNoPhoto" class="hidden flex-col items-center justify-center text-slate-600">
+        <i class="fa-solid fa-camera-slash text-5xl mb-3"></i>
+        <span class="text-sm">कोई फोटो नहीं</span>
+      </div>
+      <button class="ss-nav-btn" id="ssNext" onclick="navSlide(1)" style="right:12px"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+    <div id="ssDetail">
+      <div id="ssDetailContent"></div>
+    </div>
+  </div>
+  <div id="ssThumbs"></div>
+</div>
+
+<script>
+// ─── CONFIG ───
+const API_ID = "vxid0yoovj";
+const REGION = "ap-south-1";
+const BASE_URL = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
+
+const qs = (n) => { try { return new URLSearchParams(window.location.search).get(n) || ""; } catch(e) { return ""; } };
+const token = qs("token") || "";
+const $ = id => document.getElementById(id);
+
+// cidParam: from URL directly, OR resolved from token response
+let cidParam = (qs("cid") || qs("collection_id") || "").trim();
+
+// Resolve collection_id from token if not in URL
+async function resolveCollectionId() {
+  if (cidParam) return; // already have it
+  if (!token) return;
+  try {
+    const res = await apiCall("public_get_config", { token, form_type: "president_tour_form" });
+    const cid = res.collection_id || res.cid ||
+      (res.config && (res.config.collection_id || res.config.cid)) ||
+      (res.settings && (res.settings.collection_id || res.settings.cid)) || "";
+    if (cid) { cidParam = cid.trim(); }
+  } catch(e) { console.warn("resolveCollectionId failed", e); }
+}
+
+// ─── STATE ───
+let allTours = [];
+let filteredTours = [];
+let lastKey = null;
+let loading = false;
+let charts = {};
+let slideIndex = 0;
+let slidePhotoIndex = 0;
+let autoplayTimer = null;
+let currentView = "grid";
+
+// ─── API ───
+async function apiCall(action, payload) {
+  const url = `${BASE_URL}/political/forms`;
+  const res = await fetch(url, {
+    method: "POST", cache: "no-store",
+    body: JSON.stringify({ action, payload: payload || {} })
+  });
+  const text = await res.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch(e) { data = { message: text }; }
+  if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+  return data;
+}
+
+// ─── LOAD BRANDING ───
+async function loadBranding() {
+  try {
+    const payload = token
+      ? { token, form_type: "president_tour_form" }
+      : { collection_id: cidParam, form_type: "president_tour_form" };
+    const action = token ? "public_get_config" : "admin_get_config";
+    const res = await apiCall(action, payload);
+    const cfg = res && (res.config || res.settings || res.data || res);
+    const forms = (cfg && cfg.forms) || {};
+    const ft = forms["president_tour_form"] || {};
+    const def = (cfg && cfg.defaults) || {};
+
+    const title = ft.title || def.title || "President Tour Dashboard";
+    const subtitle = ft.subtitle || def.subtitle || "EventLens Political";
+    if ($("nav-title")) $("nav-title").textContent = title;
+    if ($("nav-subtitle")) $("nav-subtitle").textContent = subtitle;
+
+    const c1 = (ft.theme && ft.theme.primary) || (def.branding && def.branding.color1) || "#f97316";
+    const c2 = (ft.theme && ft.theme.secondary) || (def.branding && def.branding.color2) || "#ef4444";
+    document.documentElement.style.setProperty("--c1", c1);
+    document.documentElement.style.setProperty("--c2", c2);
+
+    const logoUrl = ft.logo_url || (ft.branding && ft.branding.logo && ft.branding.logo.url) || "";
+    if (logoUrl) {
+      $("nav-icon") && ($("nav-icon").style.display = "none");
+      const navLogo = $("nav-logo");
+      if (navLogo) { navLogo.src = logoUrl; navLogo.classList.remove("hidden"); }
+    }
+  } catch(e) { console.log("branding load failed", e); }
+}
+
+// ─── LOAD DATA ───
+async function loadData(append = false) {
+  if (loading) return;
+  loading = true;
+  if (!append) {
+    $("skeleton-grid").classList.remove("hidden");
+    $("tourGrid").innerHTML = "";
+    $("tourTableBody").innerHTML = "";
+    $("emptyState").classList.add("hidden");
+  }
+
+  try {
+    const fromDate = $("f-from").value;
+    const toDate = $("f-to").value;
+    const nowMs = Date.now();
+    const endMs = toDate ? new Date(toDate + "T23:59:59").getTime() : nowMs;
+    const startMs = fromDate ? new Date(fromDate + "T00:00:00").getTime() : nowMs - 365 * 24 * 3600 * 1000;
+
+    if (!append) allTours = [];
+
+    // Auto-paginate: keep fetching until no next_key or enough items
+    let pageKey = (append && lastKey) ? lastKey : null;
+    let totalFetched = 0;
+    const MAX_ITEMS = 500;
+
+    do {
+      const payload = {
+        collection_id: cidParam,
+        limit: 100,
+        start_ms: String(startMs),
+        end_ms: String(endMs),
+      };
+      if (pageKey) payload.next_key = pageKey;
+
+      const res = await apiCall("admin_list", payload);
+      const rawItems = res.items || [];
+
+      // Client-side filter for president_tour
+      const pageItems = rawItems.filter(it => {
+        const ft = (it.form_type || it.ft || "").toLowerCase();
+        return ft.includes("president") || ft.includes("tour");
+      });
+
+      allTours = allTours.concat(pageItems);
+      totalFetched += rawItems.length;
+      pageKey = res.next_key || null;
+      lastKey = pageKey;
+
+      // Stop if we have enough or no more pages or max fetched
+    } while (pageKey && totalFetched < MAX_ITEMS);
+
+    $("loadMoreWrap").classList.toggle("hidden", !lastKey);
+    applyFilters();
+  } catch(e) {
+    console.error("load error", e);
+    $("emptyState").classList.remove("hidden");
+  } finally {
+    loading = false;
+    $("skeleton-grid").classList.add("hidden");
+  }
+}
+
+function applyFilters() {
+  const level = ($("f-level").value || "").trim();
+  const district = ($("f-district").value || "").trim();
+  const type = ($("f-type").value || "").trim();
+  const from = $("f-from").value ? new Date($("f-from").value).getTime() : 0;
+  const to = $("f-to").value ? new Date($("f-to").value + "T23:59:59Z").getTime() : Infinity;
+
+  filteredTours = allTours.filter(t => {
+    const d = t.data || {};
+    const dateStr = d.tour_date || d.date || "";
+    const dateMs = dateStr ? new Date(dateStr).getTime() : (parseInt(t.created_at) || 0);
+    if (from && dateMs < from) return false;
+    if (to !== Infinity && dateMs > to) return false;
+    if (level && (d.program_level || "") !== level) return false;
+    if (district && (d.district || "") !== district) return false;
+    if (type && (d.program_type || "") !== type) return false;
+    return true;
+  });
+
+  // Populate district filter options
+  const districts = [...new Set(allTours.map(t => (t.data || {}).district).filter(Boolean))].sort();
+  const dSel = $("f-district");
+  const prevD = dSel.value;
+  dSel.innerHTML = '<option value="">सभी जिले</option>';
+  districts.forEach(d => { const o = document.createElement("option"); o.value = d; o.textContent = d; if (d === prevD) o.selected = true; dSel.appendChild(o); });
+
+  const types = [...new Set(allTours.map(t => (t.data || {}).program_type).filter(Boolean))].sort();
+  const tSel = $("f-type");
+  const prevT = tSel.value;
+  tSel.innerHTML = '<option value="">सभी प्रकार</option>';
+  types.forEach(t => { const o = document.createElement("option"); o.value = t; o.textContent = t; if (t === prevT) o.selected = true; tSel.appendChild(o); });
+
+  updateStats();
+  renderView();
+}
+
+function loadMore() { loadData(true); }
+
+// ─── STATS ───
+function updateStats() {
+  $("s-total").textContent = filteredTours.length;
+  const totalAttend = filteredTours.reduce((s, t) => s + (parseInt((t.data || {}).total_attendance) || 0), 0);
+  $("s-attendance").textContent = totalAttend.toLocaleString("hi-IN");
+  const uniqueDistricts = new Set(filteredTours.map(t => (t.data || {}).district).filter(Boolean));
+  $("s-districts").textContent = uniqueDistricts.size;
+  const totalPhotos = filteredTours.reduce((s, t) => s + ((t.photos || []).length || (t.data && 1) || 0), 0);
+  $("s-photos").textContent = totalPhotos || filteredTours.filter(t => t.s3_key).length;
+  $("result-count").textContent = `${filteredTours.length} टूर मिले`;
+}
+
+// ─── RENDER ───
+function switchView(view) {
+  currentView = view;
+  ["grid","list","chart"].forEach(v => {
+    $(`view-${v}`).classList.toggle("hidden", v !== view);
+    $(`tab-${v}`).className = `tab-btn ${v === view ? "tab-active" : "tab-inactive"}`;
+  });
+  if (view === "chart") renderCharts();
+}
+
+function renderView() {
+  if (currentView === "grid") renderGrid();
+  else if (currentView === "list") renderList();
+  else renderCharts();
+}
+
+function renderGrid() {
+  const grid = $("tourGrid");
+  grid.innerHTML = "";
+  $("emptyState").classList.toggle("hidden", filteredTours.length > 0);
+
+  filteredTours.forEach((tour, i) => {
+    const d = tour.data || {};
+    const photos = tour.photos || (tour.s3_key ? [tour.s3_key] : []);
+    const date = d.tour_date || d.date || "";
+    const level = d.program_level || "";
+    const district = d.district || "";
+    const vidhansabha = d.vidhansabha || "";
+    const mandal = d.mandal || "";
+    const location = d.tour_location || d.place || "";
+    const ptype = d.program_type || "";
+    const pname = d.program_name || "";
+    const attendance = parseInt(d.total_attendance) || 0;
+    const speakers = d.other_speakers || "";
+    const details = d.program_details || d.details || "";
+
+    const levelPill = level === "जिला" ? "pill-orange" : level === "विधानसभा" ? "pill-blue" : "pill-green";
+
+    const card = document.createElement("div");
+    card.className = "tour-card animate-in";
+    card.style.animationDelay = (i * 0.04) + "s";
+    card.innerHTML = `
+      <div class="relative" style="height:160px;background:#0b1530">
+        ${photos[0] ? `<img src="${photos[0]}" alt="" style="width:100%;height:100%;object-fit:cover;opacity:0.85" onerror="this.style.display='none'">` : ""}
+        <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(2,6,23,.9),transparent 50%)"></div>
+        <div style="position:absolute;bottom:10px;left:12px;right:12px">
+          <div class="flex flex-wrap gap-1.5 mb-1.5">
+            ${level ? `<span class="pill ${levelPill}">${level}</span>` : ""}
+            ${ptype ? `<span class="pill pill-blue">${ptype}</span>` : ""}
+          </div>
+          <div class="text-white font-bold text-sm truncate">${pname || location || "Tour"}</div>
+        </div>
+        ${photos.length > 1 ? `<div style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px"><i class="fa-solid fa-images mr-1"></i>${photos.length}</div>` : ""}
+      </div>
+      <div class="p-4 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 text-xs font-medium flex items-center gap-1">
+            <i class="fa-solid fa-calendar-alt text-orange-400 text-[10px]"></i>${date ? new Date(date).toLocaleDateString("hi-IN", {day:"numeric",month:"long",year:"numeric"}) : "—"}
+          </span>
+          ${attendance ? `<span class="text-slate-300 text-xs font-medium flex items-center gap-1"><i class="fa-solid fa-users text-blue-400 text-[10px]"></i>${attendance.toLocaleString("hi-IN")}</span>` : ""}
+        </div>
+        ${(district || vidhansabha || mandal) ? `
+        <div class="text-[11px] text-slate-400 flex items-center gap-1 flex-wrap">
+          <i class="fa-solid fa-map-pin text-emerald-400 text-[9px]"></i>
+          ${[district, vidhansabha, mandal].filter(Boolean).join(" › ")}
+        </div>` : ""}
+        ${location ? `<div class="text-[11px] text-slate-400 flex items-center gap-1"><i class="fa-solid fa-location-dot text-slate-500 text-[9px]"></i>${location}</div>` : ""}
+        ${speakers ? `<div class="text-[11px] text-slate-400 truncate"><i class="fa-solid fa-microphone text-slate-500 text-[9px] mr-1"></i>${speakers}</div>` : ""}
+        ${photos.length > 1 ? `
+        <div class="photo-grid grid gap-1" style="grid-template-columns:repeat(${Math.min(photos.length,4)},1fr)">
+          ${photos.slice(0,4).map((p,pi) => `<img src="${p}" alt="" onclick="openSlide(${i},${pi})" onerror="this.style.display='none'">`).join("")}
+        </div>` : ""}
+        <div class="flex gap-2 pt-1">
+          <button onclick="openSlide(${i},0)" class="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5" style="background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.25);color:#f97316">
+            <i class="fa-solid fa-expand"></i> देखें
+          </button>
+          ${details ? `<button onclick="showDetails('${encodeURIComponent(details)}')" class="py-2 px-3 rounded-xl text-xs" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#94a3b8"><i class="fa-solid fa-info"></i></button>` : ""}
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function renderList() {
+  const tbody = $("tourTableBody");
+  tbody.innerHTML = "";
+  $("emptyTable").classList.toggle("hidden", filteredTours.length > 0);
+
+  filteredTours.forEach((tour, i) => {
+    const d = tour.data || {};
+    const photos = tour.photos || (tour.s3_key ? [tour.photo_url || ""] : []);
+    const date = d.tour_date || d.date || "";
+    const levelPill = (d.program_level || "") === "जिला" ? "pill-orange" : (d.program_level || "") === "विधानसभा" ? "pill-blue" : "pill-green";
+
+    const tr = document.createElement("tr");
+    tr.className = "border-b border-white/5 hover:bg-white/3 transition cursor-pointer";
+    tr.onclick = () => openSlide(i, 0);
+    tr.innerHTML = `
+      <td class="px-4 py-3 text-slate-500 text-xs">${i+1}</td>
+      <td class="px-4 py-3 text-slate-200 text-xs font-medium">${date ? new Date(date).toLocaleDateString("hi-IN", {day:"numeric",month:"short",year:"numeric"}) : "—"}</td>
+      <td class="px-4 py-3 text-slate-200 text-xs">${d.tour_location || d.place || "—"}</td>
+      <td class="px-4 py-3">${d.program_level ? `<span class="pill ${levelPill}">${d.program_level}</span>` : "—"}</td>
+      <td class="px-4 py-3 text-slate-300 text-xs">${d.district || "—"}</td>
+      <td class="px-4 py-3 text-slate-300 text-xs">${d.program_type || "—"}</td>
+      <td class="px-4 py-3 text-slate-200 text-xs font-semibold">${parseInt(d.total_attendance) ? parseInt(d.total_attendance).toLocaleString("hi-IN") : "—"}</td>
+      <td class="px-4 py-3 text-slate-400 text-xs">${photos.length || 0}</td>
+      <td class="px-4 py-3 no-print">
+        <button onclick="event.stopPropagation();openSlide(${i},0)" class="text-orange-400 hover:text-orange-300 text-xs"><i class="fa-solid fa-expand"></i></button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderCharts() {
+  const COLORS = ["#f97316","#ef4444","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ec4899"];
+  const chartOpts = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ x:{ticks:{color:"#64748b",font:{size:10}},grid:{color:"rgba(255,255,255,.04)"}}, y:{ticks:{color:"#64748b",font:{size:10}},grid:{color:"rgba(255,255,255,.04)"},beginAtZero:true} } };
+
+  // Level chart
+  const levelData = {};
+  filteredTours.forEach(t => { const l = (t.data||{}).program_level || "अन्य"; levelData[l] = (levelData[l]||0)+1; });
+  renderChart("chartLevel", "doughnut", Object.keys(levelData), Object.values(levelData), COLORS, { plugins:{ legend:{display:true,position:"right",labels:{color:"#94a3b8",font:{size:11}}} }, responsive:true, maintainAspectRatio:false });
+
+  // District chart (top 8)
+  const distData = {};
+  filteredTours.forEach(t => { const d = (t.data||{}).district || "अन्य"; distData[d] = (distData[d]||0)+1; });
+  const sortedDist = Object.entries(distData).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  renderChart("chartDistrict", "bar", sortedDist.map(d=>d[0]), sortedDist.map(d=>d[1]), COLORS, chartOpts);
+
+  // Monthly chart
+  const monthData = {};
+  filteredTours.forEach(t => {
+    const dateStr = (t.data||{}).tour_date || (t.data||{}).date || "";
+    if (!dateStr) return;
+    const m = dateStr.substring(0,7);
+    monthData[m] = (monthData[m]||0)+1;
+  });
+  const sortedMonths = Object.entries(monthData).sort((a,b)=>a[0].localeCompare(b[0]));
+  renderChart("chartMonthly", "line", sortedMonths.map(m=>m[0]), sortedMonths.map(m=>m[1]), ["#f97316"], { ...chartOpts, elements:{line:{tension:.4}}, plugins:{ legend:{display:false} }, scales:{ x:{ticks:{color:"#64748b",font:{size:10}},grid:{color:"rgba(255,255,255,.04)"}}, y:{ticks:{color:"#64748b"},grid:{color:"rgba(255,255,255,.04)"},beginAtZero:true} } });
+
+  // Type chart
+  const typeData = {};
+  filteredTours.forEach(t => { const tp = (t.data||{}).program_type || "अन्य"; typeData[tp] = (typeData[tp]||0)+1; });
+  renderChart("chartType", "bar", Object.keys(typeData), Object.values(typeData), COLORS, { ...chartOpts, indexAxis:"y" });
+}
+
+function renderChart(canvasId, type, labels, data, colors, opts) {
+  if (charts[canvasId]) { charts[canvasId].destroy(); delete charts[canvasId]; }
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  charts[canvasId] = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: type === "line" ? "rgba(249,115,22,.15)" : colors,
+        borderColor: type === "line" ? "#f97316" : colors,
+        borderWidth: type === "line" ? 2 : 0,
+        fill: type === "line",
+        borderRadius: type === "bar" ? 6 : undefined,
+      }]
+    },
+    options: opts
+  });
+}
+
+// ─── SLIDESHOW ───
+function openSlide(tourIdx, photoIdx = 0) {
+  slideIndex = tourIdx;
+  slidePhotoIndex = photoIdx;
+  $("slideshowOverlay").classList.add("active");
+  document.body.style.overflow = "hidden";
+  renderSlide();
+}
+
+function closeSlideshow() {
+  $("slideshowOverlay").classList.remove("active");
+  document.body.style.overflow = "";
+  stopAutoplay();
+}
+
+function startSlideshow() {
+  openSlide(0, 0);
+  startAutoplay();
+}
+
+function navSlide(dir) {
+  const tour = filteredTours[slideIndex];
+  const photos = tour ? (tour.photos || (tour.s3_key ? [tour.photo_url || tour.s3_key] : [])) : [];
+  slidePhotoIndex += dir;
+  if (slidePhotoIndex < 0) {
+    // go to prev tour
+    if (slideIndex > 0) { slideIndex--; slidePhotoIndex = (filteredTours[slideIndex].photos||[]).length - 1 || 0; }
+    else slidePhotoIndex = 0;
+  } else if (slidePhotoIndex >= photos.length) {
+    // go to next tour
+    if (slideIndex < filteredTours.length - 1) { slideIndex++; slidePhotoIndex = 0; }
+    else slidePhotoIndex = photos.length - 1;
+  }
+  renderSlide();
+}
+
+function navTour(dir) {
+  slideIndex = Math.max(0, Math.min(filteredTours.length - 1, slideIndex + dir));
+  slidePhotoIndex = 0;
+  renderSlide();
+}
+
+function renderSlide() {
+  const tour = filteredTours[slideIndex];
+  if (!tour) return;
+  const d = tour.data || {};
+  const photos = tour.photos || (tour.s3_key ? [tour.photo_url || ""] : []);
+
+  $("ssCounter").textContent = `${slideIndex+1} / ${filteredTours.length}`;
+  $("ssProgressBar").style.width = `${((slideIndex+1)/filteredTours.length)*100}%`;
+  $("ssTitle").textContent = d.program_name || d.tour_location || "Tour";
+
+  const img = $("ssImg");
+  const noPhoto = $("ssNoPhoto");
+  if (photos[slidePhotoIndex]) {
+    img.src = photos[slidePhotoIndex];
+    img.classList.remove("hidden");
+    noPhoto.classList.add("hidden");
+    img.style.display = "";
+  } else {
+    img.classList.add("hidden");
+    noPhoto.classList.remove("hidden");
+    noPhoto.style.display = "flex";
+  }
+
+  // Thumbnails
+  const thumbs = $("ssThumbs");
+  thumbs.innerHTML = "";
+  photos.forEach((p, pi) => {
+    const t = document.createElement("img");
+    t.src = p;
+    t.className = pi === slidePhotoIndex ? "active" : "";
+    t.onclick = () => { slidePhotoIndex = pi; renderSlide(); };
+    thumbs.appendChild(t);
+  });
+
+  // Detail
+  const level = d.program_level || "";
+  const levelPill = level === "जिला" ? "#f97316" : level === "विधानसभा" ? "#60a5fa" : "#10b981";
+  $("ssDetailContent").innerHTML = `
+    <div class="space-y-3">
+      ${level ? `<span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:${levelPill};font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:5px"><i class="fa-solid fa-layer-group text-xs"></i>${level}</span>` : ""}
+      <div>
+        <div style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px">कार्यक्रम</div>
+        <div style="color:#fff;font-weight:700;font-size:15px">${d.program_name || "—"}</div>
+        ${d.program_type ? `<div style="color:#94a3b8;font-size:12px;margin-top:2px">${d.program_type}</div>` : ""}
+      </div>
+      <div>
+        <div style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px">दिनांक व स्थान</div>
+        <div style="color:#e2e8f0;font-size:13px">${d.tour_date ? new Date(d.tour_date).toLocaleDateString("hi-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) : "—"}</div>
+        <div style="color:#94a3b8;font-size:12px;margin-top:2px">${d.tour_location || "—"}</div>
+      </div>
+      ${(d.district || d.vidhansabha || d.mandal) ? `
+      <div>
+        <div style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px">क्षेत्र</div>
+        <div style="color:#e2e8f0;font-size:13px">${[d.district,d.vidhansabha,d.mandal].filter(Boolean).join(" › ")}</div>
+      </div>` : ""}
+      ${d.total_attendance ? `
+      <div>
+        <div style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px">उपस्थिति</div>
+        <div style="color:#60a5fa;font-size:22px;font-weight:800">${parseInt(d.total_attendance).toLocaleString("hi-IN")}</div>
+      </div>` : ""}
+      ${d.other_speakers ? `
+      <div>
+        <div style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px">अन्य वक्ता</div>
+        <div style="color:#e2e8f0;font-size:12px">${d.other_speakers}</div>
+      </div>` : ""}
+      ${d.program_details ? `
+      <div>
+        <div style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px">विवरण</div>
+        <div style="color:#94a3b8;font-size:12px;line-height:1.6">${d.program_details}</div>
+      </div>` : ""}
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:6px">
+        <button onclick="navTour(-1)" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#94a3b8;font-size:12px;font-weight:600;padding:8px;border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">
+          <i class="fa-solid fa-arrow-left mr-1"></i> पिछला
+        </button>
+        <button onclick="navTour(1)" style="flex:1;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);color:#f97316;font-size:12px;font-weight:600;padding:8px;border-radius:10px;cursor:pointer;transition:all .2s">
+          अगला <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+// ─── AUTOPLAY ───
+function startAutoplay() { stopAutoplay(); autoplayTimer = setInterval(() => navTour(1), 4000); $("ssAutoBtn").innerHTML = '<i class="fa-solid fa-pause text-xs"></i>'; }
+function stopAutoplay() { if (autoplayTimer) { clearInterval(autoplayTimer); autoplayTimer = null; } $("ssAutoBtn").innerHTML = '<i class="fa-solid fa-play text-xs"></i>'; }
+function toggleAutoplay() { autoplayTimer ? stopAutoplay() : startAutoplay(); }
+
+// ─── DETAILS POPUP ───
+function showDetails(encoded) {
+  const text = decodeURIComponent(encoded);
+  alert(text);
+}
+
+// ─── PDF EXPORT ───
+function exportPDF() {
+  const prev = document.title;
+  document.title = "President_Tour_Dashboard_" + new Date().toISOString().split("T")[0];
+  window.print();
+  document.title = prev;
+}
+
+// ─── PPT EXPORT (HTML-based slideshow download) ───
+function exportPPT() {
+  if (!filteredTours.length) { alert("कोई डेटा नहीं।"); return; }
+
+  let slides = filteredTours.map((tour, i) => {
+    const d = tour.data || {};
+    const photos = tour.photos || [];
+    const photoHTML = photos[0] ? `<img src="${photos[0]}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;opacity:.7">` : "";
+    return `
+<div class="slide" id="slide${i}">
+  ${photoHTML}
+  <div class="overlay"></div>
+  <div class="content">
+    ${d.program_level ? `<span class="pill">${d.program_level}</span>` : ""}
+    <h1>${d.program_name || d.tour_location || "Tour"}</h1>
+    <div class="meta">${d.program_type || ""}</div>
+    <div class="date"><i>📅</i> ${d.tour_date ? new Date(d.tour_date).toLocaleDateString("hi-IN",{day:"numeric",month:"long",year:"numeric"}) : ""}</div>
+    <div class="location"><i>📍</i> ${[d.district,d.vidhansabha,d.tour_location].filter(Boolean).join(" | ")}</div>
+    ${d.total_attendance ? `<div class="attend"><i>👥</i> ${parseInt(d.total_attendance).toLocaleString("hi-IN")} उपस्थित</div>` : ""}
+    ${d.other_speakers ? `<div class="speakers">🎤 ${d.other_speakers}</div>` : ""}
+  </div>
+</div>`;
+  }).join("\n");
+
+  const html = `<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8"><title>President Tour Slides</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#020617;color:#fff;font-family:'Noto Sans Devanagari',sans-serif;overflow:hidden;height:100vh}
+  .slide{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;background:#060D1F}
+  .slide.active{display:flex}
+  .overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(2,6,23,.9),rgba(249,115,22,.1))}
+  .content{position:relative;z-index:2;text-align:center;padding:40px;max-width:900px;width:100%}
+  .pill{display:inline-block;padding:6px 20px;border-radius:999px;font-size:14px;font-weight:700;border:2px solid #f97316;color:#f97316;margin-bottom:16px}
+  h1{font-size:2.8rem;font-weight:800;line-height:1.2;margin-bottom:12px;background:linear-gradient(135deg,#fff,#f97316);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .meta{font-size:1.1rem;color:#94a3b8;margin-bottom:20px}
+  .date,.location,.attend,.speakers{font-size:1rem;color:#cbd5e1;margin:6px 0;display:flex;align-items:center;justify-content:center;gap:8px}
+  .attend{font-size:1.4rem;font-weight:700;color:#60a5fa;margin-top:16px}
+  nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:100}
+  nav button{padding:10px 24px;border:1px solid rgba(249,115,22,.4);background:rgba(249,115,22,.15);color:#f97316;border-radius:50px;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .2s}
+  nav button:hover{background:rgba(249,115,22,.3)}
+  #counter{position:fixed;top:16px;right:20px;color:#64748b;font-size:14px;z-index:100}
+  progress{position:fixed;top:0;left:0;width:100%;height:3px;appearance:none;border:none}
+  progress::-webkit-progress-bar{background:rgba(255,255,255,.08)}
+  progress::-webkit-progress-value{background:linear-gradient(90deg,#f97316,#ef4444)}
+  @media print{nav,#counter{display:none!important}.slide.active{page-break-after:always}}
+</style>
+</head>
+<body>
+<progress id="prog" max="${filteredTours.length}" value="1"></progress>
+<div id="counter">1 / ${filteredTours.length}</div>
+${slides}
+<nav>
+  <button onclick="go(-1)">← पिछला</button>
+  <button onclick="togglePlay()" id="playBtn">▶ Auto</button>
+  <button onclick="go(1)">अगला →</button>
+</nav>
+<script>
+let cur=0,total=${filteredTours.length},timer=null;
+const slides=document.querySelectorAll('.slide');
+function show(n){slides[cur].classList.remove('active');cur=(n+total)%total;slides[cur].classList.add('active');document.getElementById('counter').textContent=(cur+1)+' / '+total;document.getElementById('prog').value=cur+1;}
+slides[0].classList.add('active');
+function go(d){show(cur+d);}
+function togglePlay(){if(timer){clearInterval(timer);timer=null;document.getElementById('playBtn').textContent='▶ Auto';}else{timer=setInterval(()=>go(1),4000);document.getElementById('playBtn').textContent='⏸ Stop';}}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')go(-1);if(e.key==='ArrowRight')go(1);});
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `President_Tour_Slides_${new Date().toISOString().split("T")[0]}.html`;
+  a.click();
+}
+
+function exportCurrentSlide() {
+  const tour = filteredTours[slideIndex];
+  if (!tour) return;
+  const photos = tour.photos || [];
+  if (photos[slidePhotoIndex]) {
+    const a = document.createElement("a");
+    a.href = photos[slidePhotoIndex];
+    a.download = `tour_photo_${slideIndex+1}_${slidePhotoIndex+1}.jpg`;
+    a.target = "_blank";
+    a.click();
+  }
+}
+
+// ─── KEYBOARD ───
+document.addEventListener("keydown", e => {
+  if (!$("slideshowOverlay").classList.contains("active")) return;
+  if (e.key === "ArrowLeft") navSlide(-1);
+  if (e.key === "ArrowRight") navSlide(1);
+  if (e.key === "Escape") closeSlideshow();
+});
+
+// ─── INIT ───
+(async function init() {
+  if (!cidParam && !token) {
+    $("emptyState").classList.remove("hidden");
+    $("skeleton-grid").classList.add("hidden");
+    $("emptyState").querySelector("p").textContent = "URL में ?cid= या ?token= जोड़ें।";
+    return;
+  }
+
+  // Set default date range (last 365 days)
+  const now = new Date();
+  const yearAgo = new Date(now - 365 * 24 * 3600 * 1000);
+  $("f-to").value = now.toISOString().split("T")[0];
+  $("f-from").value = yearAgo.toISOString().split("T")[0];
+
+  // First resolve collection_id from token if needed
+  await resolveCollectionId();
+
+  await Promise.all([loadBranding(), loadData()]);
+})();
+</script>
+</body>
+</html>

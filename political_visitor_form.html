@@ -376,6 +376,20 @@ select.inp option{background:#100d08;color:var(--text);}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:rgba(234,88,12,.25);border-radius:2px;}
 .spin{animation:sp 1s linear infinite;}@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ═══ VOICE WAVEFORM ═══ */
+#voice-bar{display:none;}
+#voice-bar.active{display:flex !important;}
+.wbar{animation:wv 0.9s ease-in-out infinite;transform-origin:bottom;}
+.wbar:nth-child(1){animation-delay:0s;}
+.wbar:nth-child(2){animation-delay:.15s;}
+.wbar:nth-child(3){animation-delay:.3s;}
+.wbar:nth-child(4){animation-delay:.45s;}
+.wbar:nth-child(5){animation-delay:.6s;}
+@keyframes wv{0%,100%{transform:scaleY(.4);opacity:.6}50%{transform:scaleY(1.3);opacity:1}}
+#voice-bar.idle .wbar{animation:none;transform:scaleY(.35);opacity:.4;}
+#voice-replay-btn{display:none !important;}
+#voice-bar.idle #voice-replay-btn{display:flex !important;}
 </style>
 </head>
 <body>
@@ -610,6 +624,25 @@ select.inp option{background:#100d08;color:var(--text);}
 <div id="popup-bg">
   <div id="popup-sheet">
     <div class="drag-handle"></div>
+
+    <!-- ══ VOICE PLAYER ══ -->
+    <div id="voice-bar" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(234,88,12,.12),rgba(194,65,12,.06));border:1px solid rgba(234,88,12,.25);display:flex;align-items:center;gap:12px;">
+      <!-- Waveform animation -->
+      <div id="voice-wave" style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
+        <span class="wbar" style="width:3px;height:14px;border-radius:2px;background:var(--o1);display:block;"></span>
+        <span class="wbar" style="width:3px;height:20px;border-radius:2px;background:var(--o1);display:block;"></span>
+        <span class="wbar" style="width:3px;height:10px;border-radius:2px;background:var(--o1);display:block;"></span>
+        <span class="wbar" style="width:3px;height:18px;border-radius:2px;background:var(--o1);display:block;"></span>
+        <span class="wbar" style="width:3px;height:8px;border-radius:2px;background:var(--o1);display:block;"></span>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div id="voice-status" style="font-size:11px;font-weight:700;color:var(--o3);margin-bottom:1px;">आवाज़ तैयार हो रही है...</div>
+        <div id="voice-text-preview" style="font-size:10px;color:rgba(200,190,180,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+      </div>
+      <button id="voice-replay-btn" onclick="replayVoice()" style="display:none;width:32px;height:32px;border-radius:50%;background:var(--o1a);border:1px solid var(--o1b);color:var(--o3);font-size:13px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </div>
 
     <!-- Welcome Hero -->
     <div class="welcome-hero">
@@ -1069,29 +1102,35 @@ function openPopup(sd){
   const name = p.name||"कार्यकर्ता";
   const evs=(sd.events||sd.timeline||[]);
   const vis=evs.filter(e=>(e.form_type||"").includes("visitor")).length;
+  const totalVisit = vis || evs.length || 1;
+  const totalEvents = evs.length;
+  const totalPhotos = (sd.photo_urls||[]).length;
 
-  // Name with "श्री/श्रीमती" prefix if not already
+  // Name prefix
   const displayName = name.startsWith("श्री") || name.startsWith("श्रीमती") ? name : `श्री ${name}`;
   _$("pp-name").textContent = displayName;
 
   // Visit count
-  _$("pp-vi").textContent = vis || evs.length || 1;
+  _$("pp-vi").textContent = totalVisit;
   _$("pp-vi-sub").textContent = `इस कार्यालय पर आपकी उपस्थिति`;
 
-  // Swagat message
-  _$("pp-swagat-msg").innerHTML = `भाजपा कार्यालय पर <b style="color:var(--o3)">आपका स्वागत है!</b><br>
-    <span style="font-size:13px;color:var(--muted);">हम यह आपकी <b style="color:var(--o1)">${vis||evs.length||1}वीं</b> विजिट है।</span>`;
+  // ── Better swagat message ──
+  const orgName = (_$("org-name")&&_$("org-name").textContent.trim()) || "भाजपा कार्यालय";
+  const visitWord = totalVisit===1 ? "पहली" : totalVisit===2 ? "दूसरी" : totalVisit===3 ? "तीसरी" : `${totalVisit}वीं`;
+  _$("pp-swagat-msg").innerHTML =
+    `<b style="color:var(--o3)">${orgName}</b> पर आपका हार्दिक स्वागत है!<br>
+     <span style="font-size:13px;color:rgba(200,190,180,.75);">यह आपकी <b style="color:var(--o1)">${visitWord} विजिट</b> है।</span>`;
 
   // Stats
-  _$("pp-ev").textContent = evs.length;
-  _$("pp-ph").textContent = (sd.photo_urls||[]).length;
+  _$("pp-ev").textContent = totalEvents;
+  _$("pp-ph").textContent = totalPhotos;
 
-  // Hidden refs (still needed by acceptMatch)
+  // Hidden refs
   _$("pp-mob").textContent  = p.mobile ? `📱 ${p.mobile}` : "";
   _$("pp-loc").textContent  = [p.dist,p.vidhan].filter(Boolean).join(" › ");
   _$("pp-sim").textContent  = `${Math.round(sd.similarity||0)}%`;
 
-  // Autofill preview (hidden but populated for acceptMatch)
+  // Autofill preview
   const fillLines=[];
   if(p.name)   fillLines.push(`<div>• नाम: <b>${p.name}</b></div>`);
   if(p.mobile) fillLines.push(`<div>• मोबाइल: <b>${p.mobile}</b></div>`);
@@ -1102,7 +1141,7 @@ function openPopup(sd){
   if(p.addr)   fillLines.push(`<div>• पता: <b>${p.addr}</b></div>`);
   _$("pp-fill-list").innerHTML=fillLines.join("");
 
-  // Recent events — styled for welcome popup
+  // Recent events
   if(evs.length){
     _$("pp-ev-wrap").style.display="block";
     _$("pp-ev-list").innerHTML=evs.slice(0,4).map(ev=>{
@@ -1118,8 +1157,120 @@ function openPopup(sd){
   }
 
   _$("popup-bg").classList.add("open");
+
+  // ── Sarvam Voice Welcome ──
+  const visitWord2 = totalVisit===1 ? "पहली" : totalVisit===2 ? "दूसरी" : totalVisit===3 ? "तीसरी" : `${totalVisit}वीं`;
+  let voiceMsg = `नमस्कार, ${name} जी! ${orgName} पर आपका हार्दिक स्वागत है।`;
+  voiceMsg += ` यह आपकी ${visitWord2} विजिट है।`;
+  if(totalEvents > 0){
+    voiceMsg += ` आप अब तक ${totalEvents} कार्यक्रमों में सम्मिलित हुए हैं।`;
+  }
+  if(p.desig){
+    voiceMsg += ` आपका पद ${p.desig} दर्ज है।`;
+  }
+  voiceMsg += ` आज की उपस्थिति दर्ज करने के लिए नीचे बटन दबाएं।`;
+
+  // Small delay so popup animation completes first
+  setTimeout(()=>{ speakSarvam(voiceMsg); }, 350);
 }
-function closePopup(){ _$("popup-bg").classList.remove("open"); }
+// ═══════════════════════════════════════════════════
+// SARVAM AI — VOICE WELCOME ENGINE
+// ═══════════════════════════════════════════════════
+const SARVAM_KEY = "sk_9tf5l7wk_9QX4r07NTD5rRCuAL0zMnbHf";
+let _voiceAudio = null;
+let _lastVoiceMsg = "";
+
+async function speakSarvam(text){
+  _lastVoiceMsg = text;
+  const bar = _$("voice-bar");
+  const statusEl = _$("voice-status");
+  const previewEl = _$("voice-text-preview");
+
+  // Show bar — loading state
+  bar.className = "active";
+  bar.style.display = "flex";
+  statusEl.textContent = "आवाज़ तैयार हो रही है...";
+  previewEl.textContent = text.slice(0,60)+(text.length>60?"...":"");
+
+  // Stop any previous audio
+  if(_voiceAudio){ _voiceAudio.pause(); _voiceAudio=null; }
+
+  try{
+    const resp = await fetch("https://api.sarvam.ai/text-to-speech", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-subscription-key": SARVAM_KEY
+      },
+      body: JSON.stringify({
+        inputs: [text],
+        target_language_code: "hi-IN",
+        speaker: "meera",          // natural female Hindi voice
+        pitch: 0,
+        pace: 1.0,
+        loudness: 1.5,
+        speech_sample_rate: 22050,
+        enable_preprocessing: true,
+        model: "bulbul:v1"
+      })
+    });
+
+    if(!resp.ok){
+      const e = await resp.text();
+      throw new Error("Sarvam API error: "+e);
+    }
+
+    const data = await resp.json();
+    // Sarvam returns base64 audio in data.audios[0]
+    const b64 = (data.audios && data.audios[0]) || data.audio || "";
+    if(!b64) throw new Error("No audio in response");
+
+    // Decode base64 → blob → play
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    const blob = new Blob([bytes],{type:"audio/wav"});
+    const audioUrl = URL.createObjectURL(blob);
+
+    _voiceAudio = new Audio(audioUrl);
+    _voiceAudio.volume = 1.0;
+
+    statusEl.textContent = "बोल रहे हैं...";
+
+    _voiceAudio.onended = ()=>{
+      bar.className = "idle";
+      bar.style.display = "flex";
+      statusEl.textContent = "फिर सुनें";
+      URL.revokeObjectURL(audioUrl);
+    };
+    _voiceAudio.onerror = ()=>{
+      bar.className = "idle";
+      statusEl.textContent = "आवाज़ उपलब्ध नहीं";
+    };
+
+    await _voiceAudio.play();
+
+  }catch(err){
+    console.warn("Sarvam TTS error:", err);
+    // Graceful fallback — hide bar silently
+    bar.className = "idle";
+    bar.style.display = "flex";
+    statusEl.textContent = "आवाज़ उपलब्ध नहीं";
+    if(DBG) console.error("TTS full error:", err);
+  }
+}
+
+function replayVoice(){
+  if(_lastVoiceMsg) speakSarvam(_lastVoiceMsg);
+}
+
+function closePopup(){
+  _$("popup-bg").classList.remove("open");
+  // Stop voice when popup closes
+  if(_voiceAudio){ _voiceAudio.pause(); _voiceAudio=null; }
+  _$("voice-bar").className="";
+  _$("voice-bar").style.display="none";
+}
 
 function acceptMatch(){
   closePopup();

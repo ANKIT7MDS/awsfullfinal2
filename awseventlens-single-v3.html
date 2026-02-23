@@ -616,6 +616,8 @@
     <select id="polLinkKind" onchange="updatePoliticalLinkUI()">
       <option value="political_search">Worker Search (Face Search)</option>
       <option value="political_form">Public Form Link</option>
+      <option value="political_dashboard">President Tour Dashboard</option>
+      <option value="political_admin">Political Admin Console</option>
     </select>
   </div>
 
@@ -624,7 +626,7 @@
     <select id="polFormType">
       <option value="visitor_form">Visitor Form</option>
       <option value="party_attendance">Party Attendance</option>
-      <option value="president_tour">President Tour</option>
+      <option value="president_tour_form">President Tour Form</option>
       <option value="mandal_reporting">Mandal Reporting</option>
       <option value="coordinator_entry">Coordinator Entry</option>
       <option value="program_info">Program Info</option>
@@ -638,7 +640,11 @@
       <option value="14">14</option>
       <option value="7">7</option>
       <option value="1">1</option>
+      <option value="90">90</option>
+      <option value="180">180</option>
       <option value="365">365</option>
+      <option value="1825">5 साल (1825)</option>
+      <option value="3650">10 साल (3650)</option>
     </select>
   </div>
 
@@ -2349,6 +2355,16 @@ async function generatePoliticalPublicLink(){
       finalUrl = `${window.location.origin}/political-search.html?token=${encodeURIComponent(token)}`;
       label = `Search link • CID: ${cid} • ${days} days`;
       addToLinkHistory('POLITICAL_SEARCH', finalUrl, '-', days * 24);
+    } else if(kind === 'political_dashboard'){
+      const r = await politicalApi('/political/public/forms', { action: 'generate_form_link', payload: { collection_id: cid, form_type: 'president_tour_form', days_valid: days } });
+      token = r.token;
+      finalUrl = `${window.location.origin}/political_president_tour_dashboard.html?token=${encodeURIComponent(token)}&cid=${encodeURIComponent(cid)}`;
+      label = `Dashboard link • CID: ${cid} • ${days} days`;
+      addToLinkHistory('POLITICAL_DASHBOARD', finalUrl, '-', days * 24);
+    } else if(kind === 'political_admin'){
+      finalUrl = `${window.location.origin}/political-admin-console.html?cid=${encodeURIComponent(cid)}`;
+      label = `Admin Console • CID: ${cid}`;
+      addToLinkHistory('POLITICAL_ADMIN', finalUrl, '-', days * 24);
     } else {
       const formType = ($('#polFormType')?.value) || 'visitor_form';
       const r = await politicalApi('/political/public/forms', { action: 'generate_form_link', payload: { collection_id: cid, form_type: formType, days_valid: days } });
@@ -2357,7 +2373,7 @@ async function generatePoliticalPublicLink(){
       const fileMap = {
         visitor_form: 'political_visitor_form.html',
         party_attendance: 'political_party_attendance_form.html',
-        president_tour: 'political_president_tour_form.html',
+        president_tour_form: 'political_president_tour_form.html',
         mandal_reporting: 'political_mandal_reporting_form.html',
         coordinator_entry: 'political_coordinator_entry_form.html',
         program_info: 'political_program_info_form.html'

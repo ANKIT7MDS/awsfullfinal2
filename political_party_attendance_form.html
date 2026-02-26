@@ -146,7 +146,7 @@ select.inp option{background:#100d08;color:var(--text);}
       <div id="proceed-wrap" style="display:none;margin-top:10px;">
         <div id="proceed-msg" style="text-align:center;font-size:11.5px;font-weight:600;color:#34d399;margin-bottom:8px;"></div>
         <button class="btn btn-primary" onclick="gotoForm()">
-          <i class="fa-solid fa-arrow-right"></i><span class="deva">फॉर्म भरें</span>
+          <i class="fa-solid fa-arrow-right"></i><span class="deva">नया रजिस्ट्रेशन</span>
         </button>
       </div>
     </div>
@@ -237,18 +237,6 @@ select.inp option{background:#100d08;color:var(--text);}
           </div>
         </div>
 
-        <!-- Date + Time -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div>
-            <label class="lbl deva">तारीख</label>
-            <input id="f-date" type="date" class="inp"/>
-          </div>
-          <div>
-            <label class="lbl deva">समय</label>
-            <input id="f-time" type="time" class="inp"/>
-          </div>
-        </div>
-
         <!-- Remarks -->
         <div>
           <label class="lbl deva">टिप्पणी</label>
@@ -307,10 +295,10 @@ select.inp option{background:#100d08;color:var(--text);}
       <div id="pp-fill-list" style="font-size:12px;color:rgba(200,190,180,.75);line-height:1.8;"></div>
     </div>
     <button class="btn btn-primary" onclick="acceptMatch()" style="margin-bottom:10px;">
-      <i class="fa-solid fa-check-circle"></i><span class="deva">फॉर्म भरें — Auto-fill के साथ</span>
+      <i class="fa-solid fa-check-circle"></i><span class="deva">विवरण पूरा करें — Auto-fill के साथ</span>
     </button>
     <button onclick="skipMatch()" style="width:100%;padding:10px;background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;">
-      Skip — नया Visitor
+      Skip — नए Visitor के रूप में भरें
     </button>
   </div>
 </div>
@@ -425,8 +413,36 @@ async function loadBranding(){
 function fillProgramNames(cfg){
   const sel=_$("f-program"); if(!sel) return;
   const forms=cfg.forms||{}; const ft=forms[FTYPE]||forms["party_attendance"]||{};
+  const fl = ft.fixed_levels || cfg.defaults?.fixed_levels || {};
+  
+  // Fixed program mode — show as hidden input, not dropdown
+  if(fl.fixed_program){
+    sel.style.display="none";
+    // Create/update hidden fixed program display
+    let fixedDiv = _$("f-program-fixed");
+    if(!fixedDiv){
+      fixedDiv = document.createElement("div");
+      fixedDiv.id = "f-program-fixed";
+      fixedDiv.style.cssText = "padding:11px 14px;border-radius:11px;font-size:13.5px;background:rgba(8,11,18,0.5);border:1px solid rgba(234,88,12,0.18);color:var(--text);font-weight:600;";
+      sel.parentNode.insertBefore(fixedDiv, sel.nextSibling);
+    }
+    fixedDiv.textContent = fl.fixed_program;
+    fixedDiv.style.display = "block";
+    sel.value = fl.fixed_program;
+    // Make sel have the value even if hidden
+    let existOpt = [...sel.options].find(o=>o.value===fl.fixed_program);
+    if(!existOpt){ const o=document.createElement("option"); o.value=fl.fixed_program; o.textContent=fl.fixed_program; sel.appendChild(o); }
+    sel.value = fl.fixed_program;
+    return;
+  }
+  
+  // Dropdown mode
+  const fixedDiv = _$("f-program-fixed");
+  if(fixedDiv) fixedDiv.style.display="none";
+  sel.style.display="";
+  
   const programs = ft.programs || ft.program_names || ft.program_list ||
-    (cfg.global && cfg.global.programs) || [];
+    (cfg.global && cfg.global.programs) || cfg.defaults?.programs || [];
   if(programs && programs.length){
     sel.innerHTML='<option value="">— कार्यक्रम चुनें —</option>';
     programs.forEach(p=>{
@@ -553,7 +569,73 @@ async function runMatch(file){
 function onMatch(sd){
   setChip("match",`✅ पहचाना गया! ${Math.round(sd.similarity||0)}%`);
   setPill(pill("fa-solid fa-user-check",`मैच मिला — ${Math.round(sd.similarity||0)}%`,"rgba(96,165,250,.1)","#7db4f8"));
-  openPopup(sd);
+  
+  // Check if existing user has complete details — if yes, auto-confirm without form
+  const p = extractProfile(sd);
+  const hasCompleteProfile = p.name && p.mobile && (p.dist || p.mandal || p.vidhan);
+  
+  if(hasCompleteProfile){
+    // Auto-confirm attendance directly — no form needed
+    autoConfirmAttendance(sd, p);
+  } else {
+    // Incomplete profile — open form for user to fill/verify
+    openPopup(sd);
+  }
+}
+
+async function autoConfirmAttendance(sd, p){
+  setChip("scanning","उपस्थिति दर्ज हो रही है...");
+  setPill(pill("fa-solid fa-circle-notch spin","उपस्थिति दर्ज हो रही है...","rgba(234,88,12,.1)","var(--o3)"));
+  
+  try{
+    if(!CID && TOK) await resolveCid();
+    
+    // Build form data from existing profile
+    const fd = {
+      mobile: p.mobile || "",
+      name: p.name || "",
+      designation: p.desig || "",
+      program_name: p.program || getProgramFromConfig() || "",
+      district: p.dist || "",
+      vidhansabha: p.vidhan || "",
+      mandal: p.mandal || "",
+      remarks: "",
+    };
+    
+    await doSave(fd, camFile);
+    
+    // Show confirmation screen directly
+    setChip("match","✅ उपस्थिति दर्ज!");
+    setPill("");
+    showAutoConfirmSuccess(p);
+    
+  }catch(err){
+    if(DBG) console.error("Auto-confirm error:", err);
+    // Fallback to normal form if auto-confirm fails
+    openPopup(sd);
+  }
+}
+
+function getProgramFromConfig(){
+  // Get first/only program from remoteCfg if available
+  if(!remoteCfg) return "";
+  const forms = remoteCfg.forms || {};
+  const ft = forms[FTYPE] || forms["party_attendance"] || {};
+  const programs = ft.programs || ft.program_options || remoteCfg.defaults?.programs || [];
+  // If only 1 program (fixed), use it
+  if(programs.length === 1) return programs[0];
+  // If fixed_program set in config
+  const fl = ft.fixed_levels || remoteCfg.defaults?.fixed_levels || {};
+  if(fl.fixed_program) return fl.fixed_program;
+  return "";
+}
+
+function showAutoConfirmSuccess(p){
+  _$("scr-cam").style.display="none";
+  _$("scr-form").style.display="none";
+  _$("scr-ok").style.display="block";
+  const loc = [p.dist, p.vidhan, p.mandal].filter(Boolean).join(" › ");
+  _$("ok-msg").innerHTML = `<b>${p.name||"आपकी"}</b> की उपस्थिति दर्ज हो गई।${loc ? `<br><span style="font-size:11px;color:var(--muted);">${loc}</span>` : ""}`;
 }
 function onNoMatch(){
   setChip("idle","नया Visitor");
@@ -630,10 +712,6 @@ function skipMatch(){ closePopup(); window._autofill=null; gotoForm(); }
 function gotoForm(){
   _$("scr-cam").style.display="none";
   _$("scr-form").style.display="block";
-  // Set today's date and current time
-  const now=new Date();
-  if(!_$("f-date").value) _$("f-date").value=now.toISOString().split("T")[0];
-  if(!_$("f-time").value) _$("f-time").value=now.toTimeString().slice(0,5);
   initCascade();
   setupMobLookup();
   setTimeout(()=>{ if(window._autofill){ fillForm(window._autofill); window._autofill=null; } },200);
@@ -748,8 +826,6 @@ async function doSubmit(e){
       district:(_$("f-dist").value||"").trim(),
       vidhansabha:(_$("f-vidhan").value||"").trim(),
       mandal:(_$("f-mandal").value||"").trim(),
-      attendance_date:(_$("f-date").value||"").trim(),
-      attendance_time:(_$("f-time").value||"").trim(),
       remarks:(_$("f-remarks").value||"").trim(),
     };
     await doSave(fd, camFile);

@@ -117,17 +117,7 @@
     }
     .smart-filters::-webkit-scrollbar { display: none; }
     
-    .person-bubble {
-        flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%;
-        border: 2.5px solid rgba(255,255,255,0.1); overflow: hidden; position: relative;
-        cursor: pointer; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); background: #000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-    .person-bubble img { 
-        width: 100%; height: 100%; object-fit: cover; 
-        transition: transform 0.2s; 
-    }
-    .person-bubble.active { border-color: var(--accent); transform: scale(1.12); box-shadow: 0 6px 18px rgba(0,230,118,0.3); }
+    /* person-bubble CSS removed - face filter icons not used */
     
     .filter-chip {
         flex: 0 0 auto; padding: 8px 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
@@ -149,14 +139,37 @@
     }
     .timeline-header i { color: var(--accent); }
 
-    /* --- MASONRY GRID --- */
+    /* --- INSTAGRAM/PINTEREST GRID --- */
     .masonry-grid { 
-        column-gap: 10px; 
-        transition: column-count 0.3s ease; 
-        margin-bottom: 30px; 
+        columns: 2 auto; /* Default: 2 columns like Instagram */
+        column-gap: 4px; 
+        transition: columns 0.3s ease; 
+        margin-bottom: 4px; 
     }
     
-    .select-ring {
+    .photo-item { 
+        break-inside: avoid; 
+        margin-bottom: 4px; 
+        border-radius: 4px; 
+        overflow: hidden; position: relative; background: #1a1a1a;
+        transform: translateZ(0); cursor: pointer;
+        /* Aspect ratio hints for Instagram look */
+    }
+    .photo-item.selected { filter: brightness(0.5); }
+    .photo-item.selected .select-ring { transform: scale(1); opacity: 1; background: var(--accent); border-color: var(--accent); }
+    .photo-item img { 
+        width: 100%; display: block; opacity: 0; 
+        transition: opacity 0.3s ease-in; 
+        border-radius: 4px; 
+    }
+    .photo-item img.loaded { opacity: 1; }
+
+    /* Desktop: 3 columns */
+    @media (min-width: 768px) {
+        .masonry-grid { columns: 3 auto; column-gap: 6px; }
+        .photo-item { margin-bottom: 6px; border-radius: 6px; }
+        .photo-item img { border-radius: 6px; }
+    }
         position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; 
         border: 2.5px solid rgba(255,255,255,0.9); border-radius: 50%; pointer-events: none;
         transition: all 0.25s; background: rgba(0,0,0,0.4); z-index: 10; transform: scale(0.7); opacity: 0;
@@ -380,20 +393,12 @@
     .lead-unlock-btn { width: calc(100% - 48px); margin: 16px 24px; justify-content: center; padding: 18px; font-size: 15px; }
     .lead-privacy { text-align: center; font-size: 12px; color: #555; margin: 0 0 20px; padding-bottom: 4px; }
 
-    /* --- IMPROVED PHOTO ITEMS --- */
-    .photo-item { 
-        break-inside: avoid; margin-bottom: 10px; border-radius: 14px; 
-        overflow: hidden; position: relative; background: #1a1a2a;
-        transform: translateZ(0); transition: transform 0.2s; cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .photo-item:active { transform: scale(0.97); }
-    .photo-item.selected { outline: 3px solid var(--accent); outline-offset: -3px; }
-    .photo-item.selected .select-ring { transform: scale(1); opacity: 1; background: var(--accent); border-color: var(--accent); }
-    .photo-item img { width: 100%; display: block; opacity: 0; transition: opacity 0.4s ease-in; border-radius: 14px; }
-    .photo-item img.loaded { opacity: 1; }
 
-    /* --- GALLERY HEADER --- */
+    /* Gallery container - full width Instagram style */
+    #galleryContainer { padding: 12px 8px 0; }
+    #galleryContainer .gallery-header, 
+    #galleryContainer .smart-filters { padding-left: 8px; padding-right: 8px; }
+
     .gallery-header {
         display: flex; align-items: center; justify-content: space-between; 
         padding: 12px 0 8px; flex-wrap: wrap; gap: 10px;
@@ -685,9 +690,9 @@
 
     /* --- INIT --- */
     window.onload = async () => {
-        // Default Grid: 3 cols for desktop, 1 for mobile
-        gridCurrentCols = window.innerWidth > 768 ? 3 : 1;
-        setGridColumns(gridCurrentCols, false);
+        // Default Grid: 3 cols for desktop, 2 for mobile (Instagram style)
+        gridCurrentCols = window.innerWidth > 768 ? 3 : 2;
+        // CSS handles this via media query, no JS needed for default
         
         const storedFavs = localStorage.getItem('el_favs_' + (linkId || urlCid));
         if(storedFavs) favorites = new Set(JSON.parse(storedFavs));
@@ -874,32 +879,16 @@
             container.appendChild(favPill);
         }
 
-        // 1. Person Bubbles
-        const people = Object.entries(aggregatedPeople).sort((a,b) => b[1].count - a[1].count).slice(0, 5);
-        people.forEach(([pid, data]) => {
-            if(data.count > 0) {
-                const bubble = document.createElement('div');
-                bubble.className = `person-bubble ${activePersonFilter === pid ? 'active' : ''}`;
-                let imgStyle = "";
-                if(data.box) {
-                    const cx = (data.box.Left + data.box.Width/2) * 100;
-                    const cy = (data.box.Top + data.box.Height/2) * 100;
-                    imgStyle = `object-position: ${cx}% ${cy}%; transform: scale(2.0);`; 
-                }
-                bubble.innerHTML = `<img src="${data.url}" style="${imgStyle}" loading="lazy">`;
-                bubble.onclick = () => togglePersonFilter(pid, bubble);
-                container.appendChild(bubble);
-            }
-        });
+        // Person bubbles REMOVED - face icons से photos load नहीं हो रहे थे (CORS/ORB issue)
+        // person_ids data silently accumulate करते हैं filtering के लिए
 
-        // 2. Tag Chips
-        const sortedTags = Object.entries(aggregatedTags).sort((a,b) => b[1]-a[1]).slice(0, 8);
+        // Tag Chips only - clean pill style
+        const sortedTags = Object.entries(aggregatedTags).sort((a,b) => b[1]-a[1]).slice(0, 12);
         sortedTags.forEach(([tag, count]) => {
-            // Friendly Name Mapping
             const displayTag = TAG_MAP[tag] || tag;
             const pill = document.createElement('div');
             pill.className = `filter-chip ${activeTagFilter === tag ? 'active' : ''}`;
-            pill.innerHTML = `${displayTag} (${count})`;
+            pill.innerHTML = `${displayTag} <span style="opacity:0.55; font-size:11px; margin-left:2px;">${count}</span>`;
             pill.onclick = () => toggleTagFilter(tag, pill);
             container.appendChild(pill);
         });
@@ -962,7 +951,7 @@
                 const grid = document.createElement('div');
                 grid.className = 'masonry-grid';
                 grid.id = `grid-${timeLabel.replace(/\s+/g,'-')}`;
-                grid.style.columnCount = gridCurrentCols;
+                // CSS handles columns via media query
                 container.appendChild(grid);
             }
             
@@ -972,14 +961,16 @@
             
             const isFav = favorites.has(p.photo_id) ? 'active' : '';
             
-            // FIXED: Fallback to full resolution image if thumbnail fails
+            // Photo item with Instagram-style grid
             const html = `
-            <div class="photo-item" id="pitem-${idx}" onclick="openViewer(${idx})" data-time="${timeLabel}">
+            <div class="photo-item" id="pitem-${idx}" onclick="isSelectMode ? toggleItemSelect(${idx}) : openViewer(${idx})" data-time="${timeLabel}">
                 <img 
                     src="${p.thumbnail_url || p.url}" 
                     loading="lazy" 
+                    referrerpolicy="no-referrer"
+                    crossorigin="anonymous"
                     onload="this.classList.add('loaded')" 
-                    onerror="if(!this.dataset.retried){this.dataset.retried=true; this.src='${p.url}';} else {this.closest('.photo-item').style.display='none';}"
+                    onerror="if(!this.dataset.retried){this.dataset.retried=true; this.src='${p.url}'; this.referrerPolicy='no-referrer';} else {this.closest('.photo-item').style.display='none';}"
                 >
                 <div class="select-ring"></div>
                 <button class="fav-btn ${isFav}" onclick="toggleFav(event, '${p.photo_id}', ${idx})">
@@ -1314,7 +1305,9 @@
     function setGridColumns(cols, animate = true) {
         if (gridCurrentCols !== cols || !animate) {
             gridCurrentCols = cols;
-            document.querySelectorAll('.masonry-grid').forEach(grid => grid.style.columnCount = gridCurrentCols);
+            document.querySelectorAll('.masonry-grid').forEach(grid => {
+                grid.style.columns = cols + ' auto';
+            });
             if(animate) triggerHaptic();
         }
     }

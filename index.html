@@ -10,25 +10,28 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root {
-      --bg: #050505; 
-      --card: #141414; 
-      --surface: #1f1f1f;
+      --bg: #0a0a0f; 
+      --card: #13131a; 
+      --surface: #1c1c27;
+      --surface2: #252535;
       --accent: #00e676; 
       --accent-soft: rgba(0, 230, 118, 0.15);
+      --accent2: #7c4dff;
       --text: #ffffff; 
-      --muted: #a0a0a0; 
-      --border: #333;
+      --muted: #8888aa; 
+      --border: rgba(255,255,255,0.08);
       --font-main: 'Plus Jakarta Sans', sans-serif;
       --overlay-op: 0.5;
       --logo-size: 85px; 
-      --banner-height: 240px;
+      --banner-height: 260px;
       --safe-area-bottom: env(safe-area-inset-bottom);
+      --radius: 16px;
+      --shadow: 0 20px 50px rgba(0,0,0,0.7);
     }
 
     * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -38,6 +41,8 @@
       min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; 
       padding-bottom: calc(80px + var(--safe-area-bottom));
       overscroll-behavior-y: none;
+      background-image: radial-gradient(ellipse at 20% 20%, rgba(124, 77, 255, 0.05) 0%, transparent 50%), 
+                        radial-gradient(ellipse at 80% 80%, rgba(0, 230, 118, 0.04) 0%, transparent 50%);
     }
 
     /* --- GLASSMORPHISM UTILS --- */
@@ -78,48 +83,61 @@
     .container { max-width: 1000px; margin: 0 auto; padding: 16px; width: 100%; position: relative; z-index: 2; }
     
     .search-card {
-        border-radius: 24px; padding: 35px 20px;
-        text-align: center; margin-top: -45px; 
-        box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+        border-radius: 28px; padding: 40px 24px;
+        text-align: center; margin-top: -50px; 
+        box-shadow: 0 20px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
+        background: linear-gradient(145deg, rgba(28,28,39,0.98), rgba(19,19,26,0.98));
+        border: 1px solid rgba(255,255,255,0.07);
     }
     .search-icon { 
-        font-size: 42px; color: var(--accent); margin-bottom: 15px; 
-        filter: drop-shadow(0 0 15px var(--accent-soft));
+        font-size: 48px; color: var(--accent); margin-bottom: 18px; 
+        filter: drop-shadow(0 0 20px rgba(0,230,118,0.4));
+        display: inline-block;
+        animation: pulse-glow 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse-glow {
+        0%, 100% { filter: drop-shadow(0 0 15px rgba(0,230,118,0.3)); }
+        50% { filter: drop-shadow(0 0 30px rgba(0,230,118,0.6)); }
     }
     .btn-main {
-        background: var(--accent); color: #000; border: none; padding: 16px 32px; border-radius: 50px;
+        background: linear-gradient(135deg, var(--accent) 0%, #00c853 100%); 
+        color: #000; border: none; padding: 16px 36px; border-radius: 50px;
         font-size: 16px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
-        transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 20px var(--accent-soft);
+        transition: transform 0.2s, box-shadow 0.2s; 
+        box-shadow: 0 8px 25px rgba(0,230,118,0.35), 0 4px 10px rgba(0,0,0,0.3);
     }
-    .btn-main:active { transform: scale(0.95); box-shadow: 0 2px 10px var(--accent-soft); }
-    .btn-main:disabled { opacity: 0.7; transform: none; cursor: not-allowed; }
+    .btn-main:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,230,118,0.45); }
+    .btn-main:active { transform: scale(0.96); box-shadow: 0 2px 10px var(--accent-soft); }
+    .btn-main:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
 
     /* --- SMART FILTERS --- */
     .smart-filters {
-        display: flex; gap: 12px; overflow-x: auto; padding: 10px 4px; margin-bottom: 15px;
+        display: flex; gap: 10px; overflow-x: auto; padding: 10px 4px; margin-bottom: 15px;
         -ms-overflow-style: none; scrollbar-width: none; align-items: center;
     }
     .smart-filters::-webkit-scrollbar { display: none; }
     
     .person-bubble {
-        flex: 0 0 auto; width: 55px; height: 55px; border-radius: 50%;
-        border: 2px solid var(--border); overflow: hidden; position: relative;
-        cursor: pointer; transition: all 0.2s; background: #000;
+        flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%;
+        border: 2.5px solid rgba(255,255,255,0.1); overflow: hidden; position: relative;
+        cursor: pointer; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); background: #000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .person-bubble img { 
         width: 100%; height: 100%; object-fit: cover; 
         transition: transform 0.2s; 
     }
-    .person-bubble.active { border-color: var(--accent); transform: scale(1.1); box-shadow: 0 4px 10px var(--accent-soft); }
+    .person-bubble.active { border-color: var(--accent); transform: scale(1.12); box-shadow: 0 6px 18px rgba(0,230,118,0.3); }
     
     .filter-chip {
-        flex: 0 0 auto; padding: 8px 16px; background: var(--surface); border: 1px solid var(--border);
+        flex: 0 0 auto; padding: 8px 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
         border-radius: 20px; font-size: 13px; color: var(--muted); cursor: pointer; transition: all 0.2s;
-        display: flex; align-items: center; gap: 6px; font-weight: 500;
+        display: flex; align-items: center; gap: 6px; font-weight: 500; white-space: nowrap;
     }
-    .filter-chip.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+    .filter-chip:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #fff; }
+    .filter-chip.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
     .filter-chip.fav-chip i { color: #ff4081; }
-    .filter-chip.fav-chip.active i { color: #000; }
+    .filter-chip.fav-chip.active i { color: var(--accent); }
 
     /* --- TIMELINE HEADERS --- */
     .timeline-header {
@@ -133,58 +151,53 @@
 
     /* --- MASONRY GRID --- */
     .masonry-grid { 
-        column-gap: 12px; 
+        column-gap: 10px; 
         transition: column-count 0.3s ease; 
         margin-bottom: 30px; 
     }
     
-    .photo-item { 
-        break-inside: avoid; margin-bottom: 12px; border-radius: 12px; 
-        overflow: hidden; position: relative; background: #1a1a1a;
-        transform: translateZ(0); transition: filter 0.2s; cursor: pointer;
-    }
-    .photo-item.selected { filter: brightness(0.6) grayscale(0.2); }
-    .photo-item.selected .select-ring { transform: scale(1); opacity: 1; background: var(--accent); border-color: var(--accent); }
-    .photo-item img { width: 100%; display: block; opacity: 0; transition: opacity 0.4s ease-in; border-radius: 12px; }
-    .photo-item img.loaded { opacity: 1; }
-
     .select-ring {
-        position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; 
-        border: 2px solid rgba(255,255,255,0.9); border-radius: 50%; pointer-events: none;
-        transition: all 0.2s; background: rgba(0,0,0,0.3); z-index: 10; transform: scale(0.8); opacity: 0;
+        position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; 
+        border: 2.5px solid rgba(255,255,255,0.9); border-radius: 50%; pointer-events: none;
+        transition: all 0.25s; background: rgba(0,0,0,0.4); z-index: 10; transform: scale(0.7); opacity: 0;
     }
     body.select-mode .select-ring { opacity: 1; transform: scale(1); }
     body.select-mode .photo-item.selected::after {
         content: '\f00c'; font-family: "Font Awesome 6 Free"; font-weight: 900;
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        color: #fff; font-size: 24px; pointer-events: none;
+        color: #fff; font-size: 26px; pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
 
     .fav-btn {
         position: absolute; bottom: 8px; right: 8px; 
-        background: rgba(0,0,0,0.3); backdrop-filter: blur(2px);
-        border: none; border-radius: 50%; width: 32px; height: 32px; 
+        background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        border: none; border-radius: 50%; width: 34px; height: 34px; 
         display: flex; align-items: center; justify-content: center;
         color: rgba(255,255,255,0.85); cursor: pointer; z-index: 5; font-size: 14px;
-        transition: all 0.2s;
+        transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
     }
-    .fav-btn.active { color: #ff4081; background: #fff; transform: scale(1.1); }
-    .fav-btn:active { transform: scale(0.9); }
+    .fav-btn.active { color: #ff4081; background: rgba(255,255,255,0.95); transform: scale(1.1); }
+    .fav-btn:active { transform: scale(0.88); }
 
     /* --- ACTION BAR --- */
     .action-bar {
         position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%) translateY(200px);
-        width: 90%; max-width: 380px; padding: 12px 20px; border-radius: 60px;
+        width: 92%; max-width: 400px; padding: 14px 20px; border-radius: 60px;
         display: flex; align-items: center; justify-content: space-around; 
-        box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 100;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06); z-index: 100;
         transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        background: rgba(22,22,32,0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.08);
     }
     .action-bar.visible { transform: translateX(-50%) translateY(0); }
     .act-btn { 
-        background: none; border: none; color: #ccc; font-size: 11px; font-weight: 500;
+        background: none; border: none; color: #888; font-size: 11px; font-weight: 600;
         display: flex; flex-direction: column; align-items: center; gap: 5px; 
-        cursor: pointer; transition: color 0.2s; 
+        cursor: pointer; transition: all 0.2s; padding: 4px 8px; border-radius: 12px;
     }
+    .act-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
     .act-btn i { font-size: 20px; transition: transform 0.2s; }
     .act-btn:active i { transform: scale(1.2); color: var(--accent); }
     .act-btn.highlight { color: var(--accent); }
@@ -308,9 +321,134 @@
     .cam-btn:active .cam-btn-inner { transform: scale(0.9); background: var(--accent); }
     .cam-close { position: absolute; top: 40px; left: 20px; color: #fff; background: rgba(0,0,0,0.5); border: none; padding: 10px 15px; border-radius: 30px; font-size: 14px; cursor: pointer; pointer-events: auto; }
 
+    /* --- LEAD MODAL REDESIGN --- */
+    .lead-modal-redesign {
+        padding: 0; overflow: hidden; border-radius: 28px;
+        background: linear-gradient(145deg, #1a1a2e, #13131f);
+        border: 1px solid rgba(255,255,255,0.08);
+        max-width: 360px; width: 90%;
+    }
+    .lead-modal-header {
+        background: linear-gradient(135deg, rgba(0,230,118,0.15), rgba(124,77,255,0.15));
+        padding: 35px 24px 25px; text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        position: relative; overflow: hidden;
+    }
+    .lead-modal-header::before {
+        content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+        background: radial-gradient(circle, rgba(0,230,118,0.08) 0%, transparent 60%);
+        animation: shimmer 3s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0%,100% { opacity:0.5; } 50% { opacity:1; } }
+    .lead-celebrate-ring {
+        width: 80px; height: 80px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), rgba(124,77,255,0.8));
+        margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 0 8px rgba(0,230,118,0.1), 0 0 30px rgba(0,230,118,0.3);
+        animation: ring-pulse 2s ease-in-out infinite;
+    }
+    @keyframes ring-pulse {
+        0%,100% { box-shadow: 0 0 0 8px rgba(0,230,118,0.1), 0 0 30px rgba(0,230,118,0.3); }
+        50% { box-shadow: 0 0 0 14px rgba(0,230,118,0.05), 0 0 40px rgba(0,230,118,0.4); }
+    }
+    .lead-celebrate-inner { color: #000; font-size: 28px; }
+    .lead-count-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(0,0,0,0.3); border: 1px solid rgba(0,230,118,0.4);
+        border-radius: 20px; padding: 6px 16px; font-size: 15px; font-weight: 700; color: var(--accent);
+    }
+    .lead-count-badge span:first-child { font-size: 22px; }
+    .lead-title { font-size: 21px; font-weight: 800; margin: 20px 24px 8px; letter-spacing: -0.3px; }
+    .lead-subtitle { font-size: 13px; color: var(--muted); margin: 0 24px 20px; line-height: 1.6; }
+    .lead-form { padding: 0 24px; }
+    .lead-input-wrap {
+        position: relative; margin-bottom: 12px;
+    }
+    .lead-input-wrap i {
+        position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+        color: var(--muted); font-size: 14px; pointer-events: none;
+    }
+    .lead-input { 
+        width: 100%; padding: 15px 16px 15px 42px; 
+        background: rgba(255,255,255,0.04); 
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; color: #fff; font-size: 15px;
+        font-family: var(--font-main);
+        transition: border-color 0.2s, background 0.2s; box-sizing: border-box;
+    }
+    .lead-input:focus { border-color: var(--accent); background: rgba(0,230,118,0.04); outline: none; }
+    .lead-input::placeholder { color: #555; }
+    .lead-unlock-btn { width: calc(100% - 48px); margin: 16px 24px; justify-content: center; padding: 18px; font-size: 15px; }
+    .lead-privacy { text-align: center; font-size: 12px; color: #555; margin: 0 0 20px; padding-bottom: 4px; }
+
+    /* --- IMPROVED PHOTO ITEMS --- */
+    .photo-item { 
+        break-inside: avoid; margin-bottom: 10px; border-radius: 14px; 
+        overflow: hidden; position: relative; background: #1a1a2a;
+        transform: translateZ(0); transition: transform 0.2s; cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .photo-item:active { transform: scale(0.97); }
+    .photo-item.selected { outline: 3px solid var(--accent); outline-offset: -3px; }
+    .photo-item.selected .select-ring { transform: scale(1); opacity: 1; background: var(--accent); border-color: var(--accent); }
+    .photo-item img { width: 100%; display: block; opacity: 0; transition: opacity 0.4s ease-in; border-radius: 14px; }
+    .photo-item img.loaded { opacity: 1; }
+
+    /* --- GALLERY HEADER --- */
+    .gallery-header {
+        display: flex; align-items: center; justify-content: space-between; 
+        padding: 12px 0 8px; flex-wrap: wrap; gap: 10px;
+    }
+    .tag-pill {
+        background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+        color: var(--text); padding: 9px 18px; border-radius: 20px; font-size: 13px; font-weight: 600;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+        transition: all 0.2s; font-family: var(--font-main);
+    }
+    .tag-pill:hover { background: rgba(255,255,255,0.1); }
+    .tag-pill.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+    /* --- TIMELINE HEADERS --- */
+    .timeline-header {
+        font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.8); margin: 28px 0 12px; padding-left: 4px;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .timeline-header::after {
+        content: ''; flex: 1; height: 1px; background: linear-gradient(to right, rgba(255,255,255,0.1), transparent);
+    }
+    .timeline-header i { color: var(--accent); font-size: 14px; }
+
+    /* --- VIEWER improvements --- */
+    .v-nav { 
+        position: absolute; top: 50%; transform: translateY(-50%); 
+        color: rgba(255,255,255,0.6); font-size: 28px; padding: 16px 12px; 
+        cursor: pointer; z-index: 310; background: rgba(0,0,0,0.3);
+        backdrop-filter: blur(5px); border-radius: 12px; transition: all 0.2s;
+    }
+    .v-nav:hover { color: #fff; background: rgba(0,0,0,0.5); }
+    .v-prev { left: 10px; } .v-next { right: 10px; }
+    
+    .v-btn-pill {
+        background: rgba(255,255,255,0.92); color: #000; border: none; 
+        padding: 13px 22px; border-radius: 50px; font-weight: 700; font-size: 14px;
+        cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        display: flex; align-items: center; gap: 8px; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .v-btn-pill:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.6); }
+    .v-btn-pill:active { transform: scale(0.95); }
+
+    /* Mobile improvements */
+    @media (max-width: 480px) {
+        .search-card { padding: 30px 18px; margin-top: -40px; border-radius: 24px; }
+        .lead-modal-redesign { border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%; margin: 0; }
+        .modal { align-items: flex-end; }
+        .lead-title { font-size: 19px; }
+        .v-actions { flex-direction: column; gap: 10px; bottom: 30px; }
+        .v-btn-pill { padding: 12px 20px; font-size: 13px; }
+    }
+
     .hidden { display: none !important; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .count-badge { background: rgba(255,255,255,0.1); color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-left: 8px; border: 1px solid #333; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+    .count-badge { background: var(--accent-soft); color: var(--accent); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-left: 8px; border: 1px solid rgba(0,230,118,0.2); }
     #sentinel { height: 50px; margin-bottom: 50px; display: flex; justify-content: center; align-items: center; }
   </style>
 </head>
@@ -428,37 +566,41 @@
 </div>
 
 <div class="modal" id="leadModal">
-    <div class="modal-card">
-        <div style="width: 70px; height: 70px; background: var(--accent-soft); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--accent-soft);">
-            <i class="fa-solid fa-check" style="color: var(--accent); font-size: 30px;"></i>
+    <div class="modal-card lead-modal-redesign">
+        <!-- Celebration header -->
+        <div class="lead-modal-header">
+            <div class="lead-celebrate-ring">
+                <div class="lead-celebrate-inner">
+                    <i class="fa-solid fa-images"></i>
+                </div>
+            </div>
+            <div class="lead-count-badge">
+                <span id="leadMatchCount">0</span> <span>Photos Found!</span>
+            </div>
         </div>
-        <h2 style="margin: 0 0 10px; font-size: 22px;">We Found Your Photos! 🎉</h2>
-        <p style="color: var(--muted); margin-bottom: 25px; font-size: 14px; line-height: 1.5;">
-            We found <span id="leadMatchCount" style="color: #fff; font-weight: 700;">0</span> photos where you appear.<br>Enter your details to view and save them.
-        </p>
-        <input id="guestName" class="lead-input" placeholder="Your Name" autocomplete="name">
-        <input id="guestMobile" class="lead-input" placeholder="Mobile Number" type="tel" autocomplete="tel">
-        <button class="btn-main" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="triggerHaptic(); unlockGallery()">
-            View My Photos
+        
+        <h2 class="lead-title">You're in the spotlight! 🎉</h2>
+        <p class="lead-subtitle">We found your photos from this event. Enter your details to unlock your gallery.</p>
+        
+        <div class="lead-form">
+            <div class="lead-input-wrap">
+                <i class="fa-solid fa-user"></i>
+                <input id="guestName" class="lead-input" placeholder="Your Name" autocomplete="name">
+            </div>
+            <div class="lead-input-wrap">
+                <i class="fa-solid fa-mobile-screen"></i>
+                <input id="guestMobile" class="lead-input" placeholder="Mobile Number" type="tel" autocomplete="tel">
+            </div>
+        </div>
+        
+        <button class="btn-main lead-unlock-btn" onclick="triggerHaptic(); unlockGallery()">
+            <i class="fa-solid fa-unlock"></i> Unlock My Gallery
         </button>
-        <p style="font-size:12px; color:var(--muted); margin-top:15px;">Your details are safe and used only for this event.</p>
+        <p class="lead-privacy">🔒 Your details are safe and private</p>
     </div>
 </div>
 
-<!-- CAPTION MODAL -->
-<div class="modal" id="captionModal">
-    <div class="caption-modal-card">
-        <div class="caption-header">
-            <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 20px;"></i>
-            <h3 style="margin:0; font-size: 18px;">AI Caption ✨</h3>
-            <button onclick="document.getElementById('captionModal').classList.remove('open')" style="margin-left: auto; background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">&times;</button>
-        </div>
-        <div class="caption-content" id="captionResult"></div>
-        <div class="caption-actions">
-            <button class="btn-main" onclick="copyCaption()" style="width:100%; justify-content:center; padding: 12px;">Copy Caption</button>
-        </div>
-    </div>
-</div>
+
 
 <div class="viewer" id="viewer">
     <button class="v-close" onclick="closeViewer()"><i class="fa-solid fa-xmark"></i></button>
@@ -469,19 +611,20 @@
     <div class="v-nav v-next" onclick="changeViewerPhoto(1)"><i class="fa-solid fa-chevron-right"></i></div>
     
     <div class="v-actions">
-        <button class="v-btn-pill v-btn-magic" id="btnMagic" onclick="triggerHaptic(); generateAICaption()">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Caption
-        </button>
         <button class="v-btn-pill" id="viewerDlBtn" onclick="triggerHaptic(); downloadSingle()">
             <i class="fa-solid fa-download"></i> Save HD Photo
         </button>
+        <button class="v-btn-pill" id="viewerShareBtn" onclick="triggerHaptic(); shareCurrentPhoto()">
+            <i class="fa-solid fa-share-nodes"></i> Share
+        </button>
     </div>
+    <!-- Viewer Counter -->
+    <div id="viewerCounter" style="position:absolute;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);color:#fff;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;backdrop-filter:blur(5px);z-index:310;"></div>
 </div>
 
 <script>
     /* --- CONFIG & STATE --- */
     const API_BASE = "https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod";
-    const GEMINI_API_KEY = "AIzaSyDxtYBRudlxLkQxpGrrc7v5uRuXtL6DMdc";
 
     const urlParams = new URLSearchParams(window.location.search);
     const linkId = urlParams.get('linkId');
@@ -868,7 +1011,9 @@
         const img = document.getElementById('viewerImg');
         img.style.opacity = '0.5';
         img.src = p.thumbnail_url || p.url;
+        img.style.transform = 'scale(1)';
         document.getElementById('viewer').classList.add('open');
+        document.getElementById('viewerCounter').innerText = `${idx + 1} / ${displayedMatches.length}`;
         history.pushState({viewerOpen: true}, "Photo Viewer", "#viewer");
         
         const hd = new Image();
@@ -941,56 +1086,6 @@
             const p = displayedMatches[currentViewIndex];
             toggleFav({stopPropagation:()=>{}}, p.photo_id, currentViewIndex);
         }
-    }
-
-    /* --- GEMINI --- */
-    async function generateAICaption() {
-        if(currentViewIndex < 0) return;
-        const p = displayedMatches[currentViewIndex];
-        const btn = document.getElementById('btnMagic');
-        
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Writing...`;
-        btn.disabled = true;
-        
-        try {
-            // FIX: Use fetch with cache: no-store instead of query params to avoid 403 on S3
-            const imgUrl = p.thumbnail_url || p.url;
-            
-            const response = await fetch(imgUrl, { cache: 'no-store', mode: 'cors' });
-            if (!response.ok) throw new Error('Failed to fetch image');
-            const blob = await response.blob();
-            
-            const base64 = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-
-            const prompt = "Write a fun, short Instagram caption for this wedding photo with hashtags.";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-            
-            const res = await fetch(apiUrl, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ "contents": [{ "parts": [{ "text": prompt }, { "inline_data": { "mime_type": "image/jpeg", "data": base64 } }] }] })
-            });
-            const d = await res.json();
-            const text = d.candidates?.[0]?.content?.parts?.[0]?.text || "Couldn't generate caption.";
-            
-            document.getElementById('captionResult').innerHTML = marked.parse(text);
-            document.getElementById('captionModal').classList.add('open');
-        } catch(e) {
-            showToast("Failed to generate caption. " + e);
-        } finally {
-            btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Caption`;
-            btn.disabled = false;
-        }
-    }
-
-    function copyCaption() {
-        navigator.clipboard.writeText(document.getElementById('captionResult').innerText);
-        showToast("Caption copied!", "fa-copy");
-        document.getElementById('captionModal').classList.remove('open');
     }
 
     /* --- HELPERS --- */
@@ -1086,54 +1181,113 @@
         const btn = document.getElementById('viewerDlBtn');
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading…`;
         btn.disabled = true;
-        fetch(p.url).then(r=>r.blob()).then(b=>{ 
-            saveAs(b, "photo.jpg"); 
-            btn.innerHTML=`<i class="fa-solid fa-check"></i> Saved successfully`; 
-            setTimeout(()=> { btn.innerHTML=`<i class="fa-solid fa-download"></i> Save HD Photo`; btn.disabled = false; }, 2000); 
-        });
+        
+        fetch(p.url, { mode: 'cors', cache: 'no-store' })
+            .then(r => {
+                if(!r.ok) throw new Error('Network error');
+                return r.blob();
+            })
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `EventLens_photo_${currentViewIndex + 1}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 3000);
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Saved!`;
+                showToast("Photo saved successfully!", "fa-circle-check");
+                setTimeout(() => { btn.innerHTML = `<i class="fa-solid fa-download"></i> Save HD Photo`; btn.disabled = false; }, 2500);
+            })
+            .catch(() => {
+                // Fallback: direct link
+                const a = document.createElement('a');
+                a.href = p.url;
+                a.download = `EventLens_photo_${currentViewIndex + 1}.jpg`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                btn.innerHTML = `<i class="fa-solid fa-download"></i> Save HD Photo`;
+                btn.disabled = false;
+                showToast("Opening photo for download...", "fa-circle-info");
+            });
+    }
+
+    function shareCurrentPhoto() {
+        if(currentViewIndex < 0) return;
+        const p = displayedMatches[currentViewIndex];
+        if(navigator.share) {
+            navigator.share({ title: 'My Event Photo', url: p.url }).catch(()=>{});
+        } else {
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Check out my photo: ' + p.url)}`, '_blank');
+        }
     }
 
     async function downloadSelectedItems() {
         if(selectedIndices.size === 0) return;
         const indices = Array.from(selectedIndices);
         const btn = document.querySelector('.act-btn.highlight');
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving…`;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
         btn.disabled = true;
-        showToast("Saving your photos…");
+        showToast(`Saving ${indices.length} photo(s)…`);
+        let saved = 0;
         for(let i of indices) {
             try {
                 const p = displayedMatches[i];
-                const r = await fetch(p.url);
-                saveAs(await r.blob(), `photo_${i}.jpg`);
-            } catch(e) { saveAs(displayedMatches[i].url, `photo_${i}.jpg`); }
-            await new Promise(r => setTimeout(r, 300));
+                try {
+                    const r = await fetch(p.url, { mode: 'cors', cache: 'no-store' });
+                    if(!r.ok) throw new Error();
+                    const blob = await r.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `EventLens_photo_${i+1}.jpg`;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 3000);
+                } catch {
+                    const a = document.createElement('a');
+                    a.href = p.url; a.download = `EventLens_photo_${i+1}.jpg`; a.target='_blank';
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                }
+                saved++;
+            } catch(e) {}
+            await new Promise(r => setTimeout(r, 400));
         }
         btn.innerHTML = `<i class="fa-solid fa-download"></i> Save`;
         btn.disabled = false;
-        showToast("Saved to your gallery!", "fa-circle-check");
+        showToast(`${saved} photo(s) saved!`, "fa-circle-check");
     }
 
     async function downloadAsZip() {
         if(selectedIndices.size === 0) return;
         const zip = new JSZip();
-        const folder = zip.folder("Photos");
+        const folder = zip.folder("EventLens_Photos");
         const btn = document.querySelectorAll('.act-btn')[2];
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing…`;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
         btn.disabled = true;
-        showToast("Preparing your zip…");
+        showToast("Preparing zip file…");
         const indices = Array.from(selectedIndices);
         await Promise.all(indices.map(async idx => {
             try {
                 const p = displayedMatches[idx];
-                const b = await fetch(p.url).then(r=>r.blob());
-                folder.file(`photo_${idx}.jpg`, b);
-            } catch(e){}
+                const r = await fetch(p.url, { mode: 'cors', cache: 'no-store' });
+                if(!r.ok) throw new Error();
+                const b = await r.blob();
+                folder.file(`photo_${idx+1}.jpg`, b);
+            } catch(e) { console.warn('Could not add photo', idx); }
         }));
-        const c = await zip.generateAsync({type:"blob"});
-        saveAs(c, "EventLens_Photos.zip");
-        btn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> Download Zip`;
+        try {
+            const c = await zip.generateAsync({type:"blob"});
+            const url = URL.createObjectURL(c);
+            const a = document.createElement('a');
+            a.href = url; a.download = "EventLens_Photos.zip";
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            showToast("Zip downloaded!", "fa-circle-check");
+        } catch(e) { showToast("Zip failed. Try saving individually."); }
+        btn.innerHTML = `<i class="fa-solid fa-file-zipper"></i> Zip`;
         btn.disabled = false;
-        showToast("Zip downloaded successfully", "fa-circle-check");
     }
 
     async function shareNative() {

@@ -500,6 +500,51 @@
                 </select>
              </div>
              
+             <!-- Party Attendance Controls -->
+             <div class="mb-6 p-5 rounded-2xl bg-emerald-950/30 border border-emerald-800/40">
+               <div class="flex items-center gap-2 mb-5">
+                 <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-calendar-check"></i></div>
+                 <div>
+                   <div class="font-bold text-white text-sm">Party Attendance Settings</div>
+                   <div class="text-[10px] text-slate-400">Attendance form ke liye special controls</div>
+                 </div>
+               </div>
+               
+               <div class="grid md:grid-cols-2 gap-5">
+                 <!-- Attendance Level Lock -->
+                 <div class="p-4 rounded-xl bg-slate-950/40 border border-slate-800">
+                   <label class="text-xs font-bold text-slate-400 block mb-2">Level Lock (Attendance)</label>
+                   <select id="lvl_party_attendance" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                     <option value="">🔓 Unlocked (user fill kare)</option>
+                     <option value="district">District Fixed</option>
+                     <option value="vidhansabha">Vidhan Sabha Fixed</option>
+                     <option value="mandal">Mandal Fixed</option>
+                   </select>
+                   <div class="text-[10px] text-slate-500 mt-2">Fix karoge toh user change nahi kar payega</div>
+                 </div>
+                 
+                 <!-- Program Name Mode -->
+                 <div class="p-4 rounded-xl bg-slate-950/40 border border-slate-800">
+                   <label class="text-xs font-bold text-slate-400 block mb-2">कार्यक्रम Mode</label>
+                   <div class="flex gap-2 mb-3">
+                     <button id="btnProgModeDropdown" onclick="setProgMode('dropdown')" class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all bg-orange-600 border-orange-500 text-white">
+                       <i class="fa-solid fa-list mr-1"></i> Dropdown
+                     </button>
+                     <button id="btnProgModeFixed" onclick="setProgMode('fixed')" class="flex-1 py-2 rounded-lg text-xs font-bold border transition-all bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600">
+                       <i class="fa-solid fa-lock mr-1"></i> Fixed
+                     </button>
+                   </div>
+                   <div id="fixedProgramWrap" style="display:none">
+                     <input id="fixedProgramInput" class="input-field w-full rounded-lg px-3 py-2 text-sm" placeholder="कार्यक्रम का नाम यहाँ लिखें..." />
+                     <div class="text-[10px] text-slate-500 mt-1">यह नाम हमेशा fixed रहेगा, dropdown नहीं दिखेगा</div>
+                   </div>
+                   <div id="dropdownProgramWrap">
+                     <div class="text-[10px] text-slate-500">Programs tab से list manage करें</div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
              <div class="grid md:grid-cols-3 gap-6">
                 <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
                    <div class="flex items-center gap-3 mb-4">
@@ -1538,6 +1583,32 @@ function setPending(kind, file, uiKey) {
         if(pending.background?.key) f.background_key = pending.background.key;
       }
 
+      // Collect levels from UI
+      const levelsData = {
+        mandal_reporting: ($('lvl_mandal_reporting')?.value || ""),
+        coordinator: ($('lvl_coordinator')?.value || ""),
+        program_info: ($('lvl_program_info')?.value || ""),
+        party_attendance: ($('lvl_party_attendance')?.value || ""),
+      };
+      // Remove empty
+      Object.keys(levelsData).forEach(k => { if(!levelsData[k]) delete levelsData[k]; });
+      
+      // Program mode for attendance
+      const progMode = state._progMode || 'dropdown';
+      const fixedProg = ($('fixedProgramInput')?.value || "").trim();
+      
+      // Save levels to defaults
+      state.config.defaults.fixed_levels = levelsData;
+      
+      // Save fixed program to attendance form config
+      if(!state.config.forms.party_attendance) state.config.forms.party_attendance = {};
+      if(!state.config.forms.party_attendance.fixed_levels) state.config.forms.party_attendance.fixed_levels = {};
+      if(progMode === 'fixed' && fixedProg) {
+        state.config.forms.party_attendance.fixed_levels.fixed_program = fixedProg;
+      } else {
+        delete state.config.forms.party_attendance.fixed_levels.fixed_program;
+      }
+
       // Save to backend (political module)
       await apiCall("admin_save_config", {
           collection_id: state.cid,
@@ -1661,12 +1732,42 @@ function setPending(kind, file, uiKey) {
   
   function renderLevels() {
       const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
-      const src = (ft === "__defaults__") ? state.config.defaults.fixed_levels : (state.config.forms[ft]?.fixed_levels || state.config.defaults.fixed_levels);
+      const src = (ft === "__defaults__") ? state.config.defaults.fixed_levels : (state.config.forms[ft]?.fixed_levels || state.config.defaults.fixed_levels || {});
       
       $('lvl_mandal_reporting').value = src?.mandal_reporting || "";
       $('lvl_coordinator').value = src?.coordinator || "";
       $('lvl_program_info').value = src?.program_info || "";
+      $('lvl_party_attendance') && ($('lvl_party_attendance').value = src?.party_attendance || "");
+      
+      // Program mode for attendance
+      const attForm = state.config.forms?.party_attendance || {};
+      const fl = attForm.fixed_levels || state.config.defaults?.fixed_levels || {};
+      const isFixed = !!(fl.fixed_program);
+      setProgMode(isFixed ? 'fixed' : 'dropdown', fl.fixed_program || "");
   }
+  
+  // setProgMode — toggle between fixed and dropdown program for attendance
+  window.setProgMode = function(mode, val) {
+    const btnDd = $('btnProgModeDropdown');
+    const btnFx = $('btnProgModeFixed');
+    const fixedWrap = $('fixedProgramWrap');
+    const ddWrap = $('dropdownProgramWrap');
+    if (!btnDd) return;
+    
+    if (mode === 'fixed') {
+      btnFx.className = btnFx.className.replace('bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600', 'bg-orange-600 border-orange-500 text-white');
+      btnDd.className = btnDd.className.replace('bg-orange-600 border-orange-500 text-white', 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600');
+      fixedWrap.style.display = 'block';
+      ddWrap.style.display = 'none';
+      if (val && $('fixedProgramInput')) $('fixedProgramInput').value = val;
+    } else {
+      btnDd.className = btnDd.className.replace('bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600', 'bg-orange-600 border-orange-500 text-white');
+      btnFx.className = btnFx.className.replace('bg-orange-600 border-orange-500 text-white', 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600');
+      fixedWrap.style.display = 'none';
+      ddWrap.style.display = 'block';
+    }
+    state._progMode = mode;
+  };
 
   // --- Data Loading (Restored Real Logic) ---
   function normalizeItem(it){

@@ -236,7 +236,10 @@ select.inp option{background:#fff;color:var(--text);}
     <button class="pp-action-btn deva" onclick="acceptMatch()">
       <i class="fa-solid fa-check-circle"></i>विवरण भरें — Auto-fill के साथ
     </button>
-    <button onclick="skipMatch()" class="pp-skip-btn deva">Skip — नया कार्यकर्त्ता</button>
+    <button onclick="skipMatch()" class="pp-skip-btn deva">यह गलत है — नया कार्यकर्त्ता</button>
+    <button onclick="openEditEntry()" style="width:100%;padding:8px;background:none;border:none;border-top:1px solid rgba(0,0,0,.08);font-size:12px;color:#d97706;cursor:pointer;margin-top:4px;font-family:'Noto Sans Devanagari','Baloo 2',sans-serif;font-weight:700;">
+      ✏️ गलत मैच — इस व्यक्ति की एंट्री सुधारें
+    </button>
   </div>
 </div>
 
@@ -759,6 +762,12 @@ function openPopup(sd){
 function closePopup(){ _$("popup-bg").classList.remove("open"); }
 function acceptMatch(){ closePopup(); if(searchResp) window._autofill=extractProfile(searchResp); gotoForm(); }
 function skipMatch(){ closePopup(); window._autofill=null; gotoForm(); }
+function openEditEntry(){
+  // Open edit modal for mismatched face entry
+  closePopup();
+  const p = searchResp ? extractProfile(searchResp) : {};
+  showEditModal(entryId, p);
+}
 
 // ═══════════════════════════════
 // FORM
@@ -893,21 +902,38 @@ async function doSubmit(e){
 }
 
 async function doSave(formData, file){
-  const sha=await sha256(file);
-  if(!entryId||!finalTok){
-    const cp={form_type:FTYPE,sha256:sha,file_name:"selfie.jpg",mime_type:"image/jpeg",payload:formData};
-    if(TOK) cp.token=TOK; if(CID) cp.collection_id=CID;
-    const cr=await api(isPub()?"public_create_entry":"create_entry",cp);
-    entryId=cr.entry_id; finalTok=cr.finalize_token; upUrl=cr.upload_url; s3k=cr.s3_key;
-    if(upUrl&&!cr.duplicate) await fetch(upUrl,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
-  }else{
-    const up={form_type:FTYPE,sha256:sha,file_name:"selfie.jpg",mime_type:"image/jpeg",payload:formData};
-    if(TOK) up.token=TOK; if(CID) up.collection_id=CID;
-    const ur=await api(isPub()?"public_create_entry":"create_entry",up);
-    finalTok=ur.finalize_token; entryId=ur.entry_id;
-    if(ur.upload_url&&!ur.duplicate) await fetch(ur.upload_url,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
+  const sha = await sha256(file);
+  const action = isPub() ? "public_create_entry" : "create_entry";
+  const fin_action = isPub() ? "public_finalize_entry" : "finalize_entry";
+
+  // Always create/update entry with form payload
+  const cp = {
+    form_type: FTYPE,
+    sha256: sha,
+    file_name: "selfie.jpg",
+    mime_type: "image/jpeg",
+    payload: formData  // form data goes here - backend stores it
+  };
+  if(TOK) cp.token = TOK;
+  if(CID) cp.collection_id = CID;
+
+  console.log("💾 doSave create_entry payload:", JSON.stringify(cp).slice(0,300));
+  const cr = await api(action, cp);
+  console.log("💾 doSave create_entry resp:", JSON.stringify(cr).slice(0,200));
+
+  entryId = cr.entry_id;
+  finalTok = cr.finalize_token;
+  upUrl = cr.upload_url;
+  s3k = cr.s3_key;
+
+  // Upload photo if URL provided and not duplicate
+  if(upUrl && !cr.duplicate){
+    await fetch(upUrl, {method:"PUT", body:file, headers:{"Content-Type":"image/jpeg"}});
   }
-  await api(isPub()?"public_finalize_entry":"finalize_entry",{finalize_token:finalTok,entry_id:entryId});
+
+  // Finalize
+  await api(fin_action, {finalize_token: finalTok, entry_id: entryId});
+  console.log("✅ doSave finalized:", entryId);
 }
 
 function showFStatus(msg,isErr){
@@ -2822,6 +2848,55 @@ const DISTRICT_DATA = {
   }
 };
 
+
+// ═══ EDIT ENTRY ═══
+let _editEntryId = null;
+function showEditModal(eid, p){
+  _editEntryId = eid;
+  _$("edit-mobile").value = p.mobile||"";
+  _$("edit-name").value   = p.name||"";
+  _$("edit-desig").value  = p.desig||"";
+  _$("edit-dist").value   = p.dist||"";
+  _$("edit-vidhan").value = p.vidhan||"";
+  _$("edit-mandal").value = p.mandal||"";
+  _$("edit-status").style.display="none";
+  _$("edit-overlay").classList.add("open");
+}
+function closeEditModal(){
+  _$("edit-overlay").classList.remove("open");
+}
+async function saveEditEntry(){
+  const mobile = (_$("edit-mobile").value||"").trim();
+  const name   = (_$("edit-name").value||"").trim();
+  if(!mobile||!name){ showEditStatus("❌ नाम और मोबाइल जरूरी है",true); return; }
+  const btn = document.querySelector(".edit-save-btn");
+  const old = btn.innerHTML; btn.disabled=true;
+  btn.innerHTML='<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite;"></i> सेव हो रहा है...';
+  try{
+    if(!CID) await resolveCid();
+    const payload={mobile,name,designation:(_$("edit-desig").value||"").trim(),district:(_$("edit-dist").value||"").trim(),vidhansabha:(_$("edit-vidhan").value||"").trim(),mandal:(_$("edit-mandal").value||"").trim()};
+    // Try update_entry, fallback to finalize with corrected payload
+    try{
+      await api(isPub()?"public_update_entry":"admin_update_entry",{collection_id:CID,entry_id:_editEntryId,form_type:FTYPE,payload});
+    }catch(e){
+      // Fallback: finalize existing entry with corrected data
+      await api(isPub()?"public_finalize_entry":"finalize_entry",{finalize_token:finalTok,entry_id:_editEntryId,payload});
+    }
+    showEditStatus("✅ एंट्री सुधर गई!",false);
+    setTimeout(()=>{ closeEditModal(); doNewEntry(); },1500);
+  }catch(err){
+    showEditStatus("❌ "+err.message,true); btn.disabled=false; btn.innerHTML=old;
+  }
+}
+function showEditStatus(msg,isErr){
+  const el=_$("edit-status");
+  el.style.display="block";
+  el.style.background=isErr?"rgba(239,68,68,.1)":"rgba(34,197,94,.1)";
+  el.style.color=isErr?"#f87171":"var(--green)";
+  el.style.border=isErr?"1.5px solid rgba(239,68,68,.3)":"1.5px solid rgba(34,197,94,.3)";
+  el.textContent=msg;
+}
+
 // ═══════════════════════════════
 // INIT
 // ═══════════════════════════════
@@ -2830,5 +2905,52 @@ const DISTRICT_DATA = {
   await startCam("user");
 })();
 </script>
+
+<!-- ══ EDIT ENTRY MODAL ══ -->
+<style>
+#edit-overlay{position:fixed;inset:0;z-index:9500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(10px);}
+#edit-overlay.open{display:flex;}
+.edit-card{width:100%;max-width:420px;background:#fff;border-radius:22px 22px 0 0;padding:20px 18px 32px;box-shadow:0 -8px 40px rgba(0,0,0,.3);animation:sheetup .3s cubic-bezier(.22,.8,.28,1);}
+.edit-title{font-size:16px;font-weight:900;color:var(--text);margin-bottom:4px;}
+.edit-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+.edit-save-btn{width:100%;padding:15px;border-radius:13px;border:none;cursor:pointer;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:16px;font-weight:900;font-family:'Noto Sans Devanagari','Baloo 2',sans-serif;margin-top:14px;-webkit-tap-highlight-color:transparent;}
+.edit-cancel-btn{width:100%;padding:10px;background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer;margin-top:6px;font-family:'Noto Sans Devanagari','Baloo 2',sans-serif;}
+</style>
+
+<div id="edit-overlay">
+  <div class="edit-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div>
+        <div class="edit-title deva">✏️ एंट्री सुधारें</div>
+        <div class="edit-sub deva">गलत मैच — सही जानकारी भरें</div>
+      </div>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div>
+        <label class="lbl deva">📱 मोबाइल *</label>
+        <input id="edit-mobile" type="tel" class="inp" inputmode="numeric" maxlength="10" placeholder="10 अंकों का नंबर"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label class="lbl deva">👤 नाम *</label><input id="edit-name" type="text" class="inp" placeholder="पूरा नाम"/></div>
+        <div><label class="lbl">पद</label><input id="edit-desig" type="text" class="inp" placeholder="पद"/></div>
+      </div>
+      <div>
+        <label class="lbl deva">🏛️ जिला</label>
+        <input id="edit-dist" type="text" class="inp" placeholder="जिला"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label class="lbl deva">विधानसभा</label><input id="edit-vidhan" type="text" class="inp" placeholder="विधानसभा"/></div>
+        <div><label class="lbl deva">मंडल</label><input id="edit-mandal" type="text" class="inp" placeholder="मंडल"/></div>
+      </div>
+      <div id="edit-status" style="display:none;font-size:13px;font-weight:700;padding:10px;border-radius:10px;text-align:center;"></div>
+      <button onclick="saveEditEntry()" class="edit-save-btn deva">
+        <i class="fa-solid fa-floppy-disk" style="margin-right:8px;"></i>सुधार सेव करें
+      </button>
+      <button onclick="closeEditModal()" class="edit-cancel-btn deva">रद्द करें</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

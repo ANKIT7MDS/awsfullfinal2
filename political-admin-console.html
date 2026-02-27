@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="hi" class="dark">
 <head>
   <meta charset="utf-8" />
@@ -33,7 +32,6 @@
       }
     }
   </script>
-
   <style>
     body {
       background-color: #020617;
@@ -148,736 +146,726 @@
 <body class="min-h-screen font-sans selection:bg-orange-500/30">
 
   <!-- Toast Container -->
-
   <div id="toastContainer" class="toast-container"></div>
 
   <!-- Top bar -->
-
   <nav class="sticky top-0 z-50 glass-header h-16">
     <div class="max-w-[1600px] mx-auto px-4 h-full">
       <div class="flex items-center justify-between h-full gap-4">
+        
+        <!-- Logo Area -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 ring-1 ring-white/10">
+            <i class="fa-solid fa-om"></i>
+          </div>
+          <div>
+            <div class="text-white font-extrabold tracking-tight text-lg leading-none">EventLens <span class="text-orange-500">Pro</span></div>
+            <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Political Admin Console</div>
+          </div>
+        </div>
 
-```
-    <!-- Logo Area -->
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 ring-1 ring-white/10">
-        <i class="fa-solid fa-om"></i>
-      </div>
-      <div>
-        <div class="text-white font-extrabold tracking-tight text-lg leading-none">EventLens <span class="text-orange-500">Pro</span></div>
-        <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Political Admin Console</div>
+        <!-- Right Actions -->
+        <div class="flex items-center gap-3">
+          <!-- CID Display -->
+          <div id="cidPill" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-300">
+            <i class="fa-solid fa-database text-emerald-500"></i>
+            <span id="cidVal" class="font-bold text-white tracking-wide"></span>
+          </div>
+
+          <div class="h-6 w-px bg-slate-800 mx-1"></div>
+
+          <!-- AUTH BUTTON -->
+          <button id="btnAuth" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-orange-400 hover:text-orange-300 transition-colors border border-transparent hover:border-orange-500/30" title="Update Token">
+            <i class="fa-solid fa-key text-sm"></i>
+          </button>
+
+          <button id="btnReload" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors border border-transparent hover:border-slate-700">
+            <i class="fa-solid fa-rotate-right text-sm group-hover:rotate-180 transition-transform duration-500"></i>
+          </button>
+
+          <button id="btnSave" class="group relative px-5 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-sm font-bold shadow-lg shadow-orange-600/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 overflow-hidden">
+            <span class="relative z-10 flex items-center gap-2">
+              <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </span>
+            <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+          </button>
+        </div>
       </div>
     </div>
-
-    <!-- Right Actions -->
-    <div class="flex items-center gap-3">
-      <!-- CID Display -->
-      <div id="cidPill" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-300">
-        <i class="fa-solid fa-database text-emerald-500"></i>
-        <span id="cidVal" class="font-bold text-white tracking-wide"></span>
-      </div>
-
-      <div class="h-6 w-px bg-slate-800 mx-1"></div>
-
-      <!-- AUTH BUTTON -->
-      <button id="btnAuth" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-orange-400 hover:text-orange-300 transition-colors border border-transparent hover:border-orange-500/30" title="Update Token">
-        <i class="fa-solid fa-key text-sm"></i>
-      </button>
-
-      <button id="btnReload" class="group px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors border border-transparent hover:border-slate-700">
-        <i class="fa-solid fa-rotate-right text-sm group-hover:rotate-180 transition-transform duration-500"></i>
-      </button>
-
-      <button id="btnSave" class="group relative px-5 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white text-sm font-bold shadow-lg shadow-orange-600/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 overflow-hidden">
-        <span class="relative z-10 flex items-center gap-2">
-          <i class="fa-solid fa-floppy-disk"></i> Save Changes
-        </span>
-        <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-      </button>
-    </div>
-  </div>
-</div>
-```
-
   </nav>
 
   <!-- Main Layout -->
-
   <main class="max-w-[1600px] mx-auto px-4 py-6">
     <div class="grid lg:grid-cols-12 gap-6 items-start">
 
-```
-  <!-- Left Sidebar -->
-  <aside class="lg:col-span-3 space-y-6 sticky top-24">
-    
-    <!-- Context Card -->
-    <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group">
-      <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-        <i class="fa-solid fa-chess-rook text-6xl text-orange-500"></i>
-      </div>
-      
-      <div class="text-xs font-bold text-orange-400 uppercase tracking-widest mb-4">Current Context</div>
-      
-      <div class="space-y-4 relative z-10">
-        <div>
-          <label class="text-[11px] font-bold text-slate-400 uppercase">Collection ID</label>
-          <div class="mt-1 flex gap-2">
-            <input id="cidInput" class="input-field w-full rounded-lg px-3 py-2 text-xs font-mono" placeholder="Enter CID..." />
-            <button id="btnApplyCid" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white transition-colors">
-              <i class="fa-solid fa-check"></i>
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <label class="text-[11px] font-bold text-slate-400 uppercase">Edit Target</label>
-          <div class="relative mt-1">
-            <select id="targetFormSel" class="input-field w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer">
-              <option value="__defaults__">📡 Defaults (All Forms)</option>
-              <option disabled>──────────────</option>
-              <option value="visitor_form">📝 Visitor Form</option>
-              <option value="party_attendance">🚩 Party Attendance</option>
-              <option value="president_tour_form">🚙 President Tour</option>
-              <option value="mandal_reporting">📊 कार्यक्रम रिपोर्टिंग</option>
-              <option value="coordinator_form">👔 Coordinator</option>
-              <option value="program_info">ℹ️ Program Info</option>
-            </select>
-            <div class="absolute right-3 top-3 text-slate-400 pointer-events-none text-xs">
-              <i class="fa-solid fa-chevron-down"></i>
-            </div>
-          </div>
-          <div class="text-[10px] text-slate-500 mt-2 leading-relaxed">
-            Changes apply to the selected form only unless "Defaults" is chosen.
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between gap-2 rounded-lg bg-slate-950/40 border border-slate-800 p-3">
-          <div>
-            <div class="text-xs font-bold text-white">Live Preview</div>
-            <div class="text-[10px] text-slate-500">Real-time branding update</div>
-          </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input id="livePreviewToggle" type="checkbox" class="sr-only peer" checked>
-            <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-orange-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- Navigation -->
-    <nav class="glass-panel rounded-2xl p-2 space-y-1">
-      <button class="nav-btn active w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="branding">
-        <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-palette text-orange-400"></i></span>
-        Branding & Preview
-      </button>
-      <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="programs">
-        <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-list-check text-blue-400"></i></span>
-        Program Names
-      </button>
-      <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="levels">
-        <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-lock text-rose-400"></i></span>
-        Level Locks
-      </button>
-      <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="attendance">
-        <i class="fa-solid fa-calendar-check text-emerald-400"></i>
-        <span>Attendance</span>
-      </button>
-      <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="data">
-        <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-table text-emerald-400"></i></span>
-        Data Records
-      </button>
-      <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="gallery">
-        <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-images text-pink-400"></i></span>
-        Photo Gallery
-      </button>
-      <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="analytics">
-        <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-chart-pie text-purple-400"></i></span>
-        Analytics
-      </button>
-      <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="backend">
-        <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-plug text-yellow-400"></i></span>
-        API Config
-      </button>
-    </nav>
-
-    <div class="text-center">
-      <p class="text-[10px] text-slate-600">v2.9.0 Pro • EventLens System</p>
-    </div>
-  </aside>
-
-  <!-- Main Content Area -->
-  <div class="lg:col-span-9 min-h-[80vh]">
-    
-    <!-- TAB: Branding -->
-    <section id="tab-branding" class="tab-content animate-fade-in">
-      <div class="grid lg:grid-cols-12 gap-6">
+      <!-- Left Sidebar -->
+      <aside class="lg:col-span-3 space-y-6 sticky top-24">
         
-        <!-- Editor Column -->
-        <div class="lg:col-span-7 space-y-6">
-          <div class="glass-panel rounded-2xl p-6">
-            <div class="flex items-center justify-between mb-6">
-               <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                 <i class="fa-solid fa-pen-nib text-orange-500"></i> Appearance
-               </h2>
-               <div class="flex gap-2">
-                  <button id="btnResetBrand" class="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-lg transition-colors">Reset</button>
-                  <button id="btnCopyToDefaults" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg transition-colors">Copy to All</button>
-               </div>
-            </div>
-
-            <!-- Text Inputs -->
-            <div class="space-y-4">
-              <div class="grid md:grid-cols-2 gap-4">
-                <div class="group">
-                  <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Title / Header</label>
-                  <input id="b_title" class="input-field w-full rounded-xl px-4 py-3 text-sm font-bold" placeholder="e.g. भाजपा कार्यालय मंदसौर" />
-                </div>
-                <div class="group">
-                  <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Subtitle</label>
-                  <input id="b_subtitle" class="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. स्वागत" />
-                </div>
-              </div>
-              <div class="group">
-                <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Tagline</label>
-                <input id="b_tagline" class="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. सेवा • संगठन • समर्पण" />
-              </div>
-            </div>
-
-            <!-- Colors -->
-            <div class="mt-6 p-4 bg-slate-950/30 rounded-xl border border-slate-800/50">
-              <label class="text-xs font-bold text-slate-400 block mb-3">Gradient Theme</label>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <div class="flex items-center gap-3">
-                    <input id="b_c1" type="color" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-0 p-0" />
-                    <div class="text-xs font-mono text-slate-400">Primary</div>
-                  </div>
-                </div>
-                <div>
-                  <div class="flex items-center gap-3">
-                    <input id="b_c2" type="color" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-0 p-0" />
-                    <div class="text-xs font-mono text-slate-400">Secondary</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <!-- Context Card -->
+        <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group">
+          <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+            <i class="fa-solid fa-chess-rook text-6xl text-orange-500"></i>
           </div>
-
-          <!-- Assets Upload -->
-          <div class="glass-panel rounded-2xl p-6">
-            <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Assets</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <!-- Logo Upload -->
-              <div class="relative group">
-                <input id="file_logo" type="file" accept="image/*" class="hidden" />
-                <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_logo').click()">
-                  <img id="prev_logo" class="absolute inset-0 w-full h-full object-contain p-2 hidden z-10" />
-                  <i id="icon_logo" class="fa-solid fa-image text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform"></i>
-                  <span class="text-[10px] font-bold text-slate-400 group-hover:text-white">Upload Logo</span>
-                </div>
-                <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="logo"><i class="fa-solid fa-xmark text-xs"></i></button>
-                <div id="name_logo" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
+          
+          <div class="text-xs font-bold text-orange-400 uppercase tracking-widest mb-4">Current Context</div>
+          
+          <div class="space-y-4 relative z-10">
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 uppercase">Collection ID</label>
+              <div class="mt-1 flex gap-2">
+                <input id="cidInput" class="input-field w-full rounded-lg px-3 py-2 text-xs font-mono" placeholder="Enter CID..." />
+                <button id="btnApplyCid" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-white transition-colors">
+                  <i class="fa-solid fa-check"></i>
+                </button>
               </div>
+            </div>
 
-              <!-- Header Upload -->
-              <div class="relative group">
-                <input id="file_header" type="file" accept="image/*" class="hidden" />
-                <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_header').click()">
-                  <img id="prev_header" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
-                  <i id="icon_header" class="fa-solid fa-panorama text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
-                  <span class="text-[10px] font-bold text-slate-400 group-hover:text-white z-20 relative">Upload Header</span>
+            <div>
+              <label class="text-[11px] font-bold text-slate-400 uppercase">Edit Target</label>
+              <div class="relative mt-1">
+                <select id="targetFormSel" class="input-field w-full rounded-lg px-3 py-2.5 text-sm appearance-none cursor-pointer">
+                  <option value="__defaults__">📡 Defaults (All Forms)</option>
+                  <option disabled>──────────────</option>
+                  <option value="visitor_form">📝 Visitor Form</option>
+                  <option value="party_attendance">🚩 Party Attendance</option>
+                  <option value="president_tour_form">🚙 President Tour</option>
+                  <option value="mandal_reporting">📊 कार्यक्रम रिपोर्टिंग</option>
+                  <option value="coordinator_form">👔 Coordinator</option>
+                  <option value="program_info">ℹ️ Program Info</option>
+                </select>
+                <div class="absolute right-3 top-3 text-slate-400 pointer-events-none text-xs">
+                  <i class="fa-solid fa-chevron-down"></i>
                 </div>
-                <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="header"><i class="fa-solid fa-xmark text-xs"></i></button>
-                <div id="name_header" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
               </div>
+              <div class="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                Changes apply to the selected form only unless "Defaults" is chosen.
+              </div>
+            </div>
 
-              <!-- BG Upload -->
-              <div class="relative group">
-                <input id="file_bg" type="file" accept="image/*" class="hidden" />
-                <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_bg').click()">
-                  <img id="prev_bg" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
-                  <i id="icon_bg" class="fa-solid fa-mountain-sun text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
-                  <span class="text-[10px] font-bold text-slate-400 group-hover:text-white z-20 relative">Upload BG</span>
-                </div>
-                <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="bg"><i class="fa-solid fa-xmark text-xs"></i></button>
-                <div id="name_bg" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
+            <div class="flex items-center justify-between gap-2 rounded-lg bg-slate-950/40 border border-slate-800 p-3">
+              <div>
+                <div class="text-xs font-bold text-white">Live Preview</div>
+                <div class="text-[10px] text-slate-500">Real-time branding update</div>
               </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input id="livePreviewToggle" type="checkbox" class="sr-only peer" checked>
+                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-orange-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+              </label>
             </div>
           </div>
         </div>
 
-        <!-- Preview Column -->
-        <div class="lg:col-span-5">
-          <div class="sticky top-28">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Mobile Preview</h3>
-              <div class="flex gap-2">
-                 <button id="btnLoadFormPreview" class="px-3 py-1 text-xs rounded-full bg-orange-600 hover:bg-orange-500 text-white font-bold transition-colors"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
-                 <button id="btnOpenFormPreview" class="px-3 py-1 text-xs rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-colors"><i class="fa-solid fa-up-right-from-square"></i></button>
+        <!-- Navigation -->
+        <nav class="glass-panel rounded-2xl p-2 space-y-1">
+          <button class="nav-btn active w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="branding">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-palette text-orange-400"></i></span>
+            Branding & Preview
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="programs">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-list-check text-blue-400"></i></span>
+            Program Names
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="levels">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-lock text-rose-400"></i></span>
+            Level Locks
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="attendance">
+            <i class="fa-solid fa-calendar-check text-emerald-400"></i>
+            <span>Attendance</span>
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="data">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-table text-emerald-400"></i></span>
+            Data Records
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="gallery">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-images text-pink-400"></i></span>
+            Photo Gallery
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="analytics">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-chart-pie text-purple-400"></i></span>
+            Analytics
+          </button>
+          <button class="nav-btn w-full text-left px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 text-slate-300" data-tab="backend">
+            <span class="w-6 h-6 rounded bg-slate-800/50 flex items-center justify-center text-xs"><i class="fa-solid fa-plug text-yellow-400"></i></span>
+            API Config
+          </button>
+        </nav>
+
+        <div class="text-center">
+          <p class="text-[10px] text-slate-600">v2.9.0 Pro • EventLens System</p>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <div class="lg:col-span-9 min-h-[80vh]">
+        
+        <!-- TAB: Branding -->
+        <section id="tab-branding" class="tab-content animate-fade-in">
+          <div class="grid lg:grid-cols-12 gap-6">
+            
+            <!-- Editor Column -->
+            <div class="lg:col-span-7 space-y-6">
+              <div class="glass-panel rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-6">
+                   <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                     <i class="fa-solid fa-pen-nib text-orange-500"></i> Appearance
+                   </h2>
+                   <div class="flex gap-2">
+                      <button id="btnResetBrand" class="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-lg transition-colors">Reset</button>
+                      <button id="btnCopyToDefaults" class="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg transition-colors">Copy to All</button>
+                   </div>
+                </div>
+
+                <!-- Text Inputs -->
+                <div class="space-y-4">
+                  <div class="grid md:grid-cols-2 gap-4">
+                    <div class="group">
+                      <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Title / Header</label>
+                      <input id="b_title" class="input-field w-full rounded-xl px-4 py-3 text-sm font-bold" placeholder="e.g. भाजपा कार्यालय मंदसौर" />
+                    </div>
+                    <div class="group">
+                      <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Subtitle</label>
+                      <input id="b_subtitle" class="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. स्वागत" />
+                    </div>
+                  </div>
+                  <div class="group">
+                    <label class="text-xs font-bold text-slate-400 ml-1 mb-1 block group-focus-within:text-orange-500 transition-colors">Tagline</label>
+                    <input id="b_tagline" class="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="e.g. सेवा • संगठन • समर्पण" />
+                  </div>
+                </div>
+
+                <!-- Colors -->
+                <div class="mt-6 p-4 bg-slate-950/30 rounded-xl border border-slate-800/50">
+                  <label class="text-xs font-bold text-slate-400 block mb-3">Gradient Theme</label>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <div class="flex items-center gap-3">
+                        <input id="b_c1" type="color" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-0 p-0" />
+                        <div class="text-xs font-mono text-slate-400">Primary</div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-3">
+                        <input id="b_c2" type="color" class="w-10 h-10 rounded-lg bg-transparent cursor-pointer border-0 p-0" />
+                        <div class="text-xs font-mono text-slate-400">Secondary</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Assets Upload -->
+              <div class="glass-panel rounded-2xl p-6">
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Assets</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <!-- Logo Upload -->
+                  <div class="relative group">
+                    <input id="file_logo" type="file" accept="image/*" class="hidden" />
+                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_logo').click()">
+                      <img id="prev_logo" class="absolute inset-0 w-full h-full object-contain p-2 hidden z-10" />
+                      <i id="icon_logo" class="fa-solid fa-image text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform"></i>
+                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white">Upload Logo</span>
+                    </div>
+                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="logo"><i class="fa-solid fa-xmark text-xs"></i></button>
+                    <div id="name_logo" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
+                  </div>
+
+                  <!-- Header Upload -->
+                  <div class="relative group">
+                    <input id="file_header" type="file" accept="image/*" class="hidden" />
+                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_header').click()">
+                      <img id="prev_header" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
+                      <i id="icon_header" class="fa-solid fa-panorama text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
+                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white z-20 relative">Upload Header</span>
+                    </div>
+                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="header"><i class="fa-solid fa-xmark text-xs"></i></button>
+                    <div id="name_header" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
+                  </div>
+
+                  <!-- BG Upload -->
+                  <div class="relative group">
+                    <input id="file_bg" type="file" accept="image/*" class="hidden" />
+                    <div class="aspect-square rounded-xl bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-orange-500 hover:bg-slate-800/50 transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center overflow-hidden" onclick="document.getElementById('file_bg').click()">
+                      <img id="prev_bg" class="absolute inset-0 w-full h-full object-cover hidden z-10 opacity-60" />
+                      <i id="icon_bg" class="fa-solid fa-mountain-sun text-2xl text-slate-500 mb-2 group-hover:scale-110 transition-transform z-0"></i>
+                      <span class="text-[10px] font-bold text-slate-400 group-hover:text-white z-20 relative">Upload BG</span>
+                    </div>
+                    <button class="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100" data-clear="bg"><i class="fa-solid fa-xmark text-xs"></i></button>
+                    <div id="name_bg" class="text-[10px] text-slate-500 mt-2 truncate text-center">No file</div>
+                  </div>
+                </div>
               </div>
             </div>
 
+            <!-- Preview Column -->
+            <div class="lg:col-span-5">
+              <div class="sticky top-28">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Mobile Preview</h3>
+                  <div class="flex gap-2">
+                     <button id="btnLoadFormPreview" class="px-3 py-1 text-xs rounded-full bg-orange-600 hover:bg-orange-500 text-white font-bold transition-colors"><i class="fa-solid fa-rotate mr-1"></i> Refresh</button>
+                     <button id="btnOpenFormPreview" class="px-3 py-1 text-xs rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-colors"><i class="fa-solid fa-up-right-from-square"></i></button>
+                  </div>
+                </div>
 
-            <div id="previewTabs" class="mt-3 flex flex-wrap gap-2"></div>
-            <!-- Phone Mockup Container -->
-            <div class="flex justify-center">
-              <div class="phone-mockup w-[320px] h-[640px] bg-white" style="position:relative">
-                <iframe id="formPreviewIframe" class="w-full h-full bg-white border-0" style="position:relative;z-index:1"></iframe>
+
+                <div id="previewTabs" class="mt-3 flex flex-wrap gap-2"></div>
+                <!-- Phone Mockup Container -->
+                <div class="flex justify-center">
+                  <div class="phone-mockup w-[320px] h-[640px] bg-white" style="position:relative">
+                    <iframe id="formPreviewIframe" class="w-full h-full bg-white border-0" style="position:relative;z-index:1"></iframe>
+                    
+                    <!-- Fallback/Overlay for branding preview (JS controlled opacity) -->
+                    <div id="customPreviewOverlay" class="absolute inset-0 bg-slate-900 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col" style="top:0;left:0;right:0;bottom:0;position:absolute">
+                       <!-- This overlay is just for quick color feedback if iframe is slow -->
+                       <div id="previewHeaderBar" class="h-1 w-full bg-orange-500"></div>
+                       <div id="previewBg" class="flex-1 bg-cover bg-center relative">
+                         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+                         <div class="relative p-6 flex flex-col items-center justify-center h-full text-center">
+                            <div id="previewHeaderImgWrap" class="w-full h-32 rounded-lg overflow-hidden mb-4 hidden shadow-lg">
+                               <img id="previewHeaderImg" class="w-full h-full object-cover">
+                            </div>
+                            <img id="previewLogo" class="w-20 h-20 rounded-full object-cover border-4 border-white/10 mb-4 hidden shadow-2xl">
+                            <i id="previewLogoIcon" class="fa-solid fa-bolt text-4xl text-orange-500 mb-4"></i>
+                            
+                            <h2 id="previewTitle" class="text-2xl font-bold text-white mb-1">Title</h2>
+                            <p id="previewSubtitle" class="text-sm text-slate-300">Subtitle</p>
+                            <p id="previewTagline" class="text-xs text-slate-400 mt-1">Tagline</p>
+                            <div class="mt-6 flex gap-2 justify-center">
+                               <div id="sw1" class="w-4 h-4 rounded-full bg-orange-500"></div>
+                               <div id="sw2" class="w-4 h-4 rounded-full bg-red-500"></div>
+                            </div>
+                         </div>
+                       </div>
+                    </div>
+                  </div>
+                </div>
                 
-                <!-- Fallback/Overlay for branding preview (JS controlled opacity) -->
-                <div id="customPreviewOverlay" class="absolute inset-0 bg-slate-900 pointer-events-none opacity-0 transition-opacity duration-300 z-20 flex flex-col" style="top:0;left:0;right:0;bottom:0;position:absolute">
-                   <!-- This overlay is just for quick color feedback if iframe is slow -->
-                   <div id="previewHeaderBar" class="h-1 w-full bg-orange-500"></div>
-                   <div id="previewBg" class="flex-1 bg-cover bg-center relative">
-                     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-                     <div class="relative p-6 flex flex-col items-center justify-center h-full text-center">
-                        <div id="previewHeaderImgWrap" class="w-full h-32 rounded-lg overflow-hidden mb-4 hidden shadow-lg">
-                           <img id="previewHeaderImg" class="w-full h-full object-cover">
-                        </div>
-                        <img id="previewLogo" class="w-20 h-20 rounded-full object-cover border-4 border-white/10 mb-4 hidden shadow-2xl">
-                        <i id="previewLogoIcon" class="fa-solid fa-bolt text-4xl text-orange-500 mb-4"></i>
-                        
-                        <h2 id="previewTitle" class="text-2xl font-bold text-white mb-1">Title</h2>
-                        <p id="previewSubtitle" class="text-sm text-slate-300">Subtitle</p>
-                        <p id="previewTagline" class="text-xs text-slate-400 mt-1">Tagline</p>
-                        <div class="mt-6 flex gap-2 justify-center">
-                           <div id="sw1" class="w-4 h-4 rounded-full bg-orange-500"></div>
-                           <div id="sw2" class="w-4 h-4 rounded-full bg-red-500"></div>
-                        </div>
-                     </div>
+                <div class="text-center mt-4">
+                   <div class="inline-block px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] text-slate-500 font-mono">
+                     <span id="formPreviewUrlTxt" class="max-w-[200px] truncate block">...</span>
                    </div>
                 </div>
               </div>
             </div>
-            
-            <div class="text-center mt-4">
-               <div class="inline-block px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[10px] text-slate-500 font-mono">
-                 <span id="formPreviewUrlTxt" class="max-w-[200px] truncate block">...</span>
-               </div>
+          </div>
+        
+          <div class="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-bold text-slate-300">All Forms Live Preview</div>
+                <div class="text-xs text-slate-500 mt-1">हर फॉर्म का प्रीव्यू यहाँ दिखेगा। किसी भी कार्ड पर क्लिक करके उस फॉर्म को चुनें।</div>
+              </div>
+              <button id="btnRefreshSignedUrls" class="px-3 py-2 text-xs rounded-lg bg-white/10 hover:bg-white/15">Refresh Preview</button>
+            </div>
+            <div id="allFormsGrid" style="display:none" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+          </div>
+
+        </section>
+
+        <!-- TAB: Programs -->
+        <section id="tab-programs" class="tab-content hidden animate-fade-in space-y-6">
+          <div class="glass-panel rounded-2xl p-6">
+             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div>
+                   <h2 class="text-xl font-bold text-white">Program Management</h2>
+                   <p class="text-sm text-slate-400">Manage the list of programs available in dropdowns.</p>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-900/50 p-1 rounded-lg border border-slate-800">
+                   <span class="text-xs font-bold text-slate-400 px-2">Mode:</span>
+                   <select id="progScopeSel" class="bg-transparent text-xs text-white font-bold py-1 pr-2 outline-none">
+                      <option value="current">Current Form Only</option>
+                      <option value="defaults">Defaults (Global)</option>
+                   </select>
+                </div>
+             </div>
+
+             <div class="flex gap-2 mb-8">
+                <input id="progInput" class="input-field flex-1 rounded-xl px-4 py-3 text-sm" placeholder="Type new program name (e.g. बूथ विजय अभियान)..." />
+                <button id="btnAddProg" class="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold shadow-lg shadow-orange-600/20 transition-all active:scale-95">
+                   <i class="fa-solid fa-plus"></i> Add
+                </button>
+             </div>
+
+             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3" id="progList">
+                <!-- Program items injected here -->
+             </div>
+          </div>
+        </section>
+
+        <!-- TAB: Levels -->
+        <section id="tab-levels" class="tab-content hidden animate-fade-in space-y-6">
+          <div class="glass-panel rounded-2xl p-6">
+             <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">Hierarchical Locks</h2>
+                <select id="levelScopeSel" class="input-field rounded-lg px-3 py-1.5 text-xs">
+                   <option value="current">Current Form</option>
+                   <option value="defaults">Defaults</option>
+                </select>
+             </div>
+             
+             <div class="grid md:grid-cols-3 gap-6">
+                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
+                   <div class="flex items-center gap-3 mb-4">
+                      <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-sitemap"></i></div>
+                      <div class="font-bold text-white text-sm">Reporting Level</div>
+                   </div>
+                   <select id="lvl_mandal_reporting" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                      <option value="">🔓 Unlocked</option>
+                      <option value="district">District Fixed</option>
+                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
+                      <option value="mandal">Mandal Fixed</option>
+                   </select>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
+                   <div class="flex items-center gap-3 mb-4">
+                      <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><i class="fa-solid fa-user-tie"></i></div>
+                      <div class="font-bold text-white text-sm">Coordinator</div>
+                   </div>
+                   <select id="lvl_coordinator" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                      <option value="">🔓 Unlocked</option>
+                      <option value="district">District Fixed</option>
+                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
+                      <option value="mandal">Mandal Fixed</option>
+                   </select>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
+                   <div class="flex items-center gap-3 mb-4">
+                      <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-info"></i></div>
+                      <div class="font-bold text-white text-sm">Program Info</div>
+                   </div>
+                   <select id="lvl_program_info" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                      <option value="">🔓 Unlocked</option>
+                      <option value="district">District Fixed</option>
+                      <option value="vidhansabha">Vidhan Sabha Fixed</option>
+                      <option value="mandal">Mandal Fixed</option>
+                   </select>
+                </div>
+             </div>
+          </div>
+        </section>
+
+        <!-- TAB: Attendance Dashboard -->
+        <section id="tab-attendance" class="tab-content hidden animate-fade-in space-y-4">
+
+          <!-- Event selector + controls -->
+          <div class="glass-panel rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap gap-2 items-center">
+              <div class="flex-1 min-w-[160px]">
+                <label class="block text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">कार्यक्रम चुनें (Event)</label>
+                <select id="att-event-sel" class="input-field w-full rounded-xl px-3 py-2 text-sm">
+                  <option value="">— सभी Events —</option>
+                </select>
+              </div>
+              <div class="flex-1 min-w-[130px]">
+                <label class="block text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">तारीख से</label>
+                <input id="att-date-from" type="date" class="input-field w-full rounded-xl px-3 py-2 text-sm"/>
+              </div>
+              <div class="flex-1 min-w-[130px]">
+                <label class="block text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">तारीख तक</label>
+                <input id="att-date-to" type="date" class="input-field w-full rounded-xl px-3 py-2 text-sm"/>
+              </div>
+              <div class="flex gap-2 pt-4">
+                <button id="btn-att-load" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 transition">
+                  <i class="fa-solid fa-rotate"></i> Load
+                </button>
+                <button id="btn-att-csv" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm flex items-center gap-1.5 transition">
+                  <i class="fa-solid fa-file-csv"></i> CSV
+                </button>
+                <button id="btn-att-excel" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm flex items-center gap-1.5 transition">
+                  <i class="fa-solid fa-file-excel"></i> Excel
+                </button>
+              </div>
+            </div>
+            <!-- Search -->
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+              <input id="att-search" class="input-field w-full rounded-xl pl-8 pr-3 py-2 text-sm" placeholder="नाम / मोबाइल / जिला खोजें..."/>
+            </div>
+          </div>
+
+          <!-- KPI cards per event -->
+          <div id="att-event-kpi" class="grid grid-cols-2 gap-3 md:grid-cols-4"></div>
+
+          <!-- Event-wise summary cards -->
+          <div id="att-event-summary" class="space-y-3"></div>
+
+          <!-- Attendance list table -->
+          <div class="glass-panel rounded-2xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+              <div class="font-bold text-sm text-white flex items-center gap-2">
+                <i class="fa-solid fa-list text-emerald-400"></i>
+                उपस्थिति सूची
+              </div>
+              <div class="text-xs text-slate-400"><span id="att-count">0</span> कार्यकर्त्ता</div>
+            </div>
+
+            <!-- Mobile cards -->
+            <div id="att-mobile-cards" class="space-y-2 p-3 md:hidden"></div>
+
+            <!-- Desktop table -->
+            <div class="hidden md:block overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="bg-slate-900/80 text-[11px] uppercase text-slate-400 font-bold">
+                  <tr>
+                    <th class="px-3 py-3 w-12">#</th>
+                    <th class="px-3 py-3">Photo</th>
+                    <th class="px-3 py-3">नाम</th>
+                    <th class="px-3 py-3">Mobile</th>
+                    <th class="px-3 py-3">जिला / विधानसभा / मंडल</th>
+                    <th class="px-3 py-3">कार्यक्रम</th>
+                    <th class="px-3 py-3">समय</th>
+                    <th class="px-3 py-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="att-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+                  <tr><td colspan="8" class="px-4 py-10 text-center text-slate-500 italic">Load बटन दबाएं</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: Data -->
+        <section id="tab-data" class="tab-content hidden animate-fade-in space-y-4">
+          <div class="glass-panel rounded-2xl p-4">
+
+            <!-- ── Top bar: search + filters ── -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <!-- Search -->
+              <div class="relative flex-1 min-w-[160px]">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                <input id="dataSearch" class="input-field w-full rounded-xl pl-8 pr-3 py-2 text-sm" placeholder="नाम / mobile खोजें..." />
+              </div>
+              <!-- Form type -->
+              <select id="dataFormSel" class="input-field rounded-xl px-3 py-2 text-sm min-w-[120px]">
+                <option value="__all__">सभी Forms</option>
+                <option value="visitor_form">Visitor</option>
+                <option value="party_attendance">Attendance</option>
+                <option value="president_tour_form">Tour</option>
+                <option value="mandal_reporting">Mandal Report</option>
+                <option value="coordinator_form">Coordinator</option>
+                <option value="program_info">Program Info</option>
+              </select>
+              <!-- Date range -->
+              <input id="dateFrom" type="date" class="input-field rounded-xl px-3 py-2 text-sm" title="From date" />
+              <input id="dateTo" type="date" class="input-field rounded-xl px-3 py-2 text-sm" title="To date" />
+              <!-- Sort -->
+              <select id="dataSort" class="input-field rounded-xl px-3 py-2 text-sm">
+                <option value="created_at_desc">नया पहले</option>
+                <option value="created_at_asc">पुराना पहले</option>
+                <option value="name_asc">नाम A-Z</option>
+                <option value="mobile_asc">Mobile</option>
+              </select>
+              <button id="btnLoadData" class="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm transition flex items-center gap-1.5">
+                <i class="fa-solid fa-filter"></i> Load
+              </button>
+              <button id="btnExportCsv" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm transition flex items-center gap-1.5">
+                <i class="fa-solid fa-download"></i> CSV
+              </button>
+            </div>
+
+            <!-- ── KPI Pills ── -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              <div class="flex-1 min-w-[100px] bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-800">
+                <div class="text-[10px] text-slate-500 uppercase font-bold">Total</div>
+                <div id="kpiTotal" class="text-2xl font-extrabold text-white">—</div>
+              </div>
+              <div class="flex-1 min-w-[100px] bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-800">
+                <div class="text-[10px] text-slate-500 uppercase font-bold">आज</div>
+                <div id="kpiToday" class="text-2xl font-extrabold text-orange-400">—</div>
+              </div>
+              <div class="flex-1 min-w-[100px] bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-800">
+                <div class="text-[10px] text-slate-500 uppercase font-bold">Unique Mobile</div>
+                <div id="kpiUnique" class="text-2xl font-extrabold text-blue-400">—</div>
+              </div>
+              <div class="flex-1 min-w-[100px] bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-800">
+                <div class="text-[10px] text-slate-500 uppercase font-bold">Photos</div>
+                <div id="kpiPhotos" class="text-2xl font-extrabold text-pink-400">—</div>
+              </div>
+            </div>
+
+            <!-- ── Cards (mobile) / Table (desktop) ── -->
+
+            <!-- Mobile: card view -->
+            <div id="dataMobileCards" class="space-y-2 md:hidden"></div>
+
+            <!-- Desktop: table view -->
+            <div class="hidden md:block rounded-xl border border-slate-800 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                  <thead class="bg-slate-900/80 text-[11px] uppercase text-slate-400 font-bold">
+                    <tr>
+                      <th class="px-3 py-3 cursor-pointer hover:text-white select-none" data-sort="created_at">
+                        समय <i class="fa-solid fa-sort ml-1 text-slate-600"></i>
+                      </th>
+                      <th class="px-3 py-3">Form</th>
+                      <th class="px-3 py-3">नाम</th>
+                      <th class="px-3 py-3">Mobile</th>
+                      <th class="px-3 py-3">जिला / स्थान</th>
+                      <th class="px-3 py-3">Photo</th>
+                      <th class="px-3 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="dataTbody" class="divide-y divide-slate-800/60 text-slate-300">
+                    <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500 italic">Load बटन दबाएं</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
+              <div class="text-xs text-slate-500">
+                दिख रहे: <span id="loadedCount" class="text-white font-bold">0</span> entries
+              </div>
+              <div class="flex gap-2">
+                <button id="btnPrevPage" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white border border-slate-700 disabled:opacity-40 transition">← Prev</button>
+                <button id="btnNextPage" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white border border-slate-700 disabled:opacity-40 transition">Next →</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB: Analytics -->
+        <!-- ── Photo Gallery Tab ── -->
+        <section id="tab-gallery" class="tab-content hidden animate-fade-in space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-images text-pink-400"></i> Photo Gallery
+            </h2>
+            <div class="flex items-center gap-2">
+              <span id="photosTotal" class="text-xs text-slate-500"></span>
+              <button id="galleryRefreshBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Photos Grid -->
+          <div class="glass-panel rounded-2xl p-4">
+            <div id="galleryGrid" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-1.5">
+              <div class="col-span-full text-slate-500 text-sm text-center py-8">Gallery tab click करने पर load होगा...</div>
+            </div>
+            <div class="mt-4 flex justify-center">
+              <button id="loadMorePhotosBtn" class="hidden px-5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-chevron-down"></i> और Photos लोड करें
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ PHOTO DETAIL SLIDESHOW ══ -->
+        <div id="photoSlideOverlay" class="hidden fixed inset-0 z-[9999] bg-slate-950 flex flex-col">
+          <!-- Top bar -->
+          <div class="flex items-center justify-between px-4 py-2.5 bg-slate-900/95 border-b border-slate-800 shrink-0">
+            <span id="photoSlideTitle" class="text-sm font-bold text-orange-400 truncate max-w-[40vw]"></span>
+            <div class="flex items-center gap-3">
+              <span id="photoSlideCounter" class="text-xs text-slate-400"></span>
+              <button id="photoSlideClose" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Main body: LEFT photo + RIGHT details -->
+          <div class="flex-1 flex overflow-hidden min-h-0">
+
+            <!-- LEFT: Photo + nav arrows -->
+            <div class="flex-1 relative bg-black flex items-center justify-center min-w-0 overflow-hidden">
+              <button id="photoSlidePrev" class="absolute left-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 border border-slate-700 text-orange-400 flex items-center justify-center hover:bg-slate-800 transition">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <img id="photoSlideImg" src="" class="max-w-full max-h-full object-contain" style="max-height:calc(100vh - 120px)" />
+              <button id="photoSlideNext" class="absolute right-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 border border-slate-700 text-orange-400 flex items-center justify-center hover:bg-slate-800 transition">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+
+            <!-- RIGHT: Details panel (scrollable) -->
+            <div class="w-72 lg:w-80 shrink-0 bg-slate-900 border-l border-slate-800 flex flex-col overflow-y-auto">
+
+              <!-- इवेंट जानकारी -->
+              <div class="p-4 border-b border-slate-800">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-3">
+                  <i class="fa-solid fa-calendar-days mr-1"></i> इवेंट जानकारी
+                </div>
+                <div id="photoSlideEventInfo" class="space-y-2"></div>
+              </div>
+
+              <!-- इस इवेंट की और Photos -->
+              <div class="p-4 border-b border-slate-800">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-2">
+                  <i class="fa-solid fa-images mr-1"></i> इस इवेंट की Photos
+                </div>
+                <div id="photoSlideEventPhotos" class="grid grid-cols-4 gap-1"></div>
+              </div>
+
+              <!-- इस व्यक्ति की सभी Photos -->
+              <div class="p-4">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-2">
+                  <i class="fa-solid fa-person mr-1"></i> इस व्यक्ति की Photos
+                </div>
+                <div id="photoSlidePersonPhotos" class="grid grid-cols-4 gap-1"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    
-      <div class="mt-6 p-4 rounded-2xl bg-white/5 border border-white/10">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <div class="text-sm font-bold text-slate-300">All Forms Live Preview</div>
-            <div class="text-xs text-slate-500 mt-1">हर फॉर्म का प्रीव्यू यहाँ दिखेगा। किसी भी कार्ड पर क्लिक करके उस फॉर्म को चुनें।</div>
+
+        <section id="tab-analytics" class="tab-content hidden animate-fade-in space-y-6">
+          <div class="flex justify-end">
+             <button id="btnRefreshCharts" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-colors border border-slate-700"><i class="fa-solid fa-rotate mr-2"></i>Refresh Charts</button>
           </div>
-          <button id="btnRefreshSignedUrls" class="px-3 py-2 text-xs rounded-lg bg-white/10 hover:bg-white/15">Refresh Preview</button>
-        </div>
-        <div id="allFormsGrid" style="display:none" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-      </div>
-
-    </section>
-
-    <!-- TAB: Programs -->
-    <section id="tab-programs" class="tab-content hidden animate-fade-in space-y-6">
-      <div class="glass-panel rounded-2xl p-6">
-         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div>
-               <h2 class="text-xl font-bold text-white">Program Management</h2>
-               <p class="text-sm text-slate-400">Manage the list of programs available in dropdowns.</p>
-            </div>
-            <div class="flex items-center gap-2 bg-slate-900/50 p-1 rounded-lg border border-slate-800">
-               <span class="text-xs font-bold text-slate-400 px-2">Mode:</span>
-               <select id="progScopeSel" class="bg-transparent text-xs text-white font-bold py-1 pr-2 outline-none">
-                  <option value="current">Current Form Only</option>
-                  <option value="defaults">Defaults (Global)</option>
-               </select>
-            </div>
-         </div>
-
-         <div class="flex gap-2 mb-8">
-            <input id="progInput" class="input-field flex-1 rounded-xl px-4 py-3 text-sm" placeholder="Type new program name (e.g. बूथ विजय अभियान)..." />
-            <button id="btnAddProg" class="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold shadow-lg shadow-orange-600/20 transition-all active:scale-95">
-               <i class="fa-solid fa-plus"></i> Add
-            </button>
-         </div>
-
-         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3" id="progList">
-            <!-- Program items injected here -->
-         </div>
-      </div>
-    </section>
-
-    <!-- TAB: Levels -->
-    <section id="tab-levels" class="tab-content hidden animate-fade-in space-y-6">
-      <div class="glass-panel rounded-2xl p-6">
-         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold text-white">Hierarchical Locks</h2>
-            <select id="levelScopeSel" class="input-field rounded-lg px-3 py-1.5 text-xs">
-               <option value="current">Current Form</option>
-               <option value="defaults">Defaults</option>
-            </select>
-         </div>
-         
-         <div class="grid md:grid-cols-3 gap-6">
-            <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
-               <div class="flex items-center gap-3 mb-4">
-                  <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center"><i class="fa-solid fa-sitemap"></i></div>
-                  <div class="font-bold text-white text-sm">Reporting Level</div>
-               </div>
-               <select id="lvl_mandal_reporting" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                  <option value="">🔓 Unlocked</option>
-                  <option value="district">District Fixed</option>
-                  <option value="vidhansabha">Vidhan Sabha Fixed</option>
-                  <option value="mandal">Mandal Fixed</option>
-               </select>
-            </div>
-
-            <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
-               <div class="flex items-center gap-3 mb-4">
-                  <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><i class="fa-solid fa-user-tie"></i></div>
-                  <div class="font-bold text-white text-sm">Coordinator</div>
-               </div>
-               <select id="lvl_coordinator" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                  <option value="">🔓 Unlocked</option>
-                  <option value="district">District Fixed</option>
-                  <option value="vidhansabha">Vidhan Sabha Fixed</option>
-                  <option value="mandal">Mandal Fixed</option>
-               </select>
-            </div>
-
-            <div class="p-5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-slate-700 transition-colors">
-               <div class="flex items-center gap-3 mb-4">
-                  <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><i class="fa-solid fa-info"></i></div>
-                  <div class="font-bold text-white text-sm">Program Info</div>
-               </div>
-               <select id="lvl_program_info" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                  <option value="">🔓 Unlocked</option>
-                  <option value="district">District Fixed</option>
-                  <option value="vidhansabha">Vidhan Sabha Fixed</option>
-                  <option value="mandal">Mandal Fixed</option>
-               </select>
-            </div>
-         </div>
-      </div>
-    </section>
-
-    <!-- TAB: Attendance Dashboard -->
-    <section id="tab-attendance" class="tab-content hidden animate-fade-in space-y-4">
-
-      <!-- Event selector + controls -->
-      <div class="glass-panel rounded-2xl p-4 space-y-3">
-        <div class="flex flex-wrap gap-2 items-center">
-          <div class="flex-1 min-w-[160px]">
-            <label class="block text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">कार्यक्रम चुनें (Event)</label>
-            <select id="att-event-sel" class="input-field w-full rounded-xl px-3 py-2 text-sm">
-              <option value="">— सभी Events —</option>
-            </select>
+          <div class="grid md:grid-cols-2 gap-6">
+             <div class="glass-panel p-5 rounded-2xl">
+                <h4 class="text-sm font-bold text-slate-300 mb-4">Submission Trends (14 Days)</h4>
+                <div class="h-[250px]"><canvas id="chartByDay"></canvas></div>
+             </div>
+             <div class="glass-panel p-5 rounded-2xl">
+                <h4 class="text-sm font-bold text-slate-300 mb-4">By Form Type</h4>
+                <div class="h-[250px]"><canvas id="chartByForm"></canvas></div>
+             </div>
+             <div class="glass-panel p-5 rounded-2xl md:col-span-2">
+                <h4 class="text-sm font-bold text-slate-300 mb-4">Top Districts</h4>
+                <div class="h-[200px]"><canvas id="chartDistrict"></canvas></div>
+             </div>
           </div>
-          <div class="flex-1 min-w-[130px]">
-            <label class="block text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">तारीख से</label>
-            <input id="att-date-from" type="date" class="input-field w-full rounded-xl px-3 py-2 text-sm"/>
-          </div>
-          <div class="flex-1 min-w-[130px]">
-            <label class="block text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">तारीख तक</label>
-            <input id="att-date-to" type="date" class="input-field w-full rounded-xl px-3 py-2 text-sm"/>
-          </div>
-          <div class="flex gap-2 pt-4">
-            <button id="btn-att-load" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 transition">
-              <i class="fa-solid fa-rotate"></i> Load
-            </button>
-            <button id="btn-att-csv" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm flex items-center gap-1.5 transition">
-              <i class="fa-solid fa-file-csv"></i> CSV
-            </button>
-            <button id="btn-att-excel" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm flex items-center gap-1.5 transition">
-              <i class="fa-solid fa-file-excel"></i> Excel
-            </button>
-          </div>
-        </div>
-        <!-- Search -->
-        <div class="relative">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-          <input id="att-search" class="input-field w-full rounded-xl pl-8 pr-3 py-2 text-sm" placeholder="नाम / मोबाइल / जिला खोजें..."/>
-        </div>
-      </div>
+        </section>
+        
+        <!-- TAB: Backend Info -->
+        <section id="tab-backend" class="tab-content hidden animate-fade-in">
+           <div class="glass-panel rounded-2xl p-8 text-center">
+              <div class="inline-flex w-16 h-16 rounded-full bg-slate-800 items-center justify-center mb-4">
+                 <i class="fa-solid fa-server text-2xl text-slate-400"></i>
+              </div>
+              <h2 class="text-xl font-bold text-white">Backend Configuration</h2>
+              <p class="text-sm text-slate-400 mt-2 max-w-lg mx-auto">This console connects to the EventLens AWS Lambda infrastructure. Ensure your user account has `political_admin` claims.</p>
+              
+              <div class="mt-8 grid gap-4 max-w-2xl mx-auto text-left">
+                 <div class="bg-slate-950/50 rounded-lg p-4 border border-slate-800 font-mono text-xs text-slate-300">
+                    <span class="text-orange-500">POST</span> /prod/political/forms
+                 </div>
+                 <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-900/30 p-3 rounded border border-slate-800">
+                       <div class="text-[10px] text-slate-500 uppercase font-bold">Action</div>
+                       <div class="text-sm text-white font-mono mt-1">admin_save_config</div>
+                    </div>
+                    <div class="bg-slate-900/30 p-3 rounded border border-slate-800">
+                        <div class="text-[10px] text-slate-500 uppercase font-bold">Action</div>
+                        <div class="text-sm text-white font-mono mt-1">admin_list_entries</div>
+                     </div>
+                 </div>
+              </div>
+           </div>
+        </section>
 
-      <!-- KPI cards per event -->
-      <div id="att-event-kpi" class="grid grid-cols-2 gap-3 md:grid-cols-4"></div>
-
-      <!-- Event-wise summary cards -->
-      <div id="att-event-summary" class="space-y-3"></div>
-
-      <!-- Attendance list table -->
-      <div class="glass-panel rounded-2xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-          <div class="font-bold text-sm text-white flex items-center gap-2">
-            <i class="fa-solid fa-list text-emerald-400"></i>
-            उपस्थिति सूची
-          </div>
-          <div class="text-xs text-slate-400"><span id="att-count">0</span> कार्यकर्त्ता</div>
-        </div>
-
-        <!-- Mobile cards -->
-        <div id="att-mobile-cards" class="space-y-2 p-3 md:hidden"></div>
-
-        <!-- Desktop table -->
-        <div class="hidden md:block overflow-x-auto">
-          <table class="w-full text-sm text-left">
-            <thead class="bg-slate-900/80 text-[11px] uppercase text-slate-400 font-bold">
-              <tr>
-                <th class="px-3 py-3 w-12">#</th>
-                <th class="px-3 py-3">Photo</th>
-                <th class="px-3 py-3">नाम</th>
-                <th class="px-3 py-3">Mobile</th>
-                <th class="px-3 py-3">जिला / विधानसभा / मंडल</th>
-                <th class="px-3 py-3">कार्यक्रम</th>
-                <th class="px-3 py-3">समय</th>
-                <th class="px-3 py-3">Action</th>
-              </tr>
-            </thead>
-            <tbody id="att-tbody" class="divide-y divide-slate-800/60 text-slate-300">
-              <tr><td colspan="8" class="px-4 py-10 text-center text-slate-500 italic">Load बटन दबाएं</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB: Data -->
-    <section id="tab-data" class="tab-content hidden animate-fade-in space-y-4">
-      <div class="glass-panel rounded-2xl p-4">
-
-        <!-- ── Top bar: search + filters ── -->
-        <div class="flex flex-wrap gap-2 mb-4">
-          <!-- Search -->
-          <div class="relative flex-1 min-w-[160px]">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-            <input id="dataSearch" class="input-field w-full rounded-xl pl-8 pr-3 py-2 text-sm" placeholder="नाम / mobile खोजें..." />
-          </div>
-          <!-- Form type -->
-          <select id="dataFormSel" class="input-field rounded-xl px-3 py-2 text-sm min-w-[120px]">
-            <option value="__all__">सभी Forms</option>
-            <option value="visitor_form">Visitor</option>
-            <option value="party_attendance">Attendance</option>
-            <option value="president_tour_form">Tour</option>
-            <option value="mandal_reporting">Mandal Report</option>
-            <option value="coordinator_form">Coordinator</option>
-            <option value="program_info">Program Info</option>
-          </select>
-          <!-- Date range -->
-          <input id="dateFrom" type="date" class="input-field rounded-xl px-3 py-2 text-sm" title="From date" />
-          <input id="dateTo" type="date" class="input-field rounded-xl px-3 py-2 text-sm" title="To date" />
-          <!-- Sort -->
-          <select id="dataSort" class="input-field rounded-xl px-3 py-2 text-sm">
-            <option value="created_at_desc">नया पहले</option>
-            <option value="created_at_asc">पुराना पहले</option>
-            <option value="name_asc">नाम A-Z</option>
-            <option value="mobile_asc">Mobile</option>
-          </select>
-          <button id="btnLoadData" class="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm transition flex items-center gap-1.5">
-            <i class="fa-solid fa-filter"></i> Load
-          </button>
-          <button id="btnExportCsv" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm transition flex items-center gap-1.5">
-            <i class="fa-solid fa-download"></i> CSV
-          </button>
-        </div>
-
-        <!-- ── KPI Pills ── -->
-        <div class="flex flex-wrap gap-2 mb-4">
-          <div class="flex-1 min-w-[100px] bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-800">
-            <div class="text-[10px] text-slate-500 uppercase font-bold">Total</div>
-            <div id="kpiTotal" class="text-2xl font-extrabold text-white">—</div>
-          </div>
-          <div class="flex-1 min-w-[100px] bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-800">
-            <div class="text-[10px] text-slate-500 uppercase font-bold">आज</div>
-            <div id="kpiToday" class="text-2xl font-extrabold text-orange-400">—</div>
-          </div>
-          <div class="flex-1 min-w-[100px] bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-800">
-            <div class="text-[10px] text-slate-500 uppercase font-bold">Unique Mobile</div>
-            <div id="kpiUnique" class="text-2xl font-extrabold text-blue-400">—</div>
-          </div>
-          <div class="flex-1 min-w-[100px] bg-slate-900/60 rounded-xl px-4 py-3 border border-slate-800">
-            <div class="text-[10px] text-slate-500 uppercase font-bold">Photos</div>
-            <div id="kpiPhotos" class="text-2xl font-extrabold text-pink-400">—</div>
-          </div>
-        </div>
-
-        <!-- ── Cards (mobile) / Table (desktop) ── -->
-
-        <!-- Mobile: card view -->
-        <div id="dataMobileCards" class="space-y-2 md:hidden"></div>
-
-        <!-- Desktop: table view -->
-        <div class="hidden md:block rounded-xl border border-slate-800 overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left">
-              <thead class="bg-slate-900/80 text-[11px] uppercase text-slate-400 font-bold">
-                <tr>
-                  <th class="px-3 py-3 cursor-pointer hover:text-white select-none" data-sort="created_at">
-                    समय <i class="fa-solid fa-sort ml-1 text-slate-600"></i>
-                  </th>
-                  <th class="px-3 py-3">Form</th>
-                  <th class="px-3 py-3">नाम</th>
-                  <th class="px-3 py-3">Mobile</th>
-                  <th class="px-3 py-3">जिला / स्थान</th>
-                  <th class="px-3 py-3">Photo</th>
-                  <th class="px-3 py-3"></th>
-                </tr>
-              </thead>
-              <tbody id="dataTbody" class="divide-y divide-slate-800/60 text-slate-300">
-                <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500 italic">Load बटन दबाएं</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Pagination -->
-        <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
-          <div class="text-xs text-slate-500">
-            दिख रहे: <span id="loadedCount" class="text-white font-bold">0</span> entries
-          </div>
-          <div class="flex gap-2">
-            <button id="btnPrevPage" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white border border-slate-700 disabled:opacity-40 transition">← Prev</button>
-            <button id="btnNextPage" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white border border-slate-700 disabled:opacity-40 transition">Next →</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB: Analytics -->
-    <!-- ── Photo Gallery Tab ── -->
-    <section id="tab-gallery" class="tab-content hidden animate-fade-in space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold text-white flex items-center gap-2">
-          <i class="fa-solid fa-images text-pink-400"></i> Photo Gallery
-        </h2>
-        <div class="flex items-center gap-2">
-          <span id="photosTotal" class="text-xs text-slate-500"></span>
-          <button id="galleryRefreshBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs hover:text-white transition flex items-center gap-1.5">
-            <i class="fa-solid fa-arrows-rotate"></i> Refresh
-          </button>
-        </div>
-      </div>
-
-      <!-- Photos Grid -->
-      <div class="glass-panel rounded-2xl p-4">
-        <div id="galleryGrid" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-1.5">
-          <div class="col-span-full text-slate-500 text-sm text-center py-8">Gallery tab click करने पर load होगा...</div>
-        </div>
-        <div class="mt-4 flex justify-center">
-          <button id="loadMorePhotosBtn" class="hidden px-5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs hover:text-white transition flex items-center gap-1.5">
-            <i class="fa-solid fa-chevron-down"></i> और Photos लोड करें
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══ PHOTO DETAIL SLIDESHOW ══ -->
-    <div id="photoSlideOverlay" class="hidden fixed inset-0 z-[9999] bg-slate-950 flex flex-col">
-      <!-- Top bar -->
-      <div class="flex items-center justify-between px-4 py-2.5 bg-slate-900/95 border-b border-slate-800 shrink-0">
-        <span id="photoSlideTitle" class="text-sm font-bold text-orange-400 truncate max-w-[40vw]"></span>
-        <div class="flex items-center gap-3">
-          <span id="photoSlideCounter" class="text-xs text-slate-400"></span>
-          <button id="photoSlideClose" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- Main body: LEFT photo + RIGHT details -->
-      <div class="flex-1 flex overflow-hidden min-h-0">
-
-        <!-- LEFT: Photo + nav arrows -->
-        <div class="flex-1 relative bg-black flex items-center justify-center min-w-0 overflow-hidden">
-          <button id="photoSlidePrev" class="absolute left-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 border border-slate-700 text-orange-400 flex items-center justify-center hover:bg-slate-800 transition">
-            <i class="fa-solid fa-chevron-left"></i>
-          </button>
-          <img id="photoSlideImg" src="" class="max-w-full max-h-full object-contain" style="max-height:calc(100vh - 120px)" />
-          <button id="photoSlideNext" class="absolute right-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 border border-slate-700 text-orange-400 flex items-center justify-center hover:bg-slate-800 transition">
-            <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
-
-        <!-- RIGHT: Details panel (scrollable) -->
-        <div class="w-72 lg:w-80 shrink-0 bg-slate-900 border-l border-slate-800 flex flex-col overflow-y-auto">
-
-          <!-- इवेंट जानकारी -->
-          <div class="p-4 border-b border-slate-800">
-            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-3">
-              <i class="fa-solid fa-calendar-days mr-1"></i> इवेंट जानकारी
-            </div>
-            <div id="photoSlideEventInfo" class="space-y-2"></div>
-          </div>
-
-          <!-- इस इवेंट की और Photos -->
-          <div class="p-4 border-b border-slate-800">
-            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-2">
-              <i class="fa-solid fa-images mr-1"></i> इस इवेंट की Photos
-            </div>
-            <div id="photoSlideEventPhotos" class="grid grid-cols-4 gap-1"></div>
-          </div>
-
-          <!-- इस व्यक्ति की सभी Photos -->
-          <div class="p-4">
-            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-2">
-              <i class="fa-solid fa-person mr-1"></i> इस व्यक्ति की Photos
-            </div>
-            <div id="photoSlidePersonPhotos" class="grid grid-cols-4 gap-1"></div>
-          </div>
-        </div>
       </div>
     </div>
-
-    <section id="tab-analytics" class="tab-content hidden animate-fade-in space-y-6">
-      <div class="flex justify-end">
-         <button id="btnRefreshCharts" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-colors border border-slate-700"><i class="fa-solid fa-rotate mr-2"></i>Refresh Charts</button>
-      </div>
-      <div class="grid md:grid-cols-2 gap-6">
-         <div class="glass-panel p-5 rounded-2xl">
-            <h4 class="text-sm font-bold text-slate-300 mb-4">Submission Trends (14 Days)</h4>
-            <div class="h-[250px]"><canvas id="chartByDay"></canvas></div>
-         </div>
-         <div class="glass-panel p-5 rounded-2xl">
-            <h4 class="text-sm font-bold text-slate-300 mb-4">By Form Type</h4>
-            <div class="h-[250px]"><canvas id="chartByForm"></canvas></div>
-         </div>
-         <div class="glass-panel p-5 rounded-2xl md:col-span-2">
-            <h4 class="text-sm font-bold text-slate-300 mb-4">Top Districts</h4>
-            <div class="h-[200px]"><canvas id="chartDistrict"></canvas></div>
-         </div>
-      </div>
-    </section>
-    
-    <!-- TAB: Backend Info -->
-    <section id="tab-backend" class="tab-content hidden animate-fade-in">
-       <div class="glass-panel rounded-2xl p-8 text-center">
-          <div class="inline-flex w-16 h-16 rounded-full bg-slate-800 items-center justify-center mb-4">
-             <i class="fa-solid fa-server text-2xl text-slate-400"></i>
-          </div>
-          <h2 class="text-xl font-bold text-white">Backend Configuration</h2>
-          <p class="text-sm text-slate-400 mt-2 max-w-lg mx-auto">This console connects to the EventLens AWS Lambda infrastructure. Ensure your user account has `political_admin` claims.</p>
-          
-          <div class="mt-8 grid gap-4 max-w-2xl mx-auto text-left">
-             <div class="bg-slate-950/50 rounded-lg p-4 border border-slate-800 font-mono text-xs text-slate-300">
-                <span class="text-orange-500">POST</span> /prod/political/forms
-             </div>
-             <div class="grid grid-cols-2 gap-4">
-                <div class="bg-slate-900/30 p-3 rounded border border-slate-800">
-                   <div class="text-[10px] text-slate-500 uppercase font-bold">Action</div>
-                   <div class="text-sm text-white font-mono mt-1">admin_save_config</div>
-                </div>
-                <div class="bg-slate-900/30 p-3 rounded border border-slate-800">
-                    <div class="text-[10px] text-slate-500 uppercase font-bold">Action</div>
-                    <div class="text-sm text-white font-mono mt-1">admin_list_entries</div>
-                 </div>
-             </div>
-          </div>
-       </div>
-    </section>
-
-  </div>
-</div>
-```
-
   </main>
 
   <!-- Modal -->
-
   <div id="modal" class="fixed inset-0 hidden items-center justify-center z-[60] backdrop-blur-sm">
     <div class="absolute inset-0 bg-black/80" id="modalBackdrop"></div>
     <div class="relative max-w-2xl w-[90%] rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden animate-slide-up">
@@ -897,7 +885,6 @@
   </div>
 
   <!-- Auth Modal -->
-
   <div id="authModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/80 backdrop-blur-sm">
     <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl">
       <h3 class="text-lg font-bold text-white mb-2">Update Access Token</h3>
@@ -1260,7 +1247,6 @@ function buildPreviewSrcDoc(ft) {
     .btn{margin-top:14px;width:100%;border:none;border-radius:14px;padding:12px 14px;font-weight:800;color:white; cursor:pointer;background:linear-gradient(90deg,var(--c1),var(--c2));}
     .note{margin-top:10px;font-size:10px;color:#64748b;text-align:center;}
   </style>
-
 </head>
 <body>
   <div class="overlay">
@@ -1275,1319 +1261,1037 @@ function buildPreviewSrcDoc(ft) {
           ${eff.subtitle ? `<div class="sub">${escHtml(eff.subtitle)}</div>` : ``}
           ${eff.tagline ? `<div class="tag">${escHtml(eff.tagline)}</div>` : ``}
 
-```
-      <div class="field">
-        <label>नाम / Name</label>
-        <input placeholder="अपना नाम लिखें" />
-      </div>
+          <div class="field">
+            <label>नाम / Name</label>
+            <input placeholder="अपना नाम लिखें" />
+          </div>
 
-      <div class="row">
-        <div class="field">
-          <label>मोबाइल</label>
-          <input placeholder="10 अंकों का" />
+          <div class="row">
+            <div class="field">
+              <label>मोबाइल</label>
+              <input placeholder="10 अंकों का" />
+            </div>
+            <div class="field">
+              <label>जिला</label>
+              <input placeholder="जिला" />
+            </div>
+          </div>
+
+          ${optionsHtml ? `
+          <div class="field">
+            <label>कार्यक्रम / Program</label>
+            <select>
+              <option value="">Select</option>
+              ${optionsHtml}
+            </select>
+          </div>` : ``}
+
+          <div class="field">
+            <label>टिप्पणी</label>
+            <input placeholder="Optional" />
+          </div>
+
+          <button class="btn">Submit</button>
+          <div class="note">Admin Preview • Live Branding</div>
         </div>
-        <div class="field">
-          <label>जिला</label>
-          <input placeholder="जिला" />
-        </div>
       </div>
-
-      ${optionsHtml ? `
-      <div class="field">
-        <label>कार्यक्रम / Program</label>
-        <select>
-          <option value="">Select</option>
-          ${optionsHtml}
-        </select>
-      </div>` : ``}
-
-      <div class="field">
-        <label>टिप्पणी</label>
-        <input placeholder="Optional" />
-      </div>
-
-      <button class="btn">Submit</button>
-      <div class="note">Admin Preview • Live Branding</div>
     </div>
-  </div>
-</div>
-```
-
   </div>
 </body>
 </html>`;
 }
 
 function renderFormPreviewIframe() {
-const iframe = $(“formPreviewIframe”);
-if (!iframe) return;
-const doc = buildPreviewSrcDoc(state.target || “visitor_form”);
-state.lastPreviewDoc = doc;
+  const iframe = $("formPreviewIframe");
+  if (!iframe) return;
+  const doc = buildPreviewSrcDoc(state.target || "visitor_form");
+  state.lastPreviewDoc = doc;
 
-// Use a Blob URL (same-origin) instead of srcdoc so blob: preview images also work reliably.
-try{
-if (state._previewBlobUrl) URL.revokeObjectURL(state._previewBlobUrl);
-}catch(e){}
-try{
-const blob = new Blob([doc], { type: “text/html” });
-const url = URL.createObjectURL(blob);
-state._previewBlobUrl = url;
-iframe.removeAttribute(“srcdoc”);
-iframe.src = url;
-}catch(e){
-// Fallback
-iframe.srcdoc = doc;
-}
+  // Use a Blob URL (same-origin) instead of srcdoc so blob: preview images also work reliably.
+  try{
+    if (state._previewBlobUrl) URL.revokeObjectURL(state._previewBlobUrl);
+  }catch(e){}
+  try{
+    const blob = new Blob([doc], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    state._previewBlobUrl = url;
+    iframe.removeAttribute("srcdoc");
+    iframe.src = url;
+  }catch(e){
+    // Fallback
+    iframe.srcdoc = doc;
+  }
 }
 
 function openCurrentPreviewInNewTab() {
-const doc = state.lastPreviewDoc || buildPreviewSrcDoc(state.target || “visitor_form”);
-const blob = new Blob([doc], { type: “text/html” });
-const url = URL.createObjectURL(blob);
-window.open(url, “_blank”, “noopener”);
-setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  const doc = state.lastPreviewDoc || buildPreviewSrcDoc(state.target || "visitor_form");
+  const blob = new Blob([doc], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 function renderPreviewTabs() {
-const wrap = $(“previewTabs”);
-if(!wrap || !state.config) return;
-const forms = state.config.forms || {};
-const keys = Object.keys(forms);
+  const wrap = $("previewTabs");
+  if(!wrap || !state.config) return;
+  const forms = state.config.forms || {};
+  const keys = Object.keys(forms);
 
-wrap.innerHTML = “”;
-const makeBtn = (ft, label) => {
-const b = document.createElement(“button”);
-const active = (ft === state.target);
-b.className = “px-3 py-2 text-xs rounded-lg border “ + (active
-? “bg-white/15 border-white/25 text-white”
-: “bg-white/5 border-white/10 text-slate-300 hover:bg-white/10”);
-b.textContent = label;
-b.addEventListener(“click”, () => {
-state.target = ft;
-const sel = $(“targetFormSel”);
-if(sel) sel.value = ft;
-renderAll();
-renderFormPreviewIframe();
-renderBrandPreview();
-window.scrollTo({ top: 0, behavior: “smooth” });
-});
-return b;
-};
+  wrap.innerHTML = "";
+  const makeBtn = (ft, label) => {
+    const b = document.createElement("button");
+    const active = (ft === state.target);
+    b.className = "px-3 py-2 text-xs rounded-lg border " + (active
+      ? "bg-white/15 border-white/25 text-white"
+      : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10");
+    b.textContent = label;
+    b.addEventListener("click", () => {
+      state.target = ft;
+      const sel = $("targetFormSel");
+      if(sel) sel.value = ft;
+      renderAll();
+      renderFormPreviewIframe();
+      renderBrandPreview();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    return b;
+  };
 
-wrap.appendChild(makeBtn(”**defaults**”, “Defaults”));
+  wrap.appendChild(makeBtn("__defaults__", "Defaults"));
 
-keys.forEach(ft => {
-const label = (forms[ft]?.title || ft).toString().slice(0, 22);
-wrap.appendChild(makeBtn(ft, label));
-});
+  keys.forEach(ft => {
+    const label = (forms[ft]?.title || ft).toString().slice(0, 22);
+    wrap.appendChild(makeBtn(ft, label));
+  });
 }
 
 function renderAllFormsGrid() {
-const grid = $(“allFormsGrid”);
-if(!grid || !state.config) return;
+  const grid = $("allFormsGrid");
+  if(!grid || !state.config) return;
 
-const forms = state.config.forms || {};
-const keys = Object.keys(forms);
+  const forms = state.config.forms || {};
+  const keys = Object.keys(forms);
 
-grid.innerHTML = “”;
+  grid.innerHTML = "";
 
-const addCard = (ft, eff) => {
-const btn = document.createElement(“button”);
-btn.type = “button”;
-btn.className = “text-left rounded-2xl overflow-hidden border “ + (ft === state.target
-? “border-white/25 bg-white/10”
-: “border-white/10 bg-white/5 hover:bg-white/10”);
+  const addCard = (ft, eff) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "text-left rounded-2xl overflow-hidden border " + (ft === state.target
+      ? "border-white/25 bg-white/10"
+      : "border-white/10 bg-white/5 hover:bg-white/10");
 
-```
-const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
-const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
+    const header = eff.headerUrl ? withCacheBust(eff.headerUrl) : "";
+    const logo = eff.logoUrl ? withCacheBust(eff.logoUrl) : "";
 
-const headerEl = header
-  ? `<img src="${escHtml(header)}" class="w-full h-24 object-cover" />`
-  : `<div class="w-full h-24" style="background:linear-gradient(135deg,${escHtml(eff.color1)},${escHtml(eff.color2)})"></div>`;
+    const headerEl = header
+      ? `<img src="${escHtml(header)}" class="w-full h-24 object-cover" />`
+      : `<div class="w-full h-24" style="background:linear-gradient(135deg,${escHtml(eff.color1)},${escHtml(eff.color2)})"></div>`;
 
-const logoEl = logo
-  ? `<img src="${escHtml(logo)}" class="w-10 h-10 rounded-xl object-cover border border-white/25 bg-slate-900" />`
-  : `<div class="w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-extrabold border border-white/15 bg-slate-900 text-slate-400">LOGO</div>`;
+    const logoEl = logo
+      ? `<img src="${escHtml(logo)}" class="w-10 h-10 rounded-xl object-cover border border-white/25 bg-slate-900" />`
+      : `<div class="w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-extrabold border border-white/15 bg-slate-900 text-slate-400">LOGO</div>`;
 
-btn.innerHTML = `
-  ${headerEl}
-  <div class="p-3">
-    <div class="flex items-start gap-3">
-      ${logoEl}
-      <div class="min-w-0">
-        <div class="font-bold text-slate-100 truncate">${escHtml(eff.title || ft)}</div>
-        <div class="text-xs text-slate-400 truncate">${escHtml(eff.subtitle || ft)}</div>
+    btn.innerHTML = `
+      ${headerEl}
+      <div class="p-3">
+        <div class="flex items-start gap-3">
+          ${logoEl}
+          <div class="min-w-0">
+            <div class="font-bold text-slate-100 truncate">${escHtml(eff.title || ft)}</div>
+            <div class="text-xs text-slate-400 truncate">${escHtml(eff.subtitle || ft)}</div>
+          </div>
+        </div>
+        <div class="mt-3">
+          <div class="h-2 rounded-full" style="background:linear-gradient(90deg,${escHtml(eff.color1)},${escHtml(eff.color2)})"></div>
+        </div>
       </div>
-    </div>
-    <div class="mt-3">
-      <div class="h-2 rounded-full" style="background:linear-gradient(90deg,${escHtml(eff.color1)},${escHtml(eff.color2)})"></div>
-    </div>
-  </div>
-`;
+    `;
 
-btn.addEventListener("click", () => {
-  state.target = ft;
-  const sel = $("targetFormSel");
-  if(sel) sel.value = ft;
-  renderAll();
-  renderFormPreviewIframe();
-  renderBrandPreview();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-});
+    btn.addEventListener("click", () => {
+      state.target = ft;
+      const sel = $("targetFormSel");
+      if(sel) sel.value = ft;
+      renderAll();
+      renderFormPreviewIframe();
+      renderBrandPreview();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
 
-grid.appendChild(btn);
-```
+    grid.appendChild(btn);
+  };
 
-};
+  // Defaults card
+  addCard("__defaults__", getEffectiveForm("__defaults__"));
 
-// Defaults card
-addCard(”**defaults**”, getEffectiveForm(”**defaults**”));
-
-keys.forEach(ft => addCard(ft, getEffectiveForm(ft)));
+  keys.forEach(ft => addCard(ft, getEffectiveForm(ft)));
 }
 
 function setPending(kind, file, uiKey) {
-uiKey = uiKey || kind;
+    uiKey = uiKey || kind;
 
-```
-// Ensure container exists
-if (!state.pendingAssets) state.pendingAssets = {};
-if (!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
+    // Ensure container exists
+    if (!state.pendingAssets) state.pendingAssets = {};
+    if (!state.pendingAssets[state.target]) state.pendingAssets[state.target] = {};
 
-const nameEl = $(`name_${uiKey}`);
-const prevImg = $(`prev_${uiKey}`);
-const iconEl = $(`icon_${uiKey}`);
+    const nameEl = $(`name_${uiKey}`);
+    const prevImg = $(`prev_${uiKey}`);
+    const iconEl = $(`icon_${uiKey}`);
 
-// Clear
-if (!file) {
-  try {
-    if (state.pendingAssets[state.target]?.[kind]?.previewUrl) {
-      URL.revokeObjectURL(state.pendingAssets[state.target][kind].previewUrl);
+    // Clear
+    if (!file) {
+      try {
+        if (state.pendingAssets[state.target]?.[kind]?.previewUrl) {
+          URL.revokeObjectURL(state.pendingAssets[state.target][kind].previewUrl);
+        }
+      } catch(e){}
+      if (state.pendingAssets[state.target]) delete state.pendingAssets[state.target][kind];
+
+      if (nameEl) nameEl.textContent = "No file selected";
+      if (prevImg) { prevImg.src = ""; prevImg.classList.add("hidden"); }
+      if (iconEl) iconEl.classList.remove("hidden");
+
+      renderBrandPreview();
+      renderFormPreviewIframe();
+      return;
     }
-  } catch(e){}
-  if (state.pendingAssets[state.target]) delete state.pendingAssets[state.target][kind];
 
-  if (nameEl) nameEl.textContent = "No file selected";
-  if (prevImg) { prevImg.src = ""; prevImg.classList.add("hidden"); }
-  if (iconEl) iconEl.classList.remove("hidden");
+    // Set
+    const previewUrl = URL.createObjectURL(file);
+    state.pendingAssets[state.target][kind] = { file, previewUrl };
 
-  renderBrandPreview();
-  renderFormPreviewIframe();
-  return;
-}
+    if (nameEl) nameEl.textContent = file.name;
 
-// Set
-const previewUrl = URL.createObjectURL(file);
-state.pendingAssets[state.target][kind] = { file, previewUrl };
+    // Immediate preview in thumbnail
+    if (prevImg) {
+      prevImg.src = previewUrl;
+      prevImg.classList.remove('hidden');
+    }
+    if (iconEl) iconEl.classList.add('hidden');
 
-if (nameEl) nameEl.textContent = file.name;
+    renderBrandPreview();
+    renderFormPreviewIframe();
+  }
 
-// Immediate preview in thumbnail
-if (prevImg) {
-  prevImg.src = previewUrl;
-  prevImg.classList.remove('hidden');
-}
-if (iconEl) iconEl.classList.add('hidden');
+// --- API Calls (Restored Robust Logic) (Restored Robust Logic) ---
+  async function apiCall(action, payload){
+    const token = (getIdToken() || "").trim();
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
-renderBrandPreview();
-renderFormPreviewIframe();
-```
+    let resp;
+    try{
+      resp = await fetch(FORMS_URL, {
+        method: "POST",
+        cache: "no-store",
+        headers,
+        body: JSON.stringify({ action, payload })
+      });
+    }catch(e){
+      throw new Error("Network error calling API. Check internet / CORS.");
+    }
 
-}
+    if (resp.status === 401) {
+      openAuthModal();
+      throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
+    }
 
-// — API Calls (Restored Robust Logic) (Restored Robust Logic) —
-async function apiCall(action, payload){
-const token = (getIdToken() || “”).trim();
-const headers = { “Content-Type”: “application/json” };
-if (token) headers[“Authorization”] = `Bearer ${token}`;
+    const txt = await resp.text();
+    let json = {};
+    try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
 
-```
-let resp;
-try{
-  resp = await fetch(FORMS_URL, {
-    method: "POST",
-    cache: "no-store",
-    headers,
-    body: JSON.stringify({ action, payload })
-  });
-}catch(e){
-  throw new Error("Network error calling API. Check internet / CORS.");
-}
+    if (!resp.ok) throw new Error(json.message || json.error || `HTTP ${resp.status}`);
+    return json;
+  }
+  
+  // Gallery module के लिए expose करो
+  window._adminApiCall = apiCall;
+  window._adminState = state;
 
-if (resp.status === 401) {
-  openAuthModal();
-  throw new Error("Unauthorized: Session Expired. Use the Key icon to update token.");
-}
+  
+  async function apiCallCandidates(actions, payload){
+    let lastErr = null;
+    for (const a of actions){
+      try { return await apiCall(a, payload); } catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error("API call failed");
+  }
 
-const txt = await resp.text();
-let json = {};
-try { json = JSON.parse(txt); } catch(e) { json = { message: txt || "Invalid JSON" }; }
+  function guessMimeFromName(name){
+    const n = (name || "").toLowerCase();
+    if (n.endsWith(".png")) return "image/png";
+    if (n.endsWith(".webp")) return "image/webp";
+    if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+    return "";
+  }
 
-if (!resp.ok) throw new Error(json.message || json.error || `HTTP ${resp.status}`);
-return json;
-```
+  async function initAssetUpload(assetKind, ft, file){
+    const mime = (file && file.type) ? file.type : (guessMimeFromName(file?.name) || "image/jpeg");
+    const fileName = `${crypto.randomUUID()}.${extFromMime(mime)}`;
+    const payload = {
+      collection_id: state.cid,
+      form_type: ft === "__defaults__" ? "visitor_form" : ft,
+      asset_kind: assetKind,
+      file_name: fileName,
+      mime_type: mime
+    };
 
-}
+    const res = await apiCallCandidates(["admin_init_asset_upload","admin_get_upload_url","admin_upload_init"], payload);
+    const uploadUrl = res.upload_url || res.url;
+    if (!uploadUrl) throw new Error("Upload URL missing from backend");
 
-// Gallery module के लिए expose करो
-window._adminApiCall = apiCall;
-window._adminState = state;
+    let putResp;
+    try{
+      putResp = await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": mime } });
+    } catch(e){
+      throw new Error("S3 upload blocked (CORS). S3 bucket CORS में PUT allow करो.");
+    }
 
-async function apiCallCandidates(actions, payload){
-let lastErr = null;
-for (const a of actions){
-try { return await apiCall(a, payload); } catch(e){ lastErr = e; }
-}
-throw lastErr || new Error(“API call failed”);
-}
+    if (!putResp.ok){
+      let t = "";
+      try{ t = await putResp.text(); }catch(e){}
+      throw new Error(`S3 upload failed: HTTP ${putResp.status} ${t ? ("- " + t.slice(0,120)) : ""}`);
+    }
 
-function guessMimeFromName(name){
-const n = (name || “”).toLowerCase();
-if (n.endsWith(”.png”)) return “image/png”;
-if (n.endsWith(”.webp”)) return “image/webp”;
-if (n.endsWith(”.jpg”) || n.endsWith(”.jpeg”)) return “image/jpeg”;
-return “”;
-}
+    const previewUrl = res.preview_url || res.public_url || res.asset_url || res.url_public || "";
+    const key = res.s3_key || res.asset_key || res.key || "";
+    if (!key) throw new Error("S3 key missing from backend");
+    return { kind: "s3", key, previewUrl };
+  }
 
-async function initAssetUpload(assetKind, ft, file){
-const mime = (file && file.type) ? file.type : (guessMimeFromName(file?.name) || “image/jpeg”);
-const fileName = `${crypto.randomUUID()}.${extFromMime(mime)}`;
-const payload = {
-collection_id: state.cid,
-form_type: ft === “**defaults**” ? “visitor_form” : ft,
-asset_kind: assetKind,
-file_name: fileName,
-mime_type: mime
-};
+  async function saveConfig() {
+    if(!state.cid) { showToast("CID missing","error"); return; }
+    if(!state.config) { showToast("Config not loaded","error"); return; }
 
-```
-const res = await apiCallCandidates(["admin_init_asset_upload","admin_get_upload_url","admin_upload_init"], payload);
-const uploadUrl = res.upload_url || res.url;
-if (!uploadUrl) throw new Error("Upload URL missing from backend");
+    const btn = $("btnSave");
+    const toast = showToast("Saving...","info",0);
+    if(btn){ btn.disabled = true; btn.textContent = "Saving..."; }
 
-let putResp;
-try{
-  putResp = await fetch(uploadUrl, { method:"PUT", body: file, headers: { "Content-Type": mime } });
-} catch(e){
-  throw new Error("S3 upload blocked (CORS). S3 bucket CORS में PUT allow करो.");
-}
+    try {
+      const ft = state.target || "visitor_form";
 
-if (!putResp.ok){
-  let t = "";
-  try{ t = await putResp.text(); }catch(e){}
-  throw new Error(`S3 upload failed: HTTP ${putResp.status} ${t ? ("- " + t.slice(0,120)) : ""}`);
-}
+      // Users expect Title/Sub/Tagline to change the actual form heading.
+      const meta = {
+        title: ($("b_title")?.value || "").trim(),
+        subtitle: ($("b_subtitle")?.value || "").trim(),
+        tagline: ($("b_tagline")?.value || "").trim(),
+      };
 
-const previewUrl = res.preview_url || res.public_url || res.asset_url || res.url_public || "";
-const key = res.s3_key || res.asset_key || res.key || "";
-if (!key) throw new Error("S3 key missing from backend");
-return { kind: "s3", key, previewUrl };
-```
+      const brand = collectBrandFromUI();
 
-}
+      // Apply local changes into state.config
+      state.config.defaults = state.config.defaults || {};
+      state.config.defaults.branding = state.config.defaults.branding || {};
+      state.config.forms = state.config.forms || {};
 
-async function saveConfig() {
-if(!state.cid) { showToast(“CID missing”,“error”); return; }
-if(!state.config) { showToast(“Config not loaded”,“error”); return; }
+      if(ft === "__defaults__") {
+        state.config.defaults.branding = deepMerge(state.config.defaults.branding, brand);
+        if(meta.title) state.config.defaults.branding.title = meta.title;
+        if(meta.subtitle) state.config.defaults.branding.subtitle = meta.subtitle;
+        if(meta.tagline) state.config.defaults.branding.tagline = meta.tagline;
 
-```
-const btn = $("btnSave");
-const toast = showToast("Saving...","info",0);
-if(btn){ btn.disabled = true; btn.textContent = "Saving..."; }
+        state.config.global = state.config.global || {};
+        if(meta.tagline) state.config.global.tagline = meta.tagline;
+      } else {
+        const f = state.config.forms[ft] || (state.config.forms[ft] = {});
+        f.title = meta.title || f.title || "";
+        f.subtitle = meta.subtitle || f.subtitle || "";
+        f.tagline = meta.tagline || f.tagline || "";
 
-try {
-  const ft = state.target || "visitor_form";
+        f.branding = deepMerge(f.branding || {}, brand);
 
-  // Users expect Title/Sub/Tagline to change the actual form heading.
-  const meta = {
-    title: ($("b_title")?.value || "").trim(),
-    subtitle: ($("b_subtitle")?.value || "").trim(),
-    tagline: ($("b_tagline")?.value || "").trim(),
-  };
-
-  const brand = collectBrandFromUI();
-
-  // Apply local changes into state.config
-  state.config.defaults = state.config.defaults || {};
-  state.config.defaults.branding = state.config.defaults.branding || {};
-  state.config.forms = state.config.forms || {};
-
-  if(ft === "__defaults__") {
-    state.config.defaults.branding = deepMerge(state.config.defaults.branding, brand);
-    if(meta.title) state.config.defaults.branding.title = meta.title;
-    if(meta.subtitle) state.config.defaults.branding.subtitle = meta.subtitle;
-    if(meta.tagline) state.config.defaults.branding.tagline = meta.tagline;
-
-    state.config.global = state.config.global || {};
-    if(meta.tagline) state.config.global.tagline = meta.tagline;
-  } else {
-    const f = state.config.forms[ft] || (state.config.forms[ft] = {});
-    f.title = meta.title || f.title || "";
-    f.subtitle = meta.subtitle || f.subtitle || "";
-    f.tagline = meta.tagline || f.tagline || "";
-
-    f.branding = deepMerge(f.branding || {}, brand);
-
-    const pending = (state.pendingAssets?.[ft] || {});
-    // Upload any pending asset files now (so backend gets NEW keys)
-    for (const kind of ["logo","header","background"]) {
-      if (pending[kind]?.file && !pending[kind]?.key) {
-        const up = await initAssetUpload(kind, ft, pending[kind].file);
-        if (up && up.key) {
-          pending[kind].key = up.key;
-          if (up.previewUrl) {
-            pending[kind].previewUrl = up.previewUrl;
-            // show immediately in admin preview
-            if (kind === "logo") f.logo_url = up.previewUrl;
-            if (kind === "header") f.header_url = up.previewUrl;
-            if (kind === "background") f.background_url = up.previewUrl;
+        const pending = (state.pendingAssets?.[ft] || {});
+        // Upload any pending asset files now (so backend gets NEW keys)
+        for (const kind of ["logo","header","background"]) {
+          if (pending[kind]?.file && !pending[kind]?.key) {
+            const up = await initAssetUpload(kind, ft, pending[kind].file);
+            if (up && up.key) {
+              pending[kind].key = up.key;
+              if (up.previewUrl) {
+                pending[kind].previewUrl = up.previewUrl;
+                // show immediately in admin preview
+                if (kind === "logo") f.logo_url = up.previewUrl;
+                if (kind === "header") f.header_url = up.previewUrl;
+                if (kind === "background") f.background_url = up.previewUrl;
+              }
+            }
           }
         }
+
+        if(pending.logo?.key) f.logo_key = pending.logo.key;
+        if(pending.header?.key) f.header_key = pending.header.key;
+        if(pending.background?.key) f.background_key = pending.background.key;
       }
-    }
 
-    if(pending.logo?.key) f.logo_key = pending.logo.key;
-    if(pending.header?.key) f.header_key = pending.header.key;
-    if(pending.background?.key) f.background_key = pending.background.key;
+      // Save to backend (political module)
+      await apiCall("admin_save_config", {
+          collection_id: state.cid,
+          config_type: "political_forms",
+          config: state.config
+        });
+
+      toast.remove?.();
+      showToast("Saved","success");
+      // Reload from backend to confirm persisted + refresh signed URLs
+      await loadConfig({ allowFallback: false, silent: true });
+      // Clear pending for this form (uploaded already)
+      if(state.pendingAssets?.[ft]) delete state.pendingAssets[ft];
+
+      // Update local cache + notify open form tabs to refresh branding
+      try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(state.config)); }catch(e){}
+      try{ localStorage.setItem(`EL_BRAND_PING_${state.cid}`, String(Date.now())); }catch(e){}
+
+      // Note: we do not auto-reload from backend here (prevents preview reverting to older cached config).
+      // If you need fresh signed URLs later, use "Refresh Signed URLs".
+
+    } catch(e) {
+      console.error("Save failed:", e);
+      toast.remove?.();
+      showToast("Save failed: " + (e?.message || e),"error");
+    } finally {
+      if(btn){ btn.disabled = false; btn.textContent = "Save Config"; }
+      state.cacheBust = Date.now();
+      renderBrandInputsFromConfig();
+      renderAll();
+      renderFormPreviewIframe();
+    }
   }
 
-  // Save to backend (political module)
-  await apiCall("admin_save_config", {
-      collection_id: state.cid,
-      config_type: "political_forms",
-      config: state.config
-    });
+  async function loadConfig(opts = {}) {
+     const allowFallback = (opts.allowFallback !== false);
+     const silent = !!opts.silent;
 
-  toast.remove?.();
-  showToast("Saved","success");
-  // Reload from backend to confirm persisted + refresh signed URLs
-  await loadConfig({ allowFallback: false, silent: true });
-  // Clear pending for this form (uploaded already)
-  if(state.pendingAssets?.[ft]) delete state.pendingAssets[ft];
+     if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
+     $('cidPill').classList.remove('hidden');
+     $('cidVal').textContent = state.cid;
 
-  // Update local cache + notify open form tabs to refresh branding
-  try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(state.config)); }catch(e){}
-  try{ localStorage.setItem(`EL_BRAND_PING_${state.cid}`, String(Date.now())); }catch(e){}
+     const t = silent ? null : showToast("Loading configuration...", "loading");
+     let cfg = null;
 
-  // Note: we do not auto-reload from backend here (prevents preview reverting to older cached config).
-  // If you need fresh signed URLs later, use "Refresh Signed URLs".
-
-} catch(e) {
-  console.error("Save failed:", e);
-  toast.remove?.();
-  showToast("Save failed: " + (e?.message || e),"error");
-} finally {
-  if(btn){ btn.disabled = false; btn.textContent = "Save Config"; }
-  state.cacheBust = Date.now();
-  renderBrandInputsFromConfig();
-  renderAll();
-  renderFormPreviewIframe();
-}
-```
-
-}
-
-async function loadConfig(opts = {}) {
-const allowFallback = (opts.allowFallback !== false);
-const silent = !!opts.silent;
-
-```
- if(!state.cid) { $('cidPill').classList.add('hidden'); return; }
- $('cidPill').classList.remove('hidden');
- $('cidVal').textContent = state.cid;
-
- const t = silent ? null : showToast("Loading configuration...", "loading");
- let cfg = null;
-
- try {
-    // Ask backend for latest config; use current target as form_type so shortcut `form` matches.
-    const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
-        collection_id: state.cid,
-        form_type: (state.target && state.target !== "__defaults__") ? state.target : "visitor_form"
-    });
-    cfg = res.config || res.data || res.item || null;
- } catch(e) {
-    console.error('admin_get_config failed', e);
- }
-
- // Fallback to local cache ONLY when allowed (otherwise keep current state.config to avoid reverting after save)
- if (!cfg && allowFallback){
-    const local = localStorage.getItem(`EL_CFG_${state.cid}`);
-    if(local) {
-      try{ cfg = JSON.parse(local); } catch(e){}
-    }
- }
-
- if (cfg){
-    state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
-    try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(cfg)); }catch(e){}
- }
-
- if(t) t.remove?.();
- renderAll();
- renderBrandInputsFromConfig();
- renderFormPreviewIframe();
-```
-
-}
-
-// — Rendering & Logic —
-
-function renderAll() {
-renderBrandPreview();
-renderPrograms();
-renderLevels();
-}
-
-function renderPrograms() {
-const ft = state.target === “**defaults**” ? “**defaults**” : state.target;
-const scope = $(‘progScopeSel’).value;
-let list = [];
-
-```
- if(scope === 'defaults') list = state.config.defaults.programs || [];
- else {
-    // Per-form: prefer program_options if present, else programs, else fallback to defaults
-    const node = state.config.forms[ft] || {};
-    const specific =
-      (Array.isArray(node.program_options) && node.program_options.length ? node.program_options :
-       (Array.isArray(node.programs) && node.programs.length ? node.programs : null));
-    list = specific || state.config.defaults.programs || [];
- }
-
- const container = $('progList');
- container.innerHTML = '';
- list.forEach((p, idx) => {
-    const el = document.createElement('div');
-    el.className = "flex items-center justify-between bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2";
-    el.innerHTML = `<span class="text-sm font-medium text-slate-300 truncate">${p}</span> 
-                    <button class="text-slate-500 hover:text-red-400 p-1" onclick="deleteProg(${idx})"><i class="fa-solid fa-trash"></i></button>`;
-    container.appendChild(el);
- });
- 
- window.deleteProg = (idx) => {
-     const newList = [...list];
-     newList.splice(idx, 1);
-     if(scope === 'defaults') state.config.defaults.programs = newList;
-     else {
-         ensureFormObj(ft);
-         state.config.forms[ft].programs = newList;
-         state.config.forms[ft].program_options = newList;
+     try {
+        // Ask backend for latest config; use current target as form_type so shortcut `form` matches.
+        const res = await apiCallCandidates(["admin_get_config","admin_get_settings","get_admin_config"], { 
+            collection_id: state.cid,
+            form_type: (state.target && state.target !== "__defaults__") ? state.target : "visitor_form"
+        });
+        cfg = res.config || res.data || res.item || null;
+     } catch(e) {
+        console.error('admin_get_config failed', e);
      }
-     renderPrograms();
- };
-```
 
-}
+     // Fallback to local cache ONLY when allowed (otherwise keep current state.config to avoid reverting after save)
+     if (!cfg && allowFallback){
+        const local = localStorage.getItem(`EL_CFG_${state.cid}`);
+        if(local) {
+          try{ cfg = JSON.parse(local); } catch(e){}
+        }
+     }
 
-function renderLevels() {
-const ft = state.target === “**defaults**” ? “**defaults**” : state.target;
-const src = (ft === “**defaults**”) ? state.config.defaults.fixed_levels : (state.config.forms[ft]?.fixed_levels || state.config.defaults.fixed_levels);
+     if (cfg){
+        state.config = deepMerge(JSON.parse(JSON.stringify(DEFAULT_CONFIG)), cfg);
+        try{ localStorage.setItem(`EL_CFG_${state.cid}`, JSON.stringify(cfg)); }catch(e){}
+     }
 
-```
-  $('lvl_mandal_reporting').value = src?.mandal_reporting || "";
-  $('lvl_coordinator').value = src?.coordinator || "";
-  $('lvl_program_info').value = src?.program_info || "";
-```
-
-}
-
-// — Data Loading (Restored Real Logic) —
-function normalizeItem(it){
-const payload = it.payload || it.data || it.fields || {};
-const createdAt = it.created_at || it.createdAt || it.ts || 0;
-const ft = it.form_type || it.formType || payload.form_type || “”;
-return {
-entry_id: it.entry_id || it.id || “”,
-created_at: createdAt,
-form_type: ft,
-payload,
-mobile: payload.mobile || payload.phone || “”,
-name: payload.name || payload.full_name || “”,
-district: payload.district || “”,
-program_name: payload.program_name || payload.program || payload.karyakram || “”
-};
-}
-function dateKeyFromMs(ms){
-if (!ms) return “”;
-const x = new Date(Number(ms));
-return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
-}
-
-async function loadData(direction=“fresh”) {
-if(!state.cid) return showToast(“CID Required”, “error”);
-const t = showToast(“Fetching records…”, “loading”);
-
-```
- let next_token = null;
- if (direction === "next") next_token = state.nextToken || null;
- if (direction === "prev"){ const prev = state.prevStack.pop() || null; next_token = prev; }
-
- const payload = {
-   collection_id: state.cid,
-   form_type: $('dataFormSel').value,
-   filters: { q: ($('dataSearch').value||"").trim(), date_from: $('dateFrom').value||"", date_to: $('dateTo').value||"" },
-   limit: 200,
-   next_token
- };
-
- let res = null;
- try{
-   res = await apiCallCandidates(["admin_list_entries","admin_query_entries","list_entries_admin","admin_list_data"], payload);
-   state.allItems = (res.items || res.data || res.rows || []).map(normalizeItem);
-   state.nextToken = res.next_token || res.nextToken || null;
-   try{ localStorage.setItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`, JSON.stringify(state.allItems)); }catch(_){}
-   t.remove(); showToast(`Loaded ${state.allItems.length} items`, "success");
- } catch(e){
-    // Cache fallback
-    try{
-        const raw = localStorage.getItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`);
-        if(raw){ state.allItems = JSON.parse(raw).map(normalizeItem); t.remove(); showToast("Loaded from cache (Offline)", "info"); }
-        else { t.remove(); showToast("Failed to load data", "error"); }
-    }catch(_){ t.remove(); showToast("Failed to load data", "error"); }
- }
- 
- state.viewItems = state.allItems;
- populateFilterOptions();
- applyClientFilters();
-```
-
-}
-
-function getVal(obj, paths){
-for(const p of paths){
-const parts = p.split(’.’);
-let cur = obj;
-let ok = true;
-for(const part of parts){
-if(cur && Object.prototype.hasOwnProperty.call(cur, part)) cur = cur[part];
-else { ok = false; break; }
-}
-if(ok && cur !== undefined && cur !== null && String(cur).trim() !== “”) return cur;
-}
-return “”;
-}
-
-function populateFilterOptions(){
-const items = state.allItems || [];
-const dSet = new Set(), aSet = new Set(), mSet = new Set(), pSet = new Set();
-items.forEach(it=>{
-const pl = it.payload || it;
-const d = getVal(pl, [“district”,“jila”,“जिला”]);
-const a = getVal(pl, [“vidhansabha”,“assembly”,“विधानसभा”]);
-const m = getVal(pl, [“mandal”,“मंडल”]);
-const pr = getVal(pl, [“program_name”,“program”,“कार्यक्रम”,“कार्यक्रम_नाम”]);
-if(d) dSet.add(d);
-if(a) aSet.add(a);
-if(m) mSet.add(m);
-if(pr) pSet.add(pr);
-});
-
-```
- function fill(selId, set){
-    const sel = $(selId);
-    if(!sel) return;
-    const cur = sel.value;
-    const first = sel.options[0]; // keep "All"
-    sel.innerHTML = "";
-    sel.appendChild(first);
-    Array.from(set).sort((x,y)=>String(x).localeCompare(String(y), 'hi')).forEach(v=>{
-       const opt = document.createElement('option');
-       opt.value = v;
-       opt.textContent = v;
-       sel.appendChild(opt);
-    });
-    sel.value = cur || "";
- }
- fill("filterDistrict", dSet);
- fill("filterAssembly", aSet);
- fill("filterMandal", mSet);
- fill("filterProgram", pSet);
-```
-
-}
-
-function applyClientFilters(){
-const ftSel = $(‘filterFormType’);
-const d = ($(‘filterDistrict’)?.value || “”).trim();
-const a = ($(‘filterAssembly’)?.value || “”).trim();
-const m = ($(‘filterMandal’)?.value || “”).trim();
-const pr = ($(‘filterProgram’)?.value || “”).trim();
-const ft = ftSel ? ftSel.value : “**all**”;
-
-```
- const from = $('dateFrom')?.value ? new Date($('dateFrom').value + "T00:00:00") : null;
- const to = $('dateTo')?.value ? new Date($('dateTo').value + "T23:59:59") : null;
-
- const out = (state.allItems || []).filter(it=>{
-    if(ft && ft !== "__all__" && it.form_type !== ft) return false;
-    const pl = it.payload || it;
-    const dd = getVal(pl, ["district","jila","जिला"]);
-    const aa = getVal(pl, ["vidhansabha","assembly","विधानसभा"]);
-    const mm = getVal(pl, ["mandal","मंडल"]);
-    const pp = getVal(pl, ["program_name","program","कार्यक्रम","कार्यक्रम_नाम"]);
-
-    if(d && dd !== d) return false;
-    if(a && aa !== a) return false;
-    if(m && mm !== m) return false;
-    if(pr && pp !== pr) return false;
-
-    if(from || to){
-      const t = new Date(it.created_at);
-      if(from && t < from) return false;
-      if(to && t > to) return false;
-    }
-    return true;
- });
-
- state.viewItems = out;
- renderTable();
- updateStats();
-```
-
-}
-function renderTable() {
-// ── Sort ──
-const sortVal = ($(‘dataSort’) || {}).value || “created_at_desc”;
-let items = […state.viewItems];
-if (sortVal === “created_at_desc”) items.sort((a,b) => b.created_at - a.created_at);
-else if (sortVal === “created_at_asc”) items.sort((a,b) => a.created_at - b.created_at);
-else if (sortVal === “name_asc”) items.sort((a,b) => (a.payload.name||””).localeCompare(b.payload.name||””));
-else if (sortVal === “mobile_asc”) items.sort((a,b) => (a.payload.mobile||””).localeCompare(b.payload.mobile||””));
-
-```
-  $('loadedCount').textContent = items.length;
-
-  // Form badge colors
-  const formColors = {
-    visitor_form: "bg-blue-900/50 text-blue-300 border-blue-800",
-    party_attendance: "bg-green-900/50 text-green-300 border-green-800",
-    president_tour_form: "bg-purple-900/50 text-purple-300 border-purple-800",
-    mandal_reporting: "bg-amber-900/50 text-amber-300 border-amber-800",
-    coordinator_form: "bg-pink-900/50 text-pink-300 border-pink-800",
-    program_info: "bg-cyan-900/50 text-cyan-300 border-cyan-800",
-  };
-  const formShort = {
-    visitor_form: "Visitor", party_attendance: "Attendance",
-    president_tour_form: "Tour", mandal_reporting: "Report",
-    coordinator_form: "Coord", program_info: "Program",
-  };
-
-  // ── Desktop Table ──
-  const tbody = $('dataTbody');
-  tbody.innerHTML = '';
-  if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-slate-500 italic">कोई entries नहीं मिली</td></tr>';
+     if(t) t.remove?.();
+     renderAll();
+     renderBrandInputsFromConfig();
+     renderFormPreviewIframe();
   }
-  items.slice(0, 100).forEach(item => {
-    const p = item.payload || {};
-    const d = new Date(item.created_at);
-    const dateStr = isNaN(d) ? "-" : d.toLocaleDateString("hi-IN", {day:"2-digit", month:"short", year:"2-digit"});
-    const timeStr = isNaN(d) ? "" : d.toLocaleTimeString("en-IN", {hour:"2-digit", minute:"2-digit"});
-    const fc = formColors[item.form_type] || "bg-slate-800 text-slate-300 border-slate-700";
-    const fs = formShort[item.form_type] || (item.form_type||"").slice(0,8);
-    const name = p.name || p["नाम"] || "-";
-    const mobile = p.mobile || p["mobile"] || "-";
-    const district = p.district || p["जिला"] || p["district"] || "-";
-    const program = p.program_name || p["कार्यक्रम_का_नाम"] || "";
-    const assembly = p.assembly || p["विधानसभा"] || "";
-    const photoUrl = item.photo_url || "";
 
-    const row = document.createElement('tr');
-    row.className = "hover:bg-slate-800/40 transition-colors";
-    row.innerHTML = `
-      <td class="px-3 py-2.5">
-        <div class="text-xs text-slate-300 font-medium">${dateStr}</div>
-        <div class="text-[10px] text-slate-500">${timeStr}</div>
-      </td>
-      <td class="px-3 py-2.5">
-        <span class="px-1.5 py-0.5 rounded text-[10px] border ${fc} font-medium whitespace-nowrap">${fs}</span>
-      </td>
-      <td class="px-3 py-2.5 max-w-[160px]">
-        <div class="text-sm text-white font-medium truncate">${name}</div>
-        ${program ? `<div class="text-[10px] text-slate-500 truncate">${program}</div>` : ''}
-      </td>
-      <td class="px-3 py-2.5">
-        <span class="text-slate-300 font-mono text-xs whitespace-nowrap">${mobile}</span>
-      </td>
-      <td class="px-3 py-2.5 max-w-[120px]">
-        <div class="text-slate-400 text-xs truncate">${district}</div>
-        ${assembly ? `<div class="text-[10px] text-slate-600 truncate">${assembly}</div>` : ''}
-      </td>
-      <td class="px-2 py-2">
-        ${photoUrl
-          ? `<img src="${photoUrl}" class="w-9 h-9 rounded object-cover cursor-pointer hover:scale-110 transition ring-1 ring-slate-700" onclick='window.open("${photoUrl}","_blank")' />`
-          : (item.s3_key ? '<i class="fa-solid fa-image text-slate-600 text-xs"></i>' : '')}
-      </td>
-      <td class="px-3 py-2.5">
-        <button class="text-orange-400 hover:text-orange-300 text-xs font-bold px-2 py-1 rounded hover:bg-orange-500/10 transition whitespace-nowrap"
-                onclick='openModal(${JSON.stringify(item).replace(/'/g, "&#39;")})'>View →</button>
-      </td>
-    `;
-    tbody.appendChild(row);
+  // --- Rendering & Logic ---
+
+  function renderAll() {
+     renderBrandPreview();
+     renderPrograms();
+     renderLevels();
+  }
+
+  function renderPrograms() {
+     const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
+     const scope = $('progScopeSel').value;
+     let list = [];
+     
+     if(scope === 'defaults') list = state.config.defaults.programs || [];
+     else {
+        // Per-form: prefer program_options if present, else programs, else fallback to defaults
+        const node = state.config.forms[ft] || {};
+        const specific =
+          (Array.isArray(node.program_options) && node.program_options.length ? node.program_options :
+           (Array.isArray(node.programs) && node.programs.length ? node.programs : null));
+        list = specific || state.config.defaults.programs || [];
+     }
+
+     const container = $('progList');
+     container.innerHTML = '';
+     list.forEach((p, idx) => {
+        const el = document.createElement('div');
+        el.className = "flex items-center justify-between bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2";
+        el.innerHTML = `<span class="text-sm font-medium text-slate-300 truncate">${p}</span> 
+                        <button class="text-slate-500 hover:text-red-400 p-1" onclick="deleteProg(${idx})"><i class="fa-solid fa-trash"></i></button>`;
+        container.appendChild(el);
+     });
+     
+     window.deleteProg = (idx) => {
+         const newList = [...list];
+         newList.splice(idx, 1);
+         if(scope === 'defaults') state.config.defaults.programs = newList;
+         else {
+             ensureFormObj(ft);
+             state.config.forms[ft].programs = newList;
+             state.config.forms[ft].program_options = newList;
+         }
+         renderPrograms();
+     };
+  }
+  
+  function renderLevels() {
+      const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
+      const src = (ft === "__defaults__") ? state.config.defaults.fixed_levels : (state.config.forms[ft]?.fixed_levels || state.config.defaults.fixed_levels);
+      
+      $('lvl_mandal_reporting').value = src?.mandal_reporting || "";
+      $('lvl_coordinator').value = src?.coordinator || "";
+      $('lvl_program_info').value = src?.program_info || "";
+  }
+
+  // --- Data Loading (Restored Real Logic) ---
+  function normalizeItem(it){
+    const payload = it.payload || it.data || it.fields || {};
+    const createdAt = it.created_at || it.createdAt || it.ts || 0;
+    const ft = it.form_type || it.formType || payload.form_type || "";
+    return {
+      entry_id: it.entry_id || it.id || "",
+      created_at: createdAt,
+      form_type: ft,
+      payload,
+      mobile: payload.mobile || payload.phone || "",
+      name: payload.name || payload.full_name || "",
+      district: payload.district || "",
+      program_name: payload.program_name || payload.program || payload.karyakram || ""
+    };
+  }
+  function dateKeyFromMs(ms){
+    if (!ms) return "";
+    const x = new Date(Number(ms));
+    return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
+  }
+
+  async function loadData(direction="fresh") {
+     if(!state.cid) return showToast("CID Required", "error");
+     const t = showToast("Fetching records...", "loading");
+     
+     let next_token = null;
+     if (direction === "next") next_token = state.nextToken || null;
+     if (direction === "prev"){ const prev = state.prevStack.pop() || null; next_token = prev; }
+
+     const payload = {
+       collection_id: state.cid,
+       form_type: $('dataFormSel').value,
+       filters: { q: ($('dataSearch').value||"").trim(), date_from: $('dateFrom').value||"", date_to: $('dateTo').value||"" },
+       limit: 200,
+       next_token
+     };
+
+     let res = null;
+     try{
+       res = await apiCallCandidates(["admin_list_entries","admin_query_entries","list_entries_admin","admin_list_data"], payload);
+       state.allItems = (res.items || res.data || res.rows || []).map(normalizeItem);
+       state.nextToken = res.next_token || res.nextToken || null;
+       try{ localStorage.setItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`, JSON.stringify(state.allItems)); }catch(_){}
+       t.remove(); showToast(`Loaded ${state.allItems.length} items`, "success");
+     } catch(e){
+        // Cache fallback
+        try{
+            const raw = localStorage.getItem(`EL_POLITICAL_DATA_CACHE::${state.cid}`);
+            if(raw){ state.allItems = JSON.parse(raw).map(normalizeItem); t.remove(); showToast("Loaded from cache (Offline)", "info"); }
+            else { t.remove(); showToast("Failed to load data", "error"); }
+        }catch(_){ t.remove(); showToast("Failed to load data", "error"); }
+     }
+     
+     state.viewItems = state.allItems;
+     populateFilterOptions();
+     applyClientFilters();
+  }
+
+  
+  function getVal(obj, paths){
+     for(const p of paths){
+        const parts = p.split('.');
+        let cur = obj;
+        let ok = true;
+        for(const part of parts){
+           if(cur && Object.prototype.hasOwnProperty.call(cur, part)) cur = cur[part];
+           else { ok = false; break; }
+        }
+        if(ok && cur !== undefined && cur !== null && String(cur).trim() !== "") return cur;
+     }
+     return "";
+  }
+
+  function populateFilterOptions(){
+     const items = state.allItems || [];
+     const dSet = new Set(), aSet = new Set(), mSet = new Set(), pSet = new Set();
+     items.forEach(it=>{
+        const pl = it.payload || it;
+        const d = getVal(pl, ["district","jila","जिला"]);
+        const a = getVal(pl, ["vidhansabha","assembly","विधानसभा"]);
+        const m = getVal(pl, ["mandal","मंडल"]);
+        const pr = getVal(pl, ["program_name","program","कार्यक्रम","कार्यक्रम_नाम"]);
+        if(d) dSet.add(d);
+        if(a) aSet.add(a);
+        if(m) mSet.add(m);
+        if(pr) pSet.add(pr);
+     });
+
+     function fill(selId, set){
+        const sel = $(selId);
+        if(!sel) return;
+        const cur = sel.value;
+        const first = sel.options[0]; // keep "All"
+        sel.innerHTML = "";
+        sel.appendChild(first);
+        Array.from(set).sort((x,y)=>String(x).localeCompare(String(y), 'hi')).forEach(v=>{
+           const opt = document.createElement('option');
+           opt.value = v;
+           opt.textContent = v;
+           sel.appendChild(opt);
+        });
+        sel.value = cur || "";
+     }
+     fill("filterDistrict", dSet);
+     fill("filterAssembly", aSet);
+     fill("filterMandal", mSet);
+     fill("filterProgram", pSet);
+  }
+
+  function applyClientFilters(){
+     const ftSel = $('filterFormType');
+     const d = ($('filterDistrict')?.value || "").trim();
+     const a = ($('filterAssembly')?.value || "").trim();
+     const m = ($('filterMandal')?.value || "").trim();
+     const pr = ($('filterProgram')?.value || "").trim();
+     const ft = ftSel ? ftSel.value : "__all__";
+
+     const from = $('dateFrom')?.value ? new Date($('dateFrom').value + "T00:00:00") : null;
+     const to = $('dateTo')?.value ? new Date($('dateTo').value + "T23:59:59") : null;
+
+     const out = (state.allItems || []).filter(it=>{
+        if(ft && ft !== "__all__" && it.form_type !== ft) return false;
+        const pl = it.payload || it;
+        const dd = getVal(pl, ["district","jila","जिला"]);
+        const aa = getVal(pl, ["vidhansabha","assembly","विधानसभा"]);
+        const mm = getVal(pl, ["mandal","मंडल"]);
+        const pp = getVal(pl, ["program_name","program","कार्यक्रम","कार्यक्रम_नाम"]);
+
+        if(d && dd !== d) return false;
+        if(a && aa !== a) return false;
+        if(m && mm !== m) return false;
+        if(pr && pp !== pr) return false;
+
+        if(from || to){
+          const t = new Date(it.created_at);
+          if(from && t < from) return false;
+          if(to && t > to) return false;
+        }
+        return true;
+     });
+
+     state.viewItems = out;
+     renderTable();
+     updateStats();
+  }
+function renderTable() {
+      // ── Sort ──
+      const sortVal = ($('dataSort') || {}).value || "created_at_desc";
+      let items = [...state.viewItems];
+      if (sortVal === "created_at_desc") items.sort((a,b) => b.created_at - a.created_at);
+      else if (sortVal === "created_at_asc") items.sort((a,b) => a.created_at - b.created_at);
+      else if (sortVal === "name_asc") items.sort((a,b) => (a.payload.name||"").localeCompare(b.payload.name||""));
+      else if (sortVal === "mobile_asc") items.sort((a,b) => (a.payload.mobile||"").localeCompare(b.payload.mobile||""));
+
+      $('loadedCount').textContent = items.length;
+
+      // Form badge colors
+      const formColors = {
+        visitor_form: "bg-blue-900/50 text-blue-300 border-blue-800",
+        party_attendance: "bg-green-900/50 text-green-300 border-green-800",
+        president_tour_form: "bg-purple-900/50 text-purple-300 border-purple-800",
+        mandal_reporting: "bg-amber-900/50 text-amber-300 border-amber-800",
+        coordinator_form: "bg-pink-900/50 text-pink-300 border-pink-800",
+        program_info: "bg-cyan-900/50 text-cyan-300 border-cyan-800",
+      };
+      const formShort = {
+        visitor_form: "Visitor", party_attendance: "Attendance",
+        president_tour_form: "Tour", mandal_reporting: "Report",
+        coordinator_form: "Coord", program_info: "Program",
+      };
+
+      // ── Desktop Table ──
+      const tbody = $('dataTbody');
+      tbody.innerHTML = '';
+      if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-10 text-center text-slate-500 italic">कोई entries नहीं मिली</td></tr>';
+      }
+      items.slice(0, 100).forEach(item => {
+        const p = item.payload || {};
+        const d = new Date(item.created_at);
+        const dateStr = isNaN(d) ? "-" : d.toLocaleDateString("hi-IN", {day:"2-digit", month:"short", year:"2-digit"});
+        const timeStr = isNaN(d) ? "" : d.toLocaleTimeString("en-IN", {hour:"2-digit", minute:"2-digit"});
+        const fc = formColors[item.form_type] || "bg-slate-800 text-slate-300 border-slate-700";
+        const fs = formShort[item.form_type] || (item.form_type||"").slice(0,8);
+        const name = p.name || p["नाम"] || "-";
+        const mobile = p.mobile || p["mobile"] || "-";
+        const district = p.district || p["जिला"] || p["district"] || "-";
+        const program = p.program_name || p["कार्यक्रम_का_नाम"] || "";
+        const assembly = p.assembly || p["विधानसभा"] || "";
+        const photoUrl = item.photo_url || "";
+
+        const row = document.createElement('tr');
+        row.className = "hover:bg-slate-800/40 transition-colors";
+        row.innerHTML = `
+          <td class="px-3 py-2.5">
+            <div class="text-xs text-slate-300 font-medium">${dateStr}</div>
+            <div class="text-[10px] text-slate-500">${timeStr}</div>
+          </td>
+          <td class="px-3 py-2.5">
+            <span class="px-1.5 py-0.5 rounded text-[10px] border ${fc} font-medium whitespace-nowrap">${fs}</span>
+          </td>
+          <td class="px-3 py-2.5 max-w-[160px]">
+            <div class="text-sm text-white font-medium truncate">${name}</div>
+            ${program ? `<div class="text-[10px] text-slate-500 truncate">${program}</div>` : ''}
+          </td>
+          <td class="px-3 py-2.5">
+            <span class="text-slate-300 font-mono text-xs whitespace-nowrap">${mobile}</span>
+          </td>
+          <td class="px-3 py-2.5 max-w-[120px]">
+            <div class="text-slate-400 text-xs truncate">${district}</div>
+            ${assembly ? `<div class="text-[10px] text-slate-600 truncate">${assembly}</div>` : ''}
+          </td>
+          <td class="px-2 py-2">
+            ${photoUrl
+              ? `<img src="${photoUrl}" class="w-9 h-9 rounded object-cover cursor-pointer hover:scale-110 transition ring-1 ring-slate-700" onclick='window.open("${photoUrl}","_blank")' />`
+              : (item.s3_key ? '<i class="fa-solid fa-image text-slate-600 text-xs"></i>' : '')}
+          </td>
+          <td class="px-3 py-2.5">
+            <button class="text-orange-400 hover:text-orange-300 text-xs font-bold px-2 py-1 rounded hover:bg-orange-500/10 transition whitespace-nowrap"
+                    onclick='openModal(${JSON.stringify(item).replace(/'/g, "&#39;")})'>View →</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // ── Mobile Cards (improved) ──
+      const mobileDiv = $('dataMobileCards');
+      if (mobileDiv) {
+        mobileDiv.innerHTML = '';
+        if (!items.length) {
+          mobileDiv.innerHTML = '<div class="text-slate-500 text-sm text-center py-8">कोई entries नहीं</div>';
+        }
+        items.slice(0, 100).forEach(item => {
+          const p = item.payload || {};
+          const d = new Date(item.created_at);
+          const dateStr = isNaN(d) ? "-" : d.toLocaleDateString("hi-IN", {day:"2-digit", month:"short"});
+          const timeStr = isNaN(d) ? "" : d.toLocaleTimeString("en-IN", {hour:"2-digit", minute:"2-digit"});
+          const fc = formColors[item.form_type] || "bg-slate-800 text-slate-300 border-slate-700";
+          const fs = formShort[item.form_type] || (item.form_type||"");
+          const name = p.name || p["नाम"] || "अज्ञात";
+          const mobile = p.mobile || "-";
+          const district = p.district || p["जिला"] || "";
+          const program = p.program_name || p["कार्यक्रम_का_नाम"] || "";
+          const photoUrl = item.photo_url || "";
+
+          const card = document.createElement('div');
+          card.className = "bg-slate-900/60 rounded-xl border border-slate-800 p-3 flex gap-3 hover:border-slate-700 active:border-orange-500/50 transition cursor-pointer";
+          card.innerHTML = `
+            ${photoUrl
+              ? `<img src="${photoUrl}" class="w-14 h-14 rounded-lg object-cover shrink-0 ring-1 ring-slate-700" />`
+              : `<div class="w-14 h-14 rounded-lg bg-slate-800 border border-slate-700 shrink-0 flex items-center justify-center"><i class="fa-solid fa-user text-slate-600"></i></div>`}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-1 mb-0.5">
+                <span class="text-sm font-bold text-white truncate">${name}</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] border ${fc} shrink-0">${fs}</span>
+              </div>
+              <div class="text-xs text-orange-300/80 font-mono">${mobile}</div>
+              ${district ? `<div class="text-[10px] text-slate-500 truncate">${district}</div>` : ''}
+              ${program ? `<div class="text-[10px] text-slate-500 truncate">${program}</div>` : ''}
+              <div class="text-[10px] text-slate-600 mt-1">${dateStr} ${timeStr}</div>
+            </div>
+          `;
+          card.addEventListener('click', () => openModal(item));
+          mobileDiv.appendChild(card);
+        });
+      }
+  }
+
+  function updateStats() {
+      $('kpiTotal').textContent = state.allItems.length;
+      $('kpiUnique').textContent = new Set(state.allItems.map(i => i.payload.mobile).filter(Boolean)).size;
+      const photosCount = state.allItems.filter(i => i.s3_key).length;
+      if ($('kpiPhotos')) $('kpiPhotos').textContent = photosCount;
+      buildCharts();
+  }
+
+  window.openModal = (item) => {
+      $('modal').classList.remove('hidden');
+      $('modal').classList.add('flex');
+      $('modalJson').textContent = JSON.stringify(item, null, 2);
+  };
+  $('btnCloseModal').onclick = () => { $('modal').classList.add('hidden'); $('modal').classList.remove('flex'); };
+  $('modalBackdrop').onclick = $('btnCloseModal').onclick;
+
+  // Auth Button Handlers
+  $('btnAuth').onclick = openAuthModal;
+  $('btnCancelAuth').onclick = () => { $('authModal').classList.remove('flex'); $('authModal').classList.add('hidden'); };
+  $('btnSaveAuth').onclick = () => {
+      const t = $('authTokenInput').value.trim();
+      if(t) {
+          localStorage.setItem("id_token", t);
+          showToast("Token updated! Reloading...", "success");
+          setTimeout(() => location.reload(), 800);
+      }
+  };
+
+  // --- Charts ---
+  function buildCharts() {
+     const items = state.viewItems.length ? state.viewItems : state.allItems;
+
+     const byForm = {}; items.forEach(x=>{ const k=x.form_type||"unknown"; byForm[k]=(byForm[k]||0)+1; });
+     const formLabels = Object.keys(byForm); const formVals = formLabels.map(k=>byForm[k]);
+
+     const dayMap = {}; items.forEach(x=>{ const k=dateKeyFromMs(x.created_at); if(!k) return; dayMap[k]=(dayMap[k]||0)+1; });
+     const days = Object.keys(dayMap).sort(); const last14 = days.slice(-14); const dayVals = last14.map(k=>dayMap[k]);
+
+     const dist = {}; items.forEach(x=>{ const k=(x.district||"").trim()||"Unknown"; dist[k]=(dist[k]||0)+1; });
+     const distPairs = Object.entries(dist).sort((a,b)=>b[1]-a[1]).slice(0,10);
+     const distLabels = distPairs.map(p=>p[0]); const distVals = distPairs.map(p=>p[1]);
+
+     if(state.charts.byDay) state.charts.byDay.destroy();
+     if(state.charts.byForm) state.charts.byForm.destroy();
+     if(state.charts.district) state.charts.district.destroy();
+
+     const common = { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false} }, scales: { x: { display: false }, y: { display: false } } };
+
+     state.charts.byDay = new Chart($('chartByDay'), { type: 'line', data: { labels: last14, datasets: [{ data: dayVals, borderColor: '#f97316', tension: 0.4 }] }, options: common });
+     state.charts.byForm = new Chart($('chartByForm'), { type: 'bar', data: { labels: formLabels, datasets: [{ data: formVals, backgroundColor: '#3b82f6' }] }, options: common });
+     state.charts.district = new Chart($('chartDistrict'), { type: 'bar', data: { labels: distLabels, datasets: [{ data: distVals, backgroundColor: '#a855f7' }] }, options: common });
+  }
+
+  // --- Event Listeners ---
+  $('btnSave').onclick = saveConfig;
+
+  // Preview controls
+  if($('btnLoadFormPreview')) $('btnLoadFormPreview').onclick = () => { state.cacheBust = Date.now(); renderBrandPreview(); renderFormPreviewIframe(); };
+  if($('btnOpenFormPreview')) $('btnOpenFormPreview').onclick = () => { state.cacheBust = Date.now(); openCurrentPreviewInNewTab(); };
+  if($('btnRefreshSignedUrls')) $('btnRefreshSignedUrls').onclick = () => { state.cacheBust = Date.now(); loadConfig(); };
+  $('btnReload').onclick = loadConfig;
+  $('btnApplyCid').onclick = () => { state.cid = $('cidInput').value; loadConfig(); };
+  
+  // Tab Switching
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.onclick = () => {
+          document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+          $(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+      };
   });
 
-  // ── Mobile Cards (improved) ──
-  const mobileDiv = $('dataMobileCards');
-  if (mobileDiv) {
-    mobileDiv.innerHTML = '';
-    if (!items.length) {
-      mobileDiv.innerHTML = '<div class="text-slate-500 text-sm text-center py-8">कोई entries नहीं</div>';
-    }
-    items.slice(0, 100).forEach(item => {
-      const p = item.payload || {};
-      const d = new Date(item.created_at);
-      const dateStr = isNaN(d) ? "-" : d.toLocaleDateString("hi-IN", {day:"2-digit", month:"short"});
-      const timeStr = isNaN(d) ? "" : d.toLocaleTimeString("en-IN", {hour:"2-digit", minute:"2-digit"});
-      const fc = formColors[item.form_type] || "bg-slate-800 text-slate-300 border-slate-700";
-      const fs = formShort[item.form_type] || (item.form_type||"");
-      const name = p.name || p["नाम"] || "अज्ञात";
-      const mobile = p.mobile || "-";
-      const district = p.district || p["जिला"] || "";
-      const program = p.program_name || p["कार्यक्रम_का_नाम"] || "";
-      const photoUrl = item.photo_url || "";
+  // Target Change
+  $('targetFormSel').onchange = () => {
+      state.target = $('targetFormSel').value;
+      renderBrandInputsFromConfig();
+      renderAll();
+      renderFormPreviewIframe();
+  };
+  // Client-side filters (no backend change)
+  ['filterDistrict','filterAssembly','filterMandal','filterProgram'].forEach(id=>{
+     const el = $(id);
+     if(el) el.onchange = applyClientFilters;
+  });
+  { const el = $('filterFormType'); if(el) el.onchange = applyClientFilters; }
 
-      const card = document.createElement('div');
-      card.className = "bg-slate-900/60 rounded-xl border border-slate-800 p-3 flex gap-3 hover:border-slate-700 active:border-orange-500/50 transition cursor-pointer";
-      card.innerHTML = `
-        ${photoUrl
-          ? `<img src="${photoUrl}" class="w-14 h-14 rounded-lg object-cover shrink-0 ring-1 ring-slate-700" />`
-          : `<div class="w-14 h-14 rounded-lg bg-slate-800 border border-slate-700 shrink-0 flex items-center justify-center"><i class="fa-solid fa-user text-slate-600"></i></div>`}
-        <div class="flex-1 min-w-0">
-          <div class="flex items-start justify-between gap-1 mb-0.5">
-            <span class="text-sm font-bold text-white truncate">${name}</span>
-            <span class="px-1.5 py-0.5 rounded text-[9px] border ${fc} shrink-0">${fs}</span>
-          </div>
-          <div class="text-xs text-orange-300/80 font-mono">${mobile}</div>
-          ${district ? `<div class="text-[10px] text-slate-500 truncate">${district}</div>` : ''}
-          ${program ? `<div class="text-[10px] text-slate-500 truncate">${program}</div>` : ''}
-          <div class="text-[10px] text-slate-600 mt-1">${dateStr} ${timeStr}</div>
-        </div>
-      `;
-      card.addEventListener('click', () => openModal(item));
-      mobileDiv.appendChild(card);
-    });
+
+  // Asset Inputs
+
+  // --- Image Fit / Crop (Client-side, does NOT change backend logic) ---
+  let __cropper = null;
+  let __cropCtx = null; // { kind, uiKey, fileName, mime }
+  function openCropperModal(kind, file, uiKey){
+     uiKey = uiKey || kind;
+     if(!file) return;
+     const modal = $('cropModal');
+     const img = $('cropImage');
+     const hint = $('cropHint');
+
+     // Decide preset
+     const preset = {
+       logo: { aspect: 1, outW: 512, outH: 512, mime: "image/png", quality: 0.92, hint: "Logo: square crop (drag + zoom)" },
+       header: { aspect: 16/5, outW: 1600, outH: 500, mime: "image/jpeg", quality: 0.9, hint: "Header: wide crop (drag + zoom)" },
+       background: { aspect: 16/9, outW: 1920, outH: 1080, mime: "image/jpeg", quality: 0.88, hint: "Background: 16:9 crop (drag + zoom)" },
+     }[kind] || { aspect: NaN, outW: 1400, outH: 800, mime: "image/jpeg", quality: 0.9, hint: "Drag + zoom" };
+
+     hint.textContent = preset.hint;
+
+     // Build image URL
+     const url = URL.createObjectURL(file);
+     img.src = url;
+     __cropCtx = { kind, uiKey, fileName: file.name || (kind + ".jpg"), preset };
+
+     modal.classList.remove("hidden");
+
+     // Initialize cropper after image load
+     img.onload = () => {
+        try{ if(__cropper){ __cropper.destroy(); __cropper = null; } }catch(_){}
+        const aspectSel = $('cropAspect');
+        aspectSel.value = "preset";
+        __cropper = new Cropper(img, {
+           viewMode: 1,
+           dragMode: "move",
+           autoCropArea: 1,
+           movable: true,
+           zoomable: true,
+           scalable: false,
+           rotatable: false,
+           responsive: true,
+           background: false,
+           aspectRatio: preset.aspect,
+           checkOrientation: true,
+        });
+     };
+
+     // Close handlers
+     $('btnCropClose').onclick = closeCropperModal;
+     $('btnCropCancel').onclick = closeCropperModal;
+
+     // Tools
+     $('btnZoomIn').onclick = () => __cropper && __cropper.zoom(0.1);
+     $('btnZoomOut').onclick = () => __cropper && __cropper.zoom(-0.1);
+     $('btnMoveLeft').onclick = () => __cropper && __cropper.move(-10, 0);
+     $('btnMoveRight').onclick = () => __cropper && __cropper.move(10, 0);
+     $('btnMoveUp').onclick = () => __cropper && __cropper.move(0, -10);
+     $('btnMoveDown').onclick = () => __cropper && __cropper.move(0, 10);
+
+     // Aspect toggle
+     $('cropAspect').onchange = (e) => {
+        if(!__cropper) return;
+        const v = e.target.value;
+        if(v === "free") __cropper.setAspectRatio(NaN);
+        else __cropper.setAspectRatio(preset.aspect);
+     };
+
+     $('btnCropApply').onclick = async () => {
+        if(!__cropper || !__cropCtx) return;
+        const { preset } = __cropCtx;
+        const canvas = __cropper.getCroppedCanvas({ width: preset.outW, height: preset.outH, imageSmoothingEnabled: true, imageSmoothingQuality: "high" });
+        if(!canvas){ showToast("Crop failed", "error"); return; }
+
+        const blob = await new Promise(res => canvas.toBlob(res, preset.mime, preset.quality));
+        if(!blob){ showToast("Crop failed", "error"); return; }
+
+        // Create a new File so existing upload logic stays same
+        const safeName = (__cropCtx.fileName || (kind + ".jpg")).replace(/\s+/g,'_');
+        const newFile = new File([blob], safeName, { type: preset.mime });
+
+        // push into pending assets (existing logic)
+        setPending(kind, newFile, uiKey);
+
+        closeCropperModal();
+     };
   }
-```
 
-}
-
-function updateStats() {
-$(‘kpiTotal’).textContent = state.allItems.length;
-$(‘kpiUnique’).textContent = new Set(state.allItems.map(i => i.payload.mobile).filter(Boolean)).size;
-const photosCount = state.allItems.filter(i => i.s3_key).length;
-if ($(‘kpiPhotos’)) $(‘kpiPhotos’).textContent = photosCount;
-buildCharts();
-}
-
-window.openModal = (item) => {
-$(‘modal’).classList.remove(‘hidden’);
-$(‘modal’).classList.add(‘flex’);
-$(‘modalJson’).textContent = JSON.stringify(item, null, 2);
-};
-$(‘btnCloseModal’).onclick = () => { $(‘modal’).classList.add(‘hidden’); $(‘modal’).classList.remove(‘flex’); };
-$(‘modalBackdrop’).onclick = $(‘btnCloseModal’).onclick;
-
-// Auth Button Handlers
-$(‘btnAuth’).onclick = openAuthModal;
-$(‘btnCancelAuth’).onclick = () => { $(‘authModal’).classList.remove(‘flex’); $(‘authModal’).classList.add(‘hidden’); };
-$(‘btnSaveAuth’).onclick = () => {
-const t = $(‘authTokenInput’).value.trim();
-if(t) {
-localStorage.setItem(“id_token”, t);
-showToast(“Token updated! Reloading…”, “success”);
-setTimeout(() => location.reload(), 800);
-}
-};
-
-// — Charts —
-function buildCharts() {
-const items = state.viewItems.length ? state.viewItems : state.allItems;
-
-```
- const byForm = {}; items.forEach(x=>{ const k=x.form_type||"unknown"; byForm[k]=(byForm[k]||0)+1; });
- const formLabels = Object.keys(byForm); const formVals = formLabels.map(k=>byForm[k]);
-
- const dayMap = {}; items.forEach(x=>{ const k=dateKeyFromMs(x.created_at); if(!k) return; dayMap[k]=(dayMap[k]||0)+1; });
- const days = Object.keys(dayMap).sort(); const last14 = days.slice(-14); const dayVals = last14.map(k=>dayMap[k]);
-
- const dist = {}; items.forEach(x=>{ const k=(x.district||"").trim()||"Unknown"; dist[k]=(dist[k]||0)+1; });
- const distPairs = Object.entries(dist).sort((a,b)=>b[1]-a[1]).slice(0,10);
- const distLabels = distPairs.map(p=>p[0]); const distVals = distPairs.map(p=>p[1]);
-
- if(state.charts.byDay) state.charts.byDay.destroy();
- if(state.charts.byForm) state.charts.byForm.destroy();
- if(state.charts.district) state.charts.district.destroy();
-
- const common = { responsive: true, maintainAspectRatio: false, plugins: { legend: {display: false} }, scales: { x: { display: false }, y: { display: false } } };
-
- state.charts.byDay = new Chart($('chartByDay'), { type: 'line', data: { labels: last14, datasets: [{ data: dayVals, borderColor: '#f97316', tension: 0.4 }] }, options: common });
- state.charts.byForm = new Chart($('chartByForm'), { type: 'bar', data: { labels: formLabels, datasets: [{ data: formVals, backgroundColor: '#3b82f6' }] }, options: common });
- state.charts.district = new Chart($('chartDistrict'), { type: 'bar', data: { labels: distLabels, datasets: [{ data: distVals, backgroundColor: '#a855f7' }] }, options: common });
-```
-
-}
-
-// — Event Listeners —
-$(‘btnSave’).onclick = saveConfig;
-
-// Preview controls
-if($(‘btnLoadFormPreview’)) $(‘btnLoadFormPreview’).onclick = () => { state.cacheBust = Date.now(); renderBrandPreview(); renderFormPreviewIframe(); };
-if($(‘btnOpenFormPreview’)) $(‘btnOpenFormPreview’).onclick = () => { state.cacheBust = Date.now(); openCurrentPreviewInNewTab(); };
-if($(‘btnRefreshSignedUrls’)) $(‘btnRefreshSignedUrls’).onclick = () => { state.cacheBust = Date.now(); loadConfig(); };
-$(‘btnReload’).onclick = loadConfig;
-$(‘btnApplyCid’).onclick = () => { state.cid = $(‘cidInput’).value; loadConfig(); };
-
-// Tab Switching
-document.querySelectorAll(’.nav-btn’).forEach(btn => {
-btn.onclick = () => {
-document.querySelectorAll(’.nav-btn’).forEach(b => b.classList.remove(‘active’));
-btn.classList.add(‘active’);
-document.querySelectorAll(’.tab-content’).forEach(t => t.classList.add(‘hidden’));
-$(`tab-${btn.dataset.tab}`).classList.remove(‘hidden’);
-};
-});
-
-// Target Change
-$(‘targetFormSel’).onchange = () => {
-state.target = $(‘targetFormSel’).value;
-renderBrandInputsFromConfig();
-renderAll();
-renderFormPreviewIframe();
-};
-// Client-side filters (no backend change)
-[‘filterDistrict’,‘filterAssembly’,‘filterMandal’,‘filterProgram’].forEach(id=>{
-const el = $(id);
-if(el) el.onchange = applyClientFilters;
-});
-{ const el = $(‘filterFormType’); if(el) el.onchange = applyClientFilters; }
-
-// Asset Inputs
-
-// — Image Fit / Crop (Client-side, does NOT change backend logic) —
-let __cropper = null;
-let __cropCtx = null; // { kind, uiKey, fileName, mime }
-function openCropperModal(kind, file, uiKey){
-uiKey = uiKey || kind;
-if(!file) return;
-const modal = $(‘cropModal’);
-const img = $(‘cropImage’);
-const hint = $(‘cropHint’);
-
-```
- // Decide preset
- const preset = {
-   logo: { aspect: 1, outW: 512, outH: 512, mime: "image/png", quality: 0.92, hint: "Logo: square crop (drag + zoom)" },
-   header: { aspect: 16/5, outW: 1600, outH: 500, mime: "image/jpeg", quality: 0.9, hint: "Header: wide crop (drag + zoom)" },
-   background: { aspect: 16/9, outW: 1920, outH: 1080, mime: "image/jpeg", quality: 0.88, hint: "Background: 16:9 crop (drag + zoom)" },
- }[kind] || { aspect: NaN, outW: 1400, outH: 800, mime: "image/jpeg", quality: 0.9, hint: "Drag + zoom" };
-
- hint.textContent = preset.hint;
-
- // Build image URL
- const url = URL.createObjectURL(file);
- img.src = url;
- __cropCtx = { kind, uiKey, fileName: file.name || (kind + ".jpg"), preset };
-
- modal.classList.remove("hidden");
-
- // Initialize cropper after image load
- img.onload = () => {
-    try{ if(__cropper){ __cropper.destroy(); __cropper = null; } }catch(_){}
-    const aspectSel = $('cropAspect');
-    aspectSel.value = "preset";
-    __cropper = new Cropper(img, {
-       viewMode: 1,
-       dragMode: "move",
-       autoCropArea: 1,
-       movable: true,
-       zoomable: true,
-       scalable: false,
-       rotatable: false,
-       responsive: true,
-       background: false,
-       aspectRatio: preset.aspect,
-       checkOrientation: true,
-    });
- };
-
- // Close handlers
- $('btnCropClose').onclick = closeCropperModal;
- $('btnCropCancel').onclick = closeCropperModal;
-
- // Tools
- $('btnZoomIn').onclick = () => __cropper && __cropper.zoom(0.1);
- $('btnZoomOut').onclick = () => __cropper && __cropper.zoom(-0.1);
- $('btnMoveLeft').onclick = () => __cropper && __cropper.move(-10, 0);
- $('btnMoveRight').onclick = () => __cropper && __cropper.move(10, 0);
- $('btnMoveUp').onclick = () => __cropper && __cropper.move(0, -10);
- $('btnMoveDown').onclick = () => __cropper && __cropper.move(0, 10);
-
- // Aspect toggle
- $('cropAspect').onchange = (e) => {
-    if(!__cropper) return;
-    const v = e.target.value;
-    if(v === "free") __cropper.setAspectRatio(NaN);
-    else __cropper.setAspectRatio(preset.aspect);
- };
-
- $('btnCropApply').onclick = async () => {
-    if(!__cropper || !__cropCtx) return;
-    const { preset } = __cropCtx;
-    const canvas = __cropper.getCroppedCanvas({ width: preset.outW, height: preset.outH, imageSmoothingEnabled: true, imageSmoothingQuality: "high" });
-    if(!canvas){ showToast("Crop failed", "error"); return; }
-
-    const blob = await new Promise(res => canvas.toBlob(res, preset.mime, preset.quality));
-    if(!blob){ showToast("Crop failed", "error"); return; }
-
-    // Create a new File so existing upload logic stays same
-    const safeName = (__cropCtx.fileName || (kind + ".jpg")).replace(/\s+/g,'_');
-    const newFile = new File([blob], safeName, { type: preset.mime });
-
-    // push into pending assets (existing logic)
-    setPending(kind, newFile, uiKey);
-
-    closeCropperModal();
- };
-```
-
-}
-
-function closeCropperModal(){
-const modal = $(‘cropModal’);
-const img = $(‘cropImage’);
-try{ if(__cropper){ __cropper.destroy(); __cropper = null; } }catch(*){}
-try{ if(img && img.src && img.src.startsWith(“blob:”)) URL.revokeObjectURL(img.src); }catch(*){}
-if(modal) modal.classList.add(“hidden”);
-__cropCtx = null;
-}
+  function closeCropperModal(){
+     const modal = $('cropModal');
+     const img = $('cropImage');
+     try{ if(__cropper){ __cropper.destroy(); __cropper = null; } }catch(_){}
+     try{ if(img && img.src && img.src.startsWith("blob:")) URL.revokeObjectURL(img.src); }catch(_){}
+     if(modal) modal.classList.add("hidden");
+     __cropCtx = null;
+  }
 
 // UI keys: logo, header, bg
 // Backend keys: logo, header, background (IMPORTANT!)
 [
-{ ui: “logo”, kind: “logo” },
-{ ui: “header”, kind: “header” },
-{ ui: “bg”, kind: “background” },
+  { ui: "logo", kind: "logo" },
+  { ui: "header", kind: "header" },
+  { ui: "bg", kind: "background" },
 ].forEach(({ui, kind}) => {
-const inp = $(`file_${ui}`);
-if (inp){
-inp.onchange = (e) => {
-const f = e?.target?.files?.[0];
-if (f) { openCropperModal(kind, f, ui); e.target.value=’’; }
-};
-}
+   const inp = $(`file_${ui}`);
+   if (inp){
+     inp.onchange = (e) => {
+       const f = e?.target?.files?.[0];
+       if (f) { openCropperModal(kind, f, ui); e.target.value=''; }
+     };
+   }
 
-const clearBtn = document.querySelector(`[data-clear="${ui}"]`);
-if(clearBtn) clearBtn.onclick = (e) => {
-e.stopPropagation();
-if (inp) inp.value = “”;
-setPending(kind, null, ui);
-};
+   const clearBtn = document.querySelector(`[data-clear="${ui}"]`);
+   if(clearBtn) clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (inp) inp.value = "";
+      setPending(kind, null, ui);
+   };
 });
 
-// Input Live Sync
-[‘input’,‘change’].forEach(ev => {
-$(‘b_title’).addEventListener(ev, renderBrandPreview);
-$(‘b_subtitle’).addEventListener(ev, renderBrandPreview);
-$(‘b_tagline’).addEventListener(ev, renderBrandPreview);
-$(‘b_c1’).addEventListener(ev, renderBrandPreview);
-$(‘b_c2’).addEventListener(ev, renderBrandPreview);
-});
-
-$(‘btnAddProg’).onclick = () => {
-const v = $(‘progInput’).value.trim();
-if(!v) return;
-const ft = state.target === “**defaults**” ? “**defaults**” : state.target;
-const scope = $(‘progScopeSel’).value;
-if(scope === ‘defaults’) {
-state.config.defaults.programs = [v, …(state.config.defaults.programs||[])];
-} else {
-ensureFormObj(ft);
-const base = (state.config.forms[ft].program_options || state.config.forms[ft].programs || []);
-const arr = [v, …base];
-state.config.forms[ft].program_options = arr;
-state.config.forms[ft].programs = arr;
-}
-$(‘progInput’).value = “”;
-renderPrograms();
-showToast(“Program Added”, “success”);
-};
-
-$(‘btnLoadData’).onclick = () => loadData(“fresh”);
-if ($(‘btnApplyFilter’)) $(‘btnApplyFilter’).onclick = async () => { await loadData(“fresh”); populateFilterOptions(); applyClientFilters(); };
-if ($(‘dataSort’)) $(‘dataSort’).onchange = () => { applyClientFilters(); };
-$(‘btnNextPage’).onclick = () => loadData(“next”);
-$(‘btnPrevPage’).onclick = () => loadData(“prev”);
-$(‘btnExportCsv’).onclick = () => {
-const rows = (state.viewItems || []).map(e => (e.payload || e));
-if(!rows.length){ showToast(“No rows to export”, “info”); return; }
-const colsSet = new Set();
-rows.forEach(r => Object.keys(r||{}).forEach(k=>colsSet.add(k)));
-const cols = Array.from(colsSet);
-
-```
- function esc(v){
-   const x = (v===undefined||v===null) ? "" : String(v).replace(/\r?\n/g, " ");
-   return '"' + x.replace(/"/g,'""') + '"';
- }
-
- const lines = [];
- lines.push(cols.map(esc).join(","));
- rows.forEach(r => {
-    lines.push(cols.map(k => esc(r[k])).join(","));
- });
-
- const csvContent = "data:text/csv;charset=utf-8," + lines.join("\n");
- const encodedUri = encodeURI(csvContent);
- const link = document.createElement("a");
- link.setAttribute("href", encodedUri);
- link.setAttribute("download", `data_${state.cid || "export"}_${Date.now()}.csv`);
- document.body.appendChild(link);
- link.click();
- document.body.removeChild(link);
-```
-
-};
-
-// Init
-loadConfig();
-renderFormPreviewIframe();
-
-})();
-</script>
-
-<!-- Cropper Modal -->
-
-<div id="cropModal" class="fixed inset-0 z-[9999] hidden">
-  <div class="absolute inset-0 bg-black/70"></div>
-  <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl glass-panel rounded-2xl border border-slate-700 overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
-        <div>
-          <div class="text-sm font-extrabold text-white">Image Fit / Crop</div>
-          <div id="cropHint" class="text-xs text-slate-400 mt-0.5">Drag to move • Scroll / pinch to zoom</div>
-        </div>
-        <button id="btnCropClose" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      <div class="p-4">
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div class="lg:col-span-4">
-            <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950/30">
-              <img id="cropImage" class="max-h-[62vh] w-full object-contain" />
-            </div>
-          </div>
-          <div class="lg:col-span-1 space-y-3">
-            <div class="text-xs font-bold text-slate-300 uppercase tracking-wider">Tools</div>
-            <div class="grid grid-cols-2 gap-2">
-              <button id="btnZoomIn" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">Zoom +</button>
-              <button id="btnZoomOut" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">Zoom −</button>
-              <button id="btnMoveLeft" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-left"></i></button>
-              <button id="btnMoveRight" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-right"></i></button>
-              <button id="btnMoveUp" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-up"></i></button>
-              <button id="btnMoveDown" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-down"></i></button>
-            </div>
-
-```
-        <div class="mt-2">
-          <div class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Aspect</div>
-          <select id="cropAspect" class="input-field w-full rounded-xl px-3 py-2 text-sm">
-            <option value="preset">Preset</option>
-            <option value="free">Free</option>
-          </select>
-          <div class="text-[11px] text-slate-400 mt-1">Preset: Logo = Square • Header = Wide • BG = 16:9</div>
-        </div>
-
-        <div class="pt-2 border-t border-slate-800">
-          <button id="btnCropApply" class="w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold">Apply</button>
-          <button id="btnCropCancel" class="w-full mt-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-```
-
-  </div>
-</div>
-
-<script>
-// ═══════════════════════════════════════════
-//  Gallery — Admin Console Module (v2)
-// ═══════════════════════════════════════════
-(function() {
-  let photosData = [];
-  let photosLastKey = null;
-  let slideIdx = 0;
-
-  function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-
-  async function adminApi(action, payload) {
-    const cid = (window._adminState && window._adminState.cid)
-      ? window._adminState.cid
-      : (new URLSearchParams(window.location.search)).get("cid") || "";
-    const fullPayload = { collection_id: cid, ...payload };
-    if (window._adminApiCall) return window._adminApiCall(action, fullPayload);
-    // fallback
-    const API_ID = "vxid0yoovj", REGION = "ap-south-1";
-    const url = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/forms`;
-    const headers = { "Content-Type": "application/json" };
-    const tok = localStorage.getItem("id_token") || "";
-    if (tok) headers["Authorization"] = `Bearer ${tok}`;
-    const resp = await fetch(url, { method:"POST", headers, body: JSON.stringify({ action, payload: fullPayload }) });
-    return resp.json();
-  }
-
-  // ── Load Photos ──
-  async function loadPhotos(reset = true) {
-    if (reset) { photosData = []; photosLastKey = null; }
-    const grid = document.getElementById("galleryGrid");
-    if (!grid) return;
-
-    const cid = (window._adminState && window._adminState.cid) || (new URLSearchParams(window.location.search)).get("cid") || "";
-    if (!cid) {
-      grid.innerHTML = '<div class="col-span-full text-amber-400 text-sm text-center py-8">⚠️ CID missing</div>';
-      return;
-    }
-
-    if (reset) grid.innerHTML = '<div class="col-span-full text-slate-500 text-sm text-center py-8"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Loading...</div>';
-
-    try {
-      const res = await adminApi("admin_list_photos", { limit: 100, last_key: photosLastKey || undefined });
-      const newPhotos = (res.photos || []).filter(p => p.url);
-      photosData = reset ? newPhotos : [...photosData, ...newPhotos];
-      photosLastKey = res.last_key || null;
-
-      renderPhotosGrid(reset);
-      const tot = document.getElementById("photosTotal");
-      if (tot) tot.textContent = `${photosData.length}${photosLastKey ? "+" : ""} photos`;
-      const btn = document.getElementById("loadMorePhotosBtn");
-      if (btn) btn.classList.toggle("hidden", !photosLastKey);
-    } catch(e) {
-      if (grid) grid.innerHTML = `<div class="col-span-full text-red-400 text-sm text-center py-8">Error: ${esc(e.message)}</div>`;
-    }
-  }
-
-  function renderPhotosGrid(reset = true) {
-    const grid = document.getElementById("galleryGrid");
-    if (!grid) return;
-    if (reset) grid.innerHTML = "";
-    const startIdx = reset ? 0 : grid.children.length;
-
-    photosData.slice(startIdx).forEach((photo, relIdx) => {
-      const absIdx = startIdx + relIdx;
-      const div = document.createElement("div");
-      div.className = "relative aspect-square bg-slate-800 rounded overflow-hidden cursor-pointer group";
-
-      const img = document.createElement("img");
-      img.src = photo.url;
-      img.loading = "lazy";
-      img.className = "w-full h-full object-cover group-hover:scale-105 transition-transform duration-200";
-
-      // Hover overlay with date
-      const overlay = document.createElement("div");
-      overlay.className = "absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex flex-col justify-end p-1 opacity-0 group-hover:opacity-100";
-      const dateStr = photo.form_date || (photo.created_at_iso || "").slice(0,10) || "";
-      overlay.innerHTML = `<span class="text-[9px] text-white/90 leading-tight truncate">${esc(photo.program_name || photo.form_type || "")}</span>
-        <span class="text-[8px] text-white/60">${esc(dateStr)}</span>`;
-
-      div.appendChild(img);
-      div.appendChild(overlay);
-      div.addEventListener("click", () => openSlide(absIdx));
-      grid.appendChild(div);
-    });
-
-    if (!photosData.length && reset) {
-      grid.innerHTML = '<div class="col-span-full text-slate-500 text-sm text-center py-8">कोई photos नहीं मिले</div>';
-    }
-  }
-
-  // ── Photo Slideshow ──
-  function openSlide(idx) {
-    slideIdx = idx;
-    showSlide();
-    document.getElementById("photoSlideOverlay").classList.remove("hidden");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeSlide() {
-    document.getElementById("photoSlideOverlay").classList.add("hidden");
-    document.body.style.overflow = "";
-  }
-
-  function showSlide() {
-    const photo = photosData[slideIdx];
-    if (!photo) return;
-
-    // Image
-    document.getElementById("photoSlideImg").src = photo.url;
-    document.getElementById("photoSlideCounter").textContent = `${slideIdx + 1} / ${photosData.length}`;
-    document.getElementById("photoSlideTitle").textContent = photo.program_name || photo.form_type || "Photo";
-
-    // Event Info (right panel)
-    const info = document.getElementById("photoSlideEventInfo");
-    const rows = [
-      ["📅 दिनांक", photo.form_date || photo.created_at_iso?.slice(0,10)],
-      ["🗺️ जिला", photo.district],
-      ["📋 Form", photo.form_type],
-      ["🏷️ Program", photo.program_name],
-    ].filter(r => r[1]);
-
-    info.innerHTML = rows.map(([k,v]) =>
-      `<div class="flex gap-2"><span class="text-slate-500 text-xs shrink-0">${esc(k)}</span><span class="text-xs text-slate-200 break-words">${esc(v)}</span></div>`
-    ).join("") || '<div class="text-slate-500 text-xs">कोई details नहीं</div>';
-
-    // इस event की और photos (same entry_id या same form_date+district)
-    const eventPhotos = photosData.filter((p, i) => i !== slideIdx && (
-      (photo.entry_id && p.entry_id === photo.entry_id) ||
-      (photo.form_date && p.form_date === photo.form_date && p.district === photo.district && p.form_type === photo.form_type)
-    )).slice(0, 12);
-
-    const epGrid = document.getElementById("photoSlideEventPhotos");
-    if (eventPhotos.length) {
-      epGrid.innerHTML = eventPhotos.map((p, i) =>
-        `<img src="${esc(p.url)}" class="aspect-square object-cover rounded cursor-pointer hover:opacity-80 w-full"
-              onclick="window._galleryGoTo(${photosData.indexOf(p)})" />`
-      ).join("");
-    } else {
-      epGrid.innerHTML = '<div class="col-span-4 text-slate-600 text-[10px] text-center py-2">यही एक photo है इस event से</div>';
-    }
-  }
-
-  window._galleryGoTo = function(idx) { slideIdx = idx; showSlide(); };
-
-  // Navigation
-  document.getElementById("photoSlidePrev")?.addEventListener("click", () => {
-    slideIdx = (slideIdx - 1 + photosData.length) % photosData.length;
-    showSlide();
-  });
-  document.getElementById("photoSlideNext")?.addEventListener("click", () => {
-    slideIdx = (slideIdx + 1) % photosData.length;
-    showSlide();
-  });
-  document.getElementById("photoSlideClose")?.addEventListener("click", closeSlide);
-  document.addEventListener("keydown", e => {
-    if (document.getElementById("photoSlideOverlay")?.classList.contains("hidden")) return;
-    if (e.key === "ArrowLeft") { slideIdx = (slideIdx - 1 + photosData.length) % photosData.length; showSlide(); }
-    if (e.key === "ArrowRight") { slideIdx = (slideIdx + 1) % photosData.length; showSlide(); }
-    if (e.key === "Escape") closeSlide();
+  // Input Live Sync
+  ['input','change'].forEach(ev => {
+      $('b_title').addEventListener(ev, renderBrandPreview);
+      $('b_subtitle').addEventListener(ev, renderBrandPreview);
+      $('b_tagline').addEventListener(ev, renderBrandPreview);
+      $('b_c1').addEventListener(ev, renderBrandPreview);
+      $('b_c2').addEventListener(ev, renderBrandPreview);
   });
 
-  // Refresh + Load more
-  document.getElementById("galleryRefreshBtn")?.addEventListener("click", () => loadPhotos(true));
-  document.getElementById("loadMorePhotosBtn")?.addEventListener("click", () => loadPhotos(false));
+  $('btnAddProg').onclick = () => {
+      const v = $('progInput').value.trim();
+      if(!v) return;
+      const ft = state.target === "__defaults__" ? "__defaults__" : state.target;
+      const scope = $('progScopeSel').value;
+      if(scope === 'defaults') {
+          state.config.defaults.programs = [v, ...(state.config.defaults.programs||[])];
+      } else {
+          ensureFormObj(ft);
+          const base = (state.config.forms[ft].program_options || state.config.forms[ft].programs || []);
+          const arr = [v, ...base];
+          state.config.forms[ft].program_options = arr;
+          state.config.forms[ft].programs = arr;
+      }
+      $('progInput').value = "";
+      renderPrograms();
+      showToast("Program Added", "success");
+  };
 
-  // Gallery tab click पर auto-load
-  document.addEventListener("click", e => {
-    const btn = e.target.closest("[data-tab]");
-    if (btn && btn.dataset.tab === "gallery" && !photosData.length) {
-      setTimeout(() => loadPhotos(true), 200);
-    }
-  });
-})();
+  $('btnLoadData').onclick = () => loadData("fresh");
+  if ($('btnApplyFilter')) $('btnApplyFilter').onclick = async () => { await loadData("fresh"); populateFilterOptions(); applyClientFilters(); };
+  if ($('dataSort')) $('dataSort').onchange = () => { applyClientFilters(); };
+  $('btnNextPage').onclick = () => loadData("next");
+  $('btnPrevPage').onclick = () => loadData("prev");
+  $('btnExportCsv').onclick = () => {
+     const rows = (state.viewItems || []).map(e => (e.payload || e));
+     if(!rows.length){ showToast("No rows to export", "info"); return; }
+     const colsSet = new Set();
+     rows.forEach(r => Object.keys(r||{}).forEach(k=>colsSet.add(k)));
+     const cols = Array.from(colsSet);
 
+     function esc(v){
+       const x = (v===undefined||v===null) ? "" : String(v).replace(/\r?\n/g, " ");
+       return '"' + x.replace(/"/g,'""') + '"';
+     }
+
+     const lines = [];
+     lines.push(cols.map(esc).join(","));
+     rows.forEach(r => {
+        lines.push(cols.map(k => esc(r[k])).join(","));
+     });
+
+     const csvContent = "data:text/csv;charset=utf-8," + lines.join("\n");
+     const encodedUri = encodeURI(csvContent);
+     const link = document.createElement("a");
+     link.setAttribute("href", encodedUri);
+     link.setAttribute("download", `data_${state.cid || "export"}_${Date.now()}.csv`);
+     document.body.appendChild(link);
+     link.click();
+     document.body.removeChild(link);
+  };
+
+  // ═══ ATTENDANCE DASHBOARD ═══
 // ═══════════════════════════════════════════════════════
 // ATTENDANCE DASHBOARD MODULE
 // ═══════════════════════════════════════════════════════
@@ -2961,6 +2665,239 @@ renderFormPreviewIframe();
   });
 })();
 
+  // Init
+  loadConfig();
+  renderFormPreviewIframe();
+
+})();
+</script>
+
+<!-- Cropper Modal -->
+<div id="cropModal" class="fixed inset-0 z-[9999] hidden">
+  <div class="absolute inset-0 bg-black/70"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl glass-panel rounded-2xl border border-slate-700 overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <div class="text-sm font-extrabold text-white">Image Fit / Crop</div>
+          <div id="cropHint" class="text-xs text-slate-400 mt-0.5">Drag to move • Scroll / pinch to zoom</div>
+        </div>
+        <button id="btnCropClose" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div class="lg:col-span-4">
+            <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950/30">
+              <img id="cropImage" class="max-h-[62vh] w-full object-contain" />
+            </div>
+          </div>
+          <div class="lg:col-span-1 space-y-3">
+            <div class="text-xs font-bold text-slate-300 uppercase tracking-wider">Tools</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnZoomIn" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">Zoom +</button>
+              <button id="btnZoomOut" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold">Zoom −</button>
+              <button id="btnMoveLeft" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-left"></i></button>
+              <button id="btnMoveRight" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-right"></i></button>
+              <button id="btnMoveUp" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-up"></i></button>
+              <button id="btnMoveDown" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold"><i class="fa-solid fa-arrow-down"></i></button>
+            </div>
+
+            <div class="mt-2">
+              <div class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Aspect</div>
+              <select id="cropAspect" class="input-field w-full rounded-xl px-3 py-2 text-sm">
+                <option value="preset">Preset</option>
+                <option value="free">Free</option>
+              </select>
+              <div class="text-[11px] text-slate-400 mt-1">Preset: Logo = Square • Header = Wide • BG = 16:9</div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+              <button id="btnCropApply" class="w-full py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold">Apply</button>
+              <button id="btnCropCancel" class="w-full mt-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  Gallery — Admin Console Module (v2)
+// ═══════════════════════════════════════════
+(function() {
+  let photosData = [];
+  let photosLastKey = null;
+  let slideIdx = 0;
+
+  function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  async function adminApi(action, payload) {
+    const cid = (window._adminState && window._adminState.cid)
+      ? window._adminState.cid
+      : (new URLSearchParams(window.location.search)).get("cid") || "";
+    const fullPayload = { collection_id: cid, ...payload };
+    if (window._adminApiCall) return window._adminApiCall(action, fullPayload);
+    // fallback
+    const API_ID = "vxid0yoovj", REGION = "ap-south-1";
+    const url = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod/political/forms`;
+    const headers = { "Content-Type": "application/json" };
+    const tok = localStorage.getItem("id_token") || "";
+    if (tok) headers["Authorization"] = `Bearer ${tok}`;
+    const resp = await fetch(url, { method:"POST", headers, body: JSON.stringify({ action, payload: fullPayload }) });
+    return resp.json();
+  }
+
+  // ── Load Photos ──
+  async function loadPhotos(reset = true) {
+    if (reset) { photosData = []; photosLastKey = null; }
+    const grid = document.getElementById("galleryGrid");
+    if (!grid) return;
+
+    const cid = (window._adminState && window._adminState.cid) || (new URLSearchParams(window.location.search)).get("cid") || "";
+    if (!cid) {
+      grid.innerHTML = '<div class="col-span-full text-amber-400 text-sm text-center py-8">⚠️ CID missing</div>';
+      return;
+    }
+
+    if (reset) grid.innerHTML = '<div class="col-span-full text-slate-500 text-sm text-center py-8"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Loading...</div>';
+
+    try {
+      const res = await adminApi("admin_list_photos", { limit: 100, last_key: photosLastKey || undefined });
+      const newPhotos = (res.photos || []).filter(p => p.url);
+      photosData = reset ? newPhotos : [...photosData, ...newPhotos];
+      photosLastKey = res.last_key || null;
+
+      renderPhotosGrid(reset);
+      const tot = document.getElementById("photosTotal");
+      if (tot) tot.textContent = `${photosData.length}${photosLastKey ? "+" : ""} photos`;
+      const btn = document.getElementById("loadMorePhotosBtn");
+      if (btn) btn.classList.toggle("hidden", !photosLastKey);
+    } catch(e) {
+      if (grid) grid.innerHTML = `<div class="col-span-full text-red-400 text-sm text-center py-8">Error: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function renderPhotosGrid(reset = true) {
+    const grid = document.getElementById("galleryGrid");
+    if (!grid) return;
+    if (reset) grid.innerHTML = "";
+    const startIdx = reset ? 0 : grid.children.length;
+
+    photosData.slice(startIdx).forEach((photo, relIdx) => {
+      const absIdx = startIdx + relIdx;
+      const div = document.createElement("div");
+      div.className = "relative aspect-square bg-slate-800 rounded overflow-hidden cursor-pointer group";
+
+      const img = document.createElement("img");
+      img.src = photo.url;
+      img.loading = "lazy";
+      img.className = "w-full h-full object-cover group-hover:scale-105 transition-transform duration-200";
+
+      // Hover overlay with date
+      const overlay = document.createElement("div");
+      overlay.className = "absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex flex-col justify-end p-1 opacity-0 group-hover:opacity-100";
+      const dateStr = photo.form_date || (photo.created_at_iso || "").slice(0,10) || "";
+      overlay.innerHTML = `<span class="text-[9px] text-white/90 leading-tight truncate">${esc(photo.program_name || photo.form_type || "")}</span>
+        <span class="text-[8px] text-white/60">${esc(dateStr)}</span>`;
+
+      div.appendChild(img);
+      div.appendChild(overlay);
+      div.addEventListener("click", () => openSlide(absIdx));
+      grid.appendChild(div);
+    });
+
+    if (!photosData.length && reset) {
+      grid.innerHTML = '<div class="col-span-full text-slate-500 text-sm text-center py-8">कोई photos नहीं मिले</div>';
+    }
+  }
+
+  // ── Photo Slideshow ──
+  function openSlide(idx) {
+    slideIdx = idx;
+    showSlide();
+    document.getElementById("photoSlideOverlay").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeSlide() {
+    document.getElementById("photoSlideOverlay").classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+
+  function showSlide() {
+    const photo = photosData[slideIdx];
+    if (!photo) return;
+
+    // Image
+    document.getElementById("photoSlideImg").src = photo.url;
+    document.getElementById("photoSlideCounter").textContent = `${slideIdx + 1} / ${photosData.length}`;
+    document.getElementById("photoSlideTitle").textContent = photo.program_name || photo.form_type || "Photo";
+
+    // Event Info (right panel)
+    const info = document.getElementById("photoSlideEventInfo");
+    const rows = [
+      ["📅 दिनांक", photo.form_date || photo.created_at_iso?.slice(0,10)],
+      ["🗺️ जिला", photo.district],
+      ["📋 Form", photo.form_type],
+      ["🏷️ Program", photo.program_name],
+    ].filter(r => r[1]);
+
+    info.innerHTML = rows.map(([k,v]) =>
+      `<div class="flex gap-2"><span class="text-slate-500 text-xs shrink-0">${esc(k)}</span><span class="text-xs text-slate-200 break-words">${esc(v)}</span></div>`
+    ).join("") || '<div class="text-slate-500 text-xs">कोई details नहीं</div>';
+
+    // इस event की और photos (same entry_id या same form_date+district)
+    const eventPhotos = photosData.filter((p, i) => i !== slideIdx && (
+      (photo.entry_id && p.entry_id === photo.entry_id) ||
+      (photo.form_date && p.form_date === photo.form_date && p.district === photo.district && p.form_type === photo.form_type)
+    )).slice(0, 12);
+
+    const epGrid = document.getElementById("photoSlideEventPhotos");
+    if (eventPhotos.length) {
+      epGrid.innerHTML = eventPhotos.map((p, i) =>
+        `<img src="${esc(p.url)}" class="aspect-square object-cover rounded cursor-pointer hover:opacity-80 w-full"
+              onclick="window._galleryGoTo(${photosData.indexOf(p)})" />`
+      ).join("");
+    } else {
+      epGrid.innerHTML = '<div class="col-span-4 text-slate-600 text-[10px] text-center py-2">यही एक photo है इस event से</div>';
+    }
+  }
+
+  window._galleryGoTo = function(idx) { slideIdx = idx; showSlide(); };
+
+  // Navigation
+  document.getElementById("photoSlidePrev")?.addEventListener("click", () => {
+    slideIdx = (slideIdx - 1 + photosData.length) % photosData.length;
+    showSlide();
+  });
+  document.getElementById("photoSlideNext")?.addEventListener("click", () => {
+    slideIdx = (slideIdx + 1) % photosData.length;
+    showSlide();
+  });
+  document.getElementById("photoSlideClose")?.addEventListener("click", closeSlide);
+  document.addEventListener("keydown", e => {
+    if (document.getElementById("photoSlideOverlay")?.classList.contains("hidden")) return;
+    if (e.key === "ArrowLeft") { slideIdx = (slideIdx - 1 + photosData.length) % photosData.length; showSlide(); }
+    if (e.key === "ArrowRight") { slideIdx = (slideIdx + 1) % photosData.length; showSlide(); }
+    if (e.key === "Escape") closeSlide();
+  });
+
+  // Refresh + Load more
+  document.getElementById("galleryRefreshBtn")?.addEventListener("click", () => loadPhotos(true));
+  document.getElementById("loadMorePhotosBtn")?.addEventListener("click", () => loadPhotos(false));
+
+  // Gallery tab click पर auto-load
+  document.addEventListener("click", e => {
+    const btn = e.target.closest("[data-tab]");
+    if (btn && btn.dataset.tab === "gallery" && !photosData.length) {
+      setTimeout(() => loadPhotos(true), 200);
+    }
+  });
+})();
 </script>
 
 </body>

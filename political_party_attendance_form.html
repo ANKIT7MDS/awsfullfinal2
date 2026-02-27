@@ -483,15 +483,29 @@ async function speakSarvam(text){
 }
 
 // ════════════════════════════════
-// RESOLVE CID
+// RESOLVE CID — multiple methods
 // ════════════════════════════════
+function extractCidFromS3Key(s3key){
+  // s3_key format: political/{cid}/forms/...
+  if(!s3key) return "";
+  const m = s3key.match(/political\/([0-9a-f\-]{36})\//i);
+  return m ? m[1] : "";
+}
+
 async function resolveCid(){
-  if(CID||!TOK) return;
-  try{
-    const r = await api("public_get_config",{token:TOK,form_type:FTYPE});
-    const c = r.collection_id||r.cid||(r.config&&(r.config.collection_id||r.config.cid))||"";
-    if(c) CID=c.trim();
-  }catch(e){}
+  if(CID) return;
+  // Method 1: from token via public_get_config
+  if(TOK){
+    try{
+      const r = await api("public_get_config",{token:TOK,form_type:FTYPE});
+      const c = r.collection_id||r.cid||(r.config&&(r.config.collection_id||r.config.cid))||"";
+      if(c){ CID=c.trim(); console.log("✅ CID from token:",CID); return; }
+    }catch(e){ console.warn("resolveCid token method failed",e); }
+  }
+  // Method 2: from URL param ?collection_id= or ?cid=
+  const urlCid = _qs("collection_id")||_qs("cid");
+  if(urlCid){ CID=urlCid.trim(); console.log("✅ CID from URL:",CID); return; }
+  console.warn("⚠️ Could not resolve CID — branding/config will fail");
 }
 
 // ════════════════════════════════
@@ -499,9 +513,21 @@ async function resolveCid(){
 // ════════════════════════════════
 async function loadBranding(){
   try{
-    const payload = TOK ? {token:TOK,form_type:FTYPE} : {collection_id:CID,form_type:FTYPE};
-    const action  = TOK ? "public_get_config" : "admin_get_config";
-    const res = await api(action, payload);
+    // Try public_get_config first (works with token or cid)
+    let res;
+    if(TOK){
+      res = await api("public_get_config", {token:TOK, form_type:FTYPE});
+    } else if(CID){
+      // Try admin first, fallback to public
+      try{
+        res = await api("admin_get_config", {collection_id:CID, form_type:FTYPE});
+      }catch(e){
+        console.warn("admin_get_config failed, trying public_get_config");
+        res = await api("public_get_config", {collection_id:CID, form_type:FTYPE});
+      }
+    } else {
+      throw new Error("No CID or TOK available for config");
+    }
 
     // Always log full response so admin can debug via F12
     console.log("📦 CONFIG RESPONSE:", JSON.stringify(res).slice(0,2000));
@@ -709,6 +735,16 @@ async function runMatch(file){
     if(CID) cp.collection_id=CID;
     const cr=await api(isPub()?"public_create_entry":"create_entry",cp);
     entryId=cr.entry_id; finalTok=cr.finalize_token; upUrl=cr.upload_url; s3k=cr.s3_key;
+    // Extract CID from s3_key if not yet known, then retry branding
+    if(!CID && s3k){
+      const cidFromS3 = extractCidFromS3Key(s3k);
+      if(cidFromS3){
+        CID = cidFromS3;
+        console.log("✅ CID from create_entry s3_key:", CID);
+        // Retry branding now that we have CID
+        loadBranding().catch(e=>console.warn("branding retry failed",e));
+      }
+    }
     if(upUrl&&!cr.duplicate) await fetch(upUrl,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
 
     const sp={s3_key:s3k,days:730};
@@ -2938,9 +2974,37 @@ const DISTRICT_DATA = {
     ]
   }
 }
+// ════════════════════════════════
 // INIT
+// ════════════════════════════════
 (async()=>{
-  await loadBranding();
+  // Step 1: Resolve CID — try URL, token
+  await resolveCid();
+
+  // Step 2: If still no CID — do a probe create_entry to extract CID from response
+  if(!CID){
+    try{
+      // Make a tiny probe call to get CID from s3_key
+      const probe = await api(isPub()?"public_create_entry":"create_entry",{
+        form_type:FTYPE, sha256:"probe", file_name:"probe.jpg", mime_type:"image/jpeg", payload:{},
+        ...(TOK?{token:TOK}:{}),
+      });
+      const cidFromS3 = extractCidFromS3Key(probe.s3_key||"");
+      const cidDirect = probe.collection_id||probe.cid||
+        extractCidFromS3Key((probe.finalize_token||""));
+      CID = cidFromS3 || cidDirect || "";
+      if(CID) console.log("✅ CID from probe s3_key:",CID);
+    }catch(e){ console.warn("Probe failed",e); }
+  }
+
+  // Step 3: Load branding (programs, title, logo)
+  if(CID || TOK){
+    await loadBranding();
+  } else {
+    console.warn("⚠️ No CID or TOK — add ?cid=YOUR_COLLECTION_ID or ?token=YOUR_TOKEN to URL");
+  }
+
+  // Step 4: Start front camera
   await startCam("user");
 })();
 </script>

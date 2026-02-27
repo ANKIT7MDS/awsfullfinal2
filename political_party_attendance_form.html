@@ -36,25 +36,61 @@ body{
 }
 .deva{font-family:'Noto Sans Devanagari','Baloo 2',sans-serif;}
 
-/* ── HEADER STRIP ── */
+/* ── HEADER STRIP (CENTERED TEXT) ── */
 .top-strip{
   background:linear-gradient(135deg,var(--saf),var(--saf2));
-  padding:12px 16px 10px;
-  display:flex;align-items:center;gap:12px;
+  padding:12px 12px 10px;
   box-shadow:0 3px 12px rgba(255,107,0,0.3);
   position:sticky;top:0;z-index:100;
+  display:grid;
+  grid-template-columns:52px 1fr 52px;
+  align-items:center;
+  gap:8px;
 }
-.top-strip .logo-wrap{
+.hdr-left,.hdr-right{
+  width:52px;height:44px;
+  display:flex;align-items:center;
+}
+.hdr-left{justify-content:flex-start;}
+.hdr-right{justify-content:flex-end;}
+.title-wrap{
+  text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.title-wrap .t1{
+  font-size:17px;font-weight:900;color:#fff;line-height:1.1;
+}
+.title-wrap .t2{font-size:11px;color:rgba(255,255,255,0.8);}
+
+/* logo */
+.logo-wrap{
   width:44px;height:44px;border-radius:12px;
   background:rgba(255,255,255,0.2);
   border:2px solid rgba(255,255,255,0.4);
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;flex-shrink:0;
 }
-.top-strip .title-wrap .t1{
-  font-size:17px;font-weight:900;color:#fff;line-height:1.1;
+
+/* Header banner (FIXED) */
+.header-banner-wrap{
+  width:100%;
+  max-width:420px;
+  margin:0 auto;
+  padding:12px 12px 0;
 }
-.top-strip .title-wrap .t2{font-size:11px;color:rgba(255,255,255,0.8);}
+.header-banner{
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  display:block;
+  border-radius:18px;
+  border:2px solid var(--border);
+  box-shadow:0 4px 20px rgba(255,107,0,0.14), 0 1px 4px rgba(0,0,0,0.06);
+  background:#fff;
+}
+@media (max-width:360px){
+  .header-banner{height:108px;}
+}
 
 /* ── CARDS ── */
 .card{
@@ -91,9 +127,7 @@ body{
 #cam-canvas{display:none;}
 
 /* Oval guide */
-.oval-guide{
-  position:absolute;inset:0;pointer-events:none;
-}
+.oval-guide{position:absolute;inset:0;pointer-events:none;}
 .oval-guide ellipse{
   fill:none;stroke:rgba(255,180,71,0.9);stroke-width:3;
   filter:drop-shadow(0 0 10px rgba(255,107,0,0.8));
@@ -165,10 +199,7 @@ body{
 }
 #cap-btn:active{transform:scale(.96);box-shadow:0 3px 12px rgba(255,107,0,0.35);}
 #cap-btn .cam-icon{font-size:28px;}
-.cap-hint{
-  text-align:center;margin-top:10px;
-  font-size:13px;color:var(--muted);font-weight:600;
-}
+.cap-hint{text-align:center;margin-top:10px;font-size:13px;color:var(--muted);font-weight:600;}
 
 /* Preview box */
 #prev-box{display:none;position:relative;}
@@ -302,7 +333,7 @@ select.inp option{background:#fff;color:var(--text);}
   background:rgba(34,197,94,.12);border:2px solid rgba(34,197,94,.3);
   color:#166534;font-size:14px;font-weight:700;margin-bottom:18px;
 }
-.confirm-msg{font-size:17px;color:#2d6a4a;font-weight:700;margin-bottom:6px;}
+.confirm-msg{font-size:17px;color:#2d6a4a;font-weight:800;margin-bottom:8px;line-height:1.35;}
 .confirm-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.6;}
 .confirm-wave{
   position:absolute;bottom:0;left:0;right:0;height:5px;
@@ -360,19 +391,22 @@ select.inp option{background:#fff;color:var(--text);}
 
   <!-- Header -->
   <div class="top-strip">
-    <div class="logo-wrap">
-      <i id="default-icon" class="fa-solid fa-people-group" style="font-size:20px;color:#fff;"></i>
-      <img id="logo-img" style="width:100%;height:100%;object-fit:contain;display:none;" alt=""/>
+    <div class="hdr-left">
+      <div class="logo-wrap">
+        <i id="default-icon" class="fa-solid fa-people-group" style="font-size:20px;color:#fff;"></i>
+        <img id="logo-img" style="width:100%;height:100%;object-fit:contain;display:none;" alt=""/>
+      </div>
     </div>
     <div class="title-wrap">
       <div id="org-name" class="t1 deva">पार्टी उपस्थिति</div>
       <div id="org-sub" class="t2">Party Attendance</div>
     </div>
+    <div class="hdr-right"><!-- spacer for perfect center --></div>
   </div>
 
   <!-- Header image (event banner) -->
-  <div id="hdr-cam-img-wrap" style="display:none;">
-    <img id="hdr-cam-img" style="width:100%;max-height:120px;object-fit:cover;display:block;" alt=""/>
+  <div id="hdr-cam-img-wrap" class="header-banner-wrap" style="display:none;">
+    <img id="hdr-cam-img" class="header-banner" alt=""/>
   </div>
 
   <div class="wrap" style="padding-top:16px;">
@@ -453,18 +487,21 @@ select.inp option{background:#fff;color:var(--text);}
 <div id="scr-form">
   <!-- Header -->
   <div class="top-strip">
-    <button class="back-btn" onclick="goCam()" style="background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4);color:#fff;padding:8px 12px;">
-      <i class="fa-solid fa-arrow-left"></i>
-    </button>
+    <div class="hdr-left">
+      <button class="back-btn" onclick="goCam()" style="background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.4);color:#fff;padding:8px 12px;">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+    </div>
     <div class="title-wrap">
       <div class="t1 deva">जानकारी भरें</div>
       <div class="t2">Fill Your Details</div>
     </div>
+    <div class="hdr-right"><!-- spacer --></div>
   </div>
 
   <!-- Form Header image -->
-  <div id="form-hdr-img-wrap" style="display:none;">
-    <img id="form-hdr-img" style="width:100%;max-height:100px;object-fit:cover;display:block;" alt=""/>
+  <div id="form-hdr-img-wrap" class="header-banner-wrap" style="display:none;">
+    <img id="form-hdr-img" class="header-banner" alt=""/>
   </div>
 
   <div class="wrap" style="padding-top:16px;">
@@ -554,10 +591,12 @@ select.inp option{background:#fff;color:var(--text);}
 <!-- ═══ SUCCESS SCREEN ═══ -->
 <div id="scr-ok">
   <div class="top-strip">
+    <div class="hdr-left"></div>
     <div class="title-wrap">
       <div class="t1 deva">✅ उपस्थिति दर्ज</div>
       <div class="t2">Attendance Recorded</div>
     </div>
+    <div class="hdr-right"></div>
   </div>
   <div class="wrap" style="padding-top:20px;">
     <div class="ok-card">
@@ -614,6 +653,7 @@ function isPub(){ return !!TOK; }
 let camFile=null, searchResp=null;
 let entryId=null, finalTok=null, upUrl=null, s3k=null;
 let facingMode="user", mobTimer=null, remoteCfg=null;
+let AUDIO_UNLOCKED=false;
 
 // ═══════════════════════════════════════
 // API
@@ -636,36 +676,87 @@ async function sha256(file){
 }
 
 // ═══════════════════════════════════════
-// SARVAM TTS — आवाज में घोषणा
+// AUDIO UNLOCK (Fix: audio not playing on mobile due to autoplay policy)
+// ═══════════════════════════════════════
+async function unlockAudio(){
+  if(AUDIO_UNLOCKED) return;
+  AUDIO_UNLOCKED=true;
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    const ctx = new AC();
+    await ctx.resume();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    g.gain.value = 0.00001; // near-silent
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.01);
+    setTimeout(()=>{ ctx.close().catch(()=>{}); }, 250);
+  }catch(e){
+    // ignore
+  }
+}
+// try unlock on first user interaction
+["click","touchstart","pointerdown"].forEach(evt=>{
+  window.addEventListener(evt, ()=>unlockAudio(), {once:true, passive:true});
+});
+
+// ═══════════════════════════════════════
+// SARVAM TTS — आवाज में घोषणा (Fixed speaker/model + better error handling)
 // ═══════════════════════════════════════
 async function speakSarvam(text){
   try{
+    await unlockAudio();
+
     const res = await fetch("https://api.sarvam.ai/text-to-speech",{
       method:"POST",
-      headers:{"Content-Type":"application/json","api-subscription-key":SARVAM_KEY},
+      headers:{
+        "Content-Type":"application/json",
+        "api-subscription-key":SARVAM_KEY
+      },
       body:JSON.stringify({
         inputs:[text],
         target_language_code:"hi-IN",
-        speaker:"meera",
+        speaker:"vidya",     // ✅ allowed speaker
         pitch:0,
         pace:0.9,
         loudness:1.4,
         speech_sample_rate:22050,
         enable_preprocessing:true,
-        model:"bulbul:v1"
+        model:"bulbul:v3"    // ✅ allowed model
       })
     });
-    const data = await res.json();
+
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok){
+      if(DBG) console.warn("Sarvam TTS bad response:", data);
+      return;
+    }
     const b64 = data.audios?.[0];
-    if(!b64) return;
+    if(!b64){
+      if(DBG) console.warn("Sarvam TTS no audio:", data);
+      return;
+    }
+
     const binary = atob(b64);
     const bytes = new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+
     const blob = new Blob([bytes.buffer],{type:"audio/wav"});
     const url = URL.createObjectURL(blob);
+
     const audio = new Audio(url);
-    audio.play();
+    audio.preload = "auto";
+
+    const p = audio.play();
+    if(p && typeof p.catch==="function"){
+      p.catch(err=>{
+        if(DBG) console.warn("Audio play blocked:", err);
+      });
+    }
     audio.onended = () => URL.revokeObjectURL(url);
+
   }catch(e){
     if(DBG) console.warn("Sarvam TTS error:",e);
   }
@@ -685,7 +776,7 @@ async function resolveCid(){
 }
 
 // ═══════════════════════════════════════
-// BRANDING
+// BRANDING + (NEW) dynamic district data support
 // ═══════════════════════════════════════
 async function loadBranding(){
   try{
@@ -718,13 +809,36 @@ async function loadBranding(){
     _$("footer-cam").textContent=foot; _$("footer-form").textContent=foot;
     if(c1){ document.documentElement.style.setProperty("--saf",c1); }
     if(c2){ document.documentElement.style.setProperty("--saf2",c2); }
-    if(logo){ _$("logo-img").src=logo; _$("logo-img").style.display="block"; _$("default-icon").style.display="none"; }
+    if(logo){
+      _$("logo-img").src=logo;
+      _$("logo-img").style.display="block";
+      _$("default-icon").style.display="none";
+    }
     if(hdr){
-      _$("hdr-cam-img").src=hdr; _$("hdr-cam-img-wrap").style.display="block";
-      _$("form-hdr-img").src=hdr; _$("form-hdr-img-wrap").style.display="block";
+      // show both banners with better styling
+      const camImg=_$("hdr-cam-img");
+      const frmImg=_$("form-hdr-img");
+      camImg.src=hdr; frmImg.src=hdr;
+      camImg.onerror=()=>{ _$("hdr-cam-img-wrap").style.display="none"; };
+      frmImg.onerror=()=>{ _$("form-hdr-img-wrap").style.display="none"; };
+      _$("hdr-cam-img-wrap").style.display="block";
+      _$("form-hdr-img-wrap").style.display="block";
+    }
+
+    // ✅ Dynamic district/vidhan/mandal data support
+    // If admin config includes: cfg.district_data OR cfg.location_data OR ft.district_data
+    // Expected format: { "जिला": { "विधानसभा": ["मंडल1","मंडल2"] } }
+    const dyn =
+      ft.district_data || ft.location_data ||
+      cfg.district_data || cfg.location_data || cfg.districts || cfg.locations || null;
+
+    if(dyn && typeof dyn==="object"){
+      window.DISTRICT_DATA_DYNAMIC = dyn;
+      if(DBG) console.log("🟠 Using dynamic DISTRICT_DATA from config");
     }
 
     fillProgramNames(cfg);
+
   }catch(e){ if(DBG) console.warn("branding fail",e); }
 }
 
@@ -757,6 +871,47 @@ function fillProgramNames(cfg){
       sel.appendChild(o);
     });
   }
+}
+
+// helpers: current program
+function getProgramFromConfig(){
+  if(!remoteCfg) return "";
+  const forms=remoteCfg.forms||{}; const ft=forms[FTYPE]||{};
+  const fl=ft.fixed_levels||remoteCfg.defaults?.fixed_levels||{};
+  if(fl.fixed_program) return fl.fixed_program;
+
+  const programs = ft.programs || ft.program_names || ft.program_list ||
+    (remoteCfg.global && remoteCfg.global.programs) ||
+    (remoteCfg.defaults && remoteCfg.defaults.programs) || [];
+
+  // If exactly 1 program exists -> return it
+  if(Array.isArray(programs) && programs.length===1){
+    const p=programs[0];
+    return typeof p==="string" ? p : (p.value||p.name||p.label||"");
+  }
+  return "";
+}
+function getBestCurrentProgram(){
+  // priority: fixed/single config -> form selected -> first config program (if exists)
+  const a = getProgramFromConfig();
+  if(a) return a;
+
+  const sel = _$("f-program");
+  const b = sel && sel.value ? (sel.value||"").trim() : "";
+  if(b) return b;
+
+  if(remoteCfg){
+    const forms=remoteCfg.forms||{}; const ft=forms[FTYPE]||{};
+    const programs = ft.programs || ft.program_names || ft.program_list ||
+      (remoteCfg.global && remoteCfg.global.programs) ||
+      (remoteCfg.defaults && remoteCfg.defaults.programs) || [];
+    if(Array.isArray(programs) && programs.length){
+      const p=programs[0];
+      const s = typeof p==="string" ? p : (p.value||p.name||p.label||"");
+      if(s) return s;
+    }
+  }
+  return "";
 }
 
 // ═══════════════════════════════════════
@@ -799,6 +954,7 @@ function setStatus(type,txt){
 // CAPTURE
 // ═══════════════════════════════════════
 async function doCapture(){
+  await unlockAudio();
   const v=_$("cam-video"),cnv=_$("cam-canvas");
   if(!v.srcObject && !v.src) return;
   const w=v.videoWidth||640,h=v.videoHeight||640;
@@ -819,6 +975,7 @@ async function doCapture(){
   },"image/jpeg",.88);
 }
 async function galUpload(e){
+  await unlockAudio();
   const file=e.target.files&&e.target.files[0]; if(!file) return;
   camFile=file;
   _$("prev-img").src=URL.createObjectURL(file);
@@ -888,7 +1045,11 @@ function extractProfile(sd){
     const at=(a.form_type||"").includes("attendance")?0:1;
     const bt=(b.form_type||"").includes("attendance")?0:1;
     return at-bt;
-  }).forEach(ev=>{ if(ev.data&&typeof ev.data==="object") cands.push(ev.data); if(ev.profile) cands.push(ev.profile); cands.push(ev); });
+  }).forEach(ev=>{
+    if(ev.data&&typeof ev.data==="object") cands.push(ev.data);
+    if(ev.profile) cands.push(ev.profile);
+    cands.push(ev);
+  });
   cands.push(sd);
   const g=(obj,...keys)=>{ for(const k of keys){ if(!obj) continue; const v=obj[k]; if(v&&typeof v==="string"&&v.trim()) return v.trim(); } return ""; };
   const p={};
@@ -908,13 +1069,16 @@ function extractProfile(sd){
 function onMatch(sd){
   setStatus("matched",`✅ पहचाना गया! ${Math.round(sd.similarity||0)}%`);
   const p = extractProfile(sd);
+
+  // current program (very important for message)
+  const currentProgram = getBestCurrentProgram();
+  if(!p.program && currentProgram) p.program = currentProgram;
+
   const hasComplete = p.name && p.mobile && (p.dist||p.mandal||p.vidhan);
 
   if(hasComplete){
-    // Auto-confirm — no form needed
     autoConfirmAttendance(sd, p);
   } else {
-    // Partial data — open form prefilled
     window._autofill = p;
     showPartialMatchNotice(p);
   }
@@ -939,19 +1103,31 @@ async function autoConfirmAttendance(sd, p){
   _$("proc-overlay").querySelector(".proc-txt").textContent = "दर्ज हो रहा है...";
   try{
     if(!CID && TOK) await resolveCid();
+
+    const currentProgram = getBestCurrentProgram();
     const fd={
       mobile:p.mobile||"",
       name:p.name||"",
       designation:p.desig||"",
-      program_name:p.program||getProgramFromConfig()||"",
+      program_name:p.program||currentProgram||"",
       district:p.dist||"",
       vidhansabha:p.vidhan||"",
       mandal:p.mandal||"",
       remarks:"",
     };
+
     await doSave(fd, camFile);
     _$("proc-overlay").classList.remove("show");
-    showBigConfirm(p);
+
+    // show confirm with current program
+    showBigConfirm({
+      name:fd.name,
+      dist:fd.district,
+      vidhan:fd.vidhansabha,
+      mandal:fd.mandal,
+      program:fd.program_name
+    });
+
   }catch(err){
     if(DBG) console.error("Auto-confirm error:",err);
     _$("proc-overlay").classList.remove("show");
@@ -961,38 +1137,42 @@ async function autoConfirmAttendance(sd, p){
   }
 }
 
-function getProgramFromConfig(){
-  if(!remoteCfg) return "";
-  const forms=remoteCfg.forms||{}; const ft=forms[FTYPE]||{};
-  const fl=ft.fixed_levels||remoteCfg.defaults?.fixed_levels||{};
-  if(fl.fixed_program) return fl.fixed_program;
-  const programs=ft.programs||ft.program_options||remoteCfg.defaults?.programs||[];
-  if(programs.length===1) return programs[0];
-  return "";
-}
-
 // ═══════════════════════════════════════
-// BIG CONFIRMATION POPUP
+// BIG CONFIRMATION POPUP (message includes current program)
 // ═══════════════════════════════════════
 function showBigConfirm(p){
-  const name = p.name||"";
-  const nameJi = name ? `${name} जी` : "आपकी";
+  const name = (p && p.name) ? p.name : "";
+  const program = (p && p.program) ? (p.program||"").trim() : "";
+  const nameJi = name ? `${name} जी` : "आप";
+
   _$("cfm-name").textContent = nameJi;
-  _$("cfm-msg").textContent = "उपस्थिति दर्ज हो गई — पधारने के लिए हार्दिक धन्यवाद!";
+
+  // ✅ Required message change:
+  // "<कार्यक्रम> में आपकी उपस्थिति दर्ज हो गई"
+  if(program){
+    _$("cfm-msg").textContent = `${program} कार्यक्रम में आपकी उपस्थिति दर्ज हो गई। पधारने के लिए हार्दिक धन्यवाद!`;
+  }else{
+    _$("cfm-msg").textContent = "आपकी उपस्थिति दर्ज हो गई — पधारने के लिए हार्दिक धन्यवाद!";
+  }
 
   const parts=[];
-  if(p.dist) parts.push(p.dist);
-  if(p.vidhan) parts.push(p.vidhan);
-  if(p.mandal) parts.push(p.mandal);
-  if(p.program) parts.push(`📋 ${p.program}`);
+  if(p && p.dist) parts.push(p.dist);
+  if(p && p.vidhan) parts.push(p.vidhan);
+  if(p && p.mandal) parts.push(p.mandal);
+  if(program) parts.push(`📋 ${program}`);
   _$("cfm-sub").textContent = parts.join(" • ");
 
   _$("confirm-overlay").classList.add("open");
 
-  // Sarvam TTS — voice announcement
+  // Sarvam TTS — voice announcement (includes program)
   const ttsText = name
-    ? `${name} जी, आपकी उपस्थिति दर्ज हो गई। कार्यक्रम में पधारने के लिए हार्दिक धन्यवाद।`
-    : `आपकी उपस्थिति दर्ज हो गई। कार्यक्रम में पधारने के लिए हार्दिक धन्यवाद।`;
+    ? (program
+        ? `${name} जी, ${program} कार्यक्रम में आपकी उपस्थिति दर्ज हो गई। पधारने के लिए हार्दिक धन्यवाद।`
+        : `${name} जी, आपकी उपस्थिति दर्ज हो गई। पधारने के लिए हार्दिक धन्यवाद।`)
+    : (program
+        ? `${program} कार्यक्रम में आपकी उपस्थिति दर्ज हो गई। पधारने के लिए हार्दिक धन्यवाद।`
+        : `आपकी उपस्थिति दर्ज हो गई। पधारने के लिए हार्दिक धन्यवाद।`);
+
   speakSarvam(ttsText);
 }
 
@@ -1022,11 +1202,15 @@ function fillForm(p){
   if(p.name)   _$("f-name").value   = p.name;
   if(p.mobile) _$("f-mobile").value = p.mobile;
   if(p.desig)  _$("f-desig").value  = p.desig;
-  if(p.program){
+
+  const currentProgram = getBestCurrentProgram();
+  const prog = p.program || currentProgram;
+  if(prog){
     const ps=_$("f-program");
-    const found=[...ps.options].find(o=>o.value===p.program||o.textContent===p.program);
+    const found=[...ps.options].find(o=>o.value===prog||o.textContent===prog);
     if(found) ps.value=found.value;
   }
+
   const filled=[]; if(p.name) filled.push("नाम"); if(p.mobile) filled.push("मोबाइल");
   if(p.desig) filled.push("पद"); if(p.dist) filled.push("जिला");
   if(filled.length){
@@ -1041,30 +1225,60 @@ function fillLocation(p){
   if(!d) return;
   const dSel=_$("f-dist");
   dSel.value=d; dSel.dispatchEvent(new Event("change"));
-  if(v){ setTimeout(()=>{ const vSel=_$("f-vidhan"); vSel.value=v; vSel.dispatchEvent(new Event("change")); if(m){ setTimeout(()=>{ _$("f-mandal").value=m; },250); } },250); }
+  if(v){
+    setTimeout(()=>{
+      const vSel=_$("f-vidhan");
+      vSel.value=v; vSel.dispatchEvent(new Event("change"));
+      if(m){
+        setTimeout(()=>{ _$("f-mandal").value=m; },250);
+      }
+    },250);
+  }
 }
 
 // ═══════════════════════════════════════
-// CASCADE
+// CASCADE (Now supports dynamic full list)
 // ═══════════════════════════════════════
+function getDistrictData(){
+  // ✅ If admin config provides full list, use it
+  if(window.DISTRICT_DATA_DYNAMIC && typeof window.DISTRICT_DATA_DYNAMIC==="object"){
+    return window.DISTRICT_DATA_DYNAMIC;
+  }
+  return DISTRICT_DATA;
+}
+
 function initCascade(){
   const d=_$("f-dist"),v=_$("f-vidhan"),m=_$("f-mandal");
   if(!d||d.options.length>2) return;
+
+  const DATA = getDistrictData();
+
   d.innerHTML='<option value="">— जिला चुनें —</option>';
-  Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+  Object.keys(DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
     const o=document.createElement("option"); o.value=k; o.textContent=k; d.appendChild(o);
   });
+
   d.addEventListener("change",()=>{
-    v.innerHTML='<option value="">— विधानसभा चुनें —</option>'; m.innerHTML='<option value="">— मंडल चुनें —</option>';
+    v.innerHTML='<option value="">— विधानसभा चुनें —</option>';
+    m.innerHTML='<option value="">— मंडल चुनें —</option>';
     v.disabled=!d.value; m.disabled=true;
-    if(d.value) Object.keys(DISTRICT_DATA[d.value]||{}).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
-      const o=document.createElement("option"); o.value=k; o.textContent=k; v.appendChild(o);
-    });
+
+    if(d.value){
+      Object.keys(DATA[d.value]||{}).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+        const o=document.createElement("option"); o.value=k; o.textContent=k; v.appendChild(o);
+      });
+    }
   });
+
   v.addEventListener("change",()=>{
     m.innerHTML='<option value="">— मंडल चुनें —</option>'; m.disabled=true;
-    const ms=(DISTRICT_DATA[d.value]||{})[v.value]||[];
-    if(ms.length){ m.disabled=false; ms.sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k;m.appendChild(o);}); }
+    const ms=(DATA[d.value]||{})[v.value]||[];
+    if(ms.length){
+      m.disabled=false;
+      ms.sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+        const o=document.createElement("option");o.value=k;o.textContent=k;m.appendChild(o);
+      });
+    }
   });
 }
 
@@ -1086,6 +1300,11 @@ async function doMobLookup(){
     if(TOK) pl.token=TOK; if(CID) pl.collection_id=CID;
     const res=await api(isPub()?"public_lookup_mobile":"lookup_mobile",pl);
     const p=extractProfile({profile:res.profile,data:res.data,events:res.events,...res});
+
+    // keep current program in message
+    const currentProgram = getBestCurrentProgram();
+    if(!p.program && currentProgram) p.program = currentProgram;
+
     if(p.name||p.dist){ fillForm(p); _$("mob-found").style.display="block"; }
   }catch(e){ if(DBG) console.warn("mob lookup fail",e); }
   finally{ _$("mob-spin").style.display="none"; }
@@ -1097,12 +1316,18 @@ async function doMobLookup(){
 async function doSubmit(e){
   e.preventDefault();
   if(!camFile){ showFStatus("❌ फोटो जरूरी है",true); return; }
+
+  await unlockAudio();
+
   const btn=_$("submit-btn"); const old=btn.innerHTML;
-  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite;"></i><span class="deva"> सेव हो रहा है...</span>';
+  btn.disabled=true;
+  btn.innerHTML='<i class="fa-solid fa-spinner" style="animation:spin 1s linear infinite;"></i><span class="deva"> सेव हो रहा है...</span>';
   showFStatus("",false);
+
   try{
     if(!CID) await resolveCid();
     if(!CID) throw new Error("Collection ID नहीं मिली — URL में ?cid= या ?token= जोड़ें");
+
     const fd={
       mobile:(_$("f-mobile").value||"").trim(),
       name:(_$("f-name").value||"").trim(),
@@ -1113,15 +1338,29 @@ async function doSubmit(e){
       mandal:(_$("f-mandal").value||"").trim(),
       remarks:(_$("f-remarks").value||"").trim(),
     };
+
     await doSave(fd, camFile);
-    // Show success with voice
-    const p = {name:fd.name, dist:fd.district, vidhan:fd.vidhansabha, mandal:fd.mandal, program:fd.program_name};
-    showBigConfirm(p);
+
+    // ✅ Confirm message includes current program
+    showBigConfirm({
+      name:fd.name,
+      dist:fd.district,
+      vidhan:fd.vidhansabha,
+      mandal:fd.mandal,
+      program:fd.program_name || getBestCurrentProgram()
+    });
+
     // Also update success screen (background)
     _$("scr-form").style.display="none";
     _$("scr-ok").style.display="block";
     _$("ok-name").textContent = fd.name ? `${fd.name} जी` : "";
-    _$("ok-msg").textContent = "आपकी उपस्थिति दर्ज हो गई";
+
+    if(fd.program_name){
+      _$("ok-msg").textContent = `${fd.program_name} कार्यक्रम में उपस्थिति दर्ज हो गई`;
+    }else{
+      _$("ok-msg").textContent = "आपकी उपस्थिति दर्ज हो गई";
+    }
+
   }catch(err){
     showFStatus("❌ "+(err.message||"Error"),true);
     btn.disabled=false; btn.innerHTML=old;
@@ -1182,7 +1421,8 @@ window.addEventListener("offline",()=>_$("offline-banner").classList.add("on"));
 window.addEventListener("online", ()=>_$("offline-banner").classList.remove("on"));
 
 // ═══════════════════════════════════════
-// DISTRICT DATA
+// DISTRICT DATA (fallback)
+// NOTE: Baaki jile/vidhansabha wapas lane ke liye best is config me district_data/location_data bhejna.
 // ═══════════════════════════════════════
 const DISTRICT_DATA = {
   "मुरैना": {

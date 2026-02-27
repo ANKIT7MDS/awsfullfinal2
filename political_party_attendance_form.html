@@ -502,23 +502,44 @@ async function loadBranding(){
     const payload = TOK ? {token:TOK,form_type:FTYPE} : {collection_id:CID,form_type:FTYPE};
     const action  = TOK ? "public_get_config" : "admin_get_config";
     const res = await api(action, payload);
+
+    // Always log full response so admin can debug via F12
+    console.log("📦 CONFIG RESPONSE:", JSON.stringify(res).slice(0,2000));
+
     if(!CID){
       const c=res.collection_id||res.cid||(res.config&&(res.config.collection_id||res.config.cid))||"";
       if(c) CID=c.trim();
     }
+
+    // Try multiple config locations — backend responses vary
     const cfg = res.config||res.settings||res.data||res;
     remoteCfg = cfg;
-    const forms=cfg.forms||{};
-    const ft=forms[FTYPE]||{};
-    const def=cfg.defaults||{};
-    const gl=cfg.global||{};
-    const title=ft.title||def.title||gl.title||"";
-    const sub=ft.subtitle||def.subtitle||"";
-    const logo=(ft.branding&&ft.branding.logo&&ft.branding.logo.url)||(def.logo_url)||"";
-    const hdr=ft.header_url||def.header_url||"";
-    const c1=(ft.branding&&ft.branding.color1)||(def.color1)||"";
-    const c2=(ft.branding&&ft.branding.color2)||(def.color2)||"";
-    const foot=gl.tagline||"Powered by EventLens";
+
+    console.log("📋 PARSED CFG keys:", Object.keys(cfg));
+    console.log("📋 cfg.forms:", JSON.stringify(cfg.forms||{}).slice(0,500));
+    console.log("📋 cfg.defaults:", JSON.stringify(cfg.defaults||{}).slice(0,500));
+    console.log("📋 cfg.global:", JSON.stringify(cfg.global||{}).slice(0,300));
+
+    const forms = cfg.forms||{};
+    // Try both FTYPE key and "party_attendance" literal
+    const ft = forms[FTYPE]||forms["party_attendance"]||{};
+    const def = cfg.defaults||{};
+    const br  = def.branding||{};
+    const gl  = cfg.global||{};
+
+    const title = ft.title||br.title||def.title||gl.title||"";
+    const sub   = ft.subtitle||br.subtitle||def.subtitle||"";
+    const logo  = (ft.branding&&ft.branding.logo&&ft.branding.logo.url)
+                 ||(ft.logo_url)
+                 ||(br.logo&&br.logo.url)
+                 ||(def.logo_url)||"";
+    const hdr   = ft.header_url||def.header_url||"";
+    const c1    = (ft.branding&&ft.branding.color1)||(br.color1)||(def.color1)||"";
+    const c2    = (ft.branding&&ft.branding.color2)||(br.color2)||(def.color2)||"";
+    const foot  = gl.tagline||"Powered by EventLens";
+
+    console.log("🎨 title=",title,"sub=",sub,"c1=",c1,"c2=",c2);
+
     if(title) _$("org-name").textContent=title;
     if(sub)   _$("org-sub").textContent=sub;
     _$("footer-cam").textContent=foot;
@@ -526,46 +547,70 @@ async function loadBranding(){
     if(c1) document.documentElement.style.setProperty("--saf",c1);
     if(c2) document.documentElement.style.setProperty("--saf2",c2);
     if(logo){ _$("logo-img").src=logo; _$("logo-img").style.display="block"; _$("default-icon").style.display="none"; }
-    if(hdr){
-      _$("hdr-top-img").src=hdr;
-      _$("hdr-top-img-wrap").style.display="block";
-    }
+    if(hdr){ _$("hdr-top-img").src=hdr; _$("hdr-top-img-wrap").style.display="block"; }
+
     fillProgramNames(cfg);
-  }catch(e){ if(DBG) console.warn("branding fail",e); }
+  }catch(e){
+    console.error("❌ branding fail:", e);
+  }
 }
 
 function fillProgramNames(cfg){
   const sel=_$("f-program"); if(!sel) return;
-  const forms=cfg.forms||{};
-  const ft=forms[FTYPE]||{};
-  const fl=ft.fixed_levels||cfg.defaults?.fixed_levels||{};
 
+  const forms = cfg.forms||{};
+  const ft    = forms[FTYPE]||forms["party_attendance"]||{};
+  const def   = cfg.defaults||{};
+  const gl    = cfg.global||{};
+
+  // fixed_levels — new admin field
+  const fl = ft.fixed_levels || def.fixed_levels || {};
+
+  // Program list — search everywhere
+  const programs =
+    ft.program_options ||
+    ft.programs ||
+    ft.program_names ||
+    ft.program_list ||
+    gl.programs ||
+    def.program_options ||
+    def.programs ||
+    [];
+
+  console.log("📋 PROGRAMS found:", JSON.stringify(programs));
+  console.log("📋 FIXED_LEVELS:", JSON.stringify(fl));
+
+  // Fixed program mode
   if(fl.fixed_program){
     currentProgram = fl.fixed_program;
     sel.style.display="none";
-    const fd=_$("f-program-fixed");
-    if(fd){ fd.textContent=fl.fixed_program; fd.style.display="block"; }
+    const fixDiv=_$("f-program-fixed");
+    if(fixDiv){ fixDiv.textContent=fl.fixed_program; fixDiv.style.display="block"; }
     let opt=[...sel.options].find(o=>o.value===fl.fixed_program);
     if(!opt){ const o=document.createElement("option"); o.value=fl.fixed_program; o.textContent=fl.fixed_program; sel.appendChild(o); }
     sel.value=fl.fixed_program;
+    console.log("🔒 Fixed program:", fl.fixed_program);
     return;
   }
 
-  const fd=_$("f-program-fixed"); if(fd) fd.style.display="none";
+  // Dropdown mode
+  const fixDiv=_$("f-program-fixed"); if(fixDiv) fixDiv.style.display="none";
   sel.style.display="";
-  const programs=ft.programs||ft.program_names||ft.program_list||
-    (cfg.global&&cfg.global.programs)||cfg.defaults?.programs||[];
-  if(programs&&programs.length){
-    if(programs.length===1) currentProgram=programs[0];
+
+  if(programs && programs.length){
+    if(programs.length===1) currentProgram = typeof programs[0]==="string" ? programs[0] : (programs[0].value||programs[0].name||"");
     sel.innerHTML='<option value="">— कार्यक्रम चुनें —</option>';
     programs.forEach(p=>{
       const o=document.createElement("option");
-      o.value=typeof p==="string"?p:(p.value||p.name||p);
-      o.textContent=typeof p==="string"?p:(p.label||p.name||p);
+      o.value   = typeof p==="string"?p:(p.value||p.name||String(p));
+      o.textContent = typeof p==="string"?p:(p.label||p.name||String(p));
       sel.appendChild(o);
     });
+    console.log("✅ Loaded",programs.length,"programs into dropdown");
+  } else {
+    console.warn("⚠️ No programs found anywhere in config");
   }
-  // listen to program change
+
   sel.addEventListener("change",()=>{ currentProgram=sel.value||""; });
 }
 
@@ -851,36 +896,64 @@ function fillForm(p){
   fillLocation(p);
 }
 function fillLocation(p){
-  const d=(p.dist||"").trim(),v=(p.vidhan||"").trim(),m=(p.mandal||"").trim();
-  if(!d) return;
+  const dist=(p.dist||"").trim(), vid=(p.vidhan||"").trim(), man=(p.mandal||"").trim();
+  if(!dist) return;
   const dSel=_$("f-dist");
-  dSel.value=d; dSel.dispatchEvent(new Event("change"));
-  if(v){ setTimeout(()=>{ const vSel=_$("f-vidhan"); vSel.value=v; vSel.dispatchEvent(new Event("change")); if(m){ setTimeout(()=>{ _$("f-mandal").value=m; },250); } },250); }
+  if(!dSel) return;
+  dSel.value=dist;
+  dSel.dispatchEvent(new Event("change"));
+  if(vid){
+    setTimeout(()=>{
+      const vSel=_$("f-vidhan");
+      if(vSel){ vSel.value=vid; vSel.dispatchEvent(new Event("change")); }
+      if(man){ setTimeout(()=>{ const mSel=_$("f-mandal"); if(mSel) mSel.value=man; }, 250); }
+    }, 250);
+  }
 }
 
 // ════════════════════════════════
 // CASCADE DROPDOWNS
 // ════════════════════════════════
+let _cascadeReady = false;
 function initCascade(){
-  const d=_$("f-dist"),v=_$("f-vidhan"),m=_$("f-mandal");
-  if(!d||d.options.length>2) return;
+  const d=_$("f-dist"), v=_$("f-vidhan"), m=_$("f-mandal");
+  if(!d || !v || !m) return;
+
+  // Always reload district options
   d.innerHTML='<option value="">— जिला चुनें —</option>';
   Object.keys(DISTRICT_DATA).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
     const o=document.createElement("option"); o.value=k; o.textContent=k; d.appendChild(o);
   });
-  d.addEventListener("change",()=>{
-    v.innerHTML='<option value="">— विधानसभा चुनें —</option>';
-    m.innerHTML='<option value="">— मंडल चुनें —</option>';
-    v.disabled=!d.value; m.disabled=true;
-    if(d.value) Object.keys(DISTRICT_DATA[d.value]||{}).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
-      const o=document.createElement("option"); o.value=k; o.textContent=k; v.appendChild(o);
-    });
+  v.innerHTML='<option value="">— पहले जिला चुनें —</option>'; v.disabled=true;
+  m.innerHTML='<option value="">— पहले विधानसभा —</option>'; m.disabled=true;
+
+  // Remove old listeners by cloning
+  const d2=d.cloneNode(true); d.parentNode.replaceChild(d2,d);
+  const v2=v.cloneNode(true); v.parentNode.replaceChild(v2,v);
+  const m2=m.cloneNode(true); m.parentNode.replaceChild(m2,m);
+
+  d2.addEventListener("change",()=>{
+    v2.innerHTML='<option value="">— विधानसभा चुनें —</option>';
+    m2.innerHTML='<option value="">— पहले विधानसभा —</option>';
+    v2.disabled=!d2.value; m2.disabled=true;
+    if(d2.value){
+      Object.keys(DISTRICT_DATA[d2.value]||{}).sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+        const o=document.createElement("option"); o.value=k; o.textContent=k; v2.appendChild(o);
+      });
+    }
   });
-  v.addEventListener("change",()=>{
-    m.innerHTML='<option value="">— मंडल चुनें —</option>'; m.disabled=true;
-    const ms=(DISTRICT_DATA[d.value]||{})[v.value]||[];
-    if(ms.length){ m.disabled=false; ms.sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=k;m.appendChild(o);}); }
+  v2.addEventListener("change",()=>{
+    m2.innerHTML='<option value="">— मंडल चुनें —</option>'; m2.disabled=true;
+    const ms=(DISTRICT_DATA[d2.value]||{})[v2.value]||[];
+    if(ms.length){
+      m2.disabled=false;
+      ms.sort((a,b)=>a.localeCompare(b,"hi")).forEach(k=>{
+        const o=document.createElement("option"); o.value=k; o.textContent=k; m2.appendChild(o);
+      });
+    }
   });
+  _cascadeReady=true;
+  console.log("✅ Cascade ready. Districts:", Object.keys(DISTRICT_DATA).length);
 }
 
 // ════════════════════════════════

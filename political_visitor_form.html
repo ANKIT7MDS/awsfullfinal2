@@ -750,6 +750,7 @@ function _elApplyBranding(cfg, formType){
       <div class="welcome-avatar" id="pp-avatar">👤</div>
       <div class="welcome-namaskar deva">🙏 नमस्कार</div>
       <div id="pp-name" class="welcome-name deva">—</div>
+      <button id="pp-edit-btn" type="button" onclick="editNameFromPopup()" style="margin-top:6px;background:rgba(234,88,12,.10);border:1px solid rgba(234,88,12,.25);color:var(--o3);padding:6px 10px;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer;">✏️ नाम गलत है? Edit</button>
       <div class="welcome-party-line">
         <span>🔶</span>
         <span class="deva" id="pp-office-label">भाजपा कार्यालय</span>
@@ -1124,16 +1125,59 @@ ${emoji} ══ TOTAL: ${total.toFixed(0)}ms ══`);
   }
 }
 
-function onMatch(sd){
-  setChip("match",`✅ पहचाना गया! ${Math.round(sd.similarity||0)}%`);
-  setPill(pill("fa-solid fa-user-check",`मैच मिला — ${Math.round(sd.similarity||0)}% similarity`,"rgba(96,165,250,.1)","#7db4f8"));
-  openPopup(sd);
+function _elHasProfileData(p){
+  return !!(p && (p.name||p.mobile||p.desig||p.dist||p.vidhan||p.mandal||p.addr));
 }
-function onNoMatch(){
+function _elFocus(id){
+  try{
+    const el=_$(id);
+    if(!el) return;
+    el.scrollIntoView({behavior:"smooth",block:"center"});
+    setTimeout(()=>{ try{ el.focus(); if(el.select) el.select(); }catch(e){} }, 50);
+  }catch(e){}
+}
+function focusReason(){ _elFocus("f-reason"); }
+function focusName(){ _elFocus("f-name"); }
+
+function onMatch(sd){
+  // If backend has profile data → show welcome + auto-open form with prefill
+  const p = extractProfile(sd);
+  const hasData = _elHasProfileData(p);
+
+  if(hasData){
+    searchResp = sd;
+    window._autofillProfile = p;
+
+    // Auto-open form in background (popup stays on top)
+    if(_$("scr-form").style.display!=="block") gotoForm();
+    // Ensure autofill + focus reason
+    setTimeout(()=>{ try{ fillForm(p); }catch(e){} focusReason(); }, 260);
+
+    setChip("match",`✅ पहचाना गया! ${Math.round(sd.similarity||0)}%`);
+    setPill(pill("fa-solid fa-user-check",`मैच मिला — ${Math.round(sd.similarity||0)}% similarity`,"rgba(96,165,250,.1)","#7db4f8"));
+    openPopup(sd);
+    return;
+  }
+
+  // Face matched but no usable profile data → treat like new visitor (no welcome popup)
+  searchResp = null;
+  window._autofillProfile = null;
   setChip("idle","नया Visitor");
   setPill(pill("fa-solid fa-user-plus","पहचाना नहीं गया — नया Visitor","rgba(16,185,129,.1)","#34d399"));
-  _$("proceed-wrap").style.display="block";
-  _$("proceed-msg").textContent="पहचाना नहीं गया — विवरण भरें";
+  try{ _$("proceed-wrap").style.display="none"; }catch(e){}
+  if(_$("scr-form").style.display!=="block") gotoForm();
+  setTimeout(()=>{ focusName(); }, 260);
+}
+
+function onNoMatch(){
+  // No face match → directly open form (no welcome message)
+  setChip("idle","नया Visitor");
+  setPill(pill("fa-solid fa-user-plus","पहचाना नहीं गया — नया Visitor","rgba(16,185,129,.1)","#34d399"));
+  try{ _$("proceed-wrap").style.display="none"; }catch(e){}
+  searchResp = null;
+  window._autofillProfile = null;
+  gotoForm();
+  setTimeout(()=>{ focusName(); }, 260);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1365,17 +1409,51 @@ function closePopup(){
 }
 
 function acceptMatch(){
+  // Popup button stays, but form is already opened + prefilled automatically
   closePopup();
   if(searchResp){
     window._autofillProfile = extractProfile(searchResp);
     if(DBG) console.log("💾 Saved autofill profile:", JSON.stringify(window._autofillProfile));
   }
-  gotoForm();
+  if(_$("scr-form").style.display!=="block") gotoForm();
+  setTimeout(()=>{ focusReason(); }, 220);
 }
 function skipMatch(){
+  // Treat as new visitor: open blank form, no welcome
   closePopup();
+  searchResp = null;
   window._autofillProfile = null;
-  gotoForm();
+  if(_$("scr-form").style.display!=="block") gotoForm();
+  setTimeout(()=>{ try{ clearFormFields(); }catch(e){} focusName(); }, 260);
+}
+
+
+function clearFormFields(){
+  try{
+    // Basic fields
+    if(_$("f-mobile")) _$("f-mobile").value="";
+    if(_$("f-name")) _$("f-name").value="";
+    if(_$("f-desig")) _$("f-desig").value="";
+    if(_$("f-addr")) _$("f-addr").value="";
+    if(_$("f-reason")) _$("f-reason").value="";
+    // Location cascade
+    if(_$("f-dist")){ _$("f-dist").value=""; _$("f-dist").dispatchEvent(new Event("change")); }
+    if(_$("f-vidhan")){ _$("f-vidhan").value=""; _$("f-vidhan").dispatchEvent(new Event("change")); }
+    if(_$("f-mandal")){ _$("f-mandal").value=""; }
+    // Hide autofill UI
+    if(_$("match-badge")) _$("match-badge").style.display="none";
+    if(_$("autofill-strip")) _$("autofill-strip").style.display="none";
+  }catch(e){}
+}
+
+function editNameFromPopup(){
+  // Quick edit path when scan shows wrong name
+  closePopup();
+  if(searchResp){
+    window._autofillProfile = extractProfile(searchResp);
+  }
+  if(_$("scr-form").style.display!=="block") gotoForm();
+  setTimeout(()=>{ focusName(); }, 260);
 }
 
 // ═══════════════════════════════════════════════════

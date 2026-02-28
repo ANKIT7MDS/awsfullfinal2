@@ -4,6 +4,13 @@
 <html lang="hi">
 <head>
   <meta charset="utf-8" />
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="EventLens"/>
+  <meta name="theme-color" content="#f97316"/>
+  <meta name="application-name" content="EventLens Pro"/>
+  <link rel="manifest" href="/manifest.json"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Program Info - EventLens</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -858,5 +865,319 @@ function onPhotosSelected(ev, maxFiles=10) {
     });
     </script>
 
-    </body>
+    <!-- ══════════════════════════════════════════════════════════
+  EventLens Universal Branding Patch v4
+  इसे हर political form के </body> से पहले paste करें।
+  यह existing applyBrandingFromConfig को enhance करता है।
+  Logo, Header, Background, Footer, Tagline, Programs, Level Lock
+  सब admin console से save किया हुआ properly apply होगा।
+══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ─── Helpers ───
+  function _s(id) { return document.getElementById(id); }
+  function _safeStr(v) { return (v == null) ? '' : String(v); }
+
+  function _pickUrl(asset) {
+    if (!asset) return '';
+    if (typeof asset === 'string') return asset.startsWith('http') ? asset : '';
+    if (typeof asset === 'object') {
+      return _safeStr(asset.url || asset.previewUrl || asset.value || '');
+    }
+    return '';
+  }
+
+  function _mergeDeep(base, over) {
+    const out = Object.assign({}, base || {});
+    Object.keys(over || {}).forEach(k => {
+      if (over[k] && typeof over[k] === 'object' && !Array.isArray(over[k]) &&
+          out[k] && typeof out[k] === 'object') {
+        out[k] = _mergeDeep(out[k], over[k]);
+      } else {
+        out[k] = over[k];
+      }
+    });
+    return out;
+  }
+
+  function _safeSetImg(el, url, onOk, onFail) {
+    if (!el || !url) { if (onFail) onFail(); return; }
+    const tmp = new Image();
+    tmp.onload = () => { el.src = url; if (onOk) onOk(); };
+    tmp.onerror = () => { if (onFail) onFail(); };
+    tmp.src = url;
+  }
+
+  // ─── Extract branding from any response shape ───
+  function _extractBrand(resp, formType) {
+    if (!resp) return {};
+    const ft = formType || '';
+
+    // Navigate the response
+    const settings = resp.settings || resp.config || resp;
+    const defaults = settings.defaults || {};
+    const global_  = settings.global  || resp.global || {};
+    const formsCfg = settings.forms   || resp.forms  || {};
+
+    // Per-form node (try multiple aliases)
+    const formCfg  = formsCfg[ft] ||
+                     formsCfg[ft.replace('_form','')] ||
+                     resp.form || {};
+
+    const defBrand  = defaults.branding || {};
+    const formBrand = formCfg.branding  || {};
+
+    // Merge: defaults < form-specific
+    const brand = _mergeDeep(defBrand, formBrand);
+
+    // Text
+    const title    = _safeStr(formCfg.title    || brand.title    || defBrand.title    || '');
+    const subtitle = _safeStr(formCfg.subtitle || brand.subtitle || defBrand.subtitle || '');
+    const tagline  = _safeStr(formCfg.tagline  || brand.tagline  || global_.tagline   || defBrand.tagline  || '');
+    const footer   = _safeStr(formCfg.footer_text || brand.footer_text || defBrand.footer_text || global_.tagline || '');
+
+    // Colors
+    const c1 = _safeStr(brand.color1 || defBrand.color1 ||
+                        (global_.theme && global_.theme.primary) || '#f97316');
+    const c2 = _safeStr(brand.color2 || defBrand.color2 ||
+                        (global_.theme && global_.theme.secondary) || '#ef4444');
+
+    // Asset URLs — new shape first, then legacy fallbacks
+    const logoUrl   = _pickUrl(brand.logo)   || _safeStr(formCfg.logo_url   || brand.logo_url   || defBrand.logo_url   || '');
+    const headerUrl = _pickUrl(brand.header) || _safeStr(formCfg.header_url || brand.header_url ||
+                      formCfg.header_image_url || defBrand.header_url || defBrand.header_image_url || '');
+    const bgUrl     = _pickUrl(brand.background) || _safeStr(
+                      formCfg.background_url || brand.background_url || formCfg.background_image_url ||
+                      defBrand.background_url || defBrand.background_image_url || '');
+    const bgOpacity = parseFloat(brand.bg_opacity || defBrand.bg_opacity || 35) / 100;
+
+    // Programs
+    const programs = (
+      (Array.isArray(formCfg.program_options) && formCfg.program_options.length ? formCfg.program_options : null) ||
+      (Array.isArray(formCfg.programs) && formCfg.programs.length ? formCfg.programs : null) ||
+      (Array.isArray(defaults.programs) && defaults.programs.length ? defaults.programs : null) ||
+      []
+    );
+
+    // Fixed level
+    const fixedLevel = _safeStr(formCfg.fixed_level || '');
+
+    return { title, subtitle, tagline, footer, c1, c2, logoUrl, headerUrl, bgUrl, bgOpacity, programs, fixedLevel };
+  }
+
+  // ─── Apply everything ───
+  function _applyAll(brand, iconId) {
+    // 1. Title / Subtitle / Tagline
+    if (brand.title    && _s('org-name'))     _s('org-name').textContent    = brand.title;
+    if (brand.subtitle && _s('org-subtitle')) _s('org-subtitle').textContent = brand.subtitle;
+    const tagEl = _s('org-tagline');
+    if (tagEl) {
+      if (brand.tagline) { tagEl.textContent = brand.tagline; tagEl.classList.remove('hidden'); }
+      else tagEl.classList.add('hidden');
+    }
+
+    // 2. Footer
+    const footerEl = _s('footer-text') || _s('footer-cam');
+    if (footerEl && brand.footer) footerEl.textContent = brand.footer;
+
+    // 3. Colors → CSS vars
+    if (brand.c1) document.documentElement.style.setProperty('--c1', brand.c1);
+    if (brand.c2) document.documentElement.style.setProperty('--c2', brand.c2);
+    // Also set --brand for forms using that var
+    if (brand.c1) document.documentElement.style.setProperty('--brand', brand.c1);
+
+    // 4. Logo
+    const logoEl  = _s('custom-logo');
+    const iconEl  = _s(iconId || 'default-icon');
+    if (brand.logoUrl && logoEl) {
+      _safeSetImg(logoEl, brand.logoUrl,
+        () => { logoEl.classList.remove('hidden'); if (iconEl) iconEl.classList.add('hidden'); },
+        () => { logoEl.classList.add('hidden');    if (iconEl) iconEl.classList.remove('hidden'); }
+      );
+    } else if (logoEl) {
+      logoEl.classList.add('hidden');
+      if (iconEl) iconEl.classList.remove('hidden');
+    }
+
+    // 5. Header image
+    if (brand.headerUrl) {
+      const hImg  = _s('header-image');
+      const hWrap = _s('header-wrap') || _s('form-hdr-img-wrap');
+      const hImgEl = _s('form-hdr-img') || hImg;
+      if (hWrap && hImgEl) {
+        _safeSetImg(hImgEl, brand.headerUrl, () => {
+          hWrap.style.display = '';
+          hWrap.classList.remove('hidden');
+        }, () => { hWrap.style.display = 'none'; });
+      } else if (hImg) {
+        if (hImg.tagName && hImg.tagName.toLowerCase() === 'img') {
+          _safeSetImg(hImg, brand.headerUrl, () => hImg.classList.remove('hidden'), null);
+        } else {
+          hImg.style.backgroundImage = `url('${brand.headerUrl}')`;
+          hImg.classList.remove('hidden');
+        }
+      }
+    }
+
+    // 6. Background image + opacity
+    if (brand.bgUrl) {
+      // CSS var (used by most forms)
+      document.documentElement.style.setProperty('--bgimg', `url('${brand.bgUrl}')`);
+      // Direct body style as fallback
+      document.body.style.backgroundImage   = `url('${brand.bgUrl}')`;
+      document.body.style.backgroundSize    = 'cover';
+      document.body.style.backgroundPosition = 'center fixed';
+      // BG overlay to control opacity
+      let ov = _s('__el_bg_overlay');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = '__el_bg_overlay';
+        ov.style.cssText =
+          'position:fixed;inset:0;z-index:-1;pointer-events:none;background:#0f172a;transition:opacity .4s;';
+        document.body.insertBefore(ov, document.body.firstChild);
+      }
+      ov.style.opacity = String(Math.max(0, 1 - brand.bgOpacity));
+    }
+  }
+
+  // ─── Fill program dropdown ───
+  function _fillPrograms(programs, selectId, placeholder) {
+    const sel = _s(selectId || 'program_name');
+    if (!sel || !programs || !programs.length) return;
+    // Save current value
+    const cur = sel.value;
+    sel.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = ''; ph.textContent = placeholder || '— कार्यक्रम चुनें —';
+    sel.appendChild(ph);
+    programs.forEach(p => {
+      const v = _safeStr(p).trim();
+      if (!v) return;
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    });
+    // Restore selection if still valid
+    if (cur) sel.value = cur;
+  }
+
+  // ─── Apply level lock ───
+  function _applyLevelLock(fixedLevel, selectId) {
+    const sel = _s(selectId || 'level');
+    if (!sel || !fixedLevel) return;
+    // Set value
+    sel.value = fixedLevel;
+    // Disable
+    sel.disabled = true;
+    sel.style.cssText += ';opacity:.75;cursor:not-allowed;';
+    // Remove existing lock badge first
+    const existing = _s('__el_level_lock_badge');
+    if (existing) existing.remove();
+    // Add badge
+    const badge = document.createElement('div');
+    badge.id = '__el_level_lock_badge';
+    badge.style.cssText = 'margin-top:5px;font-size:11px;color:#f87171;font-weight:700;display:flex;align-items:center;gap:5px;';
+    badge.innerHTML = '<i class="fa-solid fa-lock" style="font-size:10px;"></i> Level admin द्वारा lock है: <strong>' + fixedLevel + '</strong>';
+    if (sel.parentNode) sel.parentNode.appendChild(badge);
+
+    // Also trigger visibility update if setLocationVisibility exists
+    if (typeof setLocationVisibility === 'function') {
+      try { setLocationVisibility(fixedLevel); } catch(e) {}
+    }
+  }
+
+  // ─── Master function — called from each form's boot ───
+  function applyFullBranding(resp, formType, options) {
+    if (!resp) return;
+    options = options || {};
+    try {
+      const brand = _extractBrand(resp, formType);
+
+      // Text + images + colors
+      _applyAll(brand, options.iconId || 'default-icon');
+
+      // Programs
+      if (brand.programs && brand.programs.length) {
+        const programSelIds = options.programSelIds || ['program_name','program_type','activity'];
+        programSelIds.forEach(id => _fillPrograms(brand.programs, id, options.programPlaceholder));
+      }
+
+      // Level lock
+      if (brand.fixedLevel) {
+        const levelSelId = options.levelSelId || 'level';
+        _applyLevelLock(brand.fixedLevel, levelSelId);
+      }
+
+    } catch(e) {
+      console.warn('[EL Branding] applyFullBranding error:', e);
+    }
+  }
+
+  // ─── Expose globally ───
+  window.EL = window.EL || {};
+  window.EL.applyFullBranding = applyFullBranding;
+  window.EL.extractBrand = _extractBrand;
+  window.EL.fillPrograms = _fillPrograms;
+  window.EL.applyLevelLock = _applyLevelLock;
+
+  // ─── Auto-hook: intercept existing bootPage / initAll ───
+  // Forms में bootPage या initAll already call करती है loadRemoteConfig + applyBrandingFromConfig
+  // हम उसे wrap करते हैं ताकि extra features भी apply हों
+
+  function _patchBootIfNeeded() {
+    // Find the form type from existing constants
+    const ft = (typeof FORM_TYPE !== 'undefined' && FORM_TYPE) ||
+               (typeof window.FORM_TYPE !== 'undefined' && window.FORM_TYPE) || '';
+
+    // Patch applyBrandingFromConfig if it exists — wrap it
+    const origFn = window.applyBrandingFromConfig || window.applyBrandingFromResponse;
+    if (origFn && typeof origFn === 'function') {
+      const patched = function(cfg, formType, ...rest) {
+        // Call original
+        try { origFn.call(this, cfg, formType, ...rest); } catch(e) {}
+        // Then apply our extras
+        try { applyFullBranding(cfg, formType || ft, {}); } catch(e) {}
+      };
+      if (window.applyBrandingFromConfig)  window.applyBrandingFromConfig  = patched;
+      if (window.applyBrandingFromResponse) window.applyBrandingFromResponse = patched;
+    }
+
+    // Patch fillProgramNames if it exists
+    const origProg = window.fillProgramNames || window.fillProgramNamesFromResponse;
+    if (origProg && typeof origProg === 'function') {
+      const patchedProg = function(cfg, selectId, ...rest) {
+        // Call original
+        try { origProg.call(this, cfg, selectId, ...rest); } catch(e) {}
+        // Also fill from new response shape
+        try {
+          const brand = _extractBrand(cfg, ft);
+          if (brand.programs && brand.programs.length) {
+            _fillPrograms(brand.programs, selectId || 'program_name');
+          }
+        } catch(e) {}
+      };
+      if (window.fillProgramNames)             window.fillProgramNames             = patchedProg;
+      if (window.fillProgramNamesFromResponse) window.fillProgramNamesFromResponse = patchedProg;
+    }
+  }
+
+  // Run patch after DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _patchBootIfNeeded);
+  } else {
+    _patchBootIfNeeded();
+  }
+
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}
+let _deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_deferredInstallPrompt=e;var btn=document.getElementById('installAppBtn');if(btn)btn.style.display='inline-flex';});
+window._installApp=function(){if(!_deferredInstallPrompt)return;_deferredInstallPrompt.prompt();_deferredInstallPrompt.userChoice.then(function(){_deferredInstallPrompt=null;var btn=document.getElementById('installAppBtn');if(btn)btn.style.display='none';});};
+</script>
+</body>
     </html>

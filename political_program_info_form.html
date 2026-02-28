@@ -471,7 +471,7 @@ async function loadRemoteConfig(formType) {
 
     const action = isPublicMode() ? "public_get_config" : "admin_get_config";
     const res = await apiCall(action, payload);
-    return res && (res.config || res.data || res);
+    return res || null; // keep full response (settings/config/form)
   } catch (e) {
     if (debug) console.log("config load failed", e);
     return null;
@@ -500,11 +500,11 @@ function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle,
   const perFormBranding = (perForm && perForm.branding) ? perForm.branding : perForm;
   const brand = mergeObj(mergeObj(mergeObj(defaultsBranding, perFormBranding), legacyGlobal), legacyPerForm);
 
-  const title = brand.title || fallbackTitle || "EventLens Form";
-  const subtitle = brand.subtitle || fallbackSubtitle || "";
-  const tagline = brand.tagline || fallbackTagline || "";
+  const title = perForm.title || brand.title || fallbackTitle || "EventLens Form";
+  const subtitle = perForm.subtitle || brand.subtitle || fallbackSubtitle || "";
+  const tagline = perForm.tagline || brand.tagline || fallbackTagline || "";
 
-  const footerText = brand.footer_text || "";
+  const footerText = perForm.footer_text || brand.footer_text || "";
 
   // URLs: try common keys (lambda uses *_url; older uses *_image_url)
   const logoUrl = brand.logo_url || (brand.logo && brand.logo.url) || "";
@@ -517,7 +517,7 @@ function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle,
   if ($("footer-text")) $("footer-text").textContent = footerText;
 
   // Theme
-  setThemeVars(brand.theme_primary, brand.theme_secondary);
+  setThemeVars(brand.color1 || brand.theme_primary, brand.color2 || brand.theme_secondary);
   setBackgroundImage(bgUrl);
 
   // Logo (preload to avoid ORB showing broken images)

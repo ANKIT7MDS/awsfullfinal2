@@ -547,10 +547,10 @@ function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSub
     const branding = (formNode && formNode.branding) || (defaultsNode && defaultsNode.branding) || {};
     const theme = (globalNode && globalNode.theme) || {};
 
-    const title = safeStr((formNode && formNode.title) || fallbackTitle || "EventLens Form");
-    const subtitle = safeStr((formNode && formNode.subtitle) || fallbackSubtitle || "");
-    const tagline = safeStr((formNode && formNode.tagline) || branding.tagline || fallbackTagline || "");
-    const footerText = safeStr((globalNode && globalNode.tagline) || branding.footer_text || "Powered by EventLens");
+    const title = safeStr((formNode && formNode.title) || (defaultsNode && defaultsNode.branding && defaultsNode.branding.title) || fallbackTitle || "EventLens Form");
+    const subtitle = safeStr((formNode && formNode.subtitle) || (defaultsNode && defaultsNode.branding && defaultsNode.branding.subtitle) || fallbackSubtitle || "");
+    const tagline = safeStr((formNode && formNode.tagline) || branding.tagline || (defaultsNode && defaultsNode.branding && defaultsNode.branding.tagline) || fallbackTagline || "");
+    const footerText = safeStr((formNode && formNode.footer_text) || branding.footer_text || (defaultsNode && defaultsNode.branding && defaultsNode.branding.footer_text) || (globalNode && globalNode.tagline) || "Powered by EventLens");
 
     // Signed URLs from backend (preferred)
     const logoUrl = safeStr((formNode && formNode.logo_url) || (branding.logo && branding.logo.url) || branding.logo_url || (defaultsNode && defaultsNode.logo_url) || "");
@@ -649,8 +649,21 @@ function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSub
 function fillProgramNames(cfg, selectId) {
   const sel = $(selectId);
   if (!sel) return;
-  const list = (cfg && (cfg.programs || (cfg.data && cfg.data.programs))) || [];
-  const programs = Array.isArray(list) ? list : [];
+
+  // Robust: check all config paths (new admin-console shape + legacy)
+  const settings = (cfg && (cfg.settings || cfg.config || cfg)) || {};
+  const defaults = (settings.defaults || {});
+  const forms = (settings.forms || {});
+  const formNode = forms[FORM_TYPE] || forms[(FORM_TYPE||'').replace(/_form$/, '')] || {};
+
+  const arrs = [];
+  if (Array.isArray(formNode.program_options)) arrs.push(formNode.program_options);
+  if (Array.isArray(formNode.programs)) arrs.push(formNode.programs);
+  if (Array.isArray(defaults.programs)) arrs.push(defaults.programs);
+  if (Array.isArray(cfg && cfg.programs)) arrs.push(cfg.programs);
+  if (cfg && cfg.data && Array.isArray(cfg.data.programs)) arrs.push(cfg.data.programs);
+
+  const programs = Array.from(new Set(arrs.flat().map(p => safeStr(p).trim()).filter(Boolean)));
   if (!programs.length) return;
 
   sel.innerHTML = '<option value="">— कार्यक्रम चुनें —</option>';

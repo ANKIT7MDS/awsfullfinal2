@@ -554,7 +554,7 @@ body{overflow-x:hidden;}
             <div style="flex: 1; min-width: 120px;">
               <label class="text-sm" style="display:block; margin-bottom:6px;">Expiry</label>
               <select id="linkExpiry">
-                <option value="87600">Lifetime</option>
+                <option value="876000">Lifetime</option>
                 <option value="168">7 Days</option>
                 <option value="24">24 Hours</option>
                 <option value="1">1 Hour</option>
@@ -653,6 +653,7 @@ body{overflow-x:hidden;}
       <option value="365">365</option>
       <option value="1825">5 साल (1825)</option>
       <option value="3650">10 साल (3650)</option>
+      <option value="36500">Lifetime</option>
     </select>
   </div>
 
@@ -1133,7 +1134,7 @@ const COGNITO_DOMAIN = "https://ap-south-1mva8s6f3w.auth.ap-south-1.amazoncognit
       if(id === 'tGal') loadPhotos(true);
       if(id === 'tLeads') loadLeads();
       
-      if(id === 'tPol') { try{ updatePoliticalLinkUI(); }catch(e){} }
+      if(id === 'tPol') { try{ updatePoliticalLinkUI(); }catch(e){} try{ renderPoliticalLinkHistory(); }catch(e){} }
 if(id === 'tClient') loadClientSelections();
       if(id === 'tLink') renderLinkHistory();
       try{ updatePoliticalLinkUI(); }catch(e){}
@@ -2138,27 +2139,78 @@ if(id === 'tClient') loadClientSelections();
     $('#upProgress').classList.remove('hidden');
 
     const BATCH_SIZE = 50;
-    let processedCount = 0;
     const total = uploadQueue.length;
+
+    // Track progress across batches
+    window.__upTotal = total;
+    window.__upUploaded = 0;
+    window.__upFailed = 0;
+
+    // Capture initial event photo_count so we can show "Indexing" progress later
+    window.__upInitialEventPhotoCount = null;
+    try{
+      const ev = await getEventByIdSafe(eventId);
+      if(ev && ev.photo_count !== undefined && ev.photo_count !== null) window.__upInitialEventPhotoCount = Number(ev.photo_count || 0);
+    }catch(e){}
+
+    // Upload stage
+    $('#upBar').style.width = '0%';
+    $('#upPct').textContent = '0%';
+    $('#upStatusText').textContent = `Uploading to Bucket... 0/${total}`;
 
     for (let i = 0; i < total; i += BATCH_SIZE) {
       const chunk = uploadQueue.slice(i, i + BATCH_SIZE);
-      $('#upStatusText').textContent = `Uploading Batch ${Math.ceil((i+1)/BATCH_SIZE)}/${Math.ceil(total/BATCH_SIZE)}`;
-      $('#upPct').textContent = `${Math.round((processedCount / total) * 100)}%`;
+      const bNo = Math.ceil((i+1)/BATCH_SIZE);
+      const bTot = Math.ceil(total/BATCH_SIZE);
+
+      $('#upStatusText').textContent = `Uploading Batch ${bNo}/${bTot} • Uploaded ${window.__upUploaded}/${total}`;
+      $('#upPct').textContent = `${Math.round((window.__upUploaded / total) * 100)}%`;
+
       await processBatch(chunk, eventId);
-      processedCount += chunk.length;
-      $('#upBar').style.width = `${Math.round((processedCount / total) * 100)}%`;
+
+      // Update UI after each batch completes (fixes "0%" stuck when only 1 batch)
+      const pct = total > 0 ? Math.round((window.__upUploaded / total) * 100) : 100;
+      $('#upBar').style.width = `${pct}%`;
+      $('#upPct').textContent = `${pct}%`;
+      $('#upStatusText').textContent = `Uploaded ${window.__upUploaded}/${total}` + (window.__upFailed ? ` • Failed ${window.__upFailed}` : '');
     }
 
+    // Indexing stage (best-effort polling)
+    try{
+      const expected = Math.max(0, Number(window.__upUploaded || 0));
+      const initialCnt = Number(window.__upInitialEventPhotoCount || 0);
+
+      if(expected > 0){
+        $('#upBar').style.width = '0%';
+        $('#upPct').textContent = '0%';
+        $('#upStatusText').textContent = `Indexing... 0/${expected}`;
+
+        const idxRes = await pollIndexingProgress(eventId, initialCnt, expected);
+        if(idxRes && idxRes.done){
+          $('#upStatusText').textContent = `Indexed ${expected}/${expected} • Done!`;
+          $('#upBar').style.width = '100%';
+          $('#upPct').textContent = '100%';
+        } else {
+          // Indexing may continue in background via S3 trigger
+          $('#upStatusText').textContent = `Uploaded ${window.__upUploaded}/${total}. Indexing running in background — Refresh after some time.`;
+          $('#upBar').style.width = '100%';
+          $('#upPct').textContent = '100%';
+        }
+      }
+    }catch(e){}
+
     showToast('Done!');
-    $('#upStatusText').textContent = 'Done!';
     uploadQueue = [];
     renderQueue();
     $('#uploadQueueBox').classList.add('hidden');
     $('#btnStartUpload').disabled = false;
     $('#btnStartUpload').textContent = 'Start Upload';
     loadPhotos(true);
+    // Also refresh events counts after upload/indexing
+    try{ await loadEvents(); }catch(e){}
   }
+
+
 
   async function processBatch(files, eventId){
     const metaList = await Promise.all(files.map(async f => {
@@ -2178,12 +2230,35 @@ if(id === 'tClient') loadClientSelections();
 
     try {
       const res = await api('/generate-upload-urls', payload);
-      const uploadPromises = (res.urls || []).map(u => {
+
+      const urls = (res.urls || []);
+      const total = Number(window.__upTotal || (uploadQueue ? uploadQueue.length : 0)) || 0;
+
+      const uploadPromises = urls.map(u => {
         const original = metaList.find(m => m.hash === u.hash);
         if(!original) return null;
+
         return fetch(u.uploadURL, {
           method: 'PUT', body: original.fileObj,
           headers: { 'Content-Type': 'image/jpeg', 'x-amz-meta-original-hash': u.hash }
+        }).then(resp => {
+          if(!resp || !resp.ok) throw new Error('Upload failed');
+          // Count success
+          window.__upUploaded = Number(window.__upUploaded || 0) + 1;
+
+          // Update UI incrementally even within a batch
+          const pct = total > 0 ? Math.round((window.__upUploaded / total) * 100) : 100;
+          const st = $('#upStatusText');
+          if(st) st.textContent = `Uploading to Bucket... ${window.__upUploaded}/${total}` + (window.__upFailed ? ` • Failed ${window.__upFailed}` : '');
+          const bar = $('#upBar'); if(bar) bar.style.width = `${pct}%`;
+          const pctEl = $('#upPct'); if(pctEl) pctEl.textContent = `${pct}%`;
+
+          return true;
+        }).catch(err => {
+          window.__upFailed = Number(window.__upFailed || 0) + 1;
+          const st = $('#upStatusText');
+          if(st) st.textContent = `Uploading to Bucket... ${window.__upUploaded}/${total} • Failed ${window.__upFailed}`;
+          return false;
         });
       }).filter(Boolean);
 
@@ -2193,11 +2268,67 @@ if(id === 'tClient') loadClientSelections();
           updateSuperAdminCardsFromCache(); }
   }
 
+
+
   async function computeHash(file) {
     const buf = await file.arrayBuffer();
     const hash = await crypto.subtle.digest('SHA-256', buf);
     return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
+
+  async function getEventByIdSafe(eventId){
+    try{
+      if(!curCol || !curCol.collection_id) return null;
+      const data = await api('/get-events', { collection_id: curCol.collection_id });
+      const evs = data && (data.events || data.items || []);
+      if(!Array.isArray(evs)) return null;
+      return evs.find(e => String(e.event_id||'') === String(eventId||'')) || null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function _sleep(ms){ return new Promise(res => setTimeout(res, ms)); }
+
+  async function pollIndexingProgress(eventId, initialPhotoCount, expectedNew){
+    // Best-effort: S3 indexer updates event photo_count/storage_bytes after indexing
+    const maxMs = 120000; // 2 minutes
+    const intervalMs = 3000;
+    const start = Date.now();
+
+    let lastCount = null;
+    let stableTicks = 0;
+
+    while(Date.now() - start < maxMs){
+      const ev = await getEventByIdSafe(eventId);
+      if(!ev) break;
+
+      const curCnt = Number(ev.photo_count || 0);
+      const done = Math.max(0, curCnt - Number(initialPhotoCount || 0));
+      const safeExpected = Math.max(1, Number(expectedNew || 1));
+      const pct = Math.min(100, Math.round((Math.min(done, safeExpected) / safeExpected) * 100));
+
+      const st = $('#upStatusText');
+      if(st) st.textContent = `Indexing... ${Math.min(done, safeExpected)}/${safeExpected}`;
+      const bar = $('#upBar'); if(bar) bar.style.width = `${pct}%`;
+      const pctEl = $('#upPct'); if(pctEl) pctEl.textContent = `${pct}%`;
+
+      if(done >= safeExpected) return { done: true, indexed: done, current: curCnt };
+
+      if(lastCount !== null && curCnt === lastCount) stableTicks += 1;
+      else stableTicks = 0;
+
+      lastCount = curCnt;
+
+      // If no progress for ~30s, stop and let it continue in background
+      if(stableTicks >= 10) break;
+
+      await _sleep(intervalMs);
+    }
+
+    return { done: false };
+  }
+
 
   /* ================= LINKS ================= */
   function updateLinkUI() {
@@ -2423,14 +2554,22 @@ function getLinksStorageKey(){
   function addToLinkHistory(type, url, pin, expiryHours) {
     let currentHistory = JSON.parse(localStorage.getItem(getLinksStorageKey())) || [];
 
+    const hrs = Number(expiryHours);
+    const isLifetime = (!isFinite(hrs) || hrs >= 87600); // 10y+ treated as Lifetime (no-expiry in UI)
+
+    const meta = parseLinkMetaFromUrl(url);
+
     const newEntry = {
       id: Date.now(),
       type: type,
       created: new Date().toISOString(),
-      expiry: new Date(Date.now() + Number(expiryHours) * 3600 * 1000).toISOString(),
+      expiry: isLifetime ? null : new Date(Date.now() + hrs * 3600 * 1000).toISOString(),
+      expiry_hours: isFinite(hrs) ? hrs : null,
       pin: pin || '-',
       url: url,
       active: true,
+      link_id: meta.link_id || null,
+      token: meta.token || null,
       collection_id: curCol ? curCol.collection_id : null,
       collection_name: curCol ? curCol.name : 'Unknown'
     };
@@ -2441,7 +2580,10 @@ function getLinksStorageKey(){
     linkHistory = currentHistory;
 
     renderLinkHistory();
+    try{ renderPoliticalLinkHistory(); }catch(e){}
   }
+
+
 
   function renderLinkHistory() {
     linkHistory = JSON.parse(localStorage.getItem(getLinksStorageKey())) || [];
@@ -2453,8 +2595,13 @@ function getLinksStorageKey(){
     }
 
     tbody.innerHTML = linkHistory.map(link => {
-      const isExpired = new Date() > new Date(link.expiry);
+      const isLifetime = !link.expiry;
+      const isExpired = isLifetime ? false : (new Date() > new Date(link.expiry));
       const statusClass = (!link.active || isExpired) ? 'status-disabled' : 'status-active';
+
+      const expTxt = isLifetime ? 'Lifetime' : `${Math.round((new Date(link.expiry) - new Date(link.created))/3600000)}h`;
+      const toggleIcon = link.active ? 'fa-ban' : 'fa-check';
+      const toggleTitle = link.active ? 'Disable' : 'Enable';
 
       return `
         <tr style="opacity: ${!link.active ? 0.6 : 1}">
@@ -2463,19 +2610,23 @@ function getLinksStorageKey(){
             <div style="font-size:10px; color:#666;">${escapeHtml(link.collection_name || '')}</div>
           </td>
           <td style="font-size:12px">${new Date(link.created).toLocaleDateString()}</td>
-          <td style="font-size:12px">${Math.round((new Date(link.expiry) - new Date(link.created))/3600000)}h</td>
+          <td style="font-size:12px">${escapeHtml(expTxt)}</td>
           <td style="font-family:monospace">${escapeHtml(link.pin)}</td>
           <td><span class="status-badge ${statusClass}">${!link.active ? 'Disabled' : (isExpired ? 'Expired' : 'Active')}</span></td>
           <td>
             <div style="display:flex; gap:6px;">
-              <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="copyToClip('${escJsSingle(link.url)}')"><i class="fa-regular fa-copy"></i></button>
-              <button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="removeLink(${link.id})"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="copyToClip('${escJsSingle(link.url)}')" title="Copy"><i class="fa-regular fa-copy"></i></button>
+              <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="showQrForUrl('${escJsSingle(link.url)}')" title="QR"><i class="fa-solid fa-qrcode"></i></button>
+              <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="toggleLinkActive(${link.id})" title="${escapeHtml(toggleTitle)}"><i class="fa-solid ${toggleIcon}"></i></button>
+              <button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="removeLink(${link.id})" title="Remove from list"><i class="fa-solid fa-trash"></i></button>
             </div>
           </td>
         </tr>
       `;
     }).join('');
   }
+
+
 
   function removeLink(id) {
     if(!confirm("Remove this link from history list? (The link itself may still work until expiry)")) return;
@@ -2487,6 +2638,7 @@ function getLinksStorageKey(){
     linkHistory = currentHistory;
 
     renderLinkHistory();
+    try{ renderPoliticalLinkHistory(); }catch(e){}
     showToast("Removed from list");
   }
 
@@ -2499,6 +2651,164 @@ function getLinksStorageKey(){
     document.body.removeChild(temp);
     showToast('Copied!');
   }
+
+  
+  function parseLinkMetaFromUrl(url){
+    try{
+      const u = new URL(String(url||''), window.location.origin);
+      const linkId = u.searchParams.get('linkId') || u.searchParams.get('id') || u.searchParams.get('link_id');
+      const token = u.searchParams.get('token');
+      return { link_id: linkId || null, token: token || null };
+    }catch(e){
+      return { link_id: null, token: null };
+    }
+  }
+
+  function ensureQrModal(){
+    let m = document.getElementById('__qrModal');
+    if(m) return m;
+
+    m = document.createElement('div');
+    m.id = '__qrModal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px;';
+    m.innerHTML = `
+      <div style="background:#fff;border-radius:12px;padding:14px;max-width:260px;width:100%;text-align:center;position:relative;">
+        <div id="__qrBox"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn primary" style="padding:6px 12px;font-size:11px;" onclick="downloadQrPng()"><i class="fa-solid fa-download"></i> Download</button>
+          <button class="btn secondary" style="padding:6px 12px;font-size:11px;" onclick="closeQrModal()"><i class="fa-solid fa-xmark"></i> Close</button>
+        </div>
+      </div>
+    `;
+    m.addEventListener('click', (e) => { if(e.target === m) closeQrModal(); });
+    document.body.appendChild(m);
+    return m;
+  }
+
+  window.__qrLastText = null;
+
+  function showQrForUrl(url){
+    if(!url) return;
+    const m = ensureQrModal();
+    const box = document.getElementById('__qrBox');
+    if(!box) return;
+
+    window.__qrLastText = String(url);
+    box.innerHTML = '';
+    try{
+      if(typeof QRCode !== 'undefined'){
+        new QRCode(box, { text: String(url), width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
+      } else {
+        box.textContent = 'QR library not loaded';
+      }
+    }catch(e){
+      box.textContent = 'QR Error';
+    }
+    m.style.display = 'flex';
+  }
+
+  function closeQrModal(){
+    const m = document.getElementById('__qrModal');
+    if(m) m.style.display = 'none';
+  }
+
+  function downloadQrPng(){
+    const box = document.getElementById('__qrBox');
+    if(!box) return;
+    const c = box.querySelector('canvas');
+    if(!c) return;
+    const a = document.createElement('a');
+    a.href = c.toDataURL('image/png');
+    a.download = 'eventlens-qr.png';
+    a.click();
+  }
+
+  function toggleLinkActive(id){
+    let currentHistory = JSON.parse(localStorage.getItem(getLinksStorageKey())) || [];
+    const idx = currentHistory.findIndex(l => Number(l.id) === Number(id));
+    if(idx < 0) return;
+
+    currentHistory[idx].active = !currentHistory[idx].active;
+    localStorage.setItem(getLinksStorageKey(), JSON.stringify(currentHistory));
+    linkHistory = currentHistory;
+
+    renderLinkHistory();
+    try{ renderPoliticalLinkHistory(); }catch(e){}
+
+    showToast(currentHistory[idx].active ? 'Enabled' : 'Disabled');
+  }
+
+  // Political Tab: show generated political links list (same data as Link History)
+  function ensurePoliticalHistoryUI(){
+    const tab = document.getElementById('tPol');
+    if(!tab) return;
+    if(document.getElementById('__polHistWrap')) return;
+
+    const card = tab.querySelector('.card') || tab;
+
+    const wrap = document.createElement('div');
+    wrap.id = '__polHistWrap';
+    wrap.innerHTML = `
+      <hr style="border:0;border-top:1px solid #333;margin:22px 0;" />
+      <div class="row" style="justify-content: space-between; margin-bottom: 15px;">
+        <h3 style="margin:0;">Political Links History</h3>
+        <button class="btn secondary" onclick="renderPoliticalLinkHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+      </div>
+      <div class="table-responsive">
+        <table class="styled-table">
+          <thead><tr><th>Type</th><th>Created At</th><th>Expiry</th><th>PIN</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="tblPolLinkHistory">
+            <tr><td align="center" class="text-muted" colspan="6">No political links generated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+    card.appendChild(wrap);
+  }
+
+  function renderPoliticalLinkHistory(){
+    ensurePoliticalHistoryUI();
+    const tbody = document.getElementById('tblPolLinkHistory');
+    if(!tbody) return;
+
+    const all = JSON.parse(localStorage.getItem(getLinksStorageKey())) || [];
+    const pol = all.filter(l => String(l.type || '').toUpperCase().startsWith('POLITICAL'));
+    if(pol.length === 0){
+      tbody.innerHTML = `<tr><td colspan="6" align="center" class="text-muted">No political links generated yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = pol.map(link => {
+      const isLifetime = !link.expiry;
+      const isExpired = isLifetime ? false : (new Date() > new Date(link.expiry));
+      const statusClass = (!link.active || isExpired) ? 'status-disabled' : 'status-active';
+      const expTxt = isLifetime ? 'Lifetime' : `${Math.round((new Date(link.expiry) - new Date(link.created))/3600000)}h`;
+      const toggleIcon = link.active ? 'fa-ban' : 'fa-check';
+      const toggleTitle = link.active ? 'Disable' : 'Enable';
+
+      return `
+        <tr style="opacity: ${!link.active ? 0.6 : 1}">
+          <td>
+            <div style="font-weight:600">${escapeHtml(link.type)}</div>
+            <div style="font-size:10px; color:#666;">${escapeHtml(link.collection_name || '')}</div>
+          </td>
+          <td style="font-size:12px">${new Date(link.created).toLocaleDateString()}</td>
+          <td style="font-size:12px">${escapeHtml(expTxt)}</td>
+          <td style="font-family:monospace">${escapeHtml(link.pin || '-')}</td>
+          <td><span class="status-badge ${statusClass}">${!link.active ? 'Disabled' : (isExpired ? 'Expired' : 'Active')}</span></td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="copyToClip('${escJsSingle(link.url)}')" title="Copy"><i class="fa-regular fa-copy"></i></button>
+              <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="showQrForUrl('${escJsSingle(link.url)}')" title="QR"><i class="fa-solid fa-qrcode"></i></button>
+              <button class="btn secondary" style="padding:4px 8px; font-size:11px;" onclick="toggleLinkActive(${link.id})" title="${escapeHtml(toggleTitle)}"><i class="fa-solid ${toggleIcon}"></i></button>
+              <button class="btn danger" style="padding:4px 8px; font-size:11px;" onclick="removeLink(${link.id})" title="Remove from list"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
 
   /* ================= CLIENT SELECTIONS ================= */
   async function loadClientSelections() {
@@ -2521,13 +2831,10 @@ function getLinksStorageKey(){
       }
 
       const rows = selections.map((s, index) => {
-        let thumbUrl = s.thumbnail_url || s.url || '';
-        
-        // Thumbnail generation logic same as gallery
-        if (!s.thumbnail_url && s.url && String(s.url).includes('/photos/')) {
-           thumbUrl = String(s.url).replace('/photos/', '/thumbnails/');
-        }
-
+        let thumbUrl = s.thumbnail_url || '';
+        // For selections API, thumbnails may not exist or may be private.
+        // Use the same working URL as fallback (prevents ORB/403 on /thumbnails/).
+        if(!thumbUrl) thumbUrl = s.url || '';
         const safeThumb = escapeHtml(thumbUrl);
         const safeFull = escapeHtml(s.url || '');
 
@@ -2897,6 +3204,38 @@ function getLinksStorageKey(){
   if(typeof orig==='function'){window.generatePoliticalPublicLink=async function(){var r=await orig.apply(this,arguments);setTimeout(addQRBtn,400);return r;};}
   var el=document.getElementById('polLinkRes');
   if(el) new MutationObserver(function(){if(el.style.display!=='none'&&!el.classList.contains('hidden')) addQRBtn();}).observe(el,{attributes:true});
+})();
+</script>
+
+<script>
+(function(){
+  function addMainQRBtn(){
+    var res=document.getElementById('linkRes');
+    if(!res||res.dataset.qrAdded) return;
+    res.dataset.qrAdded='1';
+
+    var row=document.createElement('div');
+    row.style.cssText='margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;';
+    row.innerHTML='<button onclick="window._showMainQR()" style="background:rgba(249,115,22,15);color:#f97316;border:1px solid rgba(249,115,22,3);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fa-solid fa-qrcode"></i> QR Code</button>';
+    res.appendChild(row);
+  }
+
+  window._showMainQR=function(){
+    var url=document.getElementById('finalLink')&&document.getElementById('finalLink').value;
+    if(!url) return;
+    if(typeof showQrForUrl === 'function') showQrForUrl(url);
+  };
+
+  var orig=window.generateUnifiedLink;
+  if(typeof orig==='function'){
+    window.generateUnifiedLink=async function(){
+      var r=await orig.apply(this,arguments);
+      setTimeout(addMainQRBtn,250);
+      return r;
+    };
+  }
+  // Initial attempt (in case UI already visible)
+  setTimeout(addMainQRBtn,500);
 })();
 </script>
 </body>

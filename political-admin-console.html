@@ -374,6 +374,67 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand);}
           <button class="btn btn-primary btn-sm" onclick="saveConfig()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
         </div>
       </div>
+
+      <div class="section-card">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h2 class="font-bold text-white">Common Programs (Mandal / Coordinator / Program Info)</h2>
+          <div class="text-xs text-slate-400">इन 3 forms में common program list + prefill/lock</div>
+        </div>
+
+        <div class="text-xs text-slate-400 mb-4 p-3 bg-slate-900/50 rounded-lg">
+          <i class="fa-solid fa-circle-info text-orange-400 mr-1"></i>
+          यहाँ जो programs add करेंगे वो सिर्फ Mandal Reporting, Coordinator और Program Info में dropdown में आएंगे।
+        </div>
+
+        <div class="flex gap-2 mb-4 flex-wrap">
+          <input id="newCommonProgInput" placeholder="नया common program (e.g. मंडल बैठक)" class="flex-1"/>
+          <button class="btn btn-primary" onclick="addCommonProgram()"><i class="fa-solid fa-plus"></i> Add</button>
+          <button class="btn btn-secondary btn-sm" onclick="syncCommonFromGlobal()"><i class="fa-solid fa-arrow-rotate-right"></i> Sync from Global</button>
+          <button class="btn btn-danger btn-sm" onclick="clearCommonPrograms()"><i class="fa-solid fa-trash"></i> Clear</button>
+          <button class="btn btn-primary btn-sm" onclick="saveConfig()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+
+        <div id="commonProgList" class="space-y-2 scroll-y"></div>
+
+        <div class="mt-5 grid md:grid-cols-3 gap-3">
+          <div class="p-3 rounded-xl bg-slate-900/40 border border-slate-800/70">
+            <div class="text-sm font-semibold text-white mb-2">Mandal Reporting</div>
+            <div class="flex items-center gap-2">
+              <select id="fixedProg_mandal_reporting" class="text-xs flex-1" style="padding:6px 10px;width:auto;"></select>
+              <label class="flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" id="lockProg_mandal_reporting" onchange="applyProgramLocksFromUI()"/>
+                Lock
+              </label>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-2">Lock ON होने पर form में program field read-only होगा।</div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-900/40 border border-slate-800/70">
+            <div class="text-sm font-semibold text-white mb-2">Coordinator</div>
+            <div class="flex items-center gap-2">
+              <select id="fixedProg_coordinator_form" class="text-xs flex-1" style="padding:6px 10px;width:auto;"></select>
+              <label class="flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" id="lockProg_coordinator_form" onchange="applyProgramLocksFromUI()"/>
+                Lock
+              </label>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-2">Coordinator form key: coordinator_form (alias works for coordinator_entry).</div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-900/40 border border-slate-800/70">
+            <div class="text-sm font-semibold text-white mb-2">Program Info</div>
+            <div class="flex items-center gap-2">
+              <select id="fixedProg_program_info" class="text-xs flex-1" style="padding:6px 10px;width:auto;"></select>
+              <label class="flex items-center gap-2 text-xs text-slate-300">
+                <input type="checkbox" id="lockProg_program_info" onchange="applyProgramLocksFromUI()"/>
+                Lock
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
     </section>
 
     <!-- ═══ TAB: LEVEL LOCKS ═══ -->
@@ -469,6 +530,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand);}
               <option value="mandal_reporting">Mandal</option>
               <option value="coordinator_form">Coordinator</option>
               <option value="program_info">Program Info</option>
+              <option value="program_common">Programs (Mandal+Coordinator+Info)</option>
             </select>
             <!-- Date range -->
             <input type="date" id="dataStartDate" class="text-xs" style="padding:5px 8px;width:130px;"/>
@@ -688,7 +750,7 @@ function switchTab(tabId, btn) {
   if(tabId==='data' && state.dataItems.length===0 && state.cid) loadData(true);
   if(tabId==='analytics' && state.cid) loadAnalytics();
   if(tabId==='gallery' && state.galPhotos.length===0 && state.cid) loadGallery(true);
-  if(tabId==='programs') renderPrograms();
+  if(tabId==='programs'){ renderPrograms(); renderCommonPrograms(); hydrateProgramLocksToUI(); }
   if(tabId==='levels') renderLevelLocks();
   if(tabId==='links') renderLinkHistory();
 }
@@ -699,6 +761,8 @@ function onTargetChange(){
   renderPreview();
   populateFieldsFromConfig();
   renderPrograms();
+  renderCommonPrograms();
+  hydrateProgramLocksToUI();
   renderLevelLocks();
 }
 
@@ -740,6 +804,8 @@ async function loadConfig() {
     populateFieldsFromConfig();
     renderPreview();
     renderPrograms();
+    renderCommonPrograms();
+    hydrateProgramLocksToUI();
     renderLevelLocks();
     toast('Config loaded ✓','success');
   } catch(e) {
@@ -1070,6 +1136,132 @@ function clearPrograms() {
   if(!confirm('सभी programs delete करें?')) return;
   setProgramList([]);
   renderPrograms();
+}
+
+// ══════════════════════════════════════════════════════════
+// Common Programs (Mandal/Coordinator/Program Info) + Program Lock
+// Stored at: state.config.defaults.programs_common
+// Lock stored at: state.config.forms[ft].fixed_program + fixed_program_lock
+// ══════════════════════════════════════════════════════════
+function getCommonProgramList(){
+  const d = state.config && state.config.defaults ? state.config.defaults : {};
+  const arr = d.programs_common;
+  return Array.isArray(arr) ? arr.slice() : [];
+}
+function setCommonProgramList(list){
+  if(!state.config.defaults) state.config.defaults = {};
+  state.config.defaults.programs_common = Array.isArray(list) ? list.slice() : [];
+}
+function renderCommonPrograms(){
+  const container = $i('commonProgList');
+  if(!container) return;
+  const list = getCommonProgramList();
+  if(!list.length){
+    container.innerHTML = '<div class="text-sm text-slate-500 text-center py-4">कोई common program नहीं। Add करें ऊपर से।</div>';
+    populateFixedProgramDropdowns();
+    hydrateProgramLocksToUI();
+    return;
+  }
+  container.innerHTML = list.map((p,i)=>`
+    <div class="prog-chip">
+      <span class="text-slate-300">${i+1}. ${escHtml(p)}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteCommonProgram(${i})"><i class="fa-solid fa-trash"></i></button>
+    </div>
+  `).join('');
+  populateFixedProgramDropdowns();
+  hydrateProgramLocksToUI();
+}
+function addCommonProgram(){
+  const val = $i('newCommonProgInput')?.value.trim();
+  if(!val){ toast('Program name enter करें','error'); return; }
+  const list = getCommonProgramList();
+  if(list.includes(val)){ toast('Already exists','error'); return; }
+  list.push(val);
+  setCommonProgramList(list);
+  if($i('newCommonProgInput')) $i('newCommonProgInput').value='';
+  renderCommonPrograms();
+  toast('Common program added ✓','success');
+}
+function deleteCommonProgram(idx){
+  const list = getCommonProgramList();
+  list.splice(idx,1);
+  setCommonProgramList(list);
+  renderCommonPrograms();
+}
+function clearCommonPrograms(){
+  if(!confirm('सभी common programs delete करें?')) return;
+  setCommonProgramList([]);
+  renderCommonPrograms();
+}
+function syncCommonFromGlobal(){
+  // Copy from defaults.programs into defaults.programs_common
+  const g = (state.config.defaults && Array.isArray(state.config.defaults.programs)) ? state.config.defaults.programs : [];
+  setCommonProgramList(g.slice());
+  renderCommonPrograms();
+  toast('Synced from Global ✓','success');
+}
+function populateFixedProgramDropdowns(){
+  const list = getCommonProgramList();
+  const ids = [
+    ['mandal_reporting','fixedProg_mandal_reporting'],
+    ['coordinator_form','fixedProg_coordinator_form'],
+    ['program_info','fixedProg_program_info'],
+  ];
+  ids.forEach(([ft,id])=>{
+    const sel = $i(id);
+    if(!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">— None —</option>' + list.map(p=>`<option value="${escAttr(p)}">${escHtml(p)}</option>`).join('');
+    if(prev) sel.value = prev;
+  });
+}
+function applyProgramLocksFromUI(){
+  const pairs = [
+    ['mandal_reporting','fixedProg_mandal_reporting','lockProg_mandal_reporting'],
+    ['coordinator_form','fixedProg_coordinator_form','lockProg_coordinator_form'],
+    ['program_info','fixedProg_program_info','lockProg_program_info'],
+  ];
+  state.config.forms = state.config.forms || {};
+  pairs.forEach(([ft,selId,chkId])=>{
+    const sel = $i(selId);
+    const chk = $i(chkId);
+    const v = sel ? (sel.value || '') : '';
+    const lock = chk ? !!chk.checked : false;
+    const node = state.config.forms[ft] || {};
+    if(lock && v){
+      node.fixed_program = v;
+      node.fixed_program_lock = true;
+    } else {
+      node.fixed_program = '';
+      node.fixed_program_lock = false;
+    }
+    state.config.forms[ft] = node;
+  });
+  toast('Program locks updated','success');
+}
+function hydrateProgramLocksToUI(){
+  const pairs = [
+    ['mandal_reporting','fixedProg_mandal_reporting','lockProg_mandal_reporting'],
+    ['coordinator_form','fixedProg_coordinator_form','lockProg_coordinator_form'],
+    ['program_info','fixedProg_program_info','lockProg_program_info'],
+  ];
+  pairs.forEach(([ft,selId,chkId])=>{
+    const node = (state.config.forms && state.config.forms[ft]) ? state.config.forms[ft] : {};
+    const fp = node.fixed_program || '';
+    const locked = !!node.fixed_program_lock && !!fp;
+    const sel = $i(selId);
+    const chk = $i(chkId);
+    if(sel){
+      if(fp && !Array.from(sel.options).some(o=>o.value===fp)){
+        // If program not in list, still show it
+        const opt = document.createElement('option');
+        opt.value = fp; opt.textContent = fp;
+        sel.appendChild(opt);
+      }
+      sel.value = fp || '';
+    }
+    if(chk) chk.checked = locked;
+  });
 }
 
 // ══════════════════════════════════════════════════════

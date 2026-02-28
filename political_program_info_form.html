@@ -563,7 +563,8 @@ function fillProgramNames(cfg, selectId) {
   const arrs = [];
   if (Array.isArray(ftNode.program_options)) arrs.push(ftNode.program_options);
   if (Array.isArray(ftNode.programs)) arrs.push(ftNode.programs);
-  if (Array.isArray(defaultsNode.programs)) arrs.push(defaultsNode.programs);
+  if (Array.isArray(defaultsNode.programs_common) && defaultsNode.programs_common.length) arrs.push(defaultsNode.programs_common);
+  else if (Array.isArray(defaultsNode.programs)) arrs.push(defaultsNode.programs);
   if (Array.isArray(cfg.programs)) arrs.push(cfg.programs);
 
   const programs = Array.from(new Set(arrs.flat().map(s => safeStr(s).trim()).filter(Boolean)));
@@ -590,6 +591,31 @@ function fillProgramNames(cfg, selectId) {
 
   const manual = $("program_name_manual");
   if (manual) manual.classList.add("hidden");
+}
+
+
+function applyFixedProgram(cfg, selectId) {
+  const sel = $(selectId);
+  if (!sel) return;
+
+  const formsNode = (cfg && (cfg.forms || (cfg.settings && cfg.settings.forms) || (cfg.config && cfg.config.forms))) || {};
+  const ftNode = (formsNode && (formsNode[FORM_TYPE] || formsNode[FORM_TYPE_ALIAS] || formsNode[FORM_TYPE.replace(/_form$/,'')] )) || {};
+
+  const fixedProgram = safeStr(ftNode.fixed_program || "").trim();
+  const lock = (ftNode.fixed_program_lock === undefined) ? true : !!ftNode.fixed_program_lock;
+
+  if (fixedProgram) {
+    if (!Array.from(sel.options).some(o => (o.value||'') === fixedProgram)) {
+      const opt = document.createElement("option");
+      opt.value = fixedProgram;
+      opt.textContent = fixedProgram;
+      sel.appendChild(opt);
+    }
+    sel.value = fixedProgram;
+    if (lock) sel.disabled = true;
+  } else {
+    sel.disabled = false;
+  }
 }
 
 function getFixedLevel(cfg, formType) {
@@ -879,6 +905,7 @@ function onPhotosSelected(ev, maxFiles=10) {
       if ($("footer-text") && $("footer-text").textContent.trim() === "") $("footer-text").textContent = "Powered by EventLens";
 
       fillProgramNames(remoteCfg, "program_name");
+      applyFixedProgram(remoteCfg, "program_name");
       initLevelControl(remoteCfg, FORM_TYPE);
 
       // Photo upload removed - no file event listeners needed

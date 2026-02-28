@@ -506,6 +506,9 @@ function getFormNode(resp, formType) {
 
   // Try common aliases / legacy keys
   const aliases = [raw, raw && (raw + "_form"), raw && raw.replace(/_form$/, ""), ft && ft.replace(/_form$/, ""), ft && (ft + "_entry")].filter(Boolean);
+  // Explicit alias for Coordinator (admin config uses coordinator_form, form uses coordinator_entry)
+  if (ft === "coordinator_entry" || raw === "coordinator_entry") aliases.push("coordinator_form");
+  if (ft === "coordinator_form" || raw === "coordinator_form") aliases.push("coordinator_entry");
   for (const k of aliases) {
     const nk = normalizeFormType(k);
     if (resp.settings && resp.settings.forms && resp.settings.forms[nk]) return resp.settings.forms[nk];
@@ -595,6 +598,7 @@ function applyBrandingFromResponse(resp, formType, fallbackTitle, fallbackSubtit
   if (!resp) return;
 
   const ft = formType || resp.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+  defaultIconId = defaultIconId || "default-icon";
   const formNode = getFormNode(resp, ft) || {};
   const defaultsNode = getDefaultsNode(resp) || {};
   const globalNode = getGlobalNode(resp) || {};
@@ -662,7 +666,17 @@ function applyBrandingFromResponse(resp, formType, fallbackTitle, fallbackSubtit
 }
 
 
+function applyBrandingFromConfig(cfgOrResp, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId) {
+  // Admin preview sends settings object directly; normalize into a response-like shape
+  const payload = cfgOrResp || {};
+  const resp = (payload.settings || payload.config || payload.forms || payload.defaults) ? { settings: payload, config: payload } : payload;
+  try { applyBrandingFromResponse(resp, formType, fallbackTitle, fallbackSubtitle, fallbackTagline, defaultIconId); } catch(e) {}
+}
+
+
 function fillProgramNamesFromResponse(resp, formType, selectId) {
+  selectId = selectId || "program_name";
+  formType = formType || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
   const sel = $(selectId);
   if (!sel) return;
 
@@ -685,9 +699,12 @@ function fillProgramNamesFromResponse(resp, formType, selectId) {
     if (resp.data && Array.isArray(resp.data.programs)) arrs.push(resp.data.programs);
 
     // defaults in response
-    if (resp.defaults && Array.isArray(resp.defaults.programs)) arrs.push(resp.defaults.programs);
-    if (resp.settings && resp.settings.defaults && Array.isArray(resp.settings.defaults.programs)) arrs.push(resp.settings.defaults.programs);
-    if (resp.config && resp.config.defaults && Array.isArray(resp.config.defaults.programs)) arrs.push(resp.config.defaults.programs);
+    if (resp.defaults && Array.isArray(resp.defaults.programs_common) && resp.defaults.programs_common.length) arrs.push(resp.defaults.programs_common);
+    else if (resp.defaults && Array.isArray(resp.defaults.programs)) arrs.push(resp.defaults.programs);
+    if (resp.settings && resp.settings.defaults && Array.isArray(resp.settings.defaults.programs_common) && resp.settings.defaults.programs_common.length) arrs.push(resp.settings.defaults.programs_common);
+    else if (resp.settings && resp.settings.defaults && Array.isArray(resp.settings.defaults.programs)) arrs.push(resp.settings.defaults.programs);
+    if (resp.config && resp.config.defaults && Array.isArray(resp.config.defaults.programs_common) && resp.config.defaults.programs_common.length) arrs.push(resp.config.defaults.programs_common);
+    else if (resp.config && resp.config.defaults && Array.isArray(resp.config.defaults.programs)) arrs.push(resp.config.defaults.programs);
 
     // global/programs (legacy)
     if (resp.config && Array.isArray(resp.config.programs)) arrs.push(resp.config.programs);
@@ -711,6 +728,31 @@ function getFixedLevel(resp, formType) {
   const v = safeStr(formNode.fixed_level || "");
   return v ? v.toLowerCase() : "";
 }
+
+function applyFixedProgramFromResponse(resp, formType, selectId) {
+  selectId = selectId || "program_name";
+  const sel = $(selectId);
+  if (!sel || !resp) return;
+
+  const ftRaw = formType || resp.form_type || (typeof FORM_TYPE !== "undefined" ? FORM_TYPE : "");
+  const node = getFormNode(resp, ftRaw) || {};
+  const fixedProgram = safeStr(node.fixed_program || "").trim();
+  const lock = (node.fixed_program_lock === undefined) ? true : !!node.fixed_program_lock;
+
+  if (fixedProgram) {
+    if (!Array.from(sel.options).some(o => (o.value||'') === fixedProgram)) {
+      const opt = document.createElement("option");
+      opt.value = fixedProgram;
+      opt.textContent = fixedProgram;
+      sel.appendChild(opt);
+    }
+    sel.value = fixedProgram;
+    if (lock) sel.disabled = true;
+  } else {
+    sel.disabled = false;
+  }
+}
+
     const FORM_TYPE = "coordinator_entry";
     const FIELD_IDS = ["level","program_name","district","vidhansabha","mandal","coordinator_name","coordinator_mobile","assistant_1_name","assistant_1_mobile","assistant_2_name","assistant_2_mobile"];
 
@@ -2800,7 +2842,8 @@ async function bootPage(){
     const cfg = await loadRemoteConfig(FORM_TYPE);
     if(cfg){
       try{ applyBrandingFromResponse(cfg); }catch(e){ console.log("boot applyBranding error", e); }
-      try{ fillProgramNamesFromResponse(cfg); }catch(e){ console.log("boot fillProgramNames error", e); }
+      try{ fillProgramNamesFromResponse(cfg, FORM_TYPE, "program_name"); }catch(e){ console.log("boot fillProgramNames error", e); }
+      try{ applyFixedProgramFromResponse(cfg, FORM_TYPE, "program_name"); }catch(e){ console.log("boot fixed program error", e); }
     }
   }catch(e){ console.log("boot loadRemoteConfig error", e); }
 }

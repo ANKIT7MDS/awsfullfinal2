@@ -97,6 +97,21 @@ function _elApplyBranding(cfg, formType){
     var c1=fb.color1||db.color1||def.color1||'';
     var c2=fb.color2||db.color2||def.color2||'';
     function s(id){ return document.getElementById(id); }
+function isPresignedUrl(u){
+  try{
+    u = String(u||'');
+    return /X-Amz-Signature=|X-Amz-Algorithm=|X-Amz-Credential=|AWSAccessKeyId=|Signature=/.test(u);
+  }catch(e){ return false; }
+}
+function cacheBustSafe(u){
+  u = String(u||'').trim();
+  if(!u) return '';
+  if(isPresignedUrl(u)) return u;
+  var sep = u.indexOf('?')>=0 ? '&' : '?';
+  return u + sep + 't=' + Date.now();
+}
+
+
     // Text
     if(title){['org-name','org-title','brand-title'].forEach(function(id){var e=s(id);if(e)e.textContent=title;});}
     if(sub){['org-sub','org-subtitle','brand-subtitle'].forEach(function(id){var e=s(id);if(e)e.textContent=sub;});}
@@ -107,21 +122,21 @@ function _elApplyBranding(cfg, formType){
     if(c2) document.documentElement.style.setProperty('--o2',c2);
     // Logo
     if(logoUrl){
-      var ts='?t='+Date.now();
-      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=logoUrl+ts;e.style.display='block';}});
+      var lu = cacheBustSafe(logoUrl);
+      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=lu;e.style.display='block';}});
       ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
     }
     // Header
     if(hdrUrl){
-      var ts2='?t='+Date.now();
-      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=hdrUrl+ts2;e.style.display='block';}});
+      var hu = cacheBustSafe(hdrUrl);
+      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=hu;e.style.display='block';}});
       ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(function(id){var e=s(id);if(e)e.style.display='block';});
     }
     // Background
     if(bgUrl){
       var img=new Image();
       img.onload=function(){
-        document.body.style.backgroundImage='url("'+bgUrl+'?t='+Date.now()+'")';
+        document.body.style.backgroundImage='url("'+cacheBustSafe(bgUrl)+'")';
         document.body.style.backgroundSize='cover';
         document.body.style.backgroundPosition='center';
         document.body.style.backgroundAttachment='fixed';

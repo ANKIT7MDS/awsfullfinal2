@@ -659,7 +659,8 @@ function fillProgramNames(cfg, selectId) {
   const arrs = [];
   if (Array.isArray(formNode.program_options)) arrs.push(formNode.program_options);
   if (Array.isArray(formNode.programs)) arrs.push(formNode.programs);
-  if (Array.isArray(defaults.programs)) arrs.push(defaults.programs);
+  if (Array.isArray(defaults.programs_common) && defaults.programs_common.length) arrs.push(defaults.programs_common);
+  else if (Array.isArray(defaults.programs)) arrs.push(defaults.programs);
   if (Array.isArray(cfg && cfg.programs)) arrs.push(cfg.programs);
   if (cfg && cfg.data && Array.isArray(cfg.data.programs)) arrs.push(cfg.data.programs);
 
@@ -675,6 +676,34 @@ function fillProgramNames(cfg, selectId) {
     opt.textContent = v;
     sel.appendChild(opt);
   });
+}
+
+
+function applyFixedProgram(cfg, selectId) {
+  const sel = $(selectId);
+  if (!sel) return;
+
+  const settings = (cfg && (cfg.settings || cfg.config || cfg)) || {};
+  const defaults = (settings.defaults || {});
+  const forms = (settings.forms || {});
+  const formNode = forms[FORM_TYPE] || forms[(FORM_TYPE||'').replace(/_form$/, '')] || {};
+
+  const fixedProgram = safeStr(formNode.fixed_program || "").trim();
+  const lock = (formNode.fixed_program_lock === undefined) ? true : !!formNode.fixed_program_lock;
+
+  if (fixedProgram) {
+    // Ensure option exists
+    if (!Array.from(sel.options).some(o => (o.value||'') === fixedProgram)) {
+      const opt = document.createElement("option");
+      opt.value = fixedProgram;
+      opt.textContent = fixedProgram;
+      sel.appendChild(opt);
+    }
+    sel.value = fixedProgram;
+    if (lock) sel.disabled = true;
+  } else {
+    sel.disabled = false;
+  }
 }
 
 function getFixedLevel(cfg, formType) {
@@ -2749,6 +2778,7 @@ function onPhotosSelected(ev, maxFiles=10) {
       if ($("footer-text") && $("footer-text").textContent.trim() === "") $("footer-text").textContent = "Powered by EventLens";
 
       fillProgramNames(remoteCfg, "program_name");
+      applyFixedProgram(remoteCfg, "program_name");
       initLevelControl(remoteCfg, FORM_TYPE);
 
       // Multi-photo events

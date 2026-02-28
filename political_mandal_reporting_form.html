@@ -107,6 +107,7 @@
       background-clip: text;
       -webkit-background-clip: text;
       color: transparent;
+      -webkit-text-fill-color: transparent;
       background-image: linear-gradient(to right, var(--c1), var(--c2));
     }
     .brand-bg { background-image: linear-gradient(to right, var(--c1), var(--c2)); }
@@ -184,6 +185,12 @@ body.mode-light select option{ background:#ffffff; color:#0f172a; }
   .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
 }
 body{overflow-x:hidden;}
+
+    @supports not (-webkit-background-clip: text) {
+      .brand-text { color: var(--c1); background-image: none; }
+    }
+
+    #custom-logo{object-fit:contain;}
 </style>
 <script>
 // ═══════════════ UNIVERSAL BRANDING v4 ═══════════════
@@ -213,7 +220,7 @@ function _elApplyBranding(cfg, formType){
     // Logo
     if(logoUrl){
       var ts='?t='+Date.now();
-      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=logoUrl+ts;e.style.display='block';}});
+      ['logo-img','brand-logo','custom-logo'].forEach(function(id){var e=s(id);if(e){e.src=logoUrl+ts;e.style.display='block';}});
       ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
     }
     // Header
@@ -221,7 +228,23 @@ function _elApplyBranding(cfg, formType){
       var ts2='?t='+Date.now();
       ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=hdrUrl+ts2;e.style.display='block';}});
       ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(function(id){var e=s(id);if(e)e.style.display='block';});
+    
+    // Also support DIV banner id="header-image"
+    if(hdrUrl){
+      var hd=s('header-image');
+      if(hd){
+        if(hd.tagName && hd.tagName.toLowerCase()==='img'){
+          hd.src=cacheBustSafe(hdrUrl);
+          hd.style.display='block';
+        }else{
+          hd.style.backgroundImage='url("'+cacheBustSafe(hdrUrl)+'")';
+          hd.style.backgroundSize='cover';
+          hd.style.backgroundPosition='center';
+          hd.style.display='block';
+        }
+      }
     }
+}
     // Background
     if(bgUrl){
       var img=new Image();
@@ -255,7 +278,7 @@ function _elApplyBranding(cfg, formType){
 }
 </script>
 </head>
-    <body class="min-h-screen flex items-center justify-center p-4 font-sans mode-dark">
+    <body class="min-h-screen flex items-start sm:items-center justify-center p-3 sm:p-4 font-sans mode-dark">
 
     <div class="w-full max-w-lg glass rounded-2xl p-6 relative overflow-hidden transition-all duration-500" id="main-container">
     <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
@@ -305,7 +328,7 @@ function _elApplyBranding(cfg, formType){
           </select>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div id="wrap-vidhansabha">
             <label class="block text-xs font-medium text-slate-300/80 mb-1">विधानसभा</label>
             <select id="vidhansabha" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" disabled>
@@ -320,7 +343,7 @@ function _elApplyBranding(cfg, formType){
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-medium text-slate-300/80 mb-1">रिपोर्टर नाम</label>
             <input type="text" id="reporter_name" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" placeholder="Name" required>
@@ -331,7 +354,7 @@ function _elApplyBranding(cfg, formType){
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-medium text-slate-300/80 mb-1">तारीख</label>
             <input type="date" id="report_date" class="w-full rounded-lg px-3 py-2.5 text-sm input-field" required>
@@ -362,7 +385,7 @@ function _elApplyBranding(cfg, formType){
             आप एक से अधिक फोटो जोड़ सकते हैं। (Max 10)
           </div>
 
-          <div id="photo-grid" class="grid grid-cols-3 gap-3"></div>
+          <div id="photo-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
         </div>
 
         <button type="submit" id="submitBtn" class="w-full brand-bg text-white font-extrabold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 hover:opacity-95">

@@ -123,7 +123,7 @@ function cacheBustSafe(u){
     // Logo
     if(logoUrl){
       var lu = cacheBustSafe(logoUrl);
-      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=lu;e.style.display='block';}});
+      ['logo-img','brand-logo','custom-logo'].forEach(function(id){var e=s(id);if(e){e.src=lu;e.style.display='block';}});
       ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
     }
     // Header
@@ -131,7 +131,23 @@ function cacheBustSafe(u){
       var hu = cacheBustSafe(hdrUrl);
       ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=hu;e.style.display='block';}});
       ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(function(id){var e=s(id);if(e)e.style.display='block';});
+    
+    // Also support DIV banner id="header-image"
+    if(hdrUrl){
+      var hd=s('header-image');
+      if(hd){
+        if(hd.tagName && hd.tagName.toLowerCase()==='img'){
+          hd.src=cacheBustSafe(hdrUrl);
+          hd.style.display='block';
+        }else{
+          hd.style.backgroundImage='url("'+cacheBustSafe(hdrUrl)+'")';
+          hd.style.backgroundSize='cover';
+          hd.style.backgroundPosition='center';
+          hd.style.display='block';
+        }
+      }
     }
+}
     // Background
     if(bgUrl){
       var img=new Image();

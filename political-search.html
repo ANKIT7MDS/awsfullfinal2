@@ -472,56 +472,64 @@ body{overflow-x:hidden;}
 
 /* ── Timeline Mobile Fit ── */
 @media(max-width:1023px){
-  /* Timeline rail: tighter left margin */
-  .timeline-rail::before { left: 16px; }
+  /* Timeline rail line - aligned with dot */
+  .timeline-rail::before { left: 12px !important; width: 2px !important; }
   
-  /* Timeline card: prevent overflow */
+  /* Timeline cards - full width, no overflow */
   .timeline-card-premium {
-    padding: 14px 14px 14px 14px !important;
-    border-radius: 16px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
     margin-left: 0 !important;
-    overflow: hidden;
-    word-break: break-word;
+    overflow: hidden !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
   }
-  .timeline-card-premium:hover {
-    transform: translateY(-2px) !important; /* remove horizontal shift on mobile */
-  }
-  .event-card:hover {
-    transform: translateY(-2px) !important;
-  }
+  .timeline-card-premium:hover { transform: none !important; }
+  .event-card:hover { transform: none !important; }
   
-  /* Timeline wrapper: no extra left padding */
-  #viewTimeline > div {
-    padding-left: 0 !important;
+  /* Timeline item wrapper: proper left padding for dot */
+  .timeline-item { padding-left: 28px !important; }
+  
+  /* Dot position aligned to rail */
+  .timeline-dot {
+    width: 16px !important; height: 16px !important;
+    left: 4px !important; top: 18px !important;
+    position: absolute !important;
   }
 
-  /* Photos grid: 2 col on mobile */
-  #photosGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
-  }
+  /* Photos grid: 2 col */
+  #photosGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
 
-  /* glass card padding tighter */
-  .glass { border-radius: 20px !important; }
+  /* glass card radius */
+  .glass { border-radius: 18px !important; }
   
-  /* Results container: full width no overflow */
+  /* Results: full width no overflow */
   #resultsContainer { width: 100%; overflow-x: hidden; }
 
-  /* Tab bar: don't overflow */
-  .tab-btn { font-size: 11px !important; padding: 10px 10px !important; }
+  /* Tab buttons */
+  .tab-btn { font-size: 11px !important; padding: 8px 10px !important; }
   
-  /* Filter pills: smaller */
-  .filter-pill { font-size: 9px !important; padding: 6px 10px !important; white-space: nowrap; }
-  .filter-count { min-width: 16px !important; height: 16px !important; font-size: 9px !important; }
+  /* Filter pills */
+  .filter-pill { font-size: 9px !important; padding: 5px 8px !important; white-space: nowrap; }
+  .filter-count { min-width: 15px !important; height: 15px !important; font-size: 8px !important; }
 
-  /* Stats bar: compact */
-  .stat-card { padding: 10px !important; border-radius: 16px !important; }
-  
-  /* Step indicator: fit small screens */
-  .step-num { width: 28px !important; height: 28px !important; font-size: 11px !important; }
+  /* Stats */
+  .stat-card { padding: 10px !important; border-radius: 14px !important; }
+  .step-num { width: 26px !important; height: 26px !important; font-size: 10px !important; }
+}
 
-  /* Timeline dot tighter */
-  .timeline-dot { width: 14px !important; height: 14px !important; }
+/* Timeline view: left padding to show rail + dot properly */
+#viewTimeline {
+  padding-left: 32px !important;
+}
+@media(max-width:1023px){
+  #viewTimeline { padding-left: 28px !important; }
+}
+
+/* Timeline item photo strip: horizontal scroll properly */
+@media(max-width:600px){
+  .timeline-photo-strip { gap: 6px !important; }
+  .timeline-photo-strip img { width: 60px !important; height: 60px !important; }
 }
 
 /* ── Photo lazy loading shimmer ── */
@@ -973,7 +981,7 @@ body{overflow-x:hidden;}
           </div>
 
           <!-- Timeline View -->
-          <div id="viewTimeline" class="hidden relative pl-6 sm:pl-10 timeline-rail space-y-5 animate-fadeup pb-8" style="overflow-x:hidden;">
+          <div id="viewTimeline" class="hidden relative timeline-rail space-y-4 animate-fadeup pb-8" style="overflow-x:hidden;padding-left:32px;">
             <!-- injected -->
           </div>
         </div>
@@ -1213,20 +1221,29 @@ body{overflow-x:hidden;}
       if (el.btnTabPhotos) el.btnTabPhotos.className = tActive;
     }
   }
-  if (el.btnTabTimeline) el.btnTabTimeline.addEventListener('click', (e) => {
-    e.preventDefault(); e.stopPropagation();
-    switchTab('timeline');
-  });
-  if (el.btnTabPhotos) el.btnTabPhotos.addEventListener('click', (e) => {
-    e.preventDefault(); e.stopPropagation();
-    switchTab('photos');
-  });
+  if (el.btnTabTimeline) {
+    el.btnTabTimeline.setAttribute('type','button');
+    el.btnTabTimeline.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      switchTab('timeline');
+      return false;
+    });
+  }
+  if (el.btnTabPhotos) {
+    el.btnTabPhotos.setAttribute('type','button');
+    el.btnTabPhotos.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      switchTab('photos');
+      return false;
+    });
+  }
 
   function initFilters() {
     const btns = el.timelineFilters.querySelectorAll('.filter-btn');
     btns.forEach(btn => {
+      btn.setAttribute('type','button');
       btn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
         btns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentFilter = btn.dataset.filter;
@@ -1621,7 +1638,7 @@ body{overflow-x:hidden;}
         const withMore = Number(item.with_more || 0);
 
         const strip = document.createElement("div");
-        strip.style.cssText = "display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;";
+        strip.className = "timeline-photo-strip"; strip.style.cssText = "display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch;";
         const maxShow = 5;
         eventPhotos.slice(0, maxShow).forEach((u, pi) => {
           const thumb = document.createElement("div");

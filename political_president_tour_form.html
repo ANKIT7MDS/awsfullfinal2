@@ -474,12 +474,14 @@ async function loadRemoteConfig(ft){
 function applyBrandingFromConfig(cfg, ft, fallTitle, fallSub, fallTag, iconId){
   const root = cfg||{};
   const settings = root.settings||root.config||root.data||root;
-  const defaults = settings.defaults||settings.default||settings.branding||{};
-  const formsNode = settings.forms||(settings.branding&&settings.branding.forms)||{};
-  const formNode  = formsNode[ft]||(formsNode[ft?.toLowerCase?.()||""]||{})||{};
-  const legacyG   = (settings.branding&&settings.branding.global)?settings.branding.global:{};
-  const legacyP   = (settings.branding&&settings.branding.forms&&settings.branding.forms[ft])?settings.branding.forms[ft]:{};
-  const brand     = mergeObj(mergeObj(defaults,legacyG),mergeObj(formNode,legacyP));
+  const defaultsNode = settings.defaults || settings.default || {};
+  const formsNode = settings.forms || (settings.branding && settings.branding.forms) || {};
+  const formNode  = formsNode[ft] || formsNode[String(ft||"").toLowerCase()] || {};
+  const legacyG   = (settings.branding && settings.branding.global) ? settings.branding.global : {};
+  const legacyP   = (settings.branding && settings.branding.forms && settings.branding.forms[ft]) ? settings.branding.forms[ft] : {};
+  const defBrand  = (defaultsNode && defaultsNode.branding) ? defaultsNode.branding : defaultsNode;
+  const formBrand = (formNode && formNode.branding) ? formNode.branding : formNode;
+  const brand     = mergeObj(mergeObj(mergeObj(defBrand, formBrand), legacyG), legacyP);
 
   const title    = brand.title    || formNode.title    || fallTitle  || "जिला अध्यक्ष जी का प्रवास";
   const subtitle = brand.subtitle || formNode.subtitle || fallSub    || "कार्यक्रम पंजीयन";

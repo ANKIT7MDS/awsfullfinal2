@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0f172a"/>
 <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Program Info - EventLens</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -181,14 +181,22 @@ body.mode-light select option{ background:#ffffff; color:#0f172a; }
 @media(max-width:600px){
   input,select,textarea{font-size:16px!important;min-height:44px;}
   .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
+  body{padding:8px 6px!important;}
+  #main-container{padding:12px 12px!important;border-radius:16px!important;}
+  .grid.grid-cols-2{grid-template-columns:1fr!important;}
 }
 body{overflow-x:hidden;}
-
-    @supports not (-webkit-background-clip: text) {
-      .brand-text { color: var(--c1); background-image: none; }
-    }
-
-    #custom-logo{object-fit:contain;}
+/* Header image: show when branding loaded */
+#header-image{display:none;}
+#header-image.el-visible{display:block!important;}
+/* Logo: object-contain not cover */
+#custom-logo{object-fit:contain!important;display:none!important;}
+#custom-logo.el-loaded{display:block!important;}
+/* Logo wrapper: show logo properly */
+#form-header .inline-flex{overflow:visible;}
+@supports not (-webkit-background-clip: text) {
+  .brand-text { color: var(--c1); background-image: none; }
+}
 </style>
 <script>
 // ═══════════════ UNIVERSAL BRANDING v4 ═══════════════
@@ -231,12 +239,20 @@ function _elApplyBranding(cfg, formType){
     if(c2){ document.documentElement.style.setProperty('--o2',c2); document.documentElement.style.setProperty('--c2',c2); }
     // Logo
     if(logoUrl){
-      ['logo-img','brand-logo','custom-logo'].forEach(function(id){var e=s(id);if(e){e.src=_elCacheBust(logoUrl);e.style.display='block';}});
+      ['logo-img','brand-logo','custom-logo'].forEach(function(id){var e=s(id);if(e){
+        e.onerror=function(){this.style.display='none';this.classList.remove('el-loaded','hidden'===this.className?'':'');var di=s('default-icon');if(di)di.style.display='';};
+        e.onload=function(){if(this.src&&this.src!==window.location.href){this.style.display='block';this.classList.add('el-loaded');this.classList.remove('hidden');}};
+        e.src=_elCacheBust(logoUrl);
+      }});
       ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
     }
     // Header
     if(hdrUrl){
-      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=_elCacheBust(hdrUrl);e.style.display='block';}});
+      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){
+        e.onerror=function(){this.style.display='none';};
+        e.onload=function(){if(this.src&&this.src!==window.location.href){this.style.display='block';}};
+        e.src=_elCacheBust(hdrUrl);
+      }});
       ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(function(id){var e=s(id);if(e)e.style.display='block';});
     
     // Also support DIV banner id="header-image"
@@ -244,6 +260,7 @@ function _elApplyBranding(cfg, formType){
       var hd=s('header-image');
       if(hd){
         if(hd.tagName && hd.tagName.toLowerCase()==='img'){
+          hd.onerror=function(){this.style.display='none';};
           hd.src=_elCacheBust(hdrUrl);
           hd.style.display='block';
         }else{
@@ -251,6 +268,8 @@ function _elApplyBranding(cfg, formType){
           hd.style.backgroundSize='cover';
           hd.style.backgroundPosition='center';
           hd.style.display='block';
+          hd.classList.remove('hidden');
+          hd.classList.add('el-visible');
         }
       }
     }
@@ -288,7 +307,7 @@ function _elApplyBranding(cfg, formType){
 }
 </script>
 </head>
-    <body class="min-h-screen flex items-start sm:items-center justify-center p-3 sm:p-4 font-sans mode-dark">
+    <body class="min-h-screen flex items-start sm:items-center justify-center p-2 sm:p-4 font-sans mode-dark">
 
     <div class="w-full max-w-lg glass rounded-2xl p-4 sm:p-6 relative overflow-hidden transition-all duration-500" id="main-container">
     <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>
@@ -298,7 +317,9 @@ function _elApplyBranding(cfg, formType){
     <div class="text-center mb-6" id="form-header">
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 text-orange-500 mb-3 overflow-hidden border border-white/10">
             <i id="default-icon" class="fa-solid fa-circle-info text-2xl"></i>
-            <img id="custom-logo" src="" class="w-full h-full object-cover hidden" alt="logo">
+            <img id="custom-logo" src="" class="w-full h-full object-contain hidden" alt="logo"
+              onerror="this.style.display='none';this.classList.remove('el-loaded');document.getElementById('default-icon')&&(document.getElementById('default-icon').style.display='');"
+              onload="if(this.src&&this.src!==window.location.href){this.classList.add('el-loaded');this.classList.remove('hidden');this.style.display='block';}">
         </div>
         <h1 id="org-name" class="text-2xl font-extrabold brand-text">प्रोग्राम इन्फो</h1>
         <p id="org-subtitle" class="text-slate-300/80 text-xs mt-1">Program Information</p>

@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0f172a"/>
 <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>जिला अध्यक्ष जी का प्रवास - EventLens</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
@@ -77,8 +77,22 @@ body.el-light #photo-drop-zone{background:rgba(0,0,0,.04)!important;border-color
 @media(max-width:600px){
   input,select,textarea{font-size:16px!important;min-height:44px;}
   .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
+  /* Form fits screen on mobile */
+  body{padding:8px 6px!important;}
+  #main-card{max-width:100%!important;border-radius:16px!important;}
+  #header-banner{height:140px!important;border-radius:14px 14px 0 0!important;}
+  #logo-wrap{width:44px!important;height:44px!important;border-radius:10px!important;}
+  #org-name{font-size:14px!important;}
 }
 body{overflow-x:hidden;}
+/* Fix broken header image - hide when src empty or error */
+#brand-header-img{display:none;}
+#brand-header-img[src]:not([src=""]):not([src="data:"]) { display:block; }
+#brand-header-img.el-loaded{display:block!important;}
+/* Logo image: never show broken icon */
+#custom-logo{display:none!important;}
+#custom-logo.el-loaded{display:block!important;width:100%;height:100%;object-fit:contain;}
+
 </style>
 <script>
 // ═══════════════ UNIVERSAL BRANDING v4 ═══════════════
@@ -123,13 +137,22 @@ function cacheBustSafe(u){
     // Logo
     if(logoUrl){
       var lu = cacheBustSafe(logoUrl);
-      ['logo-img','brand-logo','custom-logo'].forEach(function(id){var e=s(id);if(e){e.src=lu;e.style.display='block';}});
+      ['logo-img','brand-logo','custom-logo'].forEach(function(id){var e=s(id);if(e){
+        e.onerror=function(){this.style.display='none';this.classList.remove('el-loaded');var di=s('default-icon');if(di)di.style.display='';};
+        e.onload=function(){if(this.src&&this.src!==window.location.href){this.style.display='block';this.classList.add('el-loaded');}};
+        e.src=lu;
+        e.style.display='block';
+      }});
       ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
     }
     // Header
     if(hdrUrl){
       var hu = cacheBustSafe(hdrUrl);
-      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=hu;e.style.display='block';}});
+      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){
+        e.onerror=function(){this.style.display='none';this.classList.remove('el-loaded');};
+        e.onload=function(){if(this.src&&this.src!==window.location.href){this.style.display='block';this.classList.add('el-loaded');}};
+        e.src=hu;
+      }});
       ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(function(id){var e=s(id);if(e)e.style.display='block';});
     
     // Also support DIV banner id="header-image"
@@ -137,6 +160,8 @@ function cacheBustSafe(u){
       var hd=s('header-image');
       if(hd){
         if(hd.tagName && hd.tagName.toLowerCase()==='img'){
+          hd.onerror=function(){this.style.display='none';};
+          hd.onload=function(){this.style.display='block';};
           hd.src=cacheBustSafe(hdrUrl);
           hd.style.display='block';
         }else{
@@ -182,7 +207,7 @@ function cacheBustSafe(u){
 </script>
 </head>
 
-<body class="py-4 px-3">
+<body class="py-3 px-3 sm:py-4">
 
 <!-- MAIN CARD -->
 <div id="main-card" class="glass rounded-2xl mx-auto overflow-hidden" style="max-width:520px;">
@@ -190,13 +215,13 @@ function cacheBustSafe(u){
   <!-- Header Banner -->
   <div id="header-banner">
     <div class="header-pattern"></div>
-    <img id="brand-header-img" src="" alt="" />
+    <img id="brand-header-img" src="" alt="" onerror="this.style.display='none';this.classList.remove('el-loaded');" onload="if(this.src&&this.src!==window.location.href){this.classList.add('el-loaded');}" />
     <div class="header-overlay"></div>
     <div style="position:absolute;bottom:0;left:0;right:0;padding:16px 18px;z-index:2;">
       <div style="display:flex;align-items:flex-end;gap:12px;">
         <div id="logo-wrap" style="width:52px;height:52px;border-radius:14px;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.25);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
           <i id="default-icon" class="fa-solid fa-route" style="font-size:20px;color:white;"></i>
-          <img id="custom-logo" src="" alt="logo" style="width:100%;height:100%;object-fit:contain;display:none;" />
+          <img id="custom-logo" src="" alt="logo" style="width:100%;height:100%;object-fit:contain;display:none;" onerror="this.style.display='none';this.classList.remove('el-loaded');document.getElementById('default-icon')&&(document.getElementById('default-icon').style.display='');" onload="if(this.src&&this.src!==window.location.href){this.classList.add('el-loaded');this.style.display='block!important';}" />
         </div>
         <div style="flex:1;min-width:0;">
           <h1 id="org-name" style="margin:0;font-size:17px;font-weight:800;color:white;line-height:1.25;text-shadow:0 1px 4px rgba(0,0,0,.4);">जिला अध्यक्ष जी का प्रवास</h1>

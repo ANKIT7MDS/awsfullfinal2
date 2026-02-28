@@ -521,6 +521,63 @@
       return obj.thumb_url || obj.thumbUrl || obj.thumbnail_url || obj.thumbnailUrl || fallbackUrl;
     }
   </script>
+<script>
+/* ── Favorites v1 ── */
+const _FAV_KEY="el_political_favorites";
+function _getFavs(){ try{return JSON.parse(localStorage.getItem(_FAV_KEY)||"[]");}catch(e){return [];} }
+function _saveFavs(arr){ try{localStorage.setItem(_FAV_KEY,JSON.stringify(arr));}catch(e){} }
+function _isFav(faceId){ return _getFavs().includes(faceId); }
+function _toggleFav(faceId, btn){
+  let favs=_getFavs();
+  if(favs.includes(faceId)){ favs=favs.filter(f=>f!==faceId); }
+  else { favs.push(faceId); }
+  _saveFavs(favs);
+  _renderFavBtn(btn, favs.includes(faceId));
+}
+function _renderFavBtn(btn, active){
+  if(!btn) return;
+  btn.innerHTML=active?"<i class='fa-solid fa-star'></i> Saved":"<i class='fa-regular fa-star'></i> Save";
+  btn.style.color=active?"#f59e0b":"";
+  btn.style.borderColor=active?"#f59e0b":"";
+}
+function _makeFavBtn(faceId){
+  const btn=document.createElement("button");
+  btn.className="fav-btn";
+  btn.style.cssText="background:transparent;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.7);display:inline-flex;align-items:center;gap:6px;margin-top:8px;";
+  _renderFavBtn(btn, _isFav(faceId));
+  btn.onclick=()=>_toggleFav(faceId, btn);
+  return btn;
+}
+/* ── End Favorites ── */
+</script>
+
+<style>
+/* ── Mobile Responsive Fixes ── */
+html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;}
+body.has-brand-bg{background-size:cover!important;background-attachment:fixed!important;}
+@media(max-width:600px){
+  .container,.wrap,.card,.form-card,.scr,.main-card{max-width:100vw!important;width:100%!important;padding:12px!important;border-radius:14px!important;}
+  input,select,textarea{font-size:16px!important;} /* Prevent iOS zoom */
+  .btn,.btn-primary,.btn-ghost,.submit-btn{width:100%!important;padding:14px!important;font-size:16px!important;}
+  #cam-box,#cam-wrap{max-height:60vw!important;}
+  .step-row,.steps,.nav-dots{flex-wrap:wrap!important;}
+  #logo-img,#custom-logo{max-width:40px!important;max-height:40px!important;}
+  #brand-header-img,#hdr-cam-img,#form-hdr-img{max-height:140px!important;object-fit:cover!important;}
+  h1,h2{font-size:18px!important;} h3{font-size:15px!important;}
+  .timeline-card,.event-card,.result-card{padding:10px!important;}
+}
+@media(max-width:400px){
+  .container,.wrap,.card{padding:8px!important;}
+  h1,h2{font-size:16px!important;}
+}
+</style>
+
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="EventLens"/>
+<meta name="theme-color" content="#f97316"/>
+<link rel="manifest" href="/manifest.json"/>
 </head>
 
 <body class="font-body">
@@ -2370,334 +2427,21 @@ function applyFilter() {
     }
   })();
   </script>
-<!-- ══════════════════════════════════════════════════════════
-  EventLens Political Search — Bridge Patch v2
-  इसे political-search.html के </body> से पहले paste करें।
-  
-  1. Guest lead → selfie-guest-data table (photographer dashboard में दिखे)
-  2. Favorite/Select → Gallery table (client view में दिखे)
-══════════════════════════════════════════════════════════ -->
 <script>
-(function() {
-  'use strict';
-
-  // ─── APIs ───
-  const SAVE_DETAILS_API = 'https://1s2tgemahh.execute-api.ap-south-1.amazonaws.com/prod/save-details';
-  const CLIENT_API = 'https://oel3deh9q3.execute-api.ap-south-1.amazonaws.com/prod/client-api';
-
-  // ─── Get CID from URL or window ───
-  function _getCid() {
-    try {
-      const qs = new URLSearchParams(location.search);
-      const fromUrl = qs.get('cid') || qs.get('collection_id') || '';
-      if (fromUrl) return fromUrl.trim();
-      // From window global (set during branding load)
-      return (window.resolvedCid || window.currentCid || '').trim();
-    } catch(e) { return ''; }
-  }
-
-  function _getToken() {
-    try {
-      const qs = new URLSearchParams(location.search);
-      return (qs.get('token') || '').trim();
-    } catch(e) { return ''; }
-  }
-
-  // ─── 1. Save guest lead to selfie-guest-data ───
-  async function saveGuestLead(name, mobile, photoCount) {
-    const cid = _getCid();
-    if (!cid || !mobile) return; // no CID or mobile = skip
-
-    try {
-      const payload = {
-        action: 'save_guest',
-        collection_id: cid,
-        link_id: _getToken() || 'political_search',
-        guest_name: name || '',
-        guest_mobile: mobile || '',
-        photo_count: photoCount || 0,
-        source: 'political_search',
-        timestamp: Date.now()
-      };
-      await fetch(SAVE_DETAILS_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      // console.log('[Bridge] Guest lead saved');
-    } catch(e) {
-      console.warn('[Bridge] saveGuestLead failed:', e.message);
-    }
-  }
-
-  // ─── 2. Sync favorite/select to Gallery table ───
-  async function syncToPhotographerDashboard(photoKey, photoUrl, name, mobile, action) {
-    const cid = _getCid();
-    if (!cid || !photoKey) return;
-
-    try {
-      const payload = {
-        action: 'update_selection',
-        collection_id: cid,
-        photo_id: photoKey,
-        photo_url: photoUrl || '',
-        user_type: 'guest',
-        guest_name: name || '',
-        guest_mobile: mobile || '',
-        selection_type: action || 'fav', // 'fav' or 'selected'
-        source: 'political_search',
-        timestamp: Date.now()
-      };
-      await fetch(CLIENT_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-    } catch(e) {
-      console.warn('[Bridge] syncToPhotographerDashboard failed:', e.message);
-    }
-  }
-
-  // ─── Expose bridge ───
-  window.EL = window.EL || {};
-  window.EL.bridge = { saveGuestLead, syncToPhotographerDashboard };
-
-  // ─── Auto-hook: intercept showResults (called after name/mobile confirm) ───
-  // political-search.html में showResults(name, mobile) function है
-  const _origShowResults = window.showResults;
-  if (typeof _origShowResults === 'function') {
-    window.showResults = function(name, mobile, ...rest) {
-      // Call original
-      try { _origShowResults.call(this, name, mobile, ...rest); } catch(e) {}
-      // Save guest lead after small delay (let results render)
-      if (name || mobile) {
-        setTimeout(() => {
-          const photoCount = document.querySelectorAll('.photo-item, [class*="photo"]').length || 0;
-          saveGuestLead(name, mobile, photoCount);
-        }, 600);
-      }
-    };
-  }
-
-  // ─── Auto-hook: intercept favorite / select buttons ───
-  // Wait for DOM to have results rendered, then hook buttons
-  function _hookFavButtons() {
-    // This runs via MutationObserver when results appear
-    document.querySelectorAll('[data-photo-key], .fav-btn, .select-btn, [onclick*="fav"], [onclick*="select"]').forEach(btn => {
-      if (btn.__el_hooked) return;
-      btn.__el_hooked = true;
-      btn.addEventListener('click', function() {
-        setTimeout(() => {
-          try {
-            const photoKey = this.dataset.photoKey || this.closest('[data-photo-key]')?.dataset.photoKey || '';
-            const photoUrl = this.dataset.photoUrl || this.closest('[data-photo-url]')?.dataset.photoUrl || '';
-            const actionType = (this.classList.contains('fav-btn') || (this.dataset.action||'').includes('fav')) ? 'fav' : 'selected';
-            const name = document.getElementById('nameInput')?.value || document.querySelector('[id*="name"]')?.value || '';
-            const mobile = document.getElementById('mobileInput')?.value || document.querySelector('[id*="mobile"]')?.value || '';
-            if (photoKey || photoUrl) {
-              syncToPhotographerDashboard(photoKey || photoUrl, photoUrl, name, mobile, actionType);
-            }
-          } catch(err) {}
-        }, 200);
-      });
-    });
-  }
-
-  // MutationObserver to hook buttons as they appear
-  if (typeof MutationObserver !== 'undefined') {
-    const observer = new MutationObserver(() => { _hookFavButtons(); });
-    observer.observe(document.body, { childList: true, subtree: true });
-    // Also run once on DOM ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', _hookFavButtons);
-    } else {
-      _hookFavButtons();
-    }
-  }
-
-})();
-</script>
-
-<script>
-// ── Constants ────────────────────────────────────────────────
-const CORE_API_BASE = 'https://1s2tgemahh.execute-api.ap-south-1.amazonaws.com';
-
-// CID और guest info track करो
+// Inject favorite button after search result
 (function(){
-  const qs = new URLSearchParams(location.search);
-  
-  // token से CID extract करना (unverified decode)
-  function _decodeToken(t){
-    try{
-      const p = t.split('.')[0];
-      const pad = '='.repeat((4-(p.length%4))%4);
-      return JSON.parse(atob((p+pad).replace(/-/g,'+').replace(/_/g,'/')));
-    }catch(e){ return {}; }
-  }
-  
-  const tok = qs.get('token')||'';
-  const decoded = tok ? _decodeToken(tok) : {};
-  window._politicalCID = qs.get('cid') || decoded.collection_id || decoded.cid || '';
+  const _origShow = window.showResult || window.renderResult;
+  setTimeout(function(){
+    const profCard = document.getElementById("profile-card") || document.getElementById("result-card") || document.getElementById("scr-result");
+    if(profCard && window._EL_FACE_ID){
+      const existing = profCard.querySelector(".fav-btn");
+      if(!existing){
+        const btn = _makeFavBtn(window._EL_FACE_ID);
+        profCard.appendChild(btn);
+      }
+    }
+  }, 1200);
 })();
-
-// ── Political Favorite → Photographer Dashboard Bridge ────────
-async function syncFavoriteToPhotographer(photoUrl, isFav, guestName, guestMobile){
-  const cid = window._politicalCID || '';
-  if(!cid || !photoUrl) return;
-  try{
-    let photoId = photoUrl;
-    try{
-      const u = new URL(photoUrl);
-      // pathname से bucket prefix हटाओ: /bucket-name/political/...  → political/...
-      photoId = decodeURIComponent(u.pathname).replace(/^\/[^/]+\//,'');
-    }catch(e){}
-    
-    await fetch(`${CORE_API_BASE}/client-api`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        action:'update_selection',
-        payload:{
-          collection_id: cid,
-          photo_id: photoId,
-          user_type:'guest',
-          guest_name: guestName||window._politicalGuestName||'Political Search User',
-          guest_mobile: guestMobile||window._politicalGuestMobile||'',
-          fav: !!isFav,
-          selected: !!isFav,
-          source:'political_search'
-        }
-      })
-    });
-    console.log('[EL] Favorite synced to photographer dashboard');
-  }catch(e){ console.warn('[EL] Favorite sync failed',e); }
-}
-
-// ── Guest Lead Save ───────────────────────────────────────────
-async function saveGuestLeadToCore(name, mobile, matchCount){
-  const cid = window._politicalCID || '';
-  if(!cid||!mobile) return;
-  window._politicalGuestName   = name   || '';
-  window._politicalGuestMobile = mobile || '';
-  try{
-    await fetch(`${CORE_API_BASE}/save-details`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        mobile: String(mobile),
-        name: name||'',
-        collection_id: cid,
-        linkId: cid,
-        photo_count: matchCount||0,
-        source:'political_search'
-      })
-    });
-    console.log('[EL] Guest lead saved');
-  }catch(e){ console.warn('[EL] Guest lead save failed',e); }
-}
-
-// ── Hook into existing confirmBtn click ──────────────────────
-// यह code DOMContentLoaded के अंदर existing confirmBtn handler के बाद add करो:
-document.addEventListener('DOMContentLoaded', function(){
-  const confirmBtn = document.getElementById('confirmBtn');
-  if(confirmBtn){
-    confirmBtn.addEventListener('click', function(){
-      // Existing handler से पहले यह trigger होगा
-      setTimeout(function(){
-        const name   = (document.getElementById('nameInput')   || {}).value || '';
-        const mobile = (document.getElementById('mobileInput') || {}).value || '';
-        // photo count: statsDashboard से लो
-        const photoCountEl = document.getElementById('photoCountVal');
-        const matchCount = photoCountEl ? parseInt(photoCountEl.textContent||'0') : 0;
-        
-        if(name || mobile){
-          saveGuestLeadToCore(name, mobile, matchCount);
-        }
-      }, 500); // search result आने दो पहले
-    });
-  }
-  
-  // ── Photo grid में favorite button hook ──────────────────
-  // Slideshow/Gallery में जहाँ heart button click होता है वहाँ:
-  // existing slideshowState या photosGrid observe करो
-  
-  // MutationObserver: photosGrid में favorite buttons को intercept करो
-  const photosGrid = document.getElementById('photosGrid') || document.getElementById('photoGrid');
-  if(photosGrid){
-    photosGrid.addEventListener('click', function(e){
-      const favBtn = e.target.closest('[data-action="fav"],[data-fav],[id$="FavBtn"],[class*="fav-btn"],[class*="heart"]');
-      if(!favBtn) return;
-      
-      // Photo URL निकालो
-      const photoItem = favBtn.closest('[data-url],[data-photo-url]') || favBtn.closest('.photo-item');
-      let photoUrl = '';
-      if(photoItem){
-        photoUrl = photoItem.dataset.url || photoItem.dataset.photoUrl || '';
-        if(!photoUrl){
-          const img = photoItem.querySelector('img');
-          if(img) photoUrl = img.src || '';
-        }
-      }
-      
-      const isFav = !favBtn.classList.contains('active'); // toggle
-      const name   = window._politicalGuestName   || '';
-      const mobile = window._politicalGuestMobile || '';
-      
-      if(photoUrl){
-        syncFavoriteToPhotographer(photoUrl, isFav, name, mobile);
-      }
-    });
-  }
-  
-  // ── Slideshow viewer में भी hook ─────────────────────────
-  // अगर slideshow modal में heart button है:
-  const viewerFavBtn = document.getElementById('viewerFavBtn') || document.getElementById('slideFavBtn');
-  if(viewerFavBtn){
-    viewerFavBtn.addEventListener('click', function(){
-      // Current photo URL
-      const viewerImg = document.getElementById('viewerImg') || document.getElementById('slideImg');
-      const photoUrl = viewerImg ? viewerImg.src : '';
-      const isFav = viewerFavBtn.classList.contains('active') || viewerFavBtn.classList.contains('active-fav');
-      const name   = window._politicalGuestName   || '';
-      const mobile = window._politicalGuestMobile || '';
-      if(photoUrl) syncFavoriteToPhotographer(photoUrl, isFav, name, mobile);
-    });
-  }
-  
-  // SS (Slideshow) modal में hook — political-search.html का SS object
-  // SS.open() के बाद favorite state change intercept:
-  const _origSSOpen = window.SS && window.SS.open;
-  if(window.SS && _origSSOpen){
-    window.SS.open = function(title, photos, timeline){
-      const result = _origSSOpen.call(window.SS, title, photos, timeline);
-      // SS modal के heart buttons observe करो
-      setTimeout(function(){
-        const modal = document.getElementById('ssModal') || document.querySelector('.slideshow-modal');
-        if(modal){
-          modal.querySelectorAll('.fav-btn,.heart-btn,[data-action="fav"]').forEach(function(btn){
-            if(btn._elHooked) return;
-            btn._elHooked = true;
-            btn.addEventListener('click', function(){
-              const img = modal.querySelector('.ss-img,#ssImg,img.slideshow-image');
-              const photoUrl = img ? img.src : '';
-              const isFav = btn.classList.contains('active')||btn.classList.contains('liked');
-              const name   = window._politicalGuestName||'';
-              const mobile = window._politicalGuestMobile||'';
-              if(photoUrl) syncFavoriteToPhotographer(photoUrl, !isFav, name, mobile);
-            });
-          });
-        }
-      }, 800);
-      return result;
-    };
-  }
-});
-</script>
-<script>
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}
-let _deferredInstallPrompt=null;
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_deferredInstallPrompt=e;var btn=document.getElementById('installAppBtn');if(btn)btn.style.display='inline-flex';});
-window._installApp=function(){if(!_deferredInstallPrompt)return;_deferredInstallPrompt.prompt();_deferredInstallPrompt.userChoice.then(function(){_deferredInstallPrompt=null;var btn=document.getElementById('installAppBtn');if(btn)btn.style.display='none';});};
 </script>
 </body>
 </html>

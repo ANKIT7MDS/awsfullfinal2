@@ -469,6 +469,98 @@
   .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
 }
 body{overflow-x:hidden;}
+
+/* ── Timeline Mobile Fit ── */
+@media(max-width:1023px){
+  /* Timeline rail: tighter left margin */
+  .timeline-rail::before { left: 16px; }
+  
+  /* Timeline card: prevent overflow */
+  .timeline-card-premium {
+    padding: 14px 14px 14px 14px !important;
+    border-radius: 16px !important;
+    margin-left: 0 !important;
+    overflow: hidden;
+    word-break: break-word;
+  }
+  .timeline-card-premium:hover {
+    transform: translateY(-2px) !important; /* remove horizontal shift on mobile */
+  }
+  .event-card:hover {
+    transform: translateY(-2px) !important;
+  }
+  
+  /* Timeline wrapper: no extra left padding */
+  #viewTimeline > div {
+    padding-left: 0 !important;
+  }
+
+  /* Photos grid: 2 col on mobile */
+  #photosGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* glass card padding tighter */
+  .glass { border-radius: 20px !important; }
+  
+  /* Results container: full width no overflow */
+  #resultsContainer { width: 100%; overflow-x: hidden; }
+
+  /* Tab bar: don't overflow */
+  .tab-btn { font-size: 11px !important; padding: 10px 10px !important; }
+  
+  /* Filter pills: smaller */
+  .filter-pill { font-size: 9px !important; padding: 6px 10px !important; white-space: nowrap; }
+  .filter-count { min-width: 16px !important; height: 16px !important; font-size: 9px !important; }
+
+  /* Stats bar: compact */
+  .stat-card { padding: 10px !important; border-radius: 16px !important; }
+  
+  /* Step indicator: fit small screens */
+  .step-num { width: 28px !important; height: 28px !important; font-size: 11px !important; }
+
+  /* Timeline dot tighter */
+  .timeline-dot { width: 14px !important; height: 14px !important; }
+}
+
+/* ── Photo lazy loading shimmer ── */
+.photo-item img { background: linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%); background-size:200% 100%; animation: shimmerAnim 1.8s ease-in-out infinite; }
+.photo-item img.loaded { animation: none !important; background: none !important; }
+
+/* ── Slideshow mobile: detail panel below image ── */
+@media(max-width:767px){
+  #slideshowMain { flex-direction: column !important; }
+  #ssDetailSide { width: 100% !important; max-height: 45vh !important; border-left: none !important; border-top: 1px solid rgba(255,255,255,0.1) !important; overflow-y: auto !important; }
+  #ssPhotoSide { min-height: 45vw !important; flex: 1 !important; }
+  #slideshowTopBar { padding: 10px 14px !important; }
+  #slideshowTitle { font-size: 13px !important; }
+  .ss-detail-val { font-size: 13px !important; }
+  .ss-detail-key { font-size: 9px !important; }
+  #ssDetailHeader { padding: 14px 16px !important; }
+  #ssDetailScroll { padding: 12px 16px !important; }
+  #ssThumbRow { padding: 10px 14px !important; }
+  .ss-thumb { width: 48px !important; height: 48px !important; }
+  
+  /* Toast: top full width on mobile */
+  #toastContainer { top: 12px !important; right: 12px !important; left: 12px !important; }
+  .toast { min-width: unset !important; width: 100% !important; }
+}
+
+/* ── Prevent horizontal scroll from any child ── */
+#viewTimeline, #viewPhotos, #resultsContainer, .timeline-rail {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── Navbar height compact on mobile ── */
+@media(max-width:640px){
+  nav.navbar .flex { height: 56px !important; }
+  .logo-icon { width: 40px !important; height: 40px !important; }
+  .font-display.text-white { font-size: 17px !important; }
+  .safe-area-bottom { padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important; }
+}
+
 </style>
 
   <script>
@@ -516,12 +608,24 @@ body{overflow-x:hidden;}
       if (!imgEl) return;
       let attempt = 0;
       imgEl.referrerPolicy = "no-referrer";
+      imgEl.onload = () => { imgEl.classList.add('loaded'); };
       const load = () => { imgEl.src = url; };
       imgEl.onerror = () => {
         if (attempt < maxRetries) { attempt++; setTimeout(load, 350 * attempt); return; }
+        imgEl.classList.add('loaded');
         imgEl.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='1.5'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3Cpolyline points='21 15 16 10 5 21'/%3E%3C/svg%3E";
       };
-      load();
+      // Use IntersectionObserver for true lazy loading
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries, obs) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) { load(); obs.disconnect(); }
+          });
+        }, { rootMargin: '200px', threshold: 0 });
+        observer.observe(imgEl);
+      } else {
+        load();
+      }
     }
     function getBestThumbUrl(obj, fallbackUrl) {
       if (!obj) return fallbackUrl;
@@ -613,8 +717,8 @@ body{overflow-x:hidden;}
               </div>
 
               <div class="relative mb-6">
-                <label class="upload-zone rounded-3xl flex flex-col items-center justify-center cursor-pointer min-h-[280px]">
-                  <input id="selfieInput" accept="image/*" type="file" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20" onchange="previewImage(this)" />
+                <label class="upload-zone rounded-3xl flex flex-col items-center justify-center cursor-pointer min-h-[200px] sm:min-h-[280px]">
+                  <input id="selfieInput" accept="image/*" capture="user" type="file" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20" onchange="previewImage(this)" />
                   <div id="uploadPlaceholder" class="flex flex-col items-center justify-center py-10 pointer-events-none select-none upload-zone-inner relative">
                     <!-- Scan corners -->
                     <div class="scan-corner scan-corner-tl"></div>
@@ -869,7 +973,7 @@ body{overflow-x:hidden;}
           </div>
 
           <!-- Timeline View -->
-          <div id="viewTimeline" class="hidden relative pl-8 sm:pl-10 timeline-rail space-y-6 animate-fadeup pb-8">
+          <div id="viewTimeline" class="hidden relative pl-6 sm:pl-10 timeline-rail space-y-5 animate-fadeup pb-8" style="overflow-x:hidden;">
             <!-- injected -->
           </div>
         </div>
@@ -1435,8 +1539,8 @@ body{overflow-x:hidden;}
       const withLabel=item.with_label||"", faceCount=Number(item.face_count||0);
       const iconColor=iconColorMap[icon]||'#D4A017';
 
-      const wrapper = document.createElement("div"); wrapper.className = "relative pl-4 sm:pl-6 timeline-item stagger-item"; wrapper.style.animationDelay = `${index*60}ms`;
-      const dot = document.createElement("div"); dot.className = "timeline-dot absolute w-5 h-5 rounded-full z-10"; dot.style.cssText = "left:-36px; top:24px;"; wrapper.appendChild(dot);
+      const wrapper = document.createElement("div"); wrapper.className = "relative pl-3 sm:pl-4 timeline-item stagger-item"; wrapper.style.animationDelay = `${index*60}ms`;
+      const dot = document.createElement("div"); dot.className = "timeline-dot absolute w-4 h-4 rounded-full z-10"; dot.style.cssText = "left:-28px; top:20px;"; wrapper.appendChild(dot);
       const card = document.createElement("div");
       const cardClass = form === 'president_tour_form' ? 'tour' : form === 'party_attendance' ? 'attendance' : form === 'mandal_reporting_form' || form === 'mandal_reporting' ? 'mandal' : form === 'visitor_form' ? 'visitor' : '';
       card.className = `timeline-card-premium cursor-pointer ${cardClass}`;

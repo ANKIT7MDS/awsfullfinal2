@@ -940,10 +940,10 @@ body{overflow-x:hidden;}
           <!-- Compact top bar: Tabs + Filters + Slideshow -->
           <div class="glass rounded-2xl overflow-hidden mb-4 sticky top-20 z-30" style="border:1px solid rgba(255,255,255,0.07);">
             <div class="flex items-center border-b px-3 gap-1" style="border-color:rgba(255,255,255,0.06);background:rgba(2,5,10,0.6);">
-              <button type="button" id="btnTabPhotos" class="tab-btn tab-active flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap" style="min-height:44px;font-size:12px;letter-spacing:0.05em;">
+              <button type="button" id="btnTabPhotos" onclick="event.preventDefault();event.stopPropagation();if(typeof switchTab==='function')switchTab('photos');return false;" class="tab-btn tab-active flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap" style="min-height:44px;font-size:12px;letter-spacing:0.05em;">
                 <i class="fa-regular fa-images"></i><span>Photos</span>
               </button>
-              <button type="button" id="btnTabTimeline" class="tab-btn flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap" style="min-height:44px;font-size:12px;letter-spacing:0.05em;">
+              <button type="button" id="btnTabTimeline" onclick="event.preventDefault();event.stopPropagation();if(typeof switchTab==='function')switchTab('timeline');return false;" class="tab-btn flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap" style="min-height:44px;font-size:12px;letter-spacing:0.05em;">
                 <i class="fa-solid fa-timeline"></i><span>Timeline</span>
               </button>
               <div class="flex-1"></div>
@@ -953,11 +953,11 @@ body{overflow-x:hidden;}
             </div>
 
             <div id="timelineFilters" class="hidden items-center gap-2 px-4 py-2.5 overflow-x-auto hide-scroll" style="background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.04);">
-              <button type="button" class="filter-btn filter-pill active" data-filter="all" style="font-family:'Noto Sans Devanagari',sans-serif;font-size:10px;padding:5px 12px;">सभी <span class="filter-count" id="countAll">0</span></button>
-              <button type="button" class="filter-btn filter-pill" data-filter="visitor_form" style="font-size:10px;padding:5px 12px;">Visitor <span class="filter-count" id="countVisitor">0</span></button>
-              <button type="button" class="filter-btn filter-pill" data-filter="president_tour_form" style="font-size:10px;padding:5px 12px;">Tour <span class="filter-count" id="countTour">0</span></button>
-              <button type="button" class="filter-btn filter-pill" data-filter="party_attendance" style="font-size:10px;padding:5px 12px;">Attendance <span class="filter-count" id="countAttendance">0</span></button>
-              <button type="button" class="filter-btn filter-pill" data-filter="mandal_reporting_form" style="font-size:10px;padding:5px 12px;">Mandal <span class="filter-count" id="countMandal">0</span></button>
+              <button type="button" class="filter-btn filter-pill active" data-filter="all" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='all';if(typeof applyFilter==='function')applyFilter();return false;" style="font-family:'Noto Sans Devanagari',sans-serif;font-size:10px;padding:5px 12px;">सभी <span class="filter-count" id="countAll">0</span></button>
+              <button type="button" class="filter-btn filter-pill" data-filter="visitor_form" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='visitor_form';if(typeof applyFilter==='function')applyFilter();return false;" style="font-size:10px;padding:5px 12px;">Visitor <span class="filter-count" id="countVisitor">0</span></button>
+              <button type="button" class="filter-btn filter-pill" data-filter="president_tour_form" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='president_tour_form';if(typeof applyFilter==='function')applyFilter();return false;" style="font-size:10px;padding:5px 12px;">Tour <span class="filter-count" id="countTour">0</span></button>
+              <button type="button" class="filter-btn filter-pill" data-filter="party_attendance" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='party_attendance';if(typeof applyFilter==='function')applyFilter();return false;" style="font-size:10px;padding:5px 12px;">Attendance <span class="filter-count" id="countAttendance">0</span></button>
+              <button type="button" class="filter-btn filter-pill" data-filter="mandal_reporting_form" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='mandal_reporting_form';if(typeof applyFilter==='function')applyFilter();return false;" style="font-size:10px;padding:5px 12px;">Mandal <span class="filter-count" id="countMandal">0</span></button>
               <div class="ml-auto flex items-center gap-2 flex-shrink-0 pl-3" style="border-left:1px solid rgba(255,255,255,0.08);">
                 <input type="date" id="tlFromDate" class="rounded-lg px-2 py-1 text-[10px] font-bold bg-slate-900/80 border border-white/10 text-slate-300 focus:border-gold-400 outline-none transition-colors" style="width:110px;" title="From">
                 <i class="fa-solid fa-arrow-right-long text-slate-600 text-xs"></i>
@@ -2215,6 +2215,10 @@ body{overflow-x:hidden;}
   window.renderTimeline = function(timeline, photoUrlByKey) { return renderTimeline(timeline, photoUrlByKey || globalPhotoMap); };
   window.globalPhotoMap = globalPhotoMap;
   window._globalPhotoMap = globalPhotoMap;
+  // Expose switchTab globally so inline onclick can call it
+  window.switchTab = switchTab;
+  window.currentFilter = currentFilter;
+  window.applyFilter = applyFilter;
 
 })();
 </script>

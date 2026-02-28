@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0f172a"/>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>उपस्थिति — EventLens</title>
@@ -141,167 +145,17 @@ select.inp option{background:#fff;color:var(--text);}
 
 #scr-cam{display:block;}#scr-form{display:none;}#scr-ok{display:none;}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:rgba(255,107,0,.25);border-radius:2px;}
-</style>
-<script>
-/* ── Universal Branding v3 ── */
-function _elPickUrl(obj){
-  if(!obj) return "";
-  if(typeof obj==="string") return obj;
-  return obj.url||obj.src||obj.href||"";
-}
-function _elApplyBg(url){
-  if(!url) return;
-  const img=new Image();
-  img.onload=function(){
-    document.documentElement.style.setProperty("--bgimg","url('"+url+"')");
-    document.body.classList.add("has-brand-bg");
-    document.body.style.backgroundImage="url('"+url+"')";
-    document.body.style.backgroundSize="cover";
-    document.body.style.backgroundAttachment="fixed";
-    document.body.style.backgroundPosition="center";
-  };
-  img.src=url;
-}
-function _elApplyBranding(res, FTYPE){
-  try{
-    const cfg=res.config||res.settings||res.data||res||{};
-    const forms=cfg.forms||{};
-    const ft=forms[FTYPE]||forms[(FTYPE||"").replace("political_","")]||{};
-    const def=(cfg.defaults&&cfg.defaults.branding)||cfg.branding||cfg.defaults||{};
-    const gl=cfg.global||{};
-    const br=ft.branding||{};
 
-    const title=ft.title||br.title||def.title||gl.title||"";
-    const sub=ft.subtitle||br.subtitle||def.subtitle||"";
-    const tagline=ft.tagline||br.tagline||gl.tagline||"Powered by EventLens";
-    const c1=br.color1||br.primary_color||def.color1||def.primary||gl.theme?.primary||"";
-    const c2=br.color2||br.secondary_color||def.color2||def.secondary||gl.theme?.secondary||"";
-
-    const logoUrl=_elPickUrl(br.logo)||ft.logo_url||def.logo_url||"";
-    const hdrUrl=_elPickUrl(br.header)||ft.header_url||def.header_url||"";
-    const bgUrl=_elPickUrl(br.background)||ft.background_url||def.background_url||"";
-
-    // Apply colors
-    if(c1){ document.documentElement.style.setProperty("--o1",c1); document.documentElement.style.setProperty("--c1",c1); document.documentElement.style.setProperty("--saf",c1); }
-    if(c2){ document.documentElement.style.setProperty("--o2",c2); document.documentElement.style.setProperty("--c2",c2); document.documentElement.style.setProperty("--saf2",c2); }
-
-    // Title/subtitle
-    const n=document.getElementById("org-name")||document.getElementById("org-title");
-    if(n&&title) n.textContent=title;
-    const s=document.getElementById("org-sub")||document.getElementById("org-subtitle");
-    if(s&&sub) s.textContent=sub;
-    const tg=document.getElementById("org-tagline");
-    if(tg){ if(tagline){tg.textContent=tagline;tg.style.display="";} }
-    ["footer-cam","footer-form","footer-text"].forEach(id=>{
-      const el=document.getElementById(id); if(el&&tagline) el.textContent=tagline;
-    });
-    document.title=(title||"EventLens")+" - EventLens";
-
-    // Logo
-    if(logoUrl){
-      ["logo-img","custom-logo"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){ el.src=logoUrl; el.style.display="block"; el.onerror=()=>{ el.style.display="none"; }; }
-      });
-      ["default-icon","logo-default"].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.style.display="none";
-      });
-    }
-
-    // Header image
-    if(hdrUrl){
-      ["brand-header-img","hdr-cam-img","form-hdr-img"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){ el.src=hdrUrl+"?t="+Date.now(); el.style.display="block"; el.onerror=()=>{ el.style.display="none"; }; }
-      });
-      ["hdr-cam-img-wrap","form-hdr-img-wrap"].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.style.display="block";
-      });
-    }
-
-    // Background image
-    _elApplyBg(bgUrl);
-
-    // Program options
-    _elFillProgramOptions(ft, cfg);
-
-  }catch(e){ console.warn("EL branding error",e); }
-}
-
-function _elFillProgramOptions(ft, cfg){
-  try{
-    // program_type select
-    const sel=document.getElementById("program_type")||document.getElementById("f-program");
-    if(sel){
-      const opts=ft.program_options||(cfg.defaults&&cfg.defaults.program_options)||[];
-      if(Array.isArray(opts)&&opts.length){
-        const cur=sel.value;
-        sel.innerHTML='<option value="">— कार्यक्रम प्रकार चुनें —</option>';
-        opts.forEach(o=>{
-          const v=(typeof o==="string")?o:(o.value||o.label||o.name||String(o));
-          const op=document.createElement("option");
-          op.value=v; op.textContent=v;
-          if(v===cur) op.selected=true;
-          sel.appendChild(op);
-        });
-      }
-    }
-    // fixed_level
-    const fl=ft.fixed_level||(cfg.defaults&&cfg.defaults.fixed_level)||"";
-    if(fl){
-      ["program_level","f-level"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){ el.value=fl; el.disabled=true; }
-      });
-    }
-  }catch(e){}
-}
-
-async function _elLoadBranding(BASE_URL, FTYPE, TOKEN, CID){
-  try{
-    const payload=TOKEN?{token:TOKEN,form_type:FTYPE}:{collection_id:CID,form_type:FTYPE};
-    const action=TOKEN?"public_get_config":"admin_get_config";
-    const r=await fetch(BASE_URL,{
-      method:"POST", cache:"no-store",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({action,payload})
-    });
-    const res=await r.json();
-    if(!window._EL_CID && res.cid) window._EL_CID=res.cid;
-    _elApplyBranding(res, FTYPE);
-    return res;
-  }catch(e){ console.warn("EL loadBranding failed",e); return {}; }
-}
-/* ── End Universal Branding ── */
-</script>
-
-<style>
-/* ── Mobile Responsive Fixes ── */
-html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;}
-body.has-brand-bg{background-size:cover!important;background-attachment:fixed!important;}
+/* Mobile Responsive */
 @media(max-width:600px){
-  .container,.wrap,.card,.form-card,.scr,.main-card{max-width:100vw!important;width:100%!important;padding:12px!important;border-radius:14px!important;}
-  input,select,textarea{font-size:16px!important;} /* Prevent iOS zoom */
-  .btn,.btn-primary,.btn-ghost,.submit-btn{width:100%!important;padding:14px!important;font-size:16px!important;}
-  #cam-box,#cam-wrap{max-height:60vw!important;}
-  .step-row,.steps,.nav-dots{flex-wrap:wrap!important;}
-  #logo-img,#custom-logo{max-width:40px!important;max-height:40px!important;}
-  #brand-header-img,#hdr-cam-img,#form-hdr-img{max-height:140px!important;object-fit:cover!important;}
-  h1,h2{font-size:18px!important;} h3{font-size:15px!important;}
-  .timeline-card,.event-card,.result-card{padding:10px!important;}
+  input,select,textarea{font-size:16px!important;min-height:44px;}
+  .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
+  .container,.card,.section-card{padding:12px!important;border-radius:12px!important;}
+  .grid{grid-template-columns:1fr!important;}
+  .resp-grid{grid-template-columns:1fr!important;}
 }
-@media(max-width:400px){
-  .container,.wrap,.card{padding:8px!important;}
-  h1,h2{font-size:16px!important;}
-}
+body{overflow-x:hidden;}
 </style>
-
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="EventLens"/>
-<meta name="theme-color" content="#f97316"/>
-<link rel="manifest" href="/manifest.json"/>
 </head>
 <body>
 
@@ -625,70 +479,17 @@ async function resolveCid(){
 // ═══════════════════════════════
 async function loadBranding(){
   try{
-    const res=await _elLoadBranding(BASE+"/political/forms", FTYPE, TOK, CID);
-    if(res.cid||res.collection_id) CID=res.cid||res.collection_id;
-    remoteCfg=res.config||res.settings||res;
-    fillProgramNames(remoteCfg);
-  }catch(e){ console.warn("branding fail",e); }
-}
+    const payload = TOK ? {token:TOK,form_type:FTYPE} : {collection_id:CID,form_type:FTYPE};
+    const action  = TOK ? "public_get_config" : "admin_get_config";
+    const res = await api(action, payload);
+    if(!CID){
+      const c=res.collection_id||res.cid||(res.config&&(res.config.collection_id||res.config.cid))||"";
+      if(c) CID=c.trim();
+    }
     const cfg = res.config||res.settings||res.data||res;
     remoteCfg=cfg;
-
-    const forms=cfg.forms||{}; const ft=forms[FTYPE]||forms["party_attendance"]||{};
-    const def=cfg.defaults||cfg.branding||{}; const gl=cfg.global||{};
-
-    const title=ft.title||def.title||gl.title||"";
-    const sub=ft.subtitle||def.subtitle||"";
-    const logo=(ft.branding&&ft.branding.logo&&ft.branding.logo.url)||(def.logo_url)||"";
-    const hdr=ft.header_url||"";
-    const c1=(ft.branding&&ft.branding.color1)||(def.color1)||"";
-    const c2=(ft.branding&&ft.branding.color2)||(def.color2)||"";
-    const foot=gl.tagline||"Powered by EventLens";
-
-    if(title) _$("org-name").textContent=title;
-    if(sub) _$("org-sub").textContent=sub;
-    _$("footer-cam").textContent=foot; _$("footer-form").textContent=foot;
-    if(c1) document.documentElement.style.setProperty("--saf",c1);
-    if(c2) document.documentElement.style.setProperty("--saf2",c2);
-    if(logo){ _$("logo-img").src=logo; _$("logo-img").style.display="block"; _$("default-icon").style.display="none"; }
-    if(hdr){
-      _$("hdr-cam-img").src=hdr; _$("hdr-cam-img-wrap").style.display="block";
-      _$("form-hdr-img").src=hdr; _$("form-hdr-img-wrap").style.display="block";
-    }
-    fillProgramNames(cfg);
-  }catch(e){ console.error("❌ branding fail:",e); }
-}
-
-function fillProgramNames(cfg){
-  const sel=_$("f-program"); if(!sel) return;
-  const forms=cfg.forms||{}; const ft=forms[FTYPE]||forms["party_attendance"]||{};
-  const fl=ft.fixed_levels||cfg.defaults?.fixed_levels||{};
-
-  console.log("📋 ft keys:", Object.keys(ft));
-  console.log("📋 fl:", JSON.stringify(fl));
-
-  // Fixed program mode
-  if(fl.fixed_program){
-    const fixDiv=_$("f-program-fixed");
-    if(fixDiv){ fixDiv.textContent=fl.fixed_program; fixDiv.style.display="block"; }
-    sel.style.display="none";
-    const o=document.createElement("option"); o.value=fl.fixed_program; o.textContent=fl.fixed_program; sel.appendChild(o);
-    sel.value=fl.fixed_program;
-    return;
-  }
-
-  const programs = ft.programs || ft.program_names || ft.program_list ||
-    (cfg.global && cfg.global.programs) || [];
-  console.log("📋 programs:", JSON.stringify(programs));
-  if(programs && programs.length){
-    sel.innerHTML='<option value="">— कार्यक्रम चुनें —</option>';
-    programs.forEach(p=>{
-      const o=document.createElement("option");
-      o.value=typeof p==="string"?p:(p.value||p.name||p);
-      o.textContent=typeof p==="string"?p:(p.label||p.name||p);
-      sel.appendChild(o);
-    });
-  }
+    _elApplyBranding(cfg, FTYPE);
+  }catch(e){ if(typeof DBG!=="undefined"&&DBG) console.warn("branding fail",e); }
 }
 
 // ═══════════════════════════════
@@ -3104,6 +2905,88 @@ function showEditStatus(msg,isErr){
     </div>
   </div>
 </div>
+
+
+// ═══════════════ UNIVERSAL BRANDING v4 ═══════════════
+function _elApplyBranding(cfg, formType){
+  try{
+    const forms=cfg.forms||{}; const ft=forms[formType]||{}; const def=cfg.defaults||cfg.branding||{}; const gl=cfg.global||{};
+    const db=def.branding||{};
+    const fb=ft.branding||{};
+    // Text
+    const title=ft.title||db.title||def.title||gl.title||'';
+    const sub=ft.subtitle||db.subtitle||def.subtitle||'';
+    const tag=ft.tagline||db.tagline||def.tagline||gl.tagline||'';
+    const foot=ft.footer_text||db.footer_text||def.footer_text||gl.tagline||'';
+    // Assets — check all path variations
+    const logoUrl=fb.logo_url||(fb.logo&&fb.logo.url)||ft.logo_url||(db.logo&&db.logo.url)||def.logo_url||'';
+    const hdrUrl =fb.header_url||(fb.header&&fb.header.url)||ft.header_url||(db.header&&db.header.url)||def.header_url||'';
+    const bgUrl  =fb.background_url||(fb.background&&fb.background.url)||ft.background_url||(db.background&&db.background.url)||def.background_url||'';
+    const bgOpa  =(fb.bg_opacity??db.bg_opacity??def.bg_opacity??35)/100;
+    // Colors
+    const c1=fb.color1||db.color1||def.color1||'';
+    const c2=fb.color2||db.color2||def.color2||'';
+    // Apply text
+    const s=(id)=>document.getElementById(id);
+    if(title){['org-name','org-title','brand-title'].forEach(id=>s(id)&&(s(id).textContent=title));}
+    if(sub){['org-sub','org-subtitle','brand-subtitle'].forEach(id=>s(id)&&(s(id).textContent=sub));}
+    if(tag){['org-tagline','brand-tagline'].forEach(id=>{const el=s(id);if(el){el.textContent=tag;el.style.display='';}}); }
+    if(foot){['footer-cam','footer-form','brand-footer'].forEach(id=>s(id)&&(s(id).textContent=foot));}
+    // Apply colors
+    if(c1) document.documentElement.style.setProperty('--o1',c1);
+    if(c2) document.documentElement.style.setProperty('--o2',c2);
+    // Apply logo (cache-bust)
+    if(logoUrl){
+      const ts='?t='+Date.now();
+      ['logo-img','brand-logo'].forEach(id=>{const el=s(id);if(el){el.src=logoUrl+ts;el.style.display='block';}});
+      ['default-icon','logo-icon'].forEach(id=>s(id)&&(s(id).style.display='none'));
+    }
+    // Apply header
+    if(hdrUrl){
+      const ts='?t='+Date.now();
+      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(id=>{const el=s(id);if(el){el.src=hdrUrl+ts;el.style.display='block';}});
+      ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(id=>s(id)&&(s(id).style.display='block'));
+    }
+    // Apply background to body
+    if(bgUrl){
+      const img=new Image();
+      img.onload=()=>{
+        document.body.style.backgroundImage='url("'+bgUrl+'?t='+Date.now()+'")';
+        document.body.style.backgroundSize='cover';
+        document.body.style.backgroundPosition='center';
+        document.body.style.backgroundAttachment='fixed';
+        // Create/update overlay
+        let ov=document.getElementById('_el_bg_ov');
+        if(!ov){ov=document.createElement('div');ov.id='_el_bg_ov';ov.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none;';document.body.prepend(ov);}
+        ov.style.background='rgba(15,23,42,'+(1-bgOpa)+')';
+      };
+      img.src=bgUrl;
+    }
+    // Fill program options
+    const progs=ft.program_options||ft.programs||def.programs||[];
+    ['program_name','program_type','karyakram_name'].forEach(selId=>{
+      const sel=s(selId);
+      if(sel&&progs.length){
+        const cur=sel.value;
+        const opts=sel.querySelectorAll('option:not([value=""])');
+        // Only fill if empty or has placeholder only
+        if(opts.length<=1){
+          progs.forEach(p=>{ const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o); });
+        }
+        if(cur) sel.value=cur;
+      }
+    });
+    // Level lock
+    const fixedLevel=ft.fixed_level||'';
+    if(fixedLevel){
+      ['level','form_level'].forEach(selId=>{
+        const sel=s(selId);
+        if(sel){ sel.value=fixedLevel; sel.disabled=true; }
+      });
+    }
+  }catch(e){ console.warn('[EL Branding]',e); }
+}
+// ═════════════════════════════════════════════════════
 
 </body>
 </html>

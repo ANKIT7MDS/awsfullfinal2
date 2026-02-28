@@ -2,6 +2,10 @@
 <!-- EventLens Political - President Tour Dashboard v1.0 -->
 <html lang="hi">
 <head>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0f172a"/>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>President Tour Dashboard — EventLens</title>
@@ -90,167 +94,17 @@ body{
 .animate-in{animation:fadeSlideUp .4s ease both}
 @keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .chart-container{position:relative;height:200px}
-</style>
-<script>
-/* ── Universal Branding v3 ── */
-function _elPickUrl(obj){
-  if(!obj) return "";
-  if(typeof obj==="string") return obj;
-  return obj.url||obj.src||obj.href||"";
-}
-function _elApplyBg(url){
-  if(!url) return;
-  const img=new Image();
-  img.onload=function(){
-    document.documentElement.style.setProperty("--bgimg","url('"+url+"')");
-    document.body.classList.add("has-brand-bg");
-    document.body.style.backgroundImage="url('"+url+"')";
-    document.body.style.backgroundSize="cover";
-    document.body.style.backgroundAttachment="fixed";
-    document.body.style.backgroundPosition="center";
-  };
-  img.src=url;
-}
-function _elApplyBranding(res, FTYPE){
-  try{
-    const cfg=res.config||res.settings||res.data||res||{};
-    const forms=cfg.forms||{};
-    const ft=forms[FTYPE]||forms[(FTYPE||"").replace("political_","")]||{};
-    const def=(cfg.defaults&&cfg.defaults.branding)||cfg.branding||cfg.defaults||{};
-    const gl=cfg.global||{};
-    const br=ft.branding||{};
 
-    const title=ft.title||br.title||def.title||gl.title||"";
-    const sub=ft.subtitle||br.subtitle||def.subtitle||"";
-    const tagline=ft.tagline||br.tagline||gl.tagline||"Powered by EventLens";
-    const c1=br.color1||br.primary_color||def.color1||def.primary||gl.theme?.primary||"";
-    const c2=br.color2||br.secondary_color||def.color2||def.secondary||gl.theme?.secondary||"";
-
-    const logoUrl=_elPickUrl(br.logo)||ft.logo_url||def.logo_url||"";
-    const hdrUrl=_elPickUrl(br.header)||ft.header_url||def.header_url||"";
-    const bgUrl=_elPickUrl(br.background)||ft.background_url||def.background_url||"";
-
-    // Apply colors
-    if(c1){ document.documentElement.style.setProperty("--o1",c1); document.documentElement.style.setProperty("--c1",c1); document.documentElement.style.setProperty("--saf",c1); }
-    if(c2){ document.documentElement.style.setProperty("--o2",c2); document.documentElement.style.setProperty("--c2",c2); document.documentElement.style.setProperty("--saf2",c2); }
-
-    // Title/subtitle
-    const n=document.getElementById("org-name")||document.getElementById("org-title");
-    if(n&&title) n.textContent=title;
-    const s=document.getElementById("org-sub")||document.getElementById("org-subtitle");
-    if(s&&sub) s.textContent=sub;
-    const tg=document.getElementById("org-tagline");
-    if(tg){ if(tagline){tg.textContent=tagline;tg.style.display="";} }
-    ["footer-cam","footer-form","footer-text"].forEach(id=>{
-      const el=document.getElementById(id); if(el&&tagline) el.textContent=tagline;
-    });
-    document.title=(title||"EventLens")+" - EventLens";
-
-    // Logo
-    if(logoUrl){
-      ["logo-img","custom-logo"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){ el.src=logoUrl; el.style.display="block"; el.onerror=()=>{ el.style.display="none"; }; }
-      });
-      ["default-icon","logo-default"].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.style.display="none";
-      });
-    }
-
-    // Header image
-    if(hdrUrl){
-      ["brand-header-img","hdr-cam-img","form-hdr-img"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){ el.src=hdrUrl+"?t="+Date.now(); el.style.display="block"; el.onerror=()=>{ el.style.display="none"; }; }
-      });
-      ["hdr-cam-img-wrap","form-hdr-img-wrap"].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.style.display="block";
-      });
-    }
-
-    // Background image
-    _elApplyBg(bgUrl);
-
-    // Program options
-    _elFillProgramOptions(ft, cfg);
-
-  }catch(e){ console.warn("EL branding error",e); }
-}
-
-function _elFillProgramOptions(ft, cfg){
-  try{
-    // program_type select
-    const sel=document.getElementById("program_type")||document.getElementById("f-program");
-    if(sel){
-      const opts=ft.program_options||(cfg.defaults&&cfg.defaults.program_options)||[];
-      if(Array.isArray(opts)&&opts.length){
-        const cur=sel.value;
-        sel.innerHTML='<option value="">— कार्यक्रम प्रकार चुनें —</option>';
-        opts.forEach(o=>{
-          const v=(typeof o==="string")?o:(o.value||o.label||o.name||String(o));
-          const op=document.createElement("option");
-          op.value=v; op.textContent=v;
-          if(v===cur) op.selected=true;
-          sel.appendChild(op);
-        });
-      }
-    }
-    // fixed_level
-    const fl=ft.fixed_level||(cfg.defaults&&cfg.defaults.fixed_level)||"";
-    if(fl){
-      ["program_level","f-level"].forEach(id=>{
-        const el=document.getElementById(id);
-        if(el){ el.value=fl; el.disabled=true; }
-      });
-    }
-  }catch(e){}
-}
-
-async function _elLoadBranding(BASE_URL, FTYPE, TOKEN, CID){
-  try{
-    const payload=TOKEN?{token:TOKEN,form_type:FTYPE}:{collection_id:CID,form_type:FTYPE};
-    const action=TOKEN?"public_get_config":"admin_get_config";
-    const r=await fetch(BASE_URL,{
-      method:"POST", cache:"no-store",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({action,payload})
-    });
-    const res=await r.json();
-    if(!window._EL_CID && res.cid) window._EL_CID=res.cid;
-    _elApplyBranding(res, FTYPE);
-    return res;
-  }catch(e){ console.warn("EL loadBranding failed",e); return {}; }
-}
-/* ── End Universal Branding ── */
-</script>
-
-<style>
-/* ── Mobile Responsive Fixes ── */
-html,body{overflow-x:hidden;-webkit-text-size-adjust:100%;}
-body.has-brand-bg{background-size:cover!important;background-attachment:fixed!important;}
+/* Mobile Responsive */
 @media(max-width:600px){
-  .container,.wrap,.card,.form-card,.scr,.main-card{max-width:100vw!important;width:100%!important;padding:12px!important;border-radius:14px!important;}
-  input,select,textarea{font-size:16px!important;} /* Prevent iOS zoom */
-  .btn,.btn-primary,.btn-ghost,.submit-btn{width:100%!important;padding:14px!important;font-size:16px!important;}
-  #cam-box,#cam-wrap{max-height:60vw!important;}
-  .step-row,.steps,.nav-dots{flex-wrap:wrap!important;}
-  #logo-img,#custom-logo{max-width:40px!important;max-height:40px!important;}
-  #brand-header-img,#hdr-cam-img,#form-hdr-img{max-height:140px!important;object-fit:cover!important;}
-  h1,h2{font-size:18px!important;} h3{font-size:15px!important;}
-  .timeline-card,.event-card,.result-card{padding:10px!important;}
+  input,select,textarea{font-size:16px!important;min-height:44px;}
+  .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
+  .container,.card,.section-card{padding:12px!important;border-radius:12px!important;}
+  .grid{grid-template-columns:1fr!important;}
+  .resp-grid{grid-template-columns:1fr!important;}
 }
-@media(max-width:400px){
-  .container,.wrap,.card{padding:8px!important;}
-  h1,h2{font-size:16px!important;}
-}
+body{overflow-x:hidden;}
 </style>
-
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="EventLens"/>
-<meta name="theme-color" content="#f97316"/>
-<link rel="manifest" href="/manifest.json"/>
 </head>
 <body>
 

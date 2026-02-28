@@ -367,9 +367,10 @@ async function loadBranding() {
     const forms = (cfg && cfg.forms) || {};
     const ft = forms["president_tour_form"] || {};
     const def = (cfg && cfg.defaults) || {};
+    const defB = (def && def.branding) || {};
 
-    const title = ft.title || def.title || "President Tour Dashboard";
-    const subtitle = ft.subtitle || def.subtitle || "EventLens Political";
+    const title = ft.title || (ft.branding && ft.branding.title) || defB.title || def.title || "President Tour Dashboard";
+    const subtitle = ft.subtitle || (ft.branding && ft.branding.subtitle) || defB.subtitle || def.subtitle || "EventLens Political";
     if ($("nav-title")) $("nav-title").textContent = title;
     if ($("nav-subtitle")) $("nav-subtitle").textContent = subtitle;
 
@@ -378,7 +379,7 @@ async function loadBranding() {
     document.documentElement.style.setProperty("--c1", c1);
     document.documentElement.style.setProperty("--c2", c2);
 
-    const logoUrl = ft.logo_url || (ft.branding && ft.branding.logo && ft.branding.logo.url) || "";
+    const logoUrl = ft.logo_url || (ft.branding && ft.branding.logo && ft.branding.logo.url) || (defB.logo && defB.logo.url) || defB.logo_url || def.logo_url || "";
     if (logoUrl) {
       $("nav-icon") && ($("nav-icon").style.display = "none");
       const navLogo = $("nav-logo");

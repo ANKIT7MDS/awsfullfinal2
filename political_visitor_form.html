@@ -405,6 +405,20 @@ body{overflow-x:hidden;}
 </style>
 <script>
 // ═══════════════ UNIVERSAL BRANDING v4 ═══════════════
+function _elIsPresignedUrl(u){
+  try{
+    const s = String(u||"");
+    return /X-Amz-Algorithm=|X-Amz-Signature=|X-Amz-Credential=|X-Amz-Date=|X-Amz-SignedHeaders=/.test(s);
+  }catch(e){ return false; }
+}
+function _elCacheBust(u){
+  const url = String(u||"").trim();
+  if(!url) return "";
+  // Do NOT append query params to presigned URLs (signature will break)
+  if(_elIsPresignedUrl(url)) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return url + sep + "t=" + Date.now();
+}
 function _elApplyBranding(cfg, formType){
   try{
     var forms=cfg.forms||{}, ft=forms[formType]||{}, def=cfg.defaults||cfg.branding||{}, gl=cfg.global||{};
@@ -430,21 +444,19 @@ function _elApplyBranding(cfg, formType){
     if(c2) document.documentElement.style.setProperty('--o2',c2);
     // Logo
     if(logoUrl){
-      var ts='?t='+Date.now();
-      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=logoUrl+ts;e.style.display='block';}});
+      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=_elCacheBust(logoUrl);e.style.display='block';}});
       ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
     }
     // Header
     if(hdrUrl){
-      var ts2='?t='+Date.now();
-      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=hdrUrl+ts2;e.style.display='block';}});
+      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=_elCacheBust(hdrUrl);e.style.display='block';}});
       ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(function(id){var e=s(id);if(e)e.style.display='block';});
     }
     // Background
     if(bgUrl){
       var img=new Image();
       img.onload=function(){
-        document.body.style.backgroundImage='url("'+bgUrl+'?t='+Date.now()+'")';
+        document.body.style.backgroundImage='url("'+_elCacheBust(bgUrl)+'")';
         document.body.style.backgroundSize='cover';
         document.body.style.backgroundPosition='center';
         document.body.style.backgroundAttachment='fixed';
@@ -866,7 +878,8 @@ async function loadBranding(){
     }
     const cfg = res.config||res.settings||res.data||res;
     remoteCfg=cfg;
-    const forms=cfg.forms||{}; const ft=forms[FTYPE]||{}; const def=cfg.defaults||cfg.branding||{}; const gl=cfg.global||{};
+        try{ _elApplyBranding(cfg, FTYPE); }catch(e){}
+const forms=cfg.forms||{}; const ft=forms[FTYPE]||{}; const def=cfg.defaults||cfg.branding||{}; const gl=cfg.global||{};
     const title=ft.title||def.title||gl.title||"";
     const sub=ft.subtitle||def.subtitle||"";
     const logo=(ft.branding&&ft.branding.logo&&ft.branding.logo.url)||(def.logo_url)||"";

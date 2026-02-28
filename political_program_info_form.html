@@ -185,6 +185,20 @@ body{overflow-x:hidden;}
 </style>
 <script>
 // ═══════════════ UNIVERSAL BRANDING v4 ═══════════════
+function _elIsPresignedUrl(u){
+  try{
+    const s = String(u||"");
+    return /X-Amz-Algorithm=|X-Amz-Signature=|X-Amz-Credential=|X-Amz-Date=|X-Amz-SignedHeaders=/.test(s);
+  }catch(e){ return false; }
+}
+function _elCacheBust(u){
+  const url = String(u||"").trim();
+  if(!url) return "";
+  // Do NOT append query params to presigned URLs (signature will break)
+  if(_elIsPresignedUrl(url)) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return url + sep + "t=" + Date.now();
+}
 function _elApplyBranding(cfg, formType){
   try{
     var forms=cfg.forms||{}, ft=forms[formType]||{}, def=cfg.defaults||cfg.branding||{}, gl=cfg.global||{};
@@ -210,21 +224,19 @@ function _elApplyBranding(cfg, formType){
     if(c2) document.documentElement.style.setProperty('--o2',c2);
     // Logo
     if(logoUrl){
-      var ts='?t='+Date.now();
-      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=logoUrl+ts;e.style.display='block';}});
+      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=_elCacheBust(logoUrl);e.style.display='block';}});
       ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
     }
     // Header
     if(hdrUrl){
-      var ts2='?t='+Date.now();
-      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=hdrUrl+ts2;e.style.display='block';}});
+      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=_elCacheBust(hdrUrl);e.style.display='block';}});
       ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(function(id){var e=s(id);if(e)e.style.display='block';});
     }
     // Background
     if(bgUrl){
       var img=new Image();
       img.onload=function(){
-        document.body.style.backgroundImage='url("'+bgUrl+'?t='+Date.now()+'")';
+        document.body.style.backgroundImage='url("'+_elCacheBust(bgUrl)+'")';
         document.body.style.backgroundSize='cover';
         document.body.style.backgroundPosition='center';
         document.body.style.backgroundAttachment='fixed';
@@ -482,7 +494,11 @@ function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle,
   const legacyPerForm = (root.branding && root.branding.forms && root.branding.forms[ftKey]) ? root.branding.forms[ftKey] : {};
 
   // Merge priority: defaults -> perForm -> legacyGlobal -> legacyPerForm (per-form wins)
-  const brand = mergeObj(mergeObj(mergeObj(defaultsNode, perForm), legacyGlobal), legacyPerForm);
+  // Merge priority: defaults branding -> perForm branding -> legacyGlobal -> legacyPerForm
+  // Supports new admin-console shape: defaults.branding.*, forms[ft].branding.*
+  const defaultsBranding = (defaultsNode && defaultsNode.branding) ? defaultsNode.branding : defaultsNode;
+  const perFormBranding = (perForm && perForm.branding) ? perForm.branding : perForm;
+  const brand = mergeObj(mergeObj(mergeObj(defaultsBranding, perFormBranding), legacyGlobal), legacyPerForm);
 
   const title = brand.title || fallbackTitle || "EventLens Form";
   const subtitle = brand.subtitle || fallbackSubtitle || "";

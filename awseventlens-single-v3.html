@@ -1,11 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="theme-color" content="#0f172a"/>
-<meta charset="utf-8" />
+  <meta charset="utf-8" />
   <!-- FIX ADDED: Prevents 403 Forbidden on S3 Images -->
   <meta name="referrer" content="no-referrer" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
@@ -156,13 +152,10 @@
     .modal-box { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; width: 90%; max-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
     .modal-head { margin-top: 0; color: var(--primary); margin-bottom: 15px; font-size: 1.25rem; font-weight: 700; }
   
-/* Mobile Responsive */
+/* === Mobile Responsive === */
 @media(max-width:600px){
   input,select,textarea{font-size:16px!important;min-height:44px;}
   .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
-  .container,.card,.section-card{padding:12px!important;border-radius:12px!important;}
-  .grid{grid-template-columns:1fr!important;}
-  .resp-grid{grid-template-columns:1fr!important;}
 }
 body{overflow-x:hidden;}
 </style>
@@ -2878,77 +2871,32 @@ function getLinksStorageKey(){
   <!-- Hidden legacy container (kept to avoid layout surprises, but unused) -->
   <div id="photographer-list" class="hidden" style="display:none"></div>
 
-
 <script>
-/* === QR + Link Save for Political Links === */
 (function(){
   function addQRBtn(){
-    const res=document.getElementById('polLinkRes');
+    var res=document.getElementById('polLinkRes');
     if(!res||res.dataset.qrAdded) return;
     res.dataset.qrAdded='1';
-    const row=document.createElement('div');
+    var row=document.createElement('div');
     row.style.cssText='margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;';
-    row.innerHTML=`
-      <button onclick="window._showPolQR()" style="background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
-        <i class="fa-solid fa-qrcode"></i> QR Code
-      </button>
-      <button onclick="window._savePolLink()" style="background:rgba(51,65,85,.8);color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">
-        <i class="fa-solid fa-bookmark"></i> Save Link
-      </button>`;
+    row.innerHTML='<button onclick="window._showPolQR()" style="background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;"><i class=\"fa-solid fa-qrcode\"></i> QR Code</button><button onclick="window._savePolLink()" style="background:rgba(51,65,85,.8);color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;"><i class=\"fa-solid fa-bookmark\"></i> Save Link</button>';
     res.appendChild(row);
-    const qrCon=document.createElement('div');
-    qrCon.id='__pol_qr';
-    qrCon.style.cssText='margin-top:10px;display:none;background:#fff;padding:10px;border-radius:10px;display:inline-block;';
-    qrCon.style.display='none';
-    res.appendChild(qrCon);
+    var qrCon=document.createElement('div');qrCon.id='__pol_qr';qrCon.style.cssText='margin-top:10px;display:none;background:#fff;padding:10px;border-radius:10px;';res.appendChild(qrCon);
   }
   window._showPolQR=function(){
-    const url=document.getElementById('polFinalLink')?.value;
+    var url=document.getElementById('polFinalLink')&&document.getElementById('polFinalLink').value;
     if(!url) return;
-    const con=document.getElementById('__pol_qr');
-    if(!con) return;
-    con.innerHTML=''; con.style.display='inline-block';
-    try{
-      if(typeof QRCode!=='undefined') new QRCode(con,{text:url,width:180,height:180,correctLevel:QRCode.CorrectLevel.M});
-      else con.textContent='QRCode library not loaded';
-      setTimeout(()=>{
-        const c=con.querySelector('canvas');
-        if(c){const d=document.createElement('div');d.style.cssText='text-align:center;margin-top:6px;';d.innerHTML=`<button onclick="window._dlQR()" style="background:#f97316;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;"><i class='fa-solid fa-download'></i> Download QR</button>`;con.appendChild(d);}
-      },300);
-    }catch(e){con.textContent='QR Error';}
+    var con=document.getElementById('__pol_qr');if(!con) return;
+    con.innerHTML='';con.style.display='inline-block';
+    try{if(typeof QRCode!=='undefined') new QRCode(con,{text:url,width:180,height:180,correctLevel:QRCode.CorrectLevel.M});}catch(e){con.textContent='QR Error';}
+    setTimeout(function(){var c=con.querySelector('canvas');if(c){var d=document.createElement('div');d.style.cssText='text-align:center;margin-top:6px;';d.innerHTML='<button onclick="window._dlQR()" style="background:#f97316;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;"><i class=\'fa-solid fa-download\'></i> Download QR</button>';con.appendChild(d);}},300);
   };
-  window._dlQR=function(){
-    const c=document.getElementById('__pol_qr')?.querySelector('canvas');
-    if(!c) return;
-    const a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='eventlens-qr.png';a.click();
-  };
-  window._savePolLink=function(){
-    const url=document.getElementById('polFinalLink')?.value;
-    if(!url) return;
-    try{
-      const h=JSON.parse(localStorage.getItem('EL_POLLINKS_ALL')||'[]');
-      h.unshift({id:Date.now(),url,created:new Date().toISOString()});
-      localStorage.setItem('EL_POLLINKS_ALL',JSON.stringify(h.slice(0,100)));
-      alert('Link saved!');
-    }catch(e){}
-  };
-  // Hook into link generation
-  const orig=window.generatePoliticalPublicLink;
-  if(typeof orig==='function'){
-    window.generatePoliticalPublicLink=async function(...a){
-      await orig.apply(this,a);
-      setTimeout(addQRBtn,400);
-    };
-  }
-  // MutationObserver fallback
-  const el=document.getElementById('polLinkRes');
-  if(el) new MutationObserver(()=>{ if(el.style.display!=='none'&&!el.classList.contains('hidden')) addQRBtn(); }).observe(el,{attributes:true});
-  // Permanent token default
-  const daysSel=document.getElementById('polDays');
-  if(daysSel&&!daysSel.querySelector('[value="3650"]')){
-    const o=document.createElement('option');o.value='3650';o.textContent='10 साल (Permanent)';daysSel.appendChild(o);
-  }
-  if(daysSel) daysSel.value='3650';
+  window._dlQR=function(){var c=document.getElementById('__pol_qr')&&document.getElementById('__pol_qr').querySelector('canvas');if(!c) return;var a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='eventlens-qr.png';a.click();};
+  window._savePolLink=function(){var url=document.getElementById('polFinalLink')&&document.getElementById('polFinalLink').value;if(!url) return;try{var h=JSON.parse(localStorage.getItem('EL_POLLINKS_ALL')||'[]');h.unshift({id:Date.now(),url,created:new Date().toISOString()});localStorage.setItem('EL_POLLINKS_ALL',JSON.stringify(h.slice(0,100)));alert('Link saved!');}catch(e){}};
+  var orig=window.generatePoliticalPublicLink;
+  if(typeof orig==='function'){window.generatePoliticalPublicLink=async function(){var r=await orig.apply(this,arguments);setTimeout(addQRBtn,400);return r;};}
+  var el=document.getElementById('polLinkRes');
+  if(el) new MutationObserver(function(){if(el.style.display!=='none'&&!el.classList.contains('hidden')) addQRBtn();}).observe(el,{attributes:true});
 })();
 </script>
 </body>

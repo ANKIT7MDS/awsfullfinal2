@@ -5,7 +5,6 @@
 <head>
   <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#0f172a"/>
 <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -177,16 +176,82 @@ body.mode-light .help{ color: rgba(15,23,42,.65) !important; }
 body.mode-light select option{ background:#ffffff; color:#0f172a; }
 /* ===== /EventLens: Light mode visibility fixes ===== */
 
-/* Mobile Responsive */
+/* === Mobile Responsive === */
 @media(max-width:600px){
   input,select,textarea{font-size:16px!important;min-height:44px;}
   .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
-  .container,.card,.section-card{padding:12px!important;border-radius:12px!important;}
-  .grid{grid-template-columns:1fr!important;}
-  .resp-grid{grid-template-columns:1fr!important;}
 }
 body{overflow-x:hidden;}
 </style>
+<script>
+// ═══════════════ UNIVERSAL BRANDING v4 ═══════════════
+function _elApplyBranding(cfg, formType){
+  try{
+    var forms=cfg.forms||{}, ft=forms[formType]||{}, def=cfg.defaults||cfg.branding||{}, gl=cfg.global||{};
+    var db=def.branding||{}, fb=ft.branding||{};
+    var title=ft.title||db.title||def.title||gl.title||'';
+    var sub=ft.subtitle||db.subtitle||def.subtitle||'';
+    var tag=ft.tagline||db.tagline||def.tagline||gl.tagline||'';
+    var foot=ft.footer_text||db.footer_text||def.footer_text||gl.tagline||'';
+    var logoUrl=fb.logo_url||(fb.logo&&fb.logo.url)||ft.logo_url||(db.logo&&db.logo.url)||def.logo_url||'';
+    var hdrUrl=fb.header_url||(fb.header&&fb.header.url)||ft.header_url||(db.header&&db.header.url)||def.header_url||'';
+    var bgUrl=fb.background_url||(fb.background&&fb.background.url)||ft.background_url||(db.background&&db.background.url)||def.background_url||'';
+    var bgOpa=((fb.bg_opacity!=null?fb.bg_opacity:db.bg_opacity!=null?db.bg_opacity:def.bg_opacity!=null?def.bg_opacity:35))/100;
+    var c1=fb.color1||db.color1||def.color1||'';
+    var c2=fb.color2||db.color2||def.color2||'';
+    function s(id){ return document.getElementById(id); }
+    // Text
+    if(title){['org-name','org-title','brand-title'].forEach(function(id){var e=s(id);if(e)e.textContent=title;});}
+    if(sub){['org-sub','org-subtitle','brand-subtitle'].forEach(function(id){var e=s(id);if(e)e.textContent=sub;});}
+    if(tag){['org-tagline','brand-tagline'].forEach(function(id){var e=s(id);if(e){e.textContent=tag;e.style.display='';}});}
+    if(foot){['footer-cam','footer-form','brand-footer'].forEach(function(id){var e=s(id);if(e)e.textContent=foot;});}
+    // Colors
+    if(c1) document.documentElement.style.setProperty('--o1',c1);
+    if(c2) document.documentElement.style.setProperty('--o2',c2);
+    // Logo
+    if(logoUrl){
+      var ts='?t='+Date.now();
+      ['logo-img','brand-logo'].forEach(function(id){var e=s(id);if(e){e.src=logoUrl+ts;e.style.display='block';}});
+      ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
+    }
+    // Header
+    if(hdrUrl){
+      var ts2='?t='+Date.now();
+      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(function(id){var e=s(id);if(e){e.src=hdrUrl+ts2;e.style.display='block';}});
+      ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(function(id){var e=s(id);if(e)e.style.display='block';});
+    }
+    // Background
+    if(bgUrl){
+      var img=new Image();
+      img.onload=function(){
+        document.body.style.backgroundImage='url("'+bgUrl+'?t='+Date.now()+'")';
+        document.body.style.backgroundSize='cover';
+        document.body.style.backgroundPosition='center';
+        document.body.style.backgroundAttachment='fixed';
+        var ov=s('_el_bg_ov');
+        if(!ov){ov=document.createElement('div');ov.id='_el_bg_ov';ov.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none;';document.body.prepend(ov);}
+        ov.style.background='rgba(15,23,42,'+(1-bgOpa)+')';
+      };
+      img.src=bgUrl;
+    }
+    // Programs
+    var progs=ft.program_options||ft.programs||def.programs||[];
+    if(progs.length){
+      ['program_name','program_type','karyakram_name'].forEach(function(selId){
+        var sel=s(selId);
+        if(sel&&sel.querySelectorAll('option:not([value=""])').length<=1){
+          progs.forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
+        }
+      });
+    }
+    // Level lock
+    var fixedLevel=ft.fixed_level||'';
+    if(fixedLevel){
+      ['level','form_level'].forEach(function(selId){var sel=s(selId);if(sel){sel.value=fixedLevel;sel.disabled=true;}});
+    }
+  }catch(e){ console.warn('[EL Branding]',e); }
+}
+</script>
 </head>
     <body class="min-h-screen flex items-center justify-center p-4 font-sans mode-dark">
 
@@ -872,87 +937,5 @@ function onPhotosSelected(ev, maxFiles=10) {
     });
     </script>
 
-    
-// ═══════════════ UNIVERSAL BRANDING v4 ═══════════════
-function _elApplyBranding(cfg, formType){
-  try{
-    const forms=cfg.forms||{}; const ft=forms[formType]||{}; const def=cfg.defaults||cfg.branding||{}; const gl=cfg.global||{};
-    const db=def.branding||{};
-    const fb=ft.branding||{};
-    // Text
-    const title=ft.title||db.title||def.title||gl.title||'';
-    const sub=ft.subtitle||db.subtitle||def.subtitle||'';
-    const tag=ft.tagline||db.tagline||def.tagline||gl.tagline||'';
-    const foot=ft.footer_text||db.footer_text||def.footer_text||gl.tagline||'';
-    // Assets — check all path variations
-    const logoUrl=fb.logo_url||(fb.logo&&fb.logo.url)||ft.logo_url||(db.logo&&db.logo.url)||def.logo_url||'';
-    const hdrUrl =fb.header_url||(fb.header&&fb.header.url)||ft.header_url||(db.header&&db.header.url)||def.header_url||'';
-    const bgUrl  =fb.background_url||(fb.background&&fb.background.url)||ft.background_url||(db.background&&db.background.url)||def.background_url||'';
-    const bgOpa  =(fb.bg_opacity??db.bg_opacity??def.bg_opacity??35)/100;
-    // Colors
-    const c1=fb.color1||db.color1||def.color1||'';
-    const c2=fb.color2||db.color2||def.color2||'';
-    // Apply text
-    const s=(id)=>document.getElementById(id);
-    if(title){['org-name','org-title','brand-title'].forEach(id=>s(id)&&(s(id).textContent=title));}
-    if(sub){['org-sub','org-subtitle','brand-subtitle'].forEach(id=>s(id)&&(s(id).textContent=sub));}
-    if(tag){['org-tagline','brand-tagline'].forEach(id=>{const el=s(id);if(el){el.textContent=tag;el.style.display='';}}); }
-    if(foot){['footer-cam','footer-form','brand-footer'].forEach(id=>s(id)&&(s(id).textContent=foot));}
-    // Apply colors
-    if(c1) document.documentElement.style.setProperty('--o1',c1);
-    if(c2) document.documentElement.style.setProperty('--o2',c2);
-    // Apply logo (cache-bust)
-    if(logoUrl){
-      const ts='?t='+Date.now();
-      ['logo-img','brand-logo'].forEach(id=>{const el=s(id);if(el){el.src=logoUrl+ts;el.style.display='block';}});
-      ['default-icon','logo-icon'].forEach(id=>s(id)&&(s(id).style.display='none'));
-    }
-    // Apply header
-    if(hdrUrl){
-      const ts='?t='+Date.now();
-      ['hdr-cam-img','form-hdr-img','brand-header-img'].forEach(id=>{const el=s(id);if(el){el.src=hdrUrl+ts;el.style.display='block';}});
-      ['hdr-cam-img-wrap','form-hdr-img-wrap','brand-header-wrap'].forEach(id=>s(id)&&(s(id).style.display='block'));
-    }
-    // Apply background to body
-    if(bgUrl){
-      const img=new Image();
-      img.onload=()=>{
-        document.body.style.backgroundImage='url("'+bgUrl+'?t='+Date.now()+'")';
-        document.body.style.backgroundSize='cover';
-        document.body.style.backgroundPosition='center';
-        document.body.style.backgroundAttachment='fixed';
-        // Create/update overlay
-        let ov=document.getElementById('_el_bg_ov');
-        if(!ov){ov=document.createElement('div');ov.id='_el_bg_ov';ov.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none;';document.body.prepend(ov);}
-        ov.style.background='rgba(15,23,42,'+(1-bgOpa)+')';
-      };
-      img.src=bgUrl;
-    }
-    // Fill program options
-    const progs=ft.program_options||ft.programs||def.programs||[];
-    ['program_name','program_type','karyakram_name'].forEach(selId=>{
-      const sel=s(selId);
-      if(sel&&progs.length){
-        const cur=sel.value;
-        const opts=sel.querySelectorAll('option:not([value=""])');
-        // Only fill if empty or has placeholder only
-        if(opts.length<=1){
-          progs.forEach(p=>{ const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o); });
-        }
-        if(cur) sel.value=cur;
-      }
-    });
-    // Level lock
-    const fixedLevel=ft.fixed_level||'';
-    if(fixedLevel){
-      ['level','form_level'].forEach(selId=>{
-        const sel=s(selId);
-        if(sel){ sel.value=fixedLevel; sel.disabled=true; }
-      });
-    }
-  }catch(e){ console.warn('[EL Branding]',e); }
-}
-// ═════════════════════════════════════════════════════
-
-</body>
+    </body>
     </html>

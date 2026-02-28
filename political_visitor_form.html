@@ -1602,15 +1602,13 @@ async function doSave(formData, file){
     entryId=cr.entry_id; finalTok=cr.finalize_token; upUrl=cr.upload_url; s3k=cr.s3_key;
     if(upUrl&&!cr.duplicate) await fetch(upUrl,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
   }else{
-    const up={form_type:FTYPE,sha256:sha,file_name:"selfie.jpg",mime_type:"image/jpeg",payload:formData};
+    // Entry already created during scan — update payload on the same entry (no new entry / no re-index).
+    const up={finalize_token:finalTok, entry_id:entryId, form_data:formData};
     if(TOK) up.token=TOK; if(CID) up.collection_id=CID;
-    const ur=await api(isPub()?"public_create_entry":"create_entry",up);
-    finalTok=ur.finalize_token; entryId=ur.entry_id;
-    if(ur.upload_url&&!ur.duplicate) await fetch(ur.upload_url,{method:"PUT",body:file,headers:{"Content-Type":"image/jpeg"}});
+    await api(isPub()?"public_update_entry_payload":"update_entry_payload", up);
   }
   await api(isPub()?"public_finalize_entry":"finalize_entry",{finalize_token:finalTok,entry_id:entryId});
 }
-
 function showFStatus(msg,isErr){
   const el=_$("f-status");
   if(!msg){el.style.display="none";return;}

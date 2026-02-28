@@ -76,22 +76,27 @@ body.el-light #photo-drop-zone{background:rgba(0,0,0,.04)!important;border-color
 /* === Mobile Responsive === */
 @media(max-width:600px){
   input,select,textarea{font-size:16px!important;min-height:44px;}
-  .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
-  /* Form fits screen on mobile */
-  body{padding:8px 6px!important;}
-  #main-card{max-width:100%!important;border-radius:16px!important;}
-  #header-banner{height:140px!important;border-radius:14px 14px 0 0!important;}
-  #logo-wrap{width:44px!important;height:44px!important;border-radius:10px!important;}
-  #org-name{font-size:14px!important;}
+  .btn,button[type=submit]{width:100%;padding:12px!important;font-size:15px!important;}
+  body{padding:6px!important;}
+  #main-card{max-width:100%!important;border-radius:14px!important;margin:0!important;}
+  #header-banner{height:130px!important;border-radius:12px 12px 0 0!important;}
+  #logo-wrap{width:42px!important;height:42px!important;}
+  #org-name{font-size:13px!important;}
+  /* 3-col grid to 1-col on very small screens */
+  div[style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr!important;
+  }
+}
+/* Desktop: center card nicely */
+@media(min-width:601px){
+  body{ display:flex; align-items:flex-start; justify-content:center; min-height:100vh; padding:20px; }
+  #main-card{ width:100%; }
 }
 body{overflow-x:hidden;}
-/* Fix broken header image - hide when src empty or error */
-#brand-header-img{display:none;}
-#brand-header-img[src]:not([src=""]):not([src="data:"]) { display:block; }
-#brand-header-img.el-loaded{display:block!important;}
-/* Logo image: never show broken icon */
-#custom-logo{display:none!important;}
-#custom-logo.el-loaded{display:block!important;width:100%;height:100%;object-fit:contain;}
+/* Header image: hidden by default, shown by JS onload */
+#brand-header-img{ display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+/* Logo: hidden by default, shown by JS onload */
+#custom-logo{ display:none; width:100%; height:100%; object-fit:contain; }
 
 </style>
 <script>
@@ -221,7 +226,7 @@ function cacheBustSafe(u){
       <div style="display:flex;align-items:flex-end;gap:12px;">
         <div id="logo-wrap" style="width:52px;height:52px;border-radius:14px;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.25);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
           <i id="default-icon" class="fa-solid fa-route" style="font-size:20px;color:white;"></i>
-          <img id="custom-logo" src="" alt="logo" style="width:100%;height:100%;object-fit:contain;display:none;" onerror="this.style.display='none';this.classList.remove('el-loaded');document.getElementById('default-icon')&&(document.getElementById('default-icon').style.display='');" onload="if(this.src&&this.src!==window.location.href){this.classList.add('el-loaded');this.style.display='block!important';}" />
+          <img id="custom-logo" src="" alt="logo" style="width:100%;height:100%;object-fit:contain;display:none;" onerror="this.style.display='none';this.classList.remove('el-loaded');document.getElementById('default-icon')&&(document.getElementById('default-icon').style.display='');" onload="if(this.src&&this.src!==window.location.href){this.classList.add('el-loaded');this.style.display='block';document.getElementById('default-icon')&&(document.getElementById('default-icon').style.display='none');}" />
         </div>
         <div style="flex:1;min-width:0;">
           <h1 id="org-name" style="margin:0;font-size:17px;font-weight:800;color:white;line-height:1.25;text-shadow:0 1px 4px rgba(0,0,0,.4);">जिला अध्यक्ष जी का प्रवास</h1>
@@ -552,17 +557,40 @@ function applyBrandingFromConfig(cfg, ft, fallTitle, fallSub, fallTag, iconId){
     img.src=url;
   };
 
-  // Logo
+  // Logo - safe load with onerror/onload
   if(logoUrl){
     const logoEl=$("custom-logo");
-    if(logoEl){ logoEl.style.display="block"; logoEl.src=logoUrl; }
+    if(logoEl){
+      logoEl.onerror=function(){ 
+        this.style.cssText="display:none!important"; 
+        const di=$(iconId)||$("default-icon"); 
+        if(di){ di.style.display="flex"; di.style.cssText="display:flex!important"; }
+      };
+      logoEl.onload=function(){
+        if(this.src && this.src!==window.location.href && !this.src.endsWith('/')){
+          this.style.cssText="display:block!important;width:100%;height:100%;object-fit:contain;";
+          this.classList.add("el-loaded");
+          const di=$(iconId)||$("default-icon"); 
+          if(di) di.style.cssText="display:none!important";
+        }
+      };
+      logoEl.src=logoUrl;
+    }
     if($(iconId)) $(iconId).style.display="none";
   }
 
-  // Header banner
+  // Header banner - safe load
   if(headerImg){
     const hi=$("brand-header-img");
-    if(hi){ hi.src=headerImg; hi.style.display="block"; }
+    if(hi){
+      hi.onerror=function(){ this.style.cssText="display:none!important"; };
+      hi.onload=function(){ 
+        if(this.src && this.src!==window.location.href){
+          this.style.cssText="display:block!important;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;";
+        }
+      };
+      hi.src=headerImg;
+    }
   }
 
   // Background

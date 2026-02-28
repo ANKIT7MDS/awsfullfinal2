@@ -177,23 +177,46 @@ body.mode-light .help{ color: rgba(15,23,42,.65) !important; }
 body.mode-light select option{ background:#ffffff; color:#0f172a; }
 /* ===== /EventLens: Light mode visibility fixes ===== */
 
+/* Body layout */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 16px 12px 32px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+/* Main container: full width up to max */
+#main-container {
+  width: 100%;
+  max-width: 520px;
+}
+/* Success screen same width */
+#success-screen {
+  width: 100%;
+  max-width: 520px;
+}
+
 /* === Mobile Responsive === */
 @media(max-width:600px){
+  body { padding: 8px 8px 24px !important; }
   input,select,textarea{font-size:16px!important;min-height:44px;}
-  .btn,button[type=submit]{width:100%;padding:14px!important;font-size:15px!important;}
-  body{padding:8px 6px!important;}
-  #main-container{padding:12px 12px!important;border-radius:16px!important;}
-  .grid.grid-cols-2{grid-template-columns:1fr!important;}
+  #main-container{padding:14px!important;border-radius:16px!important;}
 }
-body{overflow-x:hidden;}
+
 /* Header image: show when branding loaded */
 #header-image{display:none;}
 #header-image.el-visible{display:block!important;}
-/* Logo: object-contain not cover */
+
+/* Logo: object-contain, hidden until loaded */
 #custom-logo{object-fit:contain!important;display:none!important;}
 #custom-logo.el-loaded{display:block!important;}
-/* Logo wrapper: show logo properly */
-#form-header .inline-flex{overflow:visible;}
+
+/* Logo circle: don't clip logo */
+#form-header .inline-flex{ background:rgba(255,255,255,0.05); }
+
 @supports not (-webkit-background-clip: text) {
   .brand-text { color: var(--c1); background-image: none; }
 }
@@ -237,13 +260,24 @@ function _elApplyBranding(cfg, formType){
     // Colors
     if(c1){ document.documentElement.style.setProperty('--o1',c1); document.documentElement.style.setProperty('--c1',c1); }
     if(c2){ document.documentElement.style.setProperty('--o2',c2); document.documentElement.style.setProperty('--c2',c2); }
-    // Logo
+    // Logo - safe load
     if(logoUrl){
-      ['logo-img','brand-logo','custom-logo'].forEach(function(id){var e=s(id);if(e){
-        e.onerror=function(){this.style.display='none';this.classList.remove('el-loaded','hidden'===this.className?'':'');var di=s('default-icon');if(di)di.style.display='';};
-        e.onload=function(){if(this.src&&this.src!==window.location.href){this.style.display='block';this.classList.add('el-loaded');this.classList.remove('hidden');}};
-        e.src=_elCacheBust(logoUrl);
-      }});
+      var lu=_elCacheBust(logoUrl);
+      ['logo-img','brand-logo','custom-logo'].forEach(function(id){
+        var e=s(id); if(!e) return;
+        e.onerror=function(){
+          this.style.cssText='display:none!important';
+          var di=s('default-icon'); if(di){di.style.cssText='display:flex!important';}
+        };
+        e.onload=function(){
+          if(this.src&&this.src!==window.location.href&&!this.src.endsWith('/')){
+            this.style.cssText='display:block!important;width:100%;height:100%;object-fit:contain;';
+            this.classList.add('el-loaded'); this.classList.remove('hidden');
+            var di=s('default-icon'); if(di) di.style.cssText='display:none!important';
+          }
+        };
+        e.src=lu;
+      });
       ['default-icon','logo-icon'].forEach(function(id){var e=s(id);if(e)e.style.display='none';});
     }
     // Header
@@ -264,10 +298,7 @@ function _elApplyBranding(cfg, formType){
           hd.src=_elCacheBust(hdrUrl);
           hd.style.display='block';
         }else{
-          hd.style.backgroundImage='url("'+_elCacheBust(hdrUrl)+'")';
-          hd.style.backgroundSize='cover';
-          hd.style.backgroundPosition='center';
-          hd.style.display='block';
+          hd.style.cssText='display:block!important;background-image:url("'+_elCacheBust(hdrUrl)+'");background-size:cover;background-position:center;width:100%;height:96px;border-radius:12px;margin-bottom:16px;';
           hd.classList.remove('hidden');
           hd.classList.add('el-visible');
         }
@@ -307,7 +338,7 @@ function _elApplyBranding(cfg, formType){
 }
 </script>
 </head>
-    <body class="font-sans mode-dark" style="padding:12px 8px 24px; box-sizing:border-box;">
+    <body class="font-sans mode-dark">
 
     <div class="w-full max-w-lg glass rounded-2xl p-4 sm:p-6 relative overflow-hidden transition-all duration-500" id="main-container" style="margin:0 auto;">
     <div class="absolute top-0 left-0 w-full h-1 brand-bg"></div>

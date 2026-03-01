@@ -259,6 +259,8 @@
     .photo-item:hover::after { opacity: 1; }
     .photo-item .play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 2; transform: scale(0.5); }
     .photo-item:hover .play-icon { opacity: 1; transform: scale(1); }
+    .photo-item .play-icon { display: none !important; }
+
 
     /* ─── Animations ─── */
     @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(212,160,23,0.5); } 70% { box-shadow: 0 0 0 20px rgba(212,160,23,0); } 100% { box-shadow: 0 0 0 0 rgba(212,160,23,0); } }
@@ -1899,8 +1901,10 @@ body{overflow-x:hidden;}
     push("📍 जिला", item.district || data.district);
     push("🗳️ विधानसभा", item.vidhansabha || data.vidhansabha);
     push("🕌 मंडल", item.mandal || data.mandal);
-    push("🏛️ कार्यक्रम", data.program_name || data["कार्यक्रम_का_नाम"] || data.name_of_program);
-    push("🎯 प्रकार", data.program_type || data["कार्यक्रम_का_प्रकार"]);
+    const programName = data.program_name || data["कार्यक्रम_का_नाम"] || data.name_of_program || data.program || data.program_title || data.programTitle || data.programName || data["कार्यक्रम"] || data["कार्यक्रम नाम"] || data.karyakram || data.karyakram_name || data.karyakramNaam;
+    push("🏛️ कार्यक्रम", programName);
+    const programType = data.program_type || data["कार्यक्रम_का_प्रकार"] || data.program_category || data.category || data.type || data.karyakram_prakar || data.karyakramType || data["प्रकार"];
+    push("🎯 प्रकार", programType);
     push("⭐ स्तर", data.level || data.program_level || data["स्तर"]);
     push("📌 स्थान", data.tour_location || data.venue || data.tour_venue || data["स्थान"]);
     push("👥 उपस्थिति", data.total_attendance || data.attendance_count || data["उपस्थिति"]);
@@ -1924,6 +1928,7 @@ body{overflow-x:hidden;}
   const SS = (() => {
     let photos = [], idx = 0, autoTimer = null, isPlaying = false, currentDetails = [];
     let metaUrlToEventMap = null;
+    let metaKeyToEventMap = null;
 
     const overlay = document.getElementById("slideshowOverlay");
     const img = document.getElementById("slideshowImg");
@@ -2003,8 +2008,13 @@ body{overflow-x:hidden;}
       // Attach details lazily from URL→event map (when opening full gallery)
       try {
         const p = photos[idx];
-        if (p && p.url && metaUrlToEventMap && !p.details) {
-          const ev = metaUrlToEventMap.get(p.url);
+        if (p && p.url && !p.details) {
+          let ev = null;
+          if (metaUrlToEventMap) ev = metaUrlToEventMap.get(p.url) || null;
+          if (!ev && metaKeyToEventMap) {
+            const k = parseS3KeyFromUrl(p.url);
+            if (k) ev = metaKeyToEventMap.get(k) || null;
+          }
           if (ev) {
             p.eventTitle = ev.title || p.eventTitle || "Event Photo";
             p.formType = ev.formType || p.formType || "";
@@ -2042,6 +2052,7 @@ body{overflow-x:hidden;}
 
     function open(title, photoList, details, eventTitle, formType, meta) {
       metaUrlToEventMap = (meta && meta.urlToEventMap) ? meta.urlToEventMap : null;
+      metaKeyToEventMap = (meta && meta.keyToEventMap) ? meta.keyToEventMap : null;
       photos = photoList || [];
       if (!photos || !photos.length) return;
 
@@ -2103,6 +2114,7 @@ body{overflow-x:hidden;}
 
     // Build a light URL → event meta map once (used for details panel on mobile/iPhone)
     const urlToEventMap = new Map();
+    const keyToEventMap = new Map();
     try {
       (window.globalTimelineData || timeline || []).forEach(item => {
         const form = item.form_type || item.ft || "";
@@ -2112,7 +2124,11 @@ body{overflow-x:hidden;}
         const det = buildEventDetails(item, form, data, displayDate, formDate);
         const ev = { title: buildEventSummary(item).title, formType: getFormTypeLabel(form), details: det };
         const evPhotos = getEventPhotos(item, globalPhotoMap);
-        evPhotos.forEach(u => { if (u && !urlToEventMap.has(u)) urlToEventMap.set(u, ev); });
+        evPhotos.forEach(u => {
+          if (u && !urlToEventMap.has(u)) urlToEventMap.set(u, ev);
+          const k = parseS3KeyFromUrl(u);
+          if (k && !keyToEventMap.has(k)) keyToEventMap.set(k, ev);
+        });
       });
     } catch(_) {}
 
@@ -2121,6 +2137,7 @@ body{overflow-x:hidden;}
     const orderedUrls = entries.map(([k,u]) => u);
     window.__orderedPhotoUrls = orderedUrls;
     window.__urlToEventMap = urlToEventMap;
+    window.__keyToEventMap = keyToEventMap;
 
     function appendPhotoPage() {
       const st = window.__photoPager;
@@ -2136,13 +2153,8 @@ body{overflow-x:hidden;}
         try { img.fetchPriority = (i < 2 ? "high" : "low"); } catch(_) {}
         setImgSrcWithRetry(img, url);
         img.className = "w-full h-full object-cover";
-
-        const playIcon = document.createElement("div");
-        playIcon.className = "play-icon";
-        playIcon.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(212,160,23,0.9);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(0,0,0,0.5)"><i class="fa-solid fa-play text-navy-950 text-xl" style="margin-left:4px;"></i></div>';
-
-        wrapper.appendChild(img); wrapper.appendChild(playIcon);
-        el.photosGrid.appendChild(wrapper);
+        wrapper.appendChild(img);
+el.photosGrid.appendChild(wrapper);
       }
       st.cursor = end;
 
@@ -2163,8 +2175,9 @@ body{overflow-x:hidden;}
 
         const urls = window.__orderedPhotoUrls || [];
         const meta = window.__urlToEventMap || new Map();
+        const metaKey = window.__keyToEventMap || new Map();
         if (urls.length > 0) {
-          SS.open("Gallery", urls, [], "", "", { urlToEventMap: meta });
+          SS.open("Gallery", urls, [], "", "", { urlToEventMap: meta, keyToEventMap: metaKey });
           setTimeout(() => { try { SS.goTo(idx, false); } catch(_) {} }, 50);
         } else {
           modal.open("Gallery", null, true);

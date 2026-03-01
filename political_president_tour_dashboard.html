@@ -440,6 +440,8 @@ async function loadData(append = false) {
     } while (pageKey && totalFetched < MAX_ITEMS);
 
     $("loadMoreWrap").classList.toggle("hidden", !lastKey);
+    // Group multi-photo entries into single event cards
+    allTours = groupTourEntries(allTours);
     applyFilters();
   } catch(e) {
     console.error("load error", e);
@@ -448,6 +450,42 @@ async function loadData(append = false) {
     loading = false;
     $("skeleton-grid").classList.add("hidden");
   }
+}
+
+// ════════════════════════════════════════
+// GROUP: Multiple photo entries → one event card
+// ════════════════════════════════════════
+function groupTourEntries(items) {
+  const groups = new Map();
+  items.forEach(item => {
+    const d = item.data || {};
+    const date = (d.tour_date || d.date || item.created_at_iso || "").substring(0, 10);
+    const pname = (d.program_name || d.karyakram_name || "").trim();
+    const ptype = (d.program_type || "").trim();
+    const district = (d.district || item.district || "").trim();
+    const level = (d.program_level || item.level || "").trim();
+    // Group key: same date + same program name/type + same district
+    const key = [date, pname || ptype, district, level].join("||");
+
+    if (!groups.has(key)) {
+      const rep = JSON.parse(JSON.stringify(item));
+      rep._photos = [];   // all presigned photo URLs
+      rep._count = 0;     // total photo count
+      groups.set(key, rep);
+    }
+    const grp = groups.get(key);
+    grp._count++;
+    // Collect photo URLs (avoid duplicates)
+    const purl = item.photo_url || "";
+    if (purl && !grp._photos.includes(purl)) grp._photos.push(purl);
+    // Use best attendance value
+    const att = parseInt((item.data || {}).total_attendance) || 0;
+    const existing = parseInt((grp.data || {}).total_attendance) || 0;
+    if (att > existing && grp.data) grp.data.total_attendance = att;
+    // Keep latest created_at for sorting
+    if ((item.created_at || 0) > (grp.created_at || 0)) grp.created_at = item.created_at;
+  });
+  return Array.from(groups.values());
 }
 
 function applyFilters() {
@@ -523,7 +561,11 @@ function renderGrid() {
 
   filteredTours.forEach((tour, i) => {
     const d = tour.data || {};
-    const photos = tour.photos || (tour.s3_key ? [tour.s3_key] : []);
+    // Use grouped _photos first, then fallback to legacy single photo
+    const photos = (tour._photos && tour._photos.length) ? tour._photos :
+                   (tour.photos && tour.photos.length) ? tour.photos :
+                   (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []));
+    const totalCount = tour._count || photos.length || 0;
     const date = d.tour_date || d.date || "";
     const level = d.program_level || "";
     const district = d.district || "";
@@ -542,8 +584,13 @@ function renderGrid() {
     card.className = "tour-card animate-in";
     card.style.animationDelay = (i * 0.04) + "s";
     card.innerHTML = `
-      <div class="relative" style="height:160px;background:#0b1530">
-        ${photos[0] ? `<img src="${photos[0]}" alt="" style="width:100%;height:100%;object-fit:cover;opacity:0.85" onerror="this.style.display='none'">` : ""}
+      <div class="relative" style="height:160px;background:#0b1530;overflow:hidden;cursor:pointer" onclick="openSlide(${i}, 0)">
+        ${photos.length > 1 ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;height:100%;gap:1px">
+            ${photos.slice(0,4).map((p,pi) => `<img src="${p}" style="width:100%;height:100%;object-fit:cover;opacity:0.9" onerror="this.style.background='#1e293b'">`).join('')}
+          </div>` :
+          photos[0] ? `<img src="${photos[0]}" alt="" style="width:100%;height:100%;object-fit:cover;opacity:0.85" onerror="this.style.display='none'">` : ""
+        }
         <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(2,6,23,.9),transparent 50%)"></div>
         <div style="position:absolute;bottom:10px;left:12px;right:12px">
           <div class="flex flex-wrap gap-1.5 mb-1.5">
@@ -552,7 +599,7 @@ function renderGrid() {
           </div>
           <div class="text-white font-bold text-sm truncate">${pname || location || "Tour"}</div>
         </div>
-        ${photos.length > 1 ? `<div style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px"><i class="fa-solid fa-images mr-1"></i>${photos.length}</div>` : ""}
+        ${totalCount > 1 ? `<div style="position:absolute;top:10px;right:10px;background:rgba(249,115,22,.9);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px"><i class="fa-solid fa-images mr-1"></i>${totalCount} Photos</div>` : ""}
       </div>
       <div class="p-4 space-y-2.5">
         <div class="flex items-center justify-between">
@@ -590,7 +637,10 @@ function renderList() {
 
   filteredTours.forEach((tour, i) => {
     const d = tour.data || {};
-    const photos = tour.photos || (tour.s3_key ? [tour.photo_url || ""] : []);
+    const photos = (tour._photos && tour._photos.length) ? tour._photos :
+                 (tour.photos && tour.photos.length) ? tour.photos :
+                 (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []));
+  const photoCount = tour._count || photos.length;
     const date = d.tour_date || d.date || "";
     const levelPill = (d.program_level || "") === "जिला" ? "pill-orange" : (d.program_level || "") === "विधानसभा" ? "pill-blue" : "pill-green";
 
@@ -688,7 +738,7 @@ function startSlideshow() {
 
 function navSlide(dir) {
   const tour = filteredTours[slideIndex];
-  const photos = tour ? (tour.photos || (tour.s3_key ? [tour.photo_url || tour.s3_key] : [])) : [];
+  const photos = tour ? ((tour._photos && tour._photos.length) ? tour._photos : (tour.photos && tour.photos.length) ? tour.photos : (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []))) : [];
   slidePhotoIndex += dir;
   if (slidePhotoIndex < 0) {
     // go to prev tour
@@ -712,11 +762,16 @@ function renderSlide() {
   const tour = filteredTours[slideIndex];
   if (!tour) return;
   const d = tour.data || {};
-  const photos = tour.photos || (tour.s3_key ? [tour.photo_url || ""] : []);
+  const photos = (tour._photos && tour._photos.length) ? tour._photos :
+                 (tour.photos && tour.photos.length) ? tour.photos :
+                 (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []));
+  const photoCount = tour._count || photos.length;
 
   $("ssCounter").textContent = `${slideIndex+1} / ${filteredTours.length}`;
   $("ssProgressBar").style.width = `${((slideIndex+1)/filteredTours.length)*100}%`;
   $("ssTitle").textContent = d.program_name || d.tour_location || "Tour";
+  const countBadge = document.getElementById("ssPhotoCount");
+  if (countBadge) countBadge.textContent = photoCount > 1 ? `📸 ${photoCount} Photos · ${slidePhotoIndex+1}/${photos.length}` : "";
 
   const img = $("ssImg");
   const noPhoto = $("ssNoPhoto");

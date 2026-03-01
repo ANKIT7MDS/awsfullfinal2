@@ -109,9 +109,10 @@ function _elApplyBranding(cfg, formType){
     var sub=ft.subtitle||db.subtitle||def.subtitle||'';
     var tag=ft.tagline||db.tagline||def.tagline||gl.tagline||'';
     var foot=ft.footer_text||db.footer_text||def.footer_text||gl.tagline||'';
-    var logoUrl=fb.logo_url||(fb.logo&&fb.logo.url)||ft.logo_url||(db.logo&&db.logo.url)||def.logo_url||'';
-    var hdrUrl=fb.header_url||(fb.header&&fb.header.url)||ft.header_url||(db.header&&db.header.url)||def.header_url||'';
-    var bgUrl=fb.background_url||(fb.background&&fb.background.url)||ft.background_url||(db.background&&db.background.url)||def.background_url||'';
+    // Lambda stores presigned URLs at ft.logo_url, ft.header_url, ft.background_url level
+    var logoUrl=ft.logo_url||fb.logo_url||(fb.logo&&fb.logo.url)||(db.logo&&db.logo.url)||def.logo_url||'';
+    var hdrUrl=ft.header_url||fb.header_url||(fb.header&&fb.header.url)||(db.header&&db.header.url)||def.header_url||'';
+    var bgUrl=ft.background_url||fb.background_url||(fb.background&&fb.background.url)||(db.background&&db.background.url)||def.background_url||'';
     var bgOpa=((fb.bg_opacity!=null?fb.bg_opacity:db.bg_opacity!=null?db.bg_opacity:def.bg_opacity!=null?def.bg_opacity:35))/100;
     var c1=fb.color1||db.color1||def.color1||'';
     var c2=fb.color2||db.color2||def.color2||'';
@@ -532,9 +533,10 @@ function applyBrandingFromConfig(cfg, ft, fallTitle, fallSub, fallTag, iconId){
   const title    = brand.title    || formNode.title    || fallTitle  || "जिला अध्यक्ष जी का प्रवास";
   const subtitle = brand.subtitle || formNode.subtitle || fallSub    || "कार्यक्रम पंजीयन";
   const tagline  = brand.tagline  || formNode.tagline  || fallTag    || "";
-  const logoUrl  = brand.logo_url ||(brand.logo&&brand.logo.url)    || "";
-  const headerImg= brand.header_url||brand.header_image_url||(brand.header&&brand.header.url)||"";
-  const bgImg    = brand.background_url||brand.background_image_url||(brand.background&&brand.background.url)||"";
+  // Lambda returns logo_url/header_url/background_url at formNode level AND inside branding object
+  const logoUrl  = formNode.logo_url || brand.logo_url || (brand.logo&&brand.logo.url) || (formNode.branding&&formNode.branding.logo_url) || "";
+  const headerImg= formNode.header_url || brand.header_url || brand.header_image_url || (brand.header&&brand.header.url) || (formNode.branding&&formNode.branding.header_url) || "";
+  const bgImg    = formNode.background_url || brand.background_url || brand.background_image_url || (brand.background&&brand.background.url) || (formNode.branding&&formNode.branding.background_url) || "";
   const footerTxt= brand.footer_text||"";
 
   if($("org-name"))    $("org-name").textContent    = title;

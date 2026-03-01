@@ -91,13 +91,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand);}
 .ft-mandal{background:rgba(249,115,22,.15);color:var(--brand);}
 .ft-coordinator{background:rgba(168,85,247,.15);color:#c084fc;}
 .ft-program{background:rgba(14,165,233,.15);color:#38bdf8;}
-
-@media print {
-  nav, .tab-nav, .btn, button, #entryModal { display: none !important; }
-  .section-card { border: 1px solid #ccc !important; box-shadow: none !important; }
-  body { background: white !important; color: black !important; }
-  .data-table td, .data-table th { color: black !important; border-color: #ccc !important; }
-}
 </style>
 </head>
 <body>
@@ -543,8 +536,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand);}
             <input type="date" id="dataStartDate" class="text-xs" style="padding:5px 8px;width:130px;"/>
             <input type="date" id="dataEndDate" class="text-xs" style="padding:5px 8px;width:130px;"/>
             <button class="btn btn-primary btn-sm" onclick="loadData(true)"><i class="fa-solid fa-search"></i> Load</button>
-            <button class="btn btn-secondary btn-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
-          <button class="btn btn-secondary btn-sm" onclick="exportDataCSV()"><i class="fa-solid fa-download"></i> CSV</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportDataCSV()"><i class="fa-solid fa-download"></i> CSV</button>
           </div>
         </div>
         <!-- Search -->
@@ -1486,11 +1478,85 @@ function filterDataTable() {
   renderDataTable();
 }
 
+// ════════════════════════════════════════
+// GROUP: Multiple photo entries → one row per event
+// For president_tour and mandal_reporting forms
+// ════════════════════════════════════════
+function groupDataItems(items) {
+  const GROUPABLE = ['president_tour', 'mandal_reporting'];
+  const grouped = new Map();
+  const others = [];
+  
+  items.forEach(item => {
+    const ft = (item.form_type || '').toLowerCase();
+    const isGroupable = GROUPABLE.some(g => ft.includes(g));
+    
+    if (!isGroupable) { others.push(item); return; }
+    
+    const p = item.data || {};
+    const date = (item.created_at_iso || '').substring(0, 10);
+    const pname = (p.program_name || p.karyakram_name || '').trim();
+    const district = (item.district || p.district || '').trim();
+    const key = `${ft}|${date}|${pname}|${district}`;
+    
+    if (!grouped.has(key)) {
+      const rep = JSON.parse(JSON.stringify(item));
+      rep._allPhotos = [];
+      rep._count = 0;
+      grouped.set(key, rep);
+    }
+    const grp = grouped.get(key);
+    grp._count++;
+    if (item.photo_url && !grp._allPhotos.includes(item.photo_url)) {
+      grp._allPhotos.push(item.photo_url);
+    }
+    if (!grp.photo_url && item.photo_url) grp.photo_url = item.photo_url;
+    if (!grp.thumb_url && item.thumb_url) grp.thumb_url = item.thumb_url;
+    // Keep highest attendance
+    const att = parseInt((item.data || {}).total_attendance) || 0;
+    const cur = parseInt((grp.data || {}).total_attendance) || 0;
+    if (att > cur && grp.data) grp.data.total_attendance = att;
+  });
+  
+  return [...others, ...Array.from(grouped.values())];
+}
+
+// Slideshow state for admin
+let _adminSlidePhotos = [], _adminSlideCurrent = 0;
+
+function openAdminPhotoSlide(photos, startIdx) {
+  _adminSlidePhotos = photos || [];
+  _adminSlideCurrent = startIdx || 0;
+  _renderAdminSlide();
+  document.getElementById('adminPhotoSlideModal').classList.remove('hidden');
+}
+
+function _renderAdminSlide() {
+  const photos = _adminSlidePhotos;
+  const idx = _adminSlideCurrent;
+  const img = document.getElementById('adminSlideshowImg');
+  const cnt = document.getElementById('adminSlideshowCount');
+  if (img) { img.src = photos[idx] || ''; img.style.display = photos[idx] ? 'block' : 'none'; }
+  if (cnt) cnt.textContent = photos.length > 1 ? `${idx+1} / ${photos.length}` : '';
+}
+
+function adminSlideNav(dir) {
+  const len = _adminSlidePhotos.length;
+  if (!len) return;
+  _adminSlideCurrent = (_adminSlideCurrent + dir + len) % len;
+  _renderAdminSlide();
+}
+
 function renderDataTable() {
   const tbody = $i('dataTableBody');
   $i('dataCountLabel').textContent = `${state.dataFiltered.length} records`;
-  if(!state.dataFiltered.length){ tbody.innerHTML='<tr><td colspan="8" class="text-center text-slate-500 py-6">कोई records नहीं</td></tr>'; return; }
-  tbody.innerHTML = state.dataFiltered.map((item,idx) => {
+  // Apply event grouping for photo-heavy forms
+  const displayItems = groupDataItems(state.dataFiltered);
+  const groupedCount = state.dataFiltered.length - displayItems.length;
+  $i('dataCountLabel').textContent = `${displayItems.length} records${groupedCount > 0 ? ' (grouped)' : ''}`;
+  
+  if(!displayItems.length){ tbody.innerHTML='<tr><td colspan="8" class="text-center text-slate-500 py-6">कोई records नहीं</td></tr>'; return; }
+  tbody.innerHTML = displayItems.map((item,idx) => {
     const p = item.data || {};
     const name = item.name||p.name||p['नाम']||'-';
     const mobile = item.mobile||p.mobile||p['मोबाइल']||'-';
@@ -1499,11 +1565,24 @@ function renderDataTable() {
     const ft = item.form_type||'-';
     const date = item.created_at_iso ? new Date(item.created_at_iso).toLocaleDateString('hi-IN') : '-';
     const ftClass = getFtClass(ft);
-    const thumb = item.thumb_url || item.photo_url || '';
+    const allPhotos = (item._allPhotos && item._allPhotos.length) ? item._allPhotos : (item.photo_url ? [item.photo_url] : []);
+    const thumb = allPhotos[0] || item.thumb_url || '';
+    const photoCount = item._count || allPhotos.length || 0;
+    const photosJson = JSON.stringify(allPhotos).replace(/"/g, '&quot;');
     return `
       <tr>
         <td>
-          ${thumb ? `<img src="${thumb}" class="w-10 h-10 object-cover rounded-lg cursor-pointer" onclick="openEntryModal(${idx})" onerror="this.style.display='none'"/>` : '<div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-600"><i class="fa-solid fa-image"></i></div>'}
+          ${thumb ? `
+            <div style="position:relative;display:inline-block;cursor:pointer" onclick='openAdminPhotoSlide(${photosJson}, 0)'>
+              ${allPhotos.length > 1 ? `
+                <div style="width:44px;height:44px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;border-radius:8px;overflow:hidden">
+                  ${allPhotos.slice(0,4).map((p,pi) => `<img src="${p}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.background='#1e293b'">`).join('')}
+                </div>` :
+                `<img src="${thumb}" class="w-11 h-11 object-cover rounded-lg" onerror="this.style.display='none'"/>`
+              }
+              ${photoCount > 1 ? `<span style="position:absolute;top:-4px;right:-4px;background:#f97316;color:white;font-size:9px;font-weight:700;border-radius:99px;padding:1px 4px;line-height:14px">${photoCount}</span>` : ''}
+            </div>
+          ` : '<div class="w-11 h-11 rounded-lg bg-slate-800 flex items-center justify-center text-slate-600"><i class="fa-solid fa-image"></i></div>'}
         </td>
         <td class="font-medium">${escHtml(name)}</td>
         <td class="text-slate-400 font-mono text-xs">${escHtml(mobile)}</td>
@@ -1512,10 +1591,12 @@ function renderDataTable() {
         <td class="text-slate-400 text-xs">${escHtml(district)}</td>
         <td class="text-slate-500 text-xs">${date}</td>
         <td>
-          <button class="btn btn-secondary btn-sm" onclick="openEntryModal(${idx})"><i class="fa-solid fa-eye"></i></button>
+          <button class="btn btn-secondary btn-sm" onclick="openEntryModalGrouped(${idx}, displayItems)"><i class="fa-solid fa-eye"></i></button>
         </td>
       </tr>`;
   }).join('');
+  // Store for modal use
+  window._adminDisplayItems = displayItems;
 }
 
 function renderDataStats() {
@@ -1540,13 +1621,39 @@ function getFtClass(ft) {
   return 'ft-visitor';
 }
 
+function openEntryModalGrouped(idx, displayItems) {
+  const src = displayItems || window._adminDisplayItems || state.dataFiltered;
+  const item = src[idx];
+  openEntryModal_item(item);
+}
+
 function openEntryModal(idx) {
-  const item = state.dataFiltered[idx];
+  openEntryModal_item(state.dataFiltered[idx]);
+}
+
+function openEntryModal_item(item) {
   if(!item) return;
   const p = item.data || {};
+  const allPhotos = (item._allPhotos && item._allPhotos.length) ? item._allPhotos : (item.photo_url ? [item.photo_url] : []);
+  const photoCount = item._count || allPhotos.length || 0;
+  
+  // Build photo section
+  let photoSection = '';
+  if (allPhotos.length > 1) {
+    const thumbsHtml = allPhotos.map((ph, pi) => `<img src="${ph}" onclick="_setAdminMainPhoto('${ph}')" style="width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid ${pi===0?'#f97316':'transparent'}" onerror="this.style.display='none'">`).join('');
+    photoSection = `
+      <div style="position:relative;margin-bottom:8px">
+        <img id="_adminMainImg" src="${allPhotos[0]}" class="w-full max-h-52 object-cover rounded-xl" onerror="this.style.display='none'"/>
+        <div style="position:absolute;top:8px;right:8px;background:rgba(249,115,22,.9);color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px">📸 ${photoCount} Photos</div>
+      </div>
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px">${thumbsHtml}</div>`;
+  } else if (allPhotos.length === 1) {
+    photoSection = `<img src="${allPhotos[0]}" class="w-full max-h-48 object-cover rounded-xl" style="margin-bottom:8px" onerror="this.style.display='none'"/>`;
+  }
+  
   $i('entryModalContent').innerHTML = `
     <div class="space-y-3">
-      ${item.photo_url ? `<img src="${item.photo_url}" class="w-full max-h-48 object-cover rounded-xl"/>` : ''}
+      ${photoSection}
       <div class="grid grid-cols-2 gap-3 text-sm">
         ${Object.entries({ 'Form Type':item.form_type, 'Name':item.name||p.name, 'Mobile':item.mobile||p.mobile, 'District':item.district||p.district, 'Date':item.created_at_iso, ...p }).map(([k,v]) => v ? `<div><div class="text-[10px] text-slate-500 uppercase">${k}</div><div class="text-white font-medium">${escHtml(String(v))}</div></div>` : '').join('')}
       </div>

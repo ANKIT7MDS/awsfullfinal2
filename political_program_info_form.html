@@ -245,9 +245,10 @@ function _elApplyBranding(cfg, formType){
     var sub=ft.subtitle||db.subtitle||def.subtitle||'';
     var tag=ft.tagline||db.tagline||def.tagline||gl.tagline||'';
     var foot=ft.footer_text||db.footer_text||def.footer_text||gl.tagline||'';
-    var logoUrl=fb.logo_url||(fb.logo&&fb.logo.url)||ft.logo_url||(db.logo&&db.logo.url)||def.logo_url||'';
-    var hdrUrl=fb.header_url||(fb.header&&fb.header.url)||ft.header_url||(db.header&&db.header.url)||def.header_url||'';
-    var bgUrl=fb.background_url||(fb.background&&fb.background.url)||ft.background_url||(db.background&&db.background.url)||def.background_url||'';
+    // Lambda stores presigned URLs at ft.logo_url, ft.header_url, ft.background_url level
+    var logoUrl=ft.logo_url||fb.logo_url||(fb.logo&&fb.logo.url)||(db.logo&&db.logo.url)||def.logo_url||'';
+    var hdrUrl=ft.header_url||fb.header_url||(fb.header&&fb.header.url)||(db.header&&db.header.url)||def.header_url||'';
+    var bgUrl=ft.background_url||fb.background_url||(fb.background&&fb.background.url)||(db.background&&db.background.url)||def.background_url||'';
     var bgOpa=((fb.bg_opacity!=null?fb.bg_opacity:db.bg_opacity!=null?db.bg_opacity:def.bg_opacity!=null?def.bg_opacity:35))/100;
     var c1=fb.color1||db.color1||def.color1||'';
     var c2=fb.color2||db.color2||def.color2||'';
@@ -486,7 +487,9 @@ function setThemeVars(c1, c2) {
 }
 function setBackgroundImage(url) {
   if (!url) return;
-  document.documentElement.style.setProperty("--bgimg", "url('" + url + "')");
+  const safe = url.replace(/'/g, "%27");
+  document.documentElement.style.setProperty("--bgimg", "url('" + safe + "')");
+  document.body.classList.add("has-brand-bg");
 }
 
 function showStatus(msg, isError) {
@@ -582,9 +585,11 @@ function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle,
   const footerText = perForm.footer_text || brand.footer_text || "";
 
   // URLs: try common keys (lambda uses *_url; older uses *_image_url)
-  const logoUrl = brand.logo_url || (brand.logo && brand.logo.url) || "";
-  const headerUrl = brand.header_url || brand.header_image_url || (brand.header && brand.header.url) || "";
-  const bgUrl = brand.background_url || brand.background_image_url || (brand.background && brand.background.url) || "";
+  const logoUrl = formNode.logo_url || brand.logo_url || (brand.logo && brand.logo.url) || "";
+  const headerUrl = formNode.header_url || brand.header_url || brand.header_image_url || (brand.header && brand.header.url) || "";
+  const bgUrl = formNode.background_url || brand.background_url || brand.background_image_url || (brand.background && brand.background.url) || "";
+  // Also use headerUrl as headerImg alias for compatibility
+  const headerImg = headerUrl;
 
   if ($("org-name")) $("org-name").textContent = title;
   if ($("org-subtitle")) $("org-subtitle").textContent = subtitle;
@@ -610,20 +615,39 @@ function applyBrandingFromConfig(cfg, formType, fallbackTitle, fallbackSubtitle,
   }
 
   // Header image: support both <img> and div background
-  if (headerUrl && $("header-image")) {
+  const _applyHeaderImg = (url) => {
+    if (!url) return;
+    // Try header-image (div)
     const h = $("header-image");
-    const img = new Image();
-    img.onload = function() {
-      if (h.tagName && h.tagName.toLowerCase() === "img") {
-        h.src = headerUrl;
-      } else {
-        h.style.backgroundImage = "url('" + headerUrl + "')";
-      }
-      h.classList.remove("hidden");
-    };
-    img.onerror = function() {};
-    img.src = headerUrl;
-  }
+    if (h) {
+      const img = new Image();
+      img.onload = function() {
+        if (h.tagName && h.tagName.toLowerCase() === "img") {
+          h.src = url;
+        } else {
+          h.style.backgroundImage = "url('" + url + "')";
+          h.style.backgroundSize = "cover";
+          h.style.backgroundPosition = "center";
+        }
+        h.classList.remove("hidden");
+        h.style.display = "block";
+      };
+      img.onerror = function() { h.style.display = "none"; };
+      img.src = url;
+    }
+    // Also try brand-header-img (img tag, like visitor form)
+    const bhi = $("brand-header-img");
+    if (bhi) {
+      bhi.onerror = function() { this.style.display = "none"; };
+      bhi.onload = function() {
+        if (this.src && this.src !== window.location.href) {
+          this.style.cssText = "display:block!important;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;";
+        }
+      };
+      bhi.src = url;
+    }
+  };
+  if (headerUrl) _applyHeaderImg(headerUrl);
 }
 
 function fillProgramNames(cfg, selectId) {

@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>EventLens — Your Photos. One Selfie Away.</title>
+<meta name="description" content="India's smartest event photo platform. AI face recognition delivers every guest's photos in seconds. Built for photographers, loved by guests."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Manrope:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#08080c;
+  --surface:#111116;
+  --card:#16161d;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.12);
+  --green:#1afa7e;
+  --green2:#0dcc60;
+  --saffron:#ff7120;
+  --gold:#f0b429;
+  --white:#f0f0f4;
+  --muted:#6c6c7e;
+  --text:#b8b8cc;
+  --r:14px;
+}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--ink);color:var(--text);
+  font-family:'Manrope',sans-serif;font-size:16px;
+  line-height:1.6;overflow-x:hidden;
+}
+
+/* grain */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:0.5;mix-blend-mode:overlay;
+}
+
+/* ═══ NAV ═══ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 48px;height:68px;
+  background:rgba(8,8,12,0.8);
+  backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid var(--border);
+  transition:all 0.3s;
+}
+.logo{
+  font-family:'Playfair Display',serif;
+  font-size:20px;font-weight:900;
+  color:var(--white);letter-spacing:-0.3px;
+  display:flex;align-items:center;gap:10px;
+  text-decoration:none;
+}
+.logo-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 12px var(--green);
+  animation:pulse 2.5s ease infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.6}}
+.nav-links{display:flex;gap:36px;align-items:center;}
+.nav-links a{
+  font-size:13.5px;font-weight:500;color:var(--muted);
+  text-decoration:none;letter-spacing:0.2px;
+  transition:color 0.2s;
+}
+.nav-links a:hover{color:var(--white);}
+.nav-cta{
+  background:var(--green);color:#000;
+  padding:9px 22px;border-radius:50px;
+  font-weight:700;font-size:13px;letter-spacing:0.3px;
+  text-decoration:none;transition:all 0.25s;
+}
+.nav-cta:hover{background:var(--green2);box-shadow:0 0 24px rgba(26,250,126,0.3);transform:translateY(-1px);}
+.mob-menu{display:none;background:none;border:none;color:var(--white);font-size:20px;cursor:pointer;padding:4px;}
+
+/* ═══ HERO ═══ */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:110px 24px 60px;
+  position:relative;overflow:hidden;
+}
+.hero-mesh{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 20%,rgba(26,250,126,0.06) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 70%,rgba(255,113,32,0.04) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 100%,rgba(240,180,41,0.03) 0%,transparent 50%);
+}
+.hero-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.2);
+  color:var(--green);padding:6px 16px;border-radius:50px;
+  font-size:11.5px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;margin-bottom:32px;
+  animation:fadeUp 0.7s ease both;
+}
+.hero-chip i{font-size:8px;animation:pulse 1.5s infinite;}
+.hero-h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(44px,7.5vw,96px);
+  font-weight:900;line-height:0.95;
+  color:var(--white);
+  letter-spacing:-3px;
+  margin-bottom:28px;
+  animation:fadeUp 0.7s ease 0.1s both;
+}
+.hero-h1 em{font-style:normal;color:var(--green);position:relative;}
+.hero-h1 em::after{
+  content:'';position:absolute;left:0;right:0;bottom:-4px;
+  height:3px;background:var(--green);border-radius:2px;
+  opacity:0.5;
+}
+.hero-p{
+  max-width:560px;font-size:17px;color:var(--muted);
+  line-height:1.75;margin:0 auto 48px;font-weight:400;
+  animation:fadeUp 0.7s ease 0.2s both;
+}
+.hero-btns{
+  display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+  animation:fadeUp 0.7s ease 0.3s both;
+}
+.btn-g{
+  background:var(--green);color:#000;
+  padding:14px 32px;border-radius:50px;
+  font-weight:700;font-size:14.5px;
+  text-decoration:none;transition:all 0.25s;
+  display:inline-flex;align-items:center;gap:10px;
+  letter-spacing:0.2px;
+}
+.btn-g:hover{background:var(--green2);transform:translateY(-2px);box-shadow:0 16px 40px rgba(26,250,126,0.2);}
+.btn-outline{
+  background:transparent;color:var(--white);
+  padding:14px 32px;border-radius:50px;
+  font-weight:600;font-size:14.5px;border:1px solid var(--border2);
+  text-decoration:none;transition:all 0.25s;
+  display:inline-flex;align-items:center;gap:10px;
+}
+.btn-outline:hover{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.04);}
+
+/* ═══ HERO VISUAL - 3 Phone Screens ═══ */
+.hero-screens{
+  margin-top:72px;display:flex;gap:16px;justify-content:center;
+  align-items:flex-end;
+  animation:fadeUp 0.9s ease 0.4s both;
+}
+.screen{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:24px;overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,0.8);
+  position:relative;
+}
+.screen.center{width:220px;height:400px;z-index:2;margin-bottom:0;}
+.screen.side{width:170px;height:320px;opacity:0.7;margin-bottom:-20px;}
+.screen-bar{height:3px;background:linear-gradient(90deg,var(--green),#00c8ff,var(--green));background-size:200%;animation:slide 3s linear infinite;}
+@keyframes slide{0%{background-position:200%}100%{background-position:-200%}}
+.screen-content{padding:16px;height:calc(100% - 3px);}
+.sc-header{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:14px;padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+.sc-logo{font-family:'Playfair Display',serif;font-size:12px;font-weight:900;color:var(--white);}
+.sc-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.ph{border-radius:8px;aspect-ratio:1;position:relative;overflow:hidden;}
+.ph-1{background:linear-gradient(135deg,#1a2f24,#0d1f15);}
+.ph-2{background:linear-gradient(135deg,#1a2030,#0d1422);}
+.ph-3{background:linear-gradient(135deg,#2a1f0e,#1a1208);}
+.ph-4{background:linear-gradient(135deg,#1f1a2f,#100d1f);}
+.ph-match{
+  position:absolute;inset:0;border:2px solid var(--green);border-radius:8px;
+  display:flex;align-items:flex-end;padding:4px;
+}
+.ph-badge{
+  background:rgba(0,0,0,0.8);color:var(--green);
+  font-size:8px;font-weight:800;padding:2px 5px;border-radius:4px;width:100%;text-align:center;
+}
+.sc-search{
+  background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.2);
+  border-radius:8px;padding:6px 10px;
+  display:flex;align-items:center;gap:6px;margin-bottom:12px;
+}
+.sc-search-txt{font-size:9px;color:var(--green);font-weight:600;}
+.sc-label{font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;}
+.sc-stat-row{display:flex;gap:6px;margin-bottom:8px;}
+.sc-stat{flex:1;background:var(--card);border-radius:6px;padding:6px;text-align:center;}
+.sc-stat-n{font-size:13px;font-weight:800;color:var(--white);}
+.sc-stat-l{font-size:7px;color:var(--muted);font-weight:600;}
+.sc-event{background:var(--card);border-radius:6px;padding:8px;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+.sc-ev-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.sc-ev-name{font-size:8px;color:var(--white);font-weight:600;}
+.sc-ev-count{font-size:7px;color:var(--muted);margin-left:auto;}
+
+/* ═══ MARQUEE ═══ */
+.marquee-wrap{
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:16px 0;overflow:hidden;position:relative;
+}
+.marquee-wrap::before,.marquee-wrap::after{
+  content:'';position:absolute;top:0;bottom:0;width:120px;z-index:2;
+}
+.marquee-wrap::before{left:0;background:linear-gradient(90deg,var(--ink),transparent);}
+.marquee-wrap::after{right:0;background:linear-gradient(-90deg,var(--ink),transparent);}
+.marquee-track{display:flex;gap:0;animation:marquee 28s linear infinite;width:max-content;}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.marquee-item{
+  display:flex;align-items:center;gap:10px;
+  padding:0 32px;font-size:13px;font-weight:500;color:var(--muted);
+  white-space:nowrap;border-right:1px solid var(--border);
+}
+.marquee-item i{color:var(--green);font-size:11px;}
+
+/* ═══ SECTION BASE ═══ */
+.section{padding:96px 24px;}
+.wrap{max-width:1120px;margin:0 auto;}
+.tag{
+  font-size:11px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--green);
+  display:flex;align-items:center;gap:10px;margin-bottom:18px;
+}
+.tag::before{content:'';width:28px;height:1.5px;background:var(--green);}
+.h2{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(30px,4vw,52px);
+  font-weight:900;color:var(--white);
+  letter-spacing:-1.5px;line-height:1.05;margin-bottom:18px;
+}
+.lead{font-size:16.5px;color:var(--muted);max-width:520px;line-height:1.75;}
+
+/* reveal */
+.r{opacity:0;transform:translateY(28px);transition:all 0.65s cubic-bezier(0.16,1,0.3,1);}
+.r.in{opacity:1;transform:none;}
+.r.d1{transition-delay:0.1s}.r.d2{transition-delay:0.2s}.r.d3{transition-delay:0.3s}.r.d4{transition-delay:0.4s}
+
+/* ═══ HOW IT WORKS ═══ */
+.steps-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;margin-top:64px;
+  background:var(--border);border-radius:20px;overflow:hidden;
+}
+.step{
+  background:var(--surface);padding:40px 28px;
+  position:relative;transition:background 0.3s;
+}
+.step:hover{background:var(--card);}
+.step-n{
+  font-family:'Playfair Display',serif;
+  font-size:52px;font-weight:900;
+  color:rgba(26,250,126,0.08);line-height:1;
+  position:absolute;top:20px;right:20px;
+}
+.step-ico{
+  width:52px;height:52px;border-radius:14px;
+  background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.15);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--green);font-size:22px;margin-bottom:24px;
+}
+.step h3{
+  font-family:'Playfair Display',serif;
+  font-size:18px;font-weight:700;color:var(--white);
+  margin-bottom:10px;
+}
+.step p{font-size:13.5px;color:var(--muted);line-height:1.7;}
+
+/* ═══ VS COMPETITORS ═══ */
+.vs-table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  margin-top:56px;border-radius:18px;overflow:hidden;
+  border:1px solid var(--border);
+}
+.vs-table th{
+  padding:16px 20px;font-size:12px;font-weight:700;
+  letter-spacing:0.5px;text-align:center;
+  background:var(--card);
+}
+.vs-table th:first-child{text-align:left;width:30%;}
+.vs-table th.hl{background:rgba(26,250,126,0.08);color:var(--green);}
+.vs-table td{
+  padding:14px 20px;font-size:13.5px;border-top:1px solid var(--border);
+  text-align:center;color:var(--muted);
+}
+.vs-table td:first-child{text-align:left;color:var(--text);font-weight:500;}
+.vs-table td.hl{background:rgba(26,250,126,0.04);}
+.chk{color:var(--green);font-weight:700;}
+.cross{color:#444;}
+.part{color:var(--gold);}
+
+/* ═══ FEATURES GRID ═══ */
+.features{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;margin-top:56px;
+  background:var(--border);border-radius:20px;overflow:hidden;
+}
+.feat{background:var(--surface);padding:32px 28px;transition:background 0.3s;}
+.feat:hover{background:var(--card);}
+.feat-ico{font-size:28px;margin-bottom:16px;}
+.feat h4{
+  font-family:'Playfair Display',serif;
+  font-size:17px;font-weight:700;color:var(--white);margin-bottom:8px;
+}
+.feat p{font-size:13.5px;color:var(--muted);line-height:1.7;}
+.feat-new{
+  display:inline-block;
+  background:rgba(26,250,126,0.1);color:var(--green);
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;
+  margin-bottom:10px;letter-spacing:0.5px;
+}
+.feat-soon{
+  display:inline-block;
+  background:rgba(240,180,41,0.1);color:var(--gold);
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;
+  margin-bottom:10px;letter-spacing:0.5px;
+}
+
+/* ═══ POLITICAL SECTION ═══ */
+.pol-section{
+  background:var(--surface);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:96px 24px;
+}
+.pol-inner{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1.1fr;gap:80px;align-items:center;}
+.pol-forms{display:flex;flex-direction:column;gap:10px;margin-top:40px;}
+.pol-form-row{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:16px 20px;
+  display:flex;align-items:center;gap:14px;
+  transition:all 0.25s;cursor:default;
+}
+.pol-form-row:hover{border-color:rgba(255,113,32,0.3);transform:translateX(4px);}
+.pol-form-ico{
+  width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.pol-form-title{font-size:14px;font-weight:600;color:var(--white);}
+.pol-form-sub{font-size:12px;color:var(--muted);margin-top:2px;font-family:'Noto Sans Devanagari',sans-serif;}
+.pol-form-count{
+  margin-left:auto;font-size:11px;font-weight:700;
+  background:rgba(255,113,32,0.1);color:var(--saffron);
+  padding:3px 10px;border-radius:50px;white-space:nowrap;
+}
+.pol-dashboard{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.pol-dash-top{
+  border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.pol-dash-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--white);}
+.pol-live-dot{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(26,250,126,0.1);padding:5px 12px;border-radius:50px;
+}
+.pol-live-d{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.5s infinite;}
+.pol-live-t{font-size:11px;font-weight:700;color:var(--green);}
+.pol-stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+.pol-stat{background:var(--surface);border-radius:10px;padding:12px;text-align:center;}
+.pol-stat-n{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--white);}
+.pol-stat-n span{color:var(--saffron);}
+.pol-stat-l{font-size:10px;color:var(--muted);margin-top:2px;font-family:'Noto Sans Devanagari',sans-serif;}
+.pol-bar-row{margin-bottom:8px;}
+.pol-bar-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;}
+.pol-bar-track{background:rgba(255,255,255,0.05);border-radius:99px;height:6px;overflow:hidden;}
+.pol-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--saffron),var(--gold));}
+
+/* ═══ PRICING ═══ */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px;}
+.price-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:36px 28px;position:relative;
+  transition:all 0.3s;
+}
+.price-card:hover{transform:translateY(-4px);}
+.price-card.pop{
+  background:linear-gradient(160deg,#0c160f,#091210);
+  border-color:rgba(26,250,126,0.25);
+  box-shadow:0 0 40px rgba(26,250,126,0.06);
+}
+.pop-badge{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:var(--green);color:#000;
+  font-size:11px;font-weight:800;letter-spacing:0.8px;
+  padding:4px 16px;border-radius:50px;white-space:nowrap;
+  text-transform:uppercase;
+}
+.price-tier{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;}
+.price-amt{
+  font-family:'Playfair Display',serif;
+  font-size:48px;font-weight:900;color:var(--white);line-height:1;
+}
+.price-amt sup{font-size:22px;vertical-align:top;margin-top:10px;display:inline-block;}
+.price-per{font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:28px;}
+.price-feats{list-style:none;margin-bottom:32px;}
+.price-feats li{
+  padding:9px 0;border-bottom:1px solid var(--border);
+  font-size:13.5px;color:var(--text);
+  display:flex;align-items:center;gap:10px;
+}
+.price-feats li:last-child{border:none;}
+.price-feats li i{font-size:11px;width:14px;flex-shrink:0;}
+.price-feats li.off{color:var(--muted);}
+.price-feats li.off i{color:rgba(255,255,255,0.12);}
+.price-btn{
+  display:block;text-align:center;padding:13px;border-radius:12px;
+  font-weight:700;font-size:14px;text-decoration:none;transition:all 0.2s;
+}
+.pbg{background:var(--green);color:#000;}
+.pbg:hover{background:var(--green2);}
+.pbo{background:transparent;color:var(--white);border:1px solid var(--border2);}
+.pbo:hover{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.04);}
+
+/* ═══ TESTIMONIALS ═══ */
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px;}
+.testi{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:28px;transition:all 0.3s;
+}
+.testi:hover{border-color:var(--border2);}
+.stars{color:var(--gold);font-size:12px;margin-bottom:14px;letter-spacing:2px;}
+.testi-q{font-size:14px;color:var(--text);line-height:1.75;margin-bottom:20px;}
+.testi-q::before{content:'\201C';font-size:28px;color:var(--green);line-height:0;vertical-align:-10px;margin-right:3px;}
+.testi-au{display:flex;align-items:center;gap:12px;}
+.testi-av{
+  width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:15px;font-weight:700;
+}
+.testi-n{font-size:13.5px;font-weight:600;color:var(--white);}
+.testi-r{font-size:12px;color:var(--muted);}
+
+/* ═══ CTA FINAL ═══ */
+.cta-final{
+  padding:120px 24px;text-align:center;position:relative;overflow:hidden;
+}
+.cta-final::before{
+  content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:700px;height:700px;
+  background:radial-gradient(circle,rgba(26,250,126,0.05) 0%,transparent 70%);
+  pointer-events:none;
+}
+.cta-h{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(38px,6vw,70px);font-weight:900;
+  color:var(--white);letter-spacing:-2px;line-height:1;
+  margin-bottom:20px;
+}
+
+/* ═══ CONTACT ═══ */
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start;}
+.contact-form{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:36px;
+}
+.form-row{margin-bottom:16px;}
+.form-label{font-size:12.5px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;letter-spacing:0.3px;}
+.form-input{
+  width:100%;background:var(--surface);
+  border:1px solid var(--border);color:var(--white);
+  padding:12px 16px;border-radius:10px;
+  font-size:14px;font-family:'Manrope',sans-serif;
+  outline:none;transition:border-color 0.2s;
+  -webkit-appearance:none;
+}
+.form-input:focus{border-color:var(--green);}
+.form-input::placeholder{color:var(--muted);}
+
+/* ═══ FOOTER ═══ */
+footer{
+  border-top:1px solid var(--border);
+  padding:40px 48px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:20px;
+}
+.footer-links{display:flex;gap:28px;flex-wrap:wrap;}
+.footer-links a{font-size:13px;color:var(--muted);text-decoration:none;transition:color 0.2s;}
+.footer-links a:hover{color:var(--white);}
+.footer-copy{font-size:12px;color:var(--muted);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══ MOBILE ═══ */
+@media(max-width:900px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .mob-menu{display:block;}
+  .hero-screens .screen.side{display:none;}
+  .steps-grid{grid-template-columns:1fr 1fr;}
+  .features{grid-template-columns:1fr 1fr;}
+  .pol-inner{grid-template-columns:1fr;}
+  .pricing-grid{grid-template-columns:1fr;}
+  .testi-grid{grid-template-columns:1fr;}
+  .contact-grid{grid-template-columns:1fr;}
+  .vs-table{font-size:12px;}
+  footer{padding:32px 20px;}
+}
+@media(max-width:600px){
+  .hero-screens{flex-direction:column;align-items:center;}
+  .screen.center{width:240px;height:380px;}
+  .steps-grid,.features{grid-template-columns:1fr;}
+  .vs-table td,.vs-table th{padding:10px 12px;font-size:11px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="logo"><div class="logo-dot"></div>EventLens</a>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#political">Political</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <a href="index.html" class="nav-cta">Photographer Login →</a>
+  <button class="mob-menu" onclick="document.querySelector('.nav-links').style.display='flex';this.style.display='none'"><i class="fa-solid fa-bars"></i></button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-mesh"></div>
+  <div class="hero-chip"><i class="fa-solid fa-circle"></i> AI Face Recognition · Made in India</div>
+  <h1 class="hero-h1">Your Photos.<br><em>One Selfie</em> Away.</h1>
+  <p class="hero-p">Guests at your event take one selfie — EventLens finds every photo they're in. Instant. Accurate. No app download.</p>
+  <div class="hero-btns">
+    <a href="#pricing" class="btn-g"><i class="fa-solid fa-camera"></i> Start for Free</a>
+    <a href="#how" class="btn-outline"><i class="fa-solid fa-play"></i> See How It Works</a>
+  </div>
+
+  <div class="hero-screens">
+    <div class="screen side">
+      <div class="screen-bar"></div>
+      <div class="screen-content">
+        <div class="sc-header"><div class="sc-dot"></div><div class="sc-logo">EventLens</div></div>
+        <div class="sc-label">Your Collections</div>
+        <div class="sc-event"><div class="sc-ev-dot" style="background:#1afa7e"></div><div class="sc-ev-name">Sharma Wedding</div><div class="sc-ev-count">840 photos</div></div>
+        <div class="sc-event"><div class="sc-ev-dot" style="background:#f0b429"></div><div class="sc-ev-name">Gupta Sangeet</div><div class="sc-ev-count">412 photos</div></div>
+        <div class="sc-event"><div class="sc-ev-dot" style="background:#00c8ff"></div><div class="sc-ev-name">Tech Summit</div><div class="sc-ev-count">267 photos</div></div>
+      </div>
+    </div>
+    <div class="screen center">
+      <div class="screen-bar"></div>
+      <div class="screen-content">
+        <div class="sc-header"><div class="sc-dot"></div><div class="sc-logo">EventLens</div></div>
+        <div class="sc-search"><i class="fa-solid fa-face-smile" style="color:var(--green);font-size:12px;"></i><div class="sc-search-txt">Selfie uploaded — Searching 840 photos...</div></div>
+        <div class="sc-label">Found 12 Photos</div>
+        <div class="photo-grid">
+          <div class="ph ph-1"><div class="ph-match"><div class="ph-badge">98% match</div></div></div>
+          <div class="ph ph-2"><div class="ph-match"><div class="ph-badge">96% match</div></div></div>
+          <div class="ph ph-3"><div class="ph-match"><div class="ph-badge">94% match</div></div></div>
+          <div class="ph ph-4"><div class="ph-match"><div class="ph-badge">91% match</div></div></div>
+        </div>
+        <div style="margin-top:10px;background:var(--card);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px;">
+          <i class="fa-solid fa-download" style="color:var(--green);font-size:11px;"></i>
+          <span style="font-size:9px;color:var(--white);font-weight:600;">Download All (12 Photos)</span>
+        </div>
+      </div>
+    </div>
+    <div class="screen side">
+      <div class="screen-bar"></div>
+      <div class="screen-content">
+        <div class="sc-header"><div class="sc-dot"></div><div class="sc-logo">EventLens</div></div>
+        <div class="sc-label">Event Dashboard</div>
+        <div class="sc-stat-row">
+          <div class="sc-stat"><div class="sc-stat-n">840</div><div class="sc-stat-l">Photos</div></div>
+          <div class="sc-stat"><div class="sc-stat-n" style="color:var(--green)">247</div><div class="sc-stat-l">Searches</div></div>
+        </div>
+        <div class="sc-stat-row">
+          <div class="sc-stat"><div class="sc-stat-n" style="color:var(--gold)">4.2GB</div><div class="sc-stat-l">Storage</div></div>
+          <div class="sc-stat"><div class="sc-stat-n" style="color:#00c8ff">98%</div><div class="sc-stat-l">Accuracy</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> AI Face Recognition</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> QR Code Gallery Sharing</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> Instant Guest Delivery</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> Custom Branding</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> PIN Protected Galleries</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> HD Downloads</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> WhatsApp Sharing</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> AWS Powered · 99.9% Uptime</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> Political Module</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> Real-time Analytics</div>
+    <!-- repeat -->
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> AI Face Recognition</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> QR Code Gallery Sharing</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> Instant Guest Delivery</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> Custom Branding</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> PIN Protected Galleries</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> HD Downloads</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> WhatsApp Sharing</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> AWS Powered · 99.9% Uptime</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> Political Module</div>
+    <div class="marquee-item"><i class="fa-solid fa-check"></i> Real-time Analytics</div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="tag r">Photography Module</div>
+    <h2 class="h2 r d1">Simple for photographers.<br>Magical for guests.</h2>
+    <p class="lead r d2">Everything happens automatically. Upload once, guests find their photos forever.</p>
+    <div class="steps-grid r d2">
+      <div class="step">
+        <div class="step-n">01</div>
+        <div class="step-ico"><i class="fa-solid fa-upload"></i></div>
+        <h3>Photographer Uploads</h3>
+        <p>Upload event photos from any device. AI indexes every face automatically in seconds — no manual tagging.</p>
+      </div>
+      <div class="step">
+        <div class="step-n">02</div>
+        <div class="step-ico"><i class="fa-solid fa-qrcode"></i></div>
+        <h3>Share QR / Link</h3>
+        <p>Generate a branded QR code or WhatsApp-ready link. Display QR at the venue — guests scan and go.</p>
+      </div>
+      <div class="step">
+        <div class="step-n">03</div>
+        <div class="step-ico"><i class="fa-solid fa-face-smile"></i></div>
+        <h3>Selfie Search</h3>
+        <p>Guest takes one selfie in browser — no app needed. AI returns all their photos in under 3 seconds.</p>
+      </div>
+      <div class="step">
+        <div class="step-n">04</div>
+        <div class="step-ico"><i class="fa-solid fa-heart"></i></div>
+        <h3>Download & Share</h3>
+        <p>Guests download HD photos, mark favorites. Photographer sees selections. Share on WhatsApp instantly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VS COMPETITORS -->
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="tag r">Why EventLens</div>
+    <h2 class="h2 r d1">Built for India.<br>Beats global players.</h2>
+    <div class="r d2">
+      <table class="vs-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="hl">EventLens ✦</th>
+            <th>KwikPic</th>
+            <th>FotoOwl</th>
+            <th>Others</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AI Selfie Face Search</td>
+            <td class="hl chk">✓ AWS Rekognition</td>
+            <td class="chk">✓</td>
+            <td class="chk">✓</td>
+            <td class="chk">✓</td>
+          </tr>
+          <tr>
+            <td>No App Download Needed</td>
+            <td class="hl chk">✓ Browser only</td>
+            <td class="cross">✗ App required</td>
+            <td class="chk">✓</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>Political Organizations Module</td>
+            <td class="hl chk">✓ Complete suite</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>Hindi / Devanagari UI</td>
+            <td class="hl chk">✓ Full support</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>Custom Branding per Event</td>
+            <td class="hl chk">✓</td>
+            <td class="chk">✓ Paid</td>
+            <td class="chk">✓ Paid</td>
+            <td class="part">~ Partial</td>
+          </tr>
+          <tr>
+            <td>Photo Sell / Watermark</td>
+            <td class="hl part">~ Coming Soon</td>
+            <td class="chk">✓</td>
+            <td class="part">~ Partial</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>WhatsApp-native Sharing</td>
+            <td class="hl chk">✓ Built-in</td>
+            <td class="part">~ Partial</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>Pricing (India)</td>
+            <td class="hl chk">✓ ₹999/mo</td>
+            <td>₹1,999+/mo</td>
+            <td>₹2,500+/mo</td>
+            <td>$$$ USD</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features" style="padding-top:0">
+  <div class="wrap">
+    <div class="tag r">Features</div>
+    <h2 class="h2 r d1">Everything you need.<br>Nothing you don't.</h2>
+    <div class="features r d2">
+      <div class="feat">
+        <div class="feat-ico">🤳</div>
+        <h4>Selfie Face Search</h4>
+        <p>Guests take a selfie — AWS Rekognition finds all their photos across the entire event in under 3 seconds.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">📲</div>
+        <h4>QR Code at Venue</h4>
+        <p>Print QR codes for display at weddings or events. Guests scan → selfie → photos. Zero friction. No app needed.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">🎨</div>
+        <h4>Custom Branding</h4>
+        <p>Your logo, colors, and studio name on every gallery page. Clients see your brand, not EventLens.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">🔒</div>
+        <h4>PIN Protected Gallery</h4>
+        <p>Add a PIN to any gallery. Only invited guests get access. Full control over who sees your photos.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">⏱️</div>
+        <h4>Time Slot Groups</h4>
+        <p>Photos auto-grouped by Morning Ceremony, Evening Vibes, Night Party. Guests navigate naturally.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-ico">❤️</div>
+        <h4>Favorites & Selection</h4>
+        <p>Guests mark favorites, photographer sees the list. Perfect for edit selection or album planning.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-new">Coming Soon</div>
+        <div class="feat-ico">💸</div>
+        <h4>Sell Your Photos</h4>
+        <p>Watermark photos, set per-download price. Guests pay — you earn. Like KwikPic, but built for India.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-new">Coming Soon</div>
+        <div class="feat-ico">📺</div>
+        <h4>Live Slideshow Screen</h4>
+        <p>Display photos on a big screen at the venue as they're uploaded. Creates excitement at the event.</p>
+      </div>
+      <div class="feat">
+        <div class="feat-soon">Planned</div>
+        <div class="feat-ico">📧</div>
+        <h4>Auto Notification</h4>
+        <p>Notify guests on WhatsApp or email when their photos are ready. Zero manual work for photographer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- POLITICAL MODULE -->
+<div class="pol-section" id="political">
+  <div class="pol-inner wrap">
+    <div>
+      <div class="tag r">Political Module</div>
+      <h2 class="h2 r d1" style="color:var(--white);">कार्यकर्ता प्रबंधन —<br><span style="color:var(--saffron);">Face Recognition से।</span></h2>
+      <p class="lead r d2" style="font-family:'Noto Sans Devanagari','Manrope',sans-serif;">राजनीतिक दलों के लिए पूरा ecosystem — visitor tracking से लेकर mandal reporting तक। सब कुछ एक dashboard में।</p>
+      <div class="pol-forms r d3">
+        <div class="pol-form-row">
+          <div class="pol-form-ico" style="background:rgba(255,113,32,0.1);">🏢</div>
+          <div><div class="pol-form-title">Visitor Form</div><div class="pol-form-sub">कार्यालय आगंतुक — Face Scan entry</div></div>
+          <div class="pol-form-count">Daily</div>
+        </div>
+        <div class="pol-form-row">
+          <div class="pol-form-ico" style="background:rgba(240,180,41,0.1);">✅</div>
+          <div><div class="pol-form-title">Party Attendance</div><div class="pol-form-sub">कार्यक्रम उपस्थिति — Live counter</div></div>
+          <div class="pol-form-count">Per Event</div>
+        </div>
+        <div class="pol-form-row">
+          <div class="pol-form-ico" style="background:rgba(0,200,255,0.08);">🚩</div>
+          <div><div class="pol-form-title">President Tour</div><div class="pol-form-sub">जिला अध्यक्ष — Tour tracking & photos</div></div>
+          <div class="pol-form-count">Tour-wise</div>
+        </div>
+        <div class="pol-form-row">
+          <div class="pol-form-ico" style="background:rgba(26,250,126,0.08);">👤</div>
+          <div><div class="pol-form-title">Coordinator Form</div><div class="pol-form-sub">संयोजक जानकारी — Mandal level</div></div>
+          <div class="pol-form-count">Mandal</div>
+        </div>
+        <div class="pol-form-row">
+          <div class="pol-form-ico" style="background:rgba(255,113,32,0.08);">📋</div>
+          <div><div class="pol-form-title">Mandal Reporting</div><div class="pol-form-sub">कार्यक्रम रिपोर्ट — After event</div></div>
+          <div class="pol-form-count">Weekly</div>
+        </div>
+      </div>
+    </div>
+    <div class="r d2">
+      <div class="pol-dashboard">
+        <div class="pol-dash-top">
+          <div class="pol-dash-title">Admin Console</div>
+          <div class="pol-live-dot"><div class="pol-live-d"></div><div class="pol-live-t">Live</div></div>
+        </div>
+        <div class="pol-stats-grid">
+          <div class="pol-stat"><div class="pol-stat-n"><span>247</span></div><div class="pol-stat-l">आज की उपस्थिति</div></div>
+          <div class="pol-stat"><div class="pol-stat-n">1,842</div><div class="pol-stat-l">कुल कार्यकर्ता</div></div>
+          <div class="pol-stat"><div class="pol-stat-n">38</div><div class="pol-stat-l">मंडल रिपोर्ट</div></div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <div class="pol-bar-row">
+            <div class="pol-bar-label"><span>Visitor Form</span><span style="color:var(--saffron)">847</span></div>
+            <div class="pol-bar-track"><div class="pol-bar-fill" style="width:68%"></div></div>
+          </div>
+          <div class="pol-bar-row">
+            <div class="pol-bar-label"><span>Attendance</span><span style="color:var(--saffron)">512</span></div>
+            <div class="pol-bar-track"><div class="pol-bar-fill" style="width:41%"></div></div>
+          </div>
+          <div class="pol-bar-row">
+            <div class="pol-bar-label"><span>President Tour</span><span style="color:var(--saffron)">234</span></div>
+            <div class="pol-bar-track"><div class="pol-bar-fill" style="width:19%"></div></div>
+          </div>
+          <div class="pol-bar-row">
+            <div class="pol-bar-label"><span>Mandal Report</span><span style="color:var(--saffron)">249</span></div>
+            <div class="pol-bar-track"><div class="pol-bar-fill" style="width:20%"></div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button style="flex:1;background:rgba(255,113,32,0.1);border:1px solid rgba(255,113,32,0.2);color:var(--saffron);border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif;"><i class="fa-solid fa-download"></i> Export CSV</button>
+          <button style="flex:1;background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.15);color:var(--green);border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif;"><i class="fa-solid fa-chart-line"></i> Analytics</button>
+        </div>
+      </div>
+      <div style="margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px;">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px;letter-spacing:0.5px;text-transform:uppercase;">Karyakarta Intelligence</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,113,32,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;">👤</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Ramesh Kumar</div><div style="font-size:11px;color:var(--muted);">7वीं विजिट · जिला: Indore</div></div>
+          <div style="background:rgba(255,113,32,0.1);color:var(--saffron);font-size:10px;font-weight:800;padding:3px 8px;border-radius:50px;">🌟 नियमित</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(26,250,126,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;">👤</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Sunita Devi</div><div style="font-size:11px;color:var(--muted);">2री विजिट · जिला: Bhopal</div></div>
+          <div style="background:rgba(26,250,126,0.08);color:var(--green);font-size:10px;font-weight:800;padding:3px 8px;border-radius:50px;">⭐ सक्रिय</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TESTIMONIALS -->
+<section class="section">
+  <div class="wrap">
+    <div class="tag r">Reviews</div>
+    <h2 class="h2 r d1">Photographers love it.</h2>
+    <div class="testi-grid">
+      <div class="testi r d1">
+        <div class="stars">★★★★★</div>
+        <div class="testi-q">Earlier guests used to call asking for their photos. Now they find everything themselves in seconds. My WhatsApp is peaceful now.</div>
+        <div class="testi-au">
+          <div class="testi-av" style="background:rgba(26,250,126,0.12);color:var(--green);">R</div>
+          <div><div class="testi-n">Rajan Mehta</div><div class="testi-r">Wedding Photographer · Indore</div></div>
+        </div>
+      </div>
+      <div class="testi r d2">
+        <div class="stars">★★★★★</div>
+        <div class="testi-q">We put a QR code at the event. 300+ guests used it the same night. No one called. Best feature for large events.</div>
+        <div class="testi-au">
+          <div class="testi-av" style="background:rgba(0,200,255,0.1);color:#00c8ff;">P</div>
+          <div><div class="testi-n">Priya Sharma</div><div class="testi-r">Event Photographer · Mumbai</div></div>
+        </div>
+      </div>
+      <div class="testi r d3">
+        <div class="stars">★★★★★</div>
+        <div class="testi-q">The political module is exactly what we needed. Visitor tracking + face recognition at our office is working perfectly.</div>
+        <div class="testi-au">
+          <div class="testi-av" style="background:rgba(255,113,32,0.12);color:var(--saffron);">A</div>
+          <div><div class="testi-n">Amit Joshi</div><div class="testi-r" style="font-family:'Noto Sans Devanagari',sans-serif;">जिला अध्यक्ष · Madhya Pradesh</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing" style="background:var(--surface);border-top:1px solid var(--border);">
+  <div class="wrap">
+    <div class="tag r">Pricing</div>
+    <h2 class="h2 r d1">Pay in ₹. Grow without limits.</h2>
+    <p class="lead r d2">No USD pricing. No hidden fees. Cancel anytime.</p>
+    <div class="pricing-grid">
+      <div class="price-card r d1">
+        <div class="price-tier">Starter</div>
+        <div class="price-amt"><sup>₹</sup>999</div>
+        <div class="price-per">per month · GST extra</div>
+        <ul class="price-feats">
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> 10 GB Storage</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> 5 Events / month</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> 1,000 Guest Searches</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> QR Code Sharing</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Basic Gallery</li>
+          <li class="off"><i class="fa-solid fa-xmark"></i> Custom Branding</li>
+          <li class="off"><i class="fa-solid fa-xmark"></i> Political Module</li>
+        </ul>
+        <a href="#contact" class="price-btn pbo">Get Started</a>
+      </div>
+      <div class="price-card pop r d2">
+        <div class="pop-badge">Most Popular</div>
+        <div class="price-tier">Professional</div>
+        <div class="price-amt"><sup>₹</sup>2,499</div>
+        <div class="price-per">per month · GST extra</div>
+        <ul class="price-feats">
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> 100 GB Storage</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Unlimited Events</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Unlimited Searches</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Custom Branding</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> PIN Protected Galleries</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Priority Support</li>
+          <li class="off"><i class="fa-solid fa-xmark"></i> Political Module</li>
+        </ul>
+        <a href="#contact" class="price-btn pbg">Start Free Trial →</a>
+      </div>
+      <div class="price-card r d3">
+        <div class="price-tier">Organization</div>
+        <div class="price-amt" style="font-size:36px;margin-top:6px;">Custom</div>
+        <div class="price-per" style="margin-bottom:28px;">Contact for quote</div>
+        <ul class="price-feats">
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Unlimited Storage</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Photography Module</li>
+          <li><i class="fa-solid fa-check" style="color:var(--saffron)"></i> Political Module ✦</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Multi-user Access</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Dedicated Support</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Custom SLA & Training</li>
+          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> White-label Option</li>
+        </ul>
+        <a href="#contact" class="price-btn pbo">Contact Us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section" id="contact">
+  <div class="wrap">
+    <div class="contact-grid">
+      <div>
+        <div class="tag r">Get In Touch</div>
+        <h2 class="h2 r d1">Start your<br>free trial today.</h2>
+        <p class="lead r d2" style="margin-bottom:40px;">Talk to us on WhatsApp. We set you up in 10 minutes — no technical knowledge needed.</p>
+        <div style="display:flex;flex-direction:column;gap:18px;" class="r d3">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:46px;height:46px;background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:20px;flex-shrink:0;">
+              <i class="fa-brands fa-whatsapp"></i>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--white);">WhatsApp</div>
+              <div style="font-size:13px;color:var(--muted);">+91 XXXXX XXXXX — Reply in 5 mins</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:46px;height:46px;background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:18px;flex-shrink:0;">
+              <i class="fa-solid fa-envelope"></i>
+            </div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--white);">Email</div>
+              <div style="font-size:13px;color:var(--muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2b434e4747446b4e5d4e455f474e4558054245">[email&#160;protected]</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="contact-form r d2">
+        <div class="form-row">
+          <label class="form-label">Your Name</label>
+          <input id="cName" class="form-input" type="text" placeholder="Rajan Mehta"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label">WhatsApp Number</label>
+          <input id="cPhone" class="form-input" type="tel" placeholder="+91 98765 43210"/>
+        </div>
+        <div class="form-row">
+          <label class="form-label">I need EventLens for...</label>
+          <select id="cType" class="form-input">
+            <option value="">Select</option>
+            <option>Wedding / Event Photography</option>
+            <option>Photography Studio</option>
+            <option>Political Organization</option>
+            <option>Corporate Events</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="form-label">Message (optional)</label>
+          <textarea id="cMsg" class="form-input" rows="3" placeholder="Tell us about your event or need..."></textarea>
+        </div>
+        <button onclick="sendWA()" style="width:100%;background:var(--green);color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;font-family:'Manrope',sans-serif;letter-spacing:0.2px;transition:background 0.2s;display:flex;align-items:center;justify-content:center;gap:10px;" onmouseover="this.style.background='var(--green2)'" onmouseout="this.style.background='var(--green)'">
+          <i class="fa-brands fa-whatsapp" style="font-size:18px;"></i> Chat on WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<div class="cta-final">
+  <h2 class="cta-h r">Every guest deserves<br>to find <em style="color:var(--green);font-style:normal;">their moment.</em></h2>
+  <p class="lead r d1" style="margin:0 auto 40px;text-align:center;">Join photographers and organizations across India who use EventLens.</p>
+  <div class="hero-btns r d2">
+    <a href="index.html" class="btn-g"><i class="fa-solid fa-arrow-right"></i> Photographer Login</a>
+    <a href="#contact" class="btn-outline">Request Demo</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <a href="#" class="logo" style="font-size:18px;"><div class="logo-dot"></div>EventLens</a>
+  <div class="footer-links">
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#political">Political</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#contact">Contact</a>
+    <a href="index.html">Login</a>
+  </div>
+  <div class="footer-copy">© 2025 EventLens · Made with ❤️ in India</div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// scroll reveal
+const ro=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')})},{threshold:0.1});
+document.querySelectorAll('.r').forEach(el=>ro.observe(el));
+
+// nav opacity on scroll
+window.addEventListener('scroll',()=>{
+  const n=document.getElementById('nav');
+  if(n)n.style.borderColor=scrollY>60?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.07)';
+});
+
+// whatsapp
+function sendWA(){
+  const n=document.getElementById('cName')?.value||'Guest';
+  const p=document.getElementById('cPhone')?.value||'';
+  const t=document.getElementById('cType')?.value||'';
+  const m=document.getElementById('

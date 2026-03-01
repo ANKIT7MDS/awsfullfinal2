@@ -419,13 +419,15 @@ async function loadData(append = false) {
         limit: 100,
         start_ms: String(startMs),
         end_ms: String(endMs),
+        // ✅ Server-side filter: only president_tour_form entries
+        form_type: "president_tour_form",
       };
       if (pageKey) payload.next_key = pageKey;
 
       const res = await apiCall("admin_list", payload);
       const rawItems = res.items || [];
 
-      // Client-side filter for president_tour
+      // Double-check client-side (safety filter)
       const pageItems = rawItems.filter(it => {
         const ft = (it.form_type || it.ft || "").toLowerCase();
         return ft.includes("president") || ft.includes("tour");
@@ -436,8 +438,8 @@ async function loadData(append = false) {
       pageKey = res.next_key || null;
       lastKey = pageKey;
 
-      // Stop if we have enough or no more pages or max fetched
-    } while (pageKey && totalFetched < MAX_ITEMS);
+      // Continue paginating until we have enough tour items
+    } while (pageKey && totalFetched < MAX_ITEMS && allTours.length < 200);
 
     $("loadMoreWrap").classList.toggle("hidden", !lastKey);
     // Group multi-photo entries into single event cards

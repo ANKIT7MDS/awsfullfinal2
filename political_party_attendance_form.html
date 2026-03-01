@@ -454,7 +454,7 @@ const API_ID  = "vxid0yoovj";
 const REGION  = "ap-south-1";
 const BASE    = `https://${API_ID}.execute-api.${REGION}.amazonaws.com/prod`;
 const FTYPE   = "party_attendance";
-const SARVAM_KEY    = "sk_9tf5l7wk_9QX4r07NTD5rRCuAL0zMnbHf";
+// SARVAM_KEY removed — backend proxy use ho raha hai
 const SARVAM_SPEAKER = "anushka"; // valid speaker
 
 const _qs = k => { try { return new URLSearchParams(location.search).get(k)||""; } catch(e){return "";} };
@@ -498,9 +498,9 @@ async function sha256(file){
 // ═══════════════════════════════
 async function speakSarvam(text){
   try{
-    const res = await fetch("https://api.sarvam.ai/text-to-speech",{
+    const res = await fetch(`${BASE}/political/tts`,{
       method:"POST",
-      headers:{"Content-Type":"application/json","api-subscription-key":SARVAM_KEY},
+      headers:{"Content-Type":"application/json"},
       body:JSON.stringify({inputs:[text],target_language_code:"hi-IN",speaker:SARVAM_SPEAKER,pitch:0,pace:0.9,loudness:1.5,speech_sample_rate:22050,enable_preprocessing:true,model:"bulbul:v2"})
     });
     const data=await res.json();

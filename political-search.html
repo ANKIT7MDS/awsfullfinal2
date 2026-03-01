@@ -470,50 +470,64 @@
 }
 body{overflow-x:hidden;}
 
-/* ════ MOBILE RESPONSIVE ════ */
+/* ── Timeline Mobile Fit ── */
 @media(max-width:1023px){
-  #resultsContainer { width:100%; overflow-x:hidden; }
-  .tab-btn { font-size:11px !important; padding:8px 12px !important; min-height:44px !important; }
-  .filter-pill { font-size:9px !important; padding:5px 10px !important; white-space:nowrap; }
-  .filter-count { min-width:14px !important; height:14px !important; font-size:8px !important; }
-  .stat-card { padding:10px !important; border-radius:14px !important; }
-  .step-num { width:26px !important; height:26px !important; font-size:10px !important; }
-  #photosGrid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:8px !important; }
-}
+  /* Timeline rail: tighter left margin */
+  .timeline-rail::before { left: 16px; }
+  
+  /* Timeline card: prevent overflow */
+  .timeline-card-premium {
+    padding: 14px 14px 14px 14px !important;
+    border-radius: 16px !important;
+    margin-left: 0 !important;
+    overflow: hidden;
+    word-break: break-word;
+  }
+  .timeline-card-premium:hover {
+    transform: translateY(-2px) !important; /* remove horizontal shift on mobile */
+  }
+  .event-card:hover {
+    transform: translateY(-2px) !important;
+  }
+  
+  /* Timeline wrapper: no extra left padding */
+  #viewTimeline > div {
+    padding-left: 0 !important;
+  }
 
-/* ════ TIMELINE LAYOUT ════ */
-#viewTimeline {
-  padding-left: 30px;
-  overflow-x: hidden;
-  overflow-y: visible;
-}
-.timeline-rail::before { left: 8px; }
-.timeline-item { position:relative; margin-bottom:12px; }
-.timeline-dot {
-  position:absolute; left:-22px; top:16px;
-  width:12px; height:12px; border-radius:50%;
-  background:#02050A; border:2.5px solid #D4A017;
-  box-shadow:0 0 0 3px rgba(2,5,10,1),0 0 8px rgba(212,160,23,0.5);
-  z-index:2; flex-shrink:0;
-}
-.timeline-card-premium {
-  width:100%; max-width:100%; overflow:hidden;
-  word-break:break-word; box-sizing:border-box;
-}
-.timeline-card-premium:hover,
-.timeline-card-premium:active,
-.event-card:hover,
-.event-card:active { transform:none !important; }
+  /* Photos grid: 2 col on mobile */
+  #photosGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
 
-/* Photo strip scroll */
-.timeline-photo-strip {
-  display:flex; gap:6px;
-  overflow-x:auto; -webkit-overflow-scrolling:touch;
-  padding-bottom:4px;
+  /* glass card padding tighter */
+  .glass { border-radius: 20px !important; }
+  
+  /* Results container: full width no overflow */
+  #resultsContainer { width: 100%; overflow-x: hidden; }
+
+  /* Tab bar: don't overflow */
+  .tab-btn { font-size: 11px !important; padding: 10px 10px !important; }
+  
+  /* Filter pills: smaller */
+  .filter-pill { font-size: 9px !important; padding: 6px 10px !important; white-space: nowrap; }
+  .filter-count { min-width: 16px !important; height: 16px !important; font-size: 9px !important; }
+
+  /* Stats bar: compact */
+  .stat-card { padding: 10px !important; border-radius: 16px !important; }
+  
+  /* Step indicator: fit small screens */
+  .step-num { width: 28px !important; height: 28px !important; font-size: 11px !important; }
+
+  /* Timeline dot tighter */
+  .timeline-dot { width: 14px !important; height: 14px !important; }
+  /* Timeline rail + dots: avoid horizontal overflow on very small screens */
+  #viewTimeline { width: 100% !important; max-width: 100% !important; padding-left: 18px !important; padding-right: 0 !important; overflow-x: hidden !important; }
+  .timeline-rail::before { left: 12px !important; }
+  .timeline-item .timeline-dot { left: -18px !important; }
+  .timeline-card-premium { max-width: calc(100vw - 28px) !important; box-sizing: border-box !important; }
 }
-/* Prevent child overflow */
-#viewTimeline, #viewTimeline * { box-sizing:border-box; max-width:100%; }
-#viewTimeline img { height:auto; }
 
 /* ── Photo lazy loading shimmer ── */
 .photo-item img { background: linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%); background-size:200% 100%; animation: shimmerAnim 1.8s ease-in-out infinite; }
@@ -552,7 +566,26 @@ body{overflow-x:hidden;}
   .safe-area-bottom { padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important; }
 }
 
-</style>
+
+    /* --- Mobile timeline fit fixes (no layout change on desktop) --- */
+    @media (max-width: 480px) {
+      .timeline-card-premium { padding: 16px; border-radius: 20px; }
+      .timeline-rail::before { left: 16px; }
+      .timeline-dot { transform: none; }
+      #viewTimeline { overflow-x: hidden; }
+    }
+
+
+    /* ─── Mobile / iOS Stability Fixes ─── */
+    html, body { overflow-x: hidden; overscroll-behavior-y: none; }
+    @media (max-width: 480px) {
+      #viewTimeline { padding-left: 1.25rem !important; }
+      .timeline-rail::before { left: 14px !important; }
+      .timeline-card-premium { padding: 16px !important; border-radius: 20px !important; }
+      .timeline-dot { box-shadow: 0 0 0 3px rgba(2,5,10,1), 0 0 10px rgba(212,160,23,0.55) !important; }
+    }
+
+  </style>
 
   <script>
     // JS Logic remains strictly the same
@@ -921,12 +954,12 @@ body{overflow-x:hidden;}
         <div id="resultsContainer" class="hidden animate-fadeup">
 
           <!-- Compact top bar: Tabs + Filters + Slideshow -->
-          <div class="glass rounded-2xl overflow-hidden mb-4 z-30" style="border:1px solid rgba(255,255,255,0.07);">
-            <div class="flex items-center border-b px-3 gap-1" style="border-color:rgba(255,255,255,0.06);background:rgba(2,5,10,0.6);touch-action:manipulation;">
-              <button type="button" id="btnTabPhotos" class="tab-btn tab-active flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap" style="min-height:44px;font-size:12px;letter-spacing:0.05em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer;" ontouchstart="event.preventDefault();event.stopPropagation();if(typeof window.switchTab==='function'){window.switchTab('photos');}return false;" ontouchend="event.preventDefault();event.stopPropagation();return false;" onclick="event.preventDefault();event.stopPropagation();if(typeof window.switchTab==='function'){window.switchTab('photos');}return false;">
+          <div class="glass rounded-2xl overflow-hidden mb-4 sticky top-20 z-30" style="border:1px solid rgba(255,255,255,0.07);">
+            <div class="flex items-center border-b px-3 gap-1" style="border-color:rgba(255,255,255,0.06);background:rgba(2,5,10,0.6);">
+              <button type="button" id="btnTabPhotos" class="tab-btn tab-active flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap" style="min-height:44px;font-size:12px;letter-spacing:0.05em;">
                 <i class="fa-regular fa-images"></i><span>Photos</span>
               </button>
-              <button type="button" id="btnTabTimeline" class="tab-btn flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap" style="min-height:44px;font-size:12px;letter-spacing:0.05em;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer;" ontouchstart="event.preventDefault();event.stopPropagation();if(typeof window.switchTab==='function'){window.switchTab('timeline');}return false;" ontouchend="event.preventDefault();event.stopPropagation();return false;" onclick="event.preventDefault();event.stopPropagation();if(typeof window.switchTab==='function'){window.switchTab('timeline');}return false;">
+              <button type="button" id="btnTabTimeline" class="tab-btn flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap" style="min-height:44px;font-size:12px;letter-spacing:0.05em;">
                 <i class="fa-solid fa-timeline"></i><span>Timeline</span>
               </button>
               <div class="flex-1"></div>
@@ -936,11 +969,11 @@ body{overflow-x:hidden;}
             </div>
 
             <div id="timelineFilters" class="hidden items-center gap-2 px-4 py-2.5 overflow-x-auto hide-scroll" style="background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.04);">
-              <button type="button" class="filter-btn filter-pill active" data-filter="all" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='all';if(typeof applyFilter==='function')applyFilter();return false;" style="font-family:'Noto Sans Devanagari',sans-serif;font-size:10px;padding:5px 12px;">सभी <span class="filter-count" id="countAll">0</span></button>
-              <button type="button" class="filter-btn filter-pill" data-filter="visitor_form" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='visitor_form';if(typeof applyFilter==='function')applyFilter();return false;" style="font-size:10px;padding:5px 12px;">Visitor <span class="filter-count" id="countVisitor">0</span></button>
-              <button type="button" class="filter-btn filter-pill" data-filter="president_tour_form" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='president_tour_form';if(typeof applyFilter==='function')applyFilter();return false;" style="font-size:10px;padding:5px 12px;">Tour <span class="filter-count" id="countTour">0</span></button>
-              <button type="button" class="filter-btn filter-pill" data-filter="party_attendance" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='party_attendance';if(typeof applyFilter==='function')applyFilter();return false;" style="font-size:10px;padding:5px 12px;">Attendance <span class="filter-count" id="countAttendance">0</span></button>
-              <button type="button" class="filter-btn filter-pill" data-filter="mandal_reporting_form" onclick="event.preventDefault();event.stopPropagation();document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');window.currentFilter='mandal_reporting_form';if(typeof applyFilter==='function')applyFilter();return false;" style="font-size:10px;padding:5px 12px;">Mandal <span class="filter-count" id="countMandal">0</span></button>
+              <button type="button" class="filter-btn filter-pill active" data-filter="all" style="font-family:'Noto Sans Devanagari',sans-serif;font-size:10px;padding:5px 12px;">सभी <span class="filter-count" id="countAll">0</span></button>
+              <button type="button" class="filter-btn filter-pill" data-filter="visitor_form" style="font-size:10px;padding:5px 12px;">Visitor <span class="filter-count" id="countVisitor">0</span></button>
+              <button type="button" class="filter-btn filter-pill" data-filter="president_tour_form" style="font-size:10px;padding:5px 12px;">Tour <span class="filter-count" id="countTour">0</span></button>
+              <button type="button" class="filter-btn filter-pill" data-filter="party_attendance" style="font-size:10px;padding:5px 12px;">Attendance <span class="filter-count" id="countAttendance">0</span></button>
+              <button type="button" class="filter-btn filter-pill" data-filter="mandal_reporting_form" style="font-size:10px;padding:5px 12px;">Mandal <span class="filter-count" id="countMandal">0</span></button>
               <div class="ml-auto flex items-center gap-2 flex-shrink-0 pl-3" style="border-left:1px solid rgba(255,255,255,0.08);">
                 <input type="date" id="tlFromDate" class="rounded-lg px-2 py-1 text-[10px] font-bold bg-slate-900/80 border border-white/10 text-slate-300 focus:border-gold-400 outline-none transition-colors" style="width:110px;" title="From">
                 <i class="fa-solid fa-arrow-right-long text-slate-600 text-xs"></i>
@@ -958,15 +991,17 @@ body{overflow-x:hidden;}
             <div id="photosGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               <!-- injected -->
             </div>
+            <div id="photosSentinel" style="height:1px;"></div>
             <div class="text-center mt-6 text-[10px] font-extrabold tracking-[0.15em] uppercase flex items-center justify-center gap-2 text-slate-500 py-3 rounded-2xl border border-white/5" style="background:rgba(255,255,255,0.02);">
               <i class="fa-solid fa-shield-check text-teal-400 text-xs"></i> 100% Encrypted & Secure Database
             </div>
           </div>
 
           <!-- Timeline View -->
-          <div id="viewTimeline" class="hidden relative timeline-rail space-y-4 animate-fadeup pb-8" style="overflow-x:hidden;padding-left:32px;">
+          <div id="viewTimeline" class="hidden relative pl-6 sm:pl-10 timeline-rail space-y-5 animate-fadeup pb-8" style="overflow-x:hidden;">
             <!-- injected -->
           </div>
+          <div id="timelineSentinel" style="height:1px;"></div>
         </div>
 
       </div>
@@ -1054,7 +1089,16 @@ body{overflow-x:hidden;}
       .timeline-card-premium:hover { transform: none; }
       .timeline-card-premium:active { opacity: 0.85; transform: scale(0.99); }
     }
-  </style>
+  
+    /* --- Mobile timeline fit fixes (no layout change on desktop) --- */
+    @media (max-width: 480px) {
+      .timeline-card-premium { padding: 16px; border-radius: 20px; }
+      .timeline-rail::before { left: 16px; }
+      .timeline-dot { transform: none; }
+      #viewTimeline { overflow-x: hidden; }
+    }
+
+</style>
 
 <!-- ══ JAVASCRIPT (Untouched, Logic completely preserved) ══ -->
 <script>
@@ -1114,6 +1158,62 @@ body{overflow-x:hidden;}
     timelineCount: document.getElementById("timelineCount"),
     photoCount: document.getElementById("photoCount"),
   };
+
+  // iOS Safari: prevent accidental pull-to-refresh reloads on heavy scroll
+  (function preventIosPullToRefresh(){
+    let startY = 0;
+    document.addEventListener('touchstart', function(e){
+      try {
+        if (e.touches && e.touches.length === 1) startY = e.touches[0].clientY;
+      } catch(_) {}
+    }, { passive: true });
+
+    function isScrollable(el){
+      if (!el || el === document.body || el === document.documentElement) return false;
+      const style = window.getComputedStyle(el);
+      const oy = style.overflowY;
+      return (oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight;
+    }
+
+    document.addEventListener('touchmove', function(e){
+      try {
+        if (!e.touches || e.touches.length !== 1) return;
+        const y = e.touches[0].clientY;
+        const dy = y - startY;
+        if (dy <= 0) return;
+
+        // If user is at the very top of the page and pulling down, block refresh.
+        if (window.scrollY === 0) {
+          // Allow if an inner scrollable container can still scroll up.
+          let n = e.target;
+          while (n && n !== document.body) {
+            if (isScrollable(n)) {
+              if (n.scrollTop > 0) return;
+              break;
+            }
+            n = n.parentElement;
+          }
+          e.preventDefault();
+        }
+      } catch(_) {}
+    }, { passive: false });
+  })();
+
+
+
+  // iOS Safari: improve reliability of opening front camera from hidden file input
+  try {
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    if (isIOS && el.selfieInput) {
+      el.selfieInput.style.opacity = "0.001";
+      el.selfieInput.style.webkitAppearance = "none";
+      el.selfieInput.setAttribute("capture", "user");
+      el.selfieInput.setAttribute("accept", "image/*");
+    }
+  } catch(e) {}
+
+
 
   function setStep(n) {
     const nums = [document.getElementById("step1Num"), document.getElementById("step2Num"), document.getElementById("step3Num")];
@@ -1185,8 +1285,6 @@ body{overflow-x:hidden;}
   }
 
   function switchTab(tab) {
-    // Always keep mobile bottom bar hidden when results showing
-    const mb = document.getElementById("mobileBottomBar"); if(mb) mb.style.display="none";
     const tActive = "tab-btn tab-active flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap";
     const tInactive = "tab-btn flex-shrink-0 px-4 py-3 text-xs gap-2 whitespace-nowrap";
     if (tab === 'timeline') {
@@ -1206,14 +1304,20 @@ body{overflow-x:hidden;}
       if (el.btnTabPhotos) el.btnTabPhotos.className = tActive;
     }
   }
-  // Tab listeners handled via ontouchend/onclick inline attributes (iOS Safari/Chrome fix)
+  if (el.btnTabTimeline) el.btnTabTimeline.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    switchTab('timeline');
+  });
+  if (el.btnTabPhotos) el.btnTabPhotos.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    switchTab('photos');
+  });
 
   function initFilters() {
     const btns = el.timelineFilters.querySelectorAll('.filter-btn');
     btns.forEach(btn => {
-      btn.setAttribute('type','button');
       btn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        e.preventDefault(); e.stopPropagation();
         btns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentFilter = btn.dataset.filter;
@@ -1488,228 +1592,305 @@ body{overflow-x:hidden;}
   }
 
   function getEventPhotos(item, photoUrlByKey) {
-    if (Array.isArray(item.photos) && item.photos.length) return item.photos;
-    if (Array.isArray(item.photo_urls) && item.photo_urls.length) return item.photo_urls;
+    // Backward-compatible: returns full-size URLs (string[]) when the code expects URLs.
+    const out = [];
+    if (Array.isArray(item.photos) && item.photos.length) {
+      item.photos.forEach(p => {
+        if (typeof p === "string") out.push(p);
+        else if (p && typeof p === "object") {
+          const u = p.url || p.full_url || p.fullUrl || p.photo_url || p.photoUrl || p.src || "";
+          if (u) out.push(u);
+        }
+      });
+      if (out.length) return out;
+    }
+    if (Array.isArray(item.photo_urls) && item.photo_urls.length) return item.photo_urls.filter(Boolean);
     const s3Key = item.s3_key || "";
     if (isNonEmpty(s3Key) && photoUrlByKey) { const u = photoUrlByKey.get(s3Key); if (u) return [u]; }
     return [];
+  }
+
+  function toPhotoObj(p, photoUrlByKey) {
+    if (!p) return null;
+    if (typeof p === "string") {
+      const key = parseS3KeyFromUrl(p) || "";
+      return { url: p, thumbUrl: p, s3_key: key };
+    }
+    if (p && typeof p === "object") {
+      const url = p.url || p.full_url || p.fullUrl || p.photo_url || p.photoUrl || p.src || "";
+      const thumbUrl = getBestThumbUrl(p, url || "");
+      const key = p.s3_key || p.s3Key || parseS3KeyFromUrl(url) || parseS3KeyFromUrl(thumbUrl) || "";
+      const finalUrl = url || thumbUrl || "";
+      const finalThumb = thumbUrl || finalUrl || "";
+      if (!finalUrl && !finalThumb) return null;
+      return { url: finalUrl || finalThumb, thumbUrl: finalThumb || finalUrl, s3_key: key };
+    }
+    return null;
+  }
+
+  function getEventPhotoObjs(item, photoUrlByKey) {
+    // Preferred: returns [{url, thumbUrl, s3_key}]
+    const out = [];
+    if (Array.isArray(item.photos) && item.photos.length) {
+      item.photos.forEach(p => { const o = toPhotoObj(p, photoUrlByKey); if (o) out.push(o); });
+      if (out.length) return out;
+    }
+    if (Array.isArray(item.photo_urls) && item.photo_urls.length) {
+      item.photo_urls.forEach(u => { const o = toPhotoObj(u, photoUrlByKey); if (o) out.push(o); });
+      if (out.length) return out;
+    }
+    const s3Key = item.s3_key || "";
+    if (isNonEmpty(s3Key) && photoUrlByKey) {
+      const u = photoUrlByKey.get(s3Key);
+      if (u) out.push({ url: u, thumbUrl: u, s3_key: s3Key });
+    }
+    return out;
   }
 
   const iconColorMap = { 'fa-plane-departure':'#3ECFB2','fa-clipboard-list':'#D4A017','fa-user-clock':'#A78BFA','fa-users-line':'#60A5FA','fa-id-badge':'#F97316','fa-calendar-check':'#D4A017' };
 
   function renderTimeline(timeline, photoUrlByKey) {
     el.viewTimeline.innerHTML = "";
+    try { if (window.__timelineIO) window.__timelineIO.disconnect(); } catch(_) {}
+    window.__timelinePager = null;
+
     if (!Array.isArray(timeline) || timeline.length === 0) {
-      el.viewTimeline.innerHTML = `<div style="text-align:center;padding:40px 16px;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#475569;background:rgba(255,255,255,0.03);border-radius:16px;border:1px solid rgba(255,255,255,0.06);">कोई इवेंट नहीं मिला</div>`;
+      el.viewTimeline.innerHTML = `<div class="text-center py-16 text-sm font-bold tracking-widest uppercase text-slate-500 bg-white/5 rounded-3xl border border-white/5">इस फ़िल्टर में कोई इवेंट नहीं: ${currentFilter}</div>`;
       return;
     }
+
     const sorted = [...timeline].sort((a,b) => {
-      const pd = item => { const fd = getEventFormDate(item.form_type||item.ft||"",item.data||{}); if (fd) { const ps = fd.split(/[-/]/); if (ps.length===3) { const d = ps[0].length===4 ? new Date(ps[0],ps[1]-1,ps[2]) : new Date(ps[2],ps[1]-1,ps[0]); if (!isNaN(d)) return d.getTime(); } } return parseInt(item.created_at||"0",10); };
+      const pd = item => {
+        const fd = getEventFormDate(item.form_type||item.ft||"",item.data||{});
+        if (fd) {
+          const ps = fd.split(/[-/]/);
+          if (ps.length===3) {
+            const d = ps[0].length===4 ? new Date(ps[0],ps[1]-1,ps[2]) : new Date(ps[2],ps[1]-1,ps[0]);
+            if (!isNaN(d)) return d.getTime();
+          }
+        }
+        return parseInt(item.created_at||"0",10);
+      };
       return pd(b)-pd(a);
     });
 
-    // Render in batches for large data (lazy render)
-    const BATCH = 10;
-    let batchIdx = 0;
+    window.__timelinePager = { sorted, cursor: 0, pageSize: (window.innerWidth <= 480 ? 6 : 10), photoUrlByKey };
 
-    function renderBatch() {
-      const batch = sorted.slice(batchIdx, batchIdx + BATCH);
-      if (!batch.length) return;
+    function appendTimelinePage() {
+      const st = window.__timelinePager;
+      if (!st) return;
+      const start = st.cursor;
+      const end = Math.min(start + st.pageSize, st.sorted.length);
 
-      batch.forEach((item, i) => {
-        const index = batchIdx + i;
+      for (let index = start; index < end; index++) {
+        const item = st.sorted[index];
         const form = item.form_type||item.ft||"", data = item.data||{};
         const formDate = getEventFormDate(form,data);
         const displayDate = formDate || prettyIso(item.created_at_iso||"");
-        const pName = data.program_name||data["कार्यक्रम_का_नाम"]||data.name_of_program||"";
-        const pType = data.program_type||data["कार्यक्रम_का_प्रकार"]||"";
-
+        const pName = data.program_name||data["कार्यक्रम_का_नाम"]||data.name_of_program||data.karyakram_name||"";
+        const pType = data.program_type||data["कार्यक्रम_का_प्रकार"]||data.type||"";
         let title = form||"Event", icon = "fa-calendar-check";
-        if (form==="president_tour_form")         { title=pName||pType||"जिला अध्यक्ष जी का प्रवास"; icon="fa-plane-departure"; }
+        if (form==="president_tour_form") { title=pName||pType||data.tour_title||"जिला अध्यक्ष जी का प्रवास कार्यक्रम"; icon="fa-plane-departure"; }
         else if (form==="mandal_reporting"||form==="mandal_reporting_form") { title=pName||data.venue||data["स्थान"]||"मंडल कार्यक्रम"; icon="fa-clipboard-list"; }
-        else if (form==="visitor_form")            { title=item.name||data.name||data["नाम"]||"आगन्तुक"; icon="fa-user-clock"; }
-        else if (form==="party_attendance")        { title=pName||pType||"कार्यक्रम उपस्थिति"; icon="fa-users-line"; }
-        else if (form==="coordinator_entry"||form==="coordinator_form") { title=data.name||data["नाम"]||pName||"समन्वयक"; icon="fa-id-badge"; }
+        else if (form==="visitor_form") { title=item.name||data.name||data["नाम"]||"कार्यालय आगन्तुक"; icon="fa-user-clock"; }
+        else if (form==="party_attendance") { title=pName||pType||"कार्यक्रम उपस्थिति"; icon="fa-users-line"; }
+        else if (form==="coordinator_entry"||form==="coordinator_form") { title=data.name||data["नाम"]||pName||"समन्वयक प्रविष्टि"; icon="fa-id-badge"; }
         else if (pName) { title=pName; }
+        const district=item.district||data.district||"", vidhansabha=item.vidhansabha||data.vidhansabha||"";
+        const locStr=[district,vidhansabha].filter(Boolean).join(", ");
+        const eventPhotoObjs = getEventPhotoObjs(item, st.photoUrlByKey);
+        const eventPhotos = eventPhotoObjs.map(p => p.url);
+        const withLabel=item.with_label||"", faceCount=Number(item.face_count||0);
+        const iconColor=iconColorMap[icon]||'#D4A017';
 
-        const district    = item.district||data.district||"";
-        const vidhansabha = item.vidhansabha||data.vidhansabha||"";
-        const mandal      = item.mandal||data.mandal||"";
-        const locStr      = [district,vidhansabha].filter(Boolean).join(", ");
-        const venueStr    = data.tour_location||data.venue||data.tour_venue||data["स्थान"]||"";
-        const totalAtt    = data.total_attendance||data.attendance_count||data["उपस्थिति"]||"";
-        const designation = data.designation||data["पदनाम"]||"";
-        const level       = data.level||data.program_level||data["स्तर"]||"";
-        const reportSummary = data.report_summary||data.program_details||data["विवरण"]||"";
-        const speakers    = data.other_speakers||data["वक्ता"]||"";
-        const withLabel   = item.with_label||"";
-        const guests      = data.guests||data["अतिथि"]||"";
-        const faceCount   = Number(item.face_count||0);
-        const eventPhotos = getEventPhotos(item, photoUrlByKey);
-
-        const IC = { 'fa-plane-departure':'#3ECFB2','fa-clipboard-list':'#D4A017','fa-user-clock':'#A78BFA','fa-users-line':'#60A5FA','fa-id-badge':'#F97316','fa-calendar-check':'#D4A017' };
-        const iconColor = IC[icon]||'#D4A017';
-
-        // wrapper
         const wrapper = document.createElement("div");
-        wrapper.className = "timeline-item";
-        wrapper.style.cssText = "position:relative;margin-bottom:12px;";
+        wrapper.className = "relative pl-3 sm:pl-4 timeline-item stagger-item";
+        wrapper.style.animationDelay = `${index*60}ms`;
 
-        // dot
         const dot = document.createElement("div");
-        dot.className = "timeline-dot";
-        dot.style.cssText = "position:absolute;left:-22px;top:16px;width:12px;height:12px;border-radius:50%;background:#02050A;border:2.5px solid #D4A017;box-shadow:0 0 0 3px rgba(2,5,10,1),0 0 8px rgba(212,160,23,0.5);z-index:2;";
+        dot.className = "timeline-dot absolute w-4 h-4 rounded-full z-10";
+        const dotLeft = (window.innerWidth <= 480 ? -16 : -28);
+        dot.style.cssText = `left:${dotLeft}px; top:20px;`;
         wrapper.appendChild(dot);
 
-        // card
         const card = document.createElement("div");
-        card.className = "timeline-card-premium";
-        card.style.cssText = "width:100%;overflow:hidden;box-sizing:border-box;cursor:pointer;padding:12px;border-radius:14px;background:linear-gradient(145deg,rgba(17,32,68,0.45),rgba(6,13,31,0.7));border:1px solid rgba(255,255,255,0.07);border-left:3px solid "+iconColor+"66;";
+        const cardClass = form === 'president_tour_form' ? 'tour' : form === 'party_attendance' ? 'attendance' : form === 'mandal_reporting_form' || form === 'mandal_reporting' ? 'mandal' : form === 'visitor_form' ? 'visitor' : '';
+        card.className = `timeline-card-premium cursor-pointer ${cardClass}`;
 
-        // header row
-        const hdr = document.createElement("div");
-        hdr.style.cssText = "display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap;";
+        const mandal = item.mandal || data.mandal || "";
+        const guests = data.guests || data["अतिथि"] || "";
+        const venueStr = data.tour_location || data.venue || data.tour_venue || data["स्थान"] || "";
+        const totalAtt = data.total_attendance || data.attendance_count || data["उपस्थिति"] || "";
+        const designation = data.designation || data["पदनाम"] || "";
+        const level = data.level || data.program_level || data["स्तर"] || "";
+        const reportSummary = data.report_summary || data.program_details || data["विवरण"] || "";
+        const speakers = data.other_speakers || data["वक्ता"] || "";
 
-        const iconTitleWrap = document.createElement("div");
-        iconTitleWrap.style.cssText = "display:flex;align-items:center;gap:8px;min-width:0;flex:1;";
+        let html = `<div class="flex items-start sm:items-center justify-between gap-4 mb-4 flex-col sm:flex-row">
+          <div class="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+            <span class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:${iconColor}15;border:1px solid ${iconColor}40;box-shadow:0 0 15px ${iconColor}20;">
+              <i class="fa-solid ${icon} text-base" style="color:${iconColor}"></i>
+            </span>
+            <h3 class="font-display font-bold text-base sm:text-lg leading-snug text-white tracking-wide" style="overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escapeHtml(title)}</h3>
+          </div>
+          ${displayDate ? `<span class="px-3 py-1.5 rounded-lg flex-shrink-0 text-[11px] font-extrabold uppercase tracking-widest whitespace-nowrap self-start sm:self-auto bg-gold-400/10 border border-gold-400/30 text-gold-400">${escapeHtml(displayDate)}</span>` : ""}
+        </div>`;
 
-        const iconBox = document.createElement("span");
-        iconBox.style.cssText = "width:28px;height:28px;min-width:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:"+iconColor+"20;border:1px solid "+iconColor+"40;";
-        iconBox.innerHTML = '<i class="fa-solid '+icon+'" style="color:'+iconColor+';font-size:12px;"></i>';
+        if (locStr) html += `<div class="flex items-center gap-2 text-xs font-bold text-slate-300 mb-3"><i class="fa-solid fa-location-dot text-gold-400"></i><span>${escapeHtml(locStr)}</span></div>`;
 
-        const titleDiv = document.createElement("div");
-        titleDiv.style.cssText = "font-size:13px;font-weight:800;color:#f1f5f9;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;";
-        titleDiv.textContent = title;
+        const infoGrid = [];
+        const pushInfo = (label, val, icon) => { if (!val || !String(val).trim()) return; infoGrid.push(`<div class="flex gap-2 items-start"><i class="fa-solid ${icon} text-[11px] mt-0.5 text-slate-400"></i><div><div class="text-[10px] uppercase tracking-widest text-slate-500 font-extrabold">${label}</div><div class="text-xs font-bold text-slate-200">${escapeHtml(String(val))}</div></div></div>`); };
+        pushInfo("Level", level, "fa-layer-group");
+        pushInfo("Mandal", mandal, "fa-mosque");
+        pushInfo("Venue", venueStr, "fa-location-crosshairs");
+        pushInfo("Guests", guests, "fa-user-group");
+        pushInfo("Attendance", totalAtt, "fa-users");
+        pushInfo("Designation", designation, "fa-id-card");
+        pushInfo("Speakers", speakers, "fa-microphone");
 
-        iconTitleWrap.appendChild(iconBox);
-        iconTitleWrap.appendChild(titleDiv);
-        hdr.appendChild(iconTitleWrap);
-
-        if (displayDate) {
-          const db = document.createElement("span");
-          db.style.cssText = "font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:#EFC24A;background:rgba(212,160,23,0.1);border:1px solid rgba(212,160,23,0.3);padding:3px 7px;border-radius:6px;white-space:nowrap;flex-shrink:0;line-height:1.6;";
-          db.textContent = displayDate;
-          hdr.appendChild(db);
-        }
-        card.appendChild(hdr);
-
-        // info chips
-        const chips = [];
-        if (locStr)   chips.push('<i class="fa-solid fa-location-dot" style="color:#D4A01770;font-size:9px;"></i> '+escapeHtml(locStr));
-        if (mandal)   chips.push('<i class="fa-solid fa-sitemap" style="color:#D4A01770;font-size:9px;"></i> '+escapeHtml(mandal));
-        if (venueStr) chips.push('<i class="fa-solid fa-map-pin" style="color:#D4A01770;font-size:9px;"></i> '+escapeHtml(venueStr));
-        if (pType && form!=="president_tour_form") chips.push(escapeHtml(pType));
-        if (chips.length) {
-          const cd = document.createElement("div");
-          cd.style.cssText = "display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:8px;font-size:10px;color:#94a3b8;align-items:center;";
-          cd.innerHTML = chips.map(c=>'<span style="display:flex;align-items:center;gap:3px;">'+c+'</span>').join("");
-          card.appendChild(cd);
+        if (infoGrid.length) {
+          html += `<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">${infoGrid.join("")}</div>`;
         }
 
-        // pills
-        const pills = [];
-        if (pType && form==="president_tour_form") pills.push({t:pType,c:"rgba(62,207,178,0.1)",bc:"rgba(62,207,178,0.3)",fc:"#3ECFB2"});
-        if (totalAtt)    pills.push({t:"👥 "+totalAtt+" उपस्थित",c:"rgba(96,165,250,0.1)",bc:"rgba(96,165,250,0.3)",fc:"#60A5FA"});
-        if (level)       pills.push({t:level,c:"rgba(167,139,250,0.1)",bc:"rgba(167,139,250,0.3)",fc:"#A78BFA"});
-        if (designation) pills.push({t:designation,c:"rgba(249,115,22,0.1)",bc:"rgba(249,115,22,0.3)",fc:"#F97316"});
-        if (withLabel)   pills.push({t:"✓ "+withLabel.split(",")[0].trim().slice(0,30),c:"rgba(62,207,178,0.1)",bc:"rgba(62,207,178,0.3)",fc:"#3ECFB2"});
-        if (guests)      pills.push({t:"अतिथि: "+String(guests).slice(0,24),c:"rgba(255,255,255,0.05)",bc:"rgba(255,255,255,0.1)",fc:"#94a3b8"});
-        if (speakers)    pills.push({t:"वक्ता: "+String(speakers).slice(0,24),c:"rgba(255,255,255,0.05)",bc:"rgba(255,255,255,0.1)",fc:"#94a3b8"});
-        if (pills.length) {
-          const pd = document.createElement("div");
-          pd.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;";
-          pd.innerHTML = pills.map(p=>'<span style="font-size:9px;padding:3px 8px;border-radius:6px;font-weight:700;background:'+p.c+';border:1px solid '+p.bc+';color:'+p.fc+';">'+escapeHtml(p.t)+'</span>').join("");
-          card.appendChild(pd);
+        if (reportSummary && String(reportSummary).trim().length > 0) {
+          html += `<div class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-4">
+            <div class="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2"><i class="fa-solid fa-file-lines text-gold-400"></i> Summary</div>
+            <div class="text-sm text-slate-200 font-medium leading-relaxed" style="overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;">"${escapeHtml(String(reportSummary))}"</div>
+          </div>`;
         }
 
-        // report summary
-        if (reportSummary) {
-          const sd = document.createElement("div");
-          sd.style.cssText = "font-size:10px;margin-bottom:8px;color:#94a3b8;font-style:italic;background:rgba(0,0,0,0.25);padding:7px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5;";
-          sd.textContent = '"'+String(reportSummary)+'"';
-          card.appendChild(sd);
-        }
+        card.innerHTML = html;
 
-        // photo strip
         if (eventPhotos.length > 0) {
-          const strip = document.createElement("div");
-          strip.className = "timeline-photo-strip";
-          strip.style.cssText = "display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;margin-bottom:8px;";
+          const photoSection = document.createElement("div");
+          photoSection.style.cssText = "margin-bottom:16px;";
 
           const allNames = [];
-          const addName = n => { const t=String(n||"").trim(); if(t&&t.length>1&&!allNames.includes(t)) allNames.push(t); };
-          if (Array.isArray(item.with_names)) item.with_names.forEach(n=>{typeof n==="string"?addName(n):(n&&addName(n.name||n.label||""));});
-          if (!allNames.length && withLabel) withLabel.replace(/(with|and|और|एंड|तथा)/gi,",").split(",").forEach(addName);
-          [item.faces,item.matched_faces,item.identified_faces].forEach(arr=>{ if(Array.isArray(arr)) arr.forEach(f=>{f&&addName(f.name||f.Name||f.label||"");}); });
-          if (Array.isArray(item.photos)) item.photos.forEach(p=>{p&&typeof p==="object"&&addName(p.name||p.person_name||"");});
-          if (form==="visitor_form") addName(item.name||data.name||data["नाम"]);
-          const withMore = Number(item.with_more||0);
+          const addName = (n) => { const t = String(n||"").trim(); if (t && t.length > 1 && !allNames.includes(t)) allNames.push(t); };
 
-          eventPhotos.slice(0,5).forEach((u,pi) => {
+          if (Array.isArray(item.with_names)) {
+            item.with_names.forEach(n => {
+              if (typeof n === 'string') addName(n);
+              else if (n && typeof n === 'object') addName(n.name || n.label || n.display_name || "");
+            });
+          }
+          if (allNames.length === 0 && withLabel && withLabel.trim()) {
+            const raw = withLabel.replace(/\bwith\b/gi, ',').replace(/\band\b/gi, ',').replace(/\bएंड\b/g, ',').replace(/\bऔर\b/g, ',').replace(/\bतथा\b/g, ',');
+            raw.split(',').forEach(n => addName(n));
+          }
+          const faceSources = [item.faces, item.matched_faces, item.identified_faces];
+          faceSources.forEach(arr => {
+            if (!Array.isArray(arr)) return;
+            arr.forEach(f => { if (!f) return; addName(f.name || f.Name || f.label || f.person_name || f.matched_name || ""); });
+          });
+          if (Array.isArray(item.photos)) item.photos.forEach(p => { if (p && typeof p === 'object') addName(p.name || p.person_name || p.label || ""); });
+          if (form === "visitor_form") addName(item.name || data.name || data["नाम"]);
+
+          const withMore = Number(item.with_more || 0);
+
+          const strip = document.createElement("div");
+          strip.style.cssText = "display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;";
+          const maxShow = 5;
+          eventPhotoObjs.slice(0, maxShow).forEach((p, pi) => {
+            const u = (p && (p.thumbUrl || p.url)) || "";
             const thumb = document.createElement("div");
-            thumb.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;";
+            thumb.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;";
+
             const im = document.createElement("img");
+            im.loading = "lazy"; im.decoding = "async";
             setImgSrcWithRetry(im, u);
-            im.style.cssText = "width:52px;height:52px;border-radius:10px;object-fit:cover;border:1.5px solid rgba(255,255,255,0.1);display:block;flex-shrink:0;";
-            thumb.appendChild(im);
+            im.style.cssText = "width:72px;height:72px;border-radius:16px;object-fit:cover;border:2px solid rgba(255,255,255,0.1);flex-shrink:0;transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);display:block;box-shadow:0 4px 10px rgba(0,0,0,0.3);";
+
             if (allNames[pi]) {
-              const nm = document.createElement("div");
-              nm.style.cssText = "font-size:9px;font-weight:600;color:#94a3b8;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;";
-              nm.textContent = allNames[pi].split(" ")[0];
-              thumb.appendChild(nm);
+              const nameEl = document.createElement("div");
+              const firstName = allNames[pi].split(' ')[0];
+              nameEl.style.cssText = "font-size:10px;font-weight:800;color:#cbd5e1;text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;";
+              nameEl.title = allNames[pi];
+              nameEl.textContent = firstName;
+              thumb.appendChild(im);
+              thumb.appendChild(nameEl);
+            } else {
+              thumb.appendChild(im);
             }
             strip.appendChild(thumb);
           });
 
-          if (eventPhotos.length > 5) {
+          if (eventPhotos.length > maxShow) {
             const more = document.createElement("div");
-            more.style.cssText = "width:52px;height:52px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:rgba(212,160,23,0.1);border:1.5px dashed rgba(212,160,23,0.4);color:#D4A017;gap:2px;flex-shrink:0;";
-            more.innerHTML = '<i class="fa-solid fa-images" style="font-size:11px;"></i><span style="font-size:9px;">+' + (eventPhotos.length-5) + '</span>';
+            more.style.cssText = "width:72px;height:72px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;font-weight:800;background:rgba(212,160,23,0.1);border:2px dashed rgba(212,160,23,0.4);color:var(--gold-400);gap:4px;flex-shrink:0;box-shadow:inset 0 0 20px rgba(212,160,23,0.05);";
+            more.innerHTML = `<i class="fa-solid fa-images"></i><span class="text-[11px]">+${eventPhotos.length - maxShow}</span>`;
             strip.appendChild(more);
           }
-          card.appendChild(strip);
 
-          // names row
+          photoSection.appendChild(strip);
+
           if (allNames.length > 0) {
-            const nr = document.createElement("div");
-            nr.style.cssText = "margin-bottom:8px;padding:6px 10px;border-radius:8px;background:rgba(212,160,23,0.07);border:1px solid rgba(212,160,23,0.18);font-size:11px;color:#f1f5f9;display:flex;align-items:center;gap:6px;overflow:hidden;";
-            const shown = allNames.slice(0,3), rem = (allNames.length-shown.length)+withMore;
-            nr.innerHTML = '<i class="fa-solid fa-users" style="color:#D4A017;font-size:10px;flex-shrink:0;"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+shown.map(n=>'<b style="color:#F5D78A;">'+escapeHtml(n)+'</b>').join(' <span style="color:#475569;">•</span> ')+(rem>0?' <span style="color:#94a3b8;font-size:10px;">& '+rem+' अन्य</span>':'')+'</span>';
-            card.appendChild(nr);
-          } else if (withMore>0||faceCount>1) {
-            const nr = document.createElement("div");
-            nr.style.cssText = "margin-bottom:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:6px;";
-            nr.innerHTML = '<i class="fa-solid fa-users" style="font-size:10px;flex-shrink:0;"></i><span>'+(withMore||faceCount)+' लोग उपस्थित</span>';
-            card.appendChild(nr);
+            const nameRow = document.createElement("div");
+            nameRow.style.cssText = "margin-top:8px;padding:10px 14px;border-radius:12px;background:rgba(212,160,23,0.08);border:1px solid rgba(212,160,23,0.2);backdrop-filter:blur(10px);";
+            const maxShow = 3;
+            const shown = allNames.slice(0, maxShow);
+            const remaining = (allNames.length - shown.length) + withMore;
+            let nameText = shown.map(n => `<span style="color:#F5D78A;font-weight:800;">${escapeHtml(n)}</span>`).join(' <span style="color:#64748b;margin:0 4px;">•</span> ');
+            if (remaining > 0) nameText += ` <span style="color:#94a3b8;font-size:11px;font-weight:700;">& ${remaining} अन्य</span>`;
+            nameRow.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-users text-[11px]" style="color:#D4A017;flex-shrink:0;"></i><span style="font-size:12px;color:#f1f5f9;line-height:1.5;">${nameText}</span></div>`;
+            photoSection.appendChild(nameRow);
+          } else if (withMore > 0) {
+            const nameRow = document.createElement("div");
+            nameRow.style.cssText = "margin-top:8px;font-size:12px;font-weight:700;color:#cbd5e1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:10px;";
+            nameRow.innerHTML = `<i class="fa-solid fa-users text-[11px]"></i><span>${withMore} अन्य लोग भी उपस्थित</span>`;
+            photoSection.appendChild(nameRow);
+          } else if (faceCount > 1) {
+            const nameRow = document.createElement("div");
+            nameRow.style.cssText = "margin-top:8px;font-size:12px;font-weight:700;color:#cbd5e1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:10px;";
+            nameRow.innerHTML = `<i class="fa-solid fa-users text-[11px]"></i><span>${faceCount} लोग पहचाने गए</span>`;
+            photoSection.appendChild(nameRow);
           }
+
+          card.appendChild(photoSection);
         }
 
-        // footer
         const footer = document.createElement("div");
-        footer.style.cssText = "padding-top:8px;border-top:1px dashed rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;";
-        footer.innerHTML = '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#475569;">'+escapeHtml(getFormTypeLabel(form))+'</span><span style="font-size:10px;font-weight:700;color:#EFC24A;background:rgba(212,160,23,0.1);padding:4px 12px;border-radius:20px;border:1px solid rgba(212,160,23,0.25);display:flex;align-items:center;gap:4px;"><i class="fa-solid fa-expand" style="font-size:9px;"></i> देखें</span>';
+        footer.style.cssText = "padding-top:16px;border-top:1px dashed rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:space-between;";
+        footer.innerHTML = `<span class="text-[11px] font-extrabold tracking-widest uppercase text-slate-500">${escapeHtml(getFormTypeLabel(form))}</span><span class="text-xs flex items-center gap-2 font-bold text-gold-400 bg-gold-400/10 px-4 py-2 rounded-full hover:bg-gold-400/20 hover:scale-105 transition-all duration-300"><i class="fa-solid fa-expand text-[10px]"></i> View Full Report</span>`;
         card.appendChild(footer);
 
-        // ── iOS-safe touch/click handlers ──
-        const _open = () => openEventSlideshow(item, { title, icon, details: buildEventDetails(item, form, data, displayDate, formDate) });
-        card.addEventListener("touchstart", e => { e.stopPropagation(); }, { passive: true });
-        card.addEventListener("touchend", e => { e.preventDefault(); e.stopPropagation(); _open(); });
-        card.addEventListener("click", e => { e.stopPropagation(); _open(); });
+        // Avoid accidental navigation on iOS: hard stop propagation
+        card.addEventListener("click", (e) => {
+          try { e.preventDefault(); e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } catch(_) {}
+          openEventSlideshow(item, { title, icon, details: buildEventDetails(item,form,data,displayDate,formDate) });
+        }, { passive: false });
 
         wrapper.appendChild(card);
         el.viewTimeline.appendChild(wrapper);
-      });
+      }
 
-      batchIdx += BATCH;
-      // Load next batch on next frame if more remain
-      if (batchIdx < sorted.length) {
-        requestAnimationFrame(renderBatch);
+      st.cursor = end;
+      if (end >= st.sorted.length) {
+        try { if (window.__timelineIO) window.__timelineIO.disconnect(); } catch(_) {}
       }
     }
 
-    renderBatch();
-  }
+    // Render initial page
+    appendTimelinePage();
 
+    // Setup infinite timeline load (prevents huge DOM on iPhone)
+    const sentinel = document.getElementById("timelineSentinel");
+    if (sentinel) {
+      try { if (window.__timelineIO) window.__timelineIO.disconnect(); } catch(_) {}
+      if ("IntersectionObserver" in window) {
+        window.__timelineIO = new IntersectionObserver((ents) => {
+          ents.forEach(en => { if (en.isIntersecting) appendTimelinePage(); });
+        }, { root: null, rootMargin: "900px 0px", threshold: 0.01 });
+        window.__timelineIO.observe(sentinel);
+      } else {
+        const onScroll = () => {
+          const st = window.__timelinePager; if (!st) return;
+          if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 900)) appendTimelinePage();
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+      }
+    }
+  }
 
   function buildEventDetails(item, form, data, displayDate, formDate) {
     const details = [], push = (k, v) => { if (v && String(v).trim()) details.push([k, String(v).trim()]); };
@@ -1742,6 +1923,8 @@ body{overflow-x:hidden;}
 
   const SS = (() => {
     let photos = [], idx = 0, autoTimer = null, isPlaying = false, currentDetails = [];
+    let metaUrlToEventMap = null;
+
     const overlay = document.getElementById("slideshowOverlay");
     const img = document.getElementById("slideshowImg");
     const counter = document.getElementById("slideshowCounter");
@@ -1774,6 +1957,35 @@ body{overflow-x:hidden;}
       }
     }
 
+
+    function renderThumbsWindow() {
+      try {
+        if (!thumbRow) return;
+        thumbRow.innerHTML = "";
+        const total = photos.length;
+        if (!total) return;
+
+        const win = (window.innerWidth <= 480 ? 7 : 10);
+        const start = Math.max(0, idx - win);
+        const end = Math.min(total, idx + win + 1);
+
+        for (let i = start; i < end; i++) {
+          const p = photos[i];
+          const url = (typeof p === "string") ? p : (p && p.url) ? p.url : "";
+          if (!url) continue;
+          const t = document.createElement("img");
+          t.className = "ss-thumb" + (i === idx ? " active" : "");
+          t.alt = "";
+          t.loading = "lazy";
+          t.decoding = "async";
+          t.dataset.idx = String(i);
+          setImgSrcWithRetry(t, url);
+          t.addEventListener("click", () => { stopAuto(); goTo(i); }, { passive: true });
+          thumbRow.appendChild(t);
+        }
+      } catch(_) {}
+    }
+
     function goTo(i, animate = true) {
       if (!photos.length) return;
       idx = ((i % photos.length) + photos.length) % photos.length;
@@ -1781,8 +1993,26 @@ body{overflow-x:hidden;}
       counter.textContent = `${idx+1} / ${photos.length}`;
       if (animate) { img.classList.add("fading"); setTimeout(() => { img.src = photos[idx].url; img.onload = () => img.classList.remove("fading"); img.onerror = () => img.classList.remove("fading"); }, 220); }
       else { img.src = photos[idx].url; }
-      thumbRow.querySelectorAll(".ss-thumb").forEach((t,ti) => t.classList.toggle("active", ti===idx));
-      if (thumbRow.children[idx]) thumbRow.children[idx].scrollIntoView({ behavior:"smooth", block:"nearest", inline:"center" });
+      // Windowed thumbnails for performance (avoid iPhone reload on big galleries)
+      renderThumbsWindow();
+      const activeThumb = thumbRow.querySelector('.ss-thumb.active');
+      if (activeThumb && activeThumb.scrollIntoView) {
+        try { activeThumb.scrollIntoView({ behavior:"smooth", block:"nearest", inline:"center" }); } catch(_) {}
+      }
+
+      // Attach details lazily from URL→event map (when opening full gallery)
+      try {
+        const p = photos[idx];
+        if (p && p.url && metaUrlToEventMap && !p.details) {
+          const ev = metaUrlToEventMap.get(p.url);
+          if (ev) {
+            p.eventTitle = ev.title || p.eventTitle || "Event Photo";
+            p.formType = ev.formType || p.formType || "";
+            p.details = ev.details || [];
+          }
+        }
+      } catch(_) {}
+
       renderDetailPanel(photos[idx]);
     }
 
@@ -1810,17 +2040,21 @@ body{overflow-x:hidden;}
       touchX = null;
     }, { passive: true });
 
-    function open(title, photoList, details, eventTitle, formType) {
-      photos = photoList || []; if (!photos.length) return;
+    function open(title, photoList, details, eventTitle, formType, meta) {
+      metaUrlToEventMap = (meta && meta.urlToEventMap) ? meta.urlToEventMap : null;
+      photos = photoList || [];
+      if (!photos || !photos.length) return;
+
+      // Normalize: allow passing urls as strings (big galleries) without heavy objects
+      if (typeof photos[0] === "string") {
+        photos = photos.map(u => ({ url: u }));
+      }
+
       currentDetails = details || [];
       titleEl.textContent = title || "Event";
-      thumbRow.innerHTML = "";
-      photos.forEach((p,i) => {
-        const t = document.createElement("img"); t.src = p.url; t.className = "ss-thumb"; t.alt = "";
-        t.addEventListener("click", () => { stopAuto(); goTo(i); }); thumbRow.appendChild(t);
-      });
       overlay.classList.add("active");
       document.body.classList.add("overflow-hidden");
+      // Render first frame (thumbs are windowed for performance)
       goTo(0, false);
     }
     function close() { stopAuto(); overlay.classList.remove("active"); img.src = ""; document.body.classList.remove("overflow-hidden"); }
@@ -1829,7 +2063,8 @@ body{overflow-x:hidden;}
 
   function openEventSlideshow(item, sum) {
     const form = item.form_type||item.ft||"", data = item.data||{};
-    const eventPhotos = getEventPhotos(item, globalPhotoMap);
+    const eventPhotoObjs = getEventPhotoObjs(item, globalPhotoMap);
+    const eventPhotos = eventPhotoObjs.map(p => p.url);
     if (eventPhotos.length === 0) {
       const body = document.createElement("div");
       const det = sum.details||buildEventDetails(item,form,data,getEventFormDate(form,data)||prettyIso(item.created_at_iso||""),getEventFormDate(form,data));
@@ -1846,47 +2081,119 @@ body{overflow-x:hidden;}
     galleryImages = [];
     if (!Array.isArray(photoUrls)||photoUrls.length===0) {
       el.photosGrid.innerHTML = `<div class="col-span-full text-center py-16 text-sm font-bold tracking-widest uppercase text-slate-500 bg-white/5 rounded-3xl border border-white/5">कोई फोटो नहीं मिली</div>`;
+      // Stop any existing observers
+      try { if (window.__photoIO) window.__photoIO.disconnect(); } catch(_) {}
+      window.__photoPager = null;
       return;
     }
+
+    // Deduplicate by S3 key (fast + stable)
     const byKey = new Map();
     photoUrls.forEach(u => { const k = parseS3KeyFromUrl(u); if (isNonEmpty(k)&&!byKey.has(k)) byKey.set(k,u); });
+
+    // Build label map from timeline (used in fallback modal only)
     const labelByKey = new Map();
     (timeline||[]).forEach(t => { if (isNonEmpty(t.s3_key)) labelByKey.set(t.s3_key,buildEventSummary(t).title); });
-    Array.from(byKey.entries()).forEach(([k,url],idx) => {
+
+    const entries = Array.from(byKey.entries()); // [key,url]
+    // Maintain legacy galleryImages list (used by older modal fallback)
+    entries.forEach(([k,url]) => {
       galleryImages.push({ url, title: labelByKey.get(k)||"Event Photo", id: k });
-      const wrapper = document.createElement("div"); wrapper.className = "photo-item"; wrapper.style.cssText += ";touch-action:manipulation;-webkit-tap-highlight-color:transparent;";
-      const img = document.createElement("img"); setImgSrcWithRetry(img,url); img.loading = "lazy"; img.className = "w-full h-full object-cover";
-      const playIcon = document.createElement("div"); playIcon.className = "play-icon"; playIcon.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(212,160,23,0.9);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(0,0,0,0.5)"><i class="fa-solid fa-play text-navy-950 text-xl" style="margin-left:4px;"></i></div>';
-      wrapper.appendChild(img); wrapper.appendChild(playIcon);
-      wrapper.addEventListener("click", (function(capturedIdx) {
-        return function(e) {
-          e && e.stopPropagation();
-          // Build urlToEvent map from timeline data
-          const urlToEventMap = new Map();
-          (window.globalTimelineData || []).forEach(item => {
-            const form = item.form_type || item.ft || "";
-            const data = item.data || {};
-            const formDate = getEventFormDate(form, data);
-            const displayDate = formDate || prettyIso(item.created_at_iso || "");
-            const det = buildEventDetails(item, form, data, displayDate, formDate);
-            const evPhotos = getEventPhotos(item, globalPhotoMap);
-            const title = buildEventSummary(item).title;
-            const fLabel = getFormTypeLabel(form);
-            evPhotos.forEach(u => { if (!urlToEventMap.has(u)) urlToEventMap.set(u, { title, formType: fLabel, details: det }); });
-          });
-          const allPhotos = Array.from(byKey.values()).map(u => {
-            const ev = urlToEventMap.get(u) || {};
-            return { url: u, eventTitle: ev.title || "Event Photo", formType: ev.formType || "", details: ev.details || [] };
-          });
-          if (!allPhotos.length) return;
-          const startPhoto = allPhotos[capturedIdx] || allPhotos[0];
-          // Open at index 0 first, then jump - so details render correctly
-          SS.open(startPhoto.eventTitle || "Gallery", allPhotos, startPhoto.details, startPhoto.eventTitle, startPhoto.formType);
-          if (capturedIdx > 0) setTimeout(() => { if (typeof SS.goTo === 'function') SS.goTo(capturedIdx, false); }, 30);
-        };
-      })(idx));
-      el.photosGrid.appendChild(wrapper);
     });
+
+    // Build a light URL → event meta map once (used for details panel on mobile/iPhone)
+    const urlToEventMap = new Map();
+    try {
+      (window.globalTimelineData || timeline || []).forEach(item => {
+        const form = item.form_type || item.ft || "";
+        const data = item.data || {};
+        const formDate = getEventFormDate(form, data);
+        const displayDate = formDate || prettyIso(item.created_at_iso || "");
+        const det = buildEventDetails(item, form, data, displayDate, formDate);
+        const ev = { title: buildEventSummary(item).title, formType: getFormTypeLabel(form), details: det };
+        const evPhotos = getEventPhotos(item, globalPhotoMap);
+        evPhotos.forEach(u => { if (u && !urlToEventMap.has(u)) urlToEventMap.set(u, ev); });
+      });
+    } catch(_) {}
+
+    // Pager state (avoid rendering all at once; iPhone reload/memory)
+    window.__photoPager = { entries, cursor: 0, pageSize: (window.innerWidth <= 480 ? 18 : 30), urlToEventMap };
+    const orderedUrls = entries.map(([k,u]) => u);
+    window.__orderedPhotoUrls = orderedUrls;
+    window.__urlToEventMap = urlToEventMap;
+
+    function appendPhotoPage() {
+      const st = window.__photoPager;
+      if (!st) return;
+      const start = st.cursor;
+      const end = Math.min(start + st.pageSize, st.entries.length);
+      for (let i = start; i < end; i++) {
+        const url = st.entries[i][1];
+        const wrapper = document.createElement("div"); wrapper.className = "photo-item"; wrapper.dataset.index = String(i);
+        const img = document.createElement("img");
+        img.decoding = "async";
+        img.loading = (i < 6 ? "eager" : "lazy");
+        try { img.fetchPriority = (i < 2 ? "high" : "low"); } catch(_) {}
+        setImgSrcWithRetry(img, url);
+        img.className = "w-full h-full object-cover";
+
+        const playIcon = document.createElement("div");
+        playIcon.className = "play-icon";
+        playIcon.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:rgba(212,160,23,0.9);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(0,0,0,0.5)"><i class="fa-solid fa-play text-navy-950 text-xl" style="margin-left:4px;"></i></div>';
+
+        wrapper.appendChild(img); wrapper.appendChild(playIcon);
+        el.photosGrid.appendChild(wrapper);
+      }
+      st.cursor = end;
+
+      // done?
+      if (end >= st.entries.length) {
+        try { if (window.__photoIO) window.__photoIO.disconnect(); } catch(_) {}
+      }
+    }
+
+    // One-time click delegation (works even when we append later)
+    if (!window.__photoGridClickBound) {
+      window.__photoGridClickBound = true;
+      el.photosGrid.addEventListener("click", (e) => {
+        const item = e.target.closest(".photo-item");
+        if (!item) return;
+        try { e.preventDefault(); e.stopPropagation(); } catch(_) {}
+        const idx = parseInt(item.dataset.index || "0", 10) || 0;
+
+        const urls = window.__orderedPhotoUrls || [];
+        const meta = window.__urlToEventMap || new Map();
+        if (urls.length > 0) {
+          SS.open("Gallery", urls, [], "", "", { urlToEventMap: meta });
+          setTimeout(() => { try { SS.goTo(idx, false); } catch(_) {} }, 50);
+        } else {
+          modal.open("Gallery", null, true);
+          modal.showGalleryImage(idx);
+        }
+      });
+    }
+
+    // Render first page now
+    appendPhotoPage();
+
+    // Setup infinite load
+    const sentinel = document.getElementById("photosSentinel");
+    if (sentinel) {
+      try { if (window.__photoIO) window.__photoIO.disconnect(); } catch(_) {}
+      if ("IntersectionObserver" in window) {
+        window.__photoIO = new IntersectionObserver((ents) => {
+          ents.forEach(en => { if (en.isIntersecting) appendPhotoPage(); });
+        }, { root: null, rootMargin: "900px 0px", threshold: 0.01 });
+        window.__photoIO.observe(sentinel);
+      } else {
+        // Fallback: window scroll
+        const onScroll = () => {
+          const st = window.__photoPager; if (!st) return;
+          if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 900)) appendPhotoPage();
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+      }
+    }
   }
 
   async function apiCall(action, payload, tokenOpt) {
@@ -2014,7 +2321,20 @@ body{overflow-x:hidden;}
       try { const buf = await file.arrayBuffer(); const hb = await crypto.subtle.digest("SHA-256",buf); photoSha256 = Array.from(new Uint8Array(hb)).map(b=>b.toString(16).padStart(2,"0")).join(""); } catch(e) {}
       const init = await apiCall("init_search",{mime_type:file.type||"image/jpeg",sha256:photoSha256},token);
       const uploadUrl = init.upload_url||init.url, searchId = init.search_id||init.searchId;
-      if (!init.cache_hit) { await fetch(uploadUrl,{method:"PUT",body:file,headers:{"Content-Type":file.type}}); }
+      if (!init.cache_hit) {
+        // Upload to presigned URL. Some devices/browsers may produce empty/odd Content-Type; retry safely.
+        let putResp;
+        try {
+          const putHeaders = {};
+          const ct = (file && file.type) ? String(file.type) : "";
+          if (ct) putHeaders["Content-Type"] = ct;
+          putResp = await fetch(uploadUrl, { method:"PUT", body:file, headers: putHeaders });
+          if (!putResp.ok) throw new Error("PUT_FAILED");
+        } catch(e) {
+          putResp = await fetch(uploadUrl, { method:"PUT", body:file });
+          if (!putResp.ok) throw new Error("Upload failed");
+        }
+      }
       setStatus("डेटाबेस में खोज हो रही है...","loading");
       const res = await apiCall("run_search",{search_id:searchId},token);
       el.skeletonLoader.classList.add("hidden");
@@ -2072,8 +2392,6 @@ body{overflow-x:hidden;}
     renderPhotos(res.photo_urls||[], timeline);
     switchTab("photos");
     if (window.innerWidth < 1024) el.resultsContainer.scrollIntoView({ behavior:"smooth", block:"start" });
-    // Hide mobile bar explicitly
-    const mb = document.getElementById("mobileBottomBar"); if(mb) mb.style.display="none";
   }
 
   function openAllSlideshow() {
@@ -2094,7 +2412,8 @@ body{overflow-x:hidden;}
       else if (form === "party_attendance") title = pName || pType || "कार्यक्रम उपस्थिति";
       else if (form === "coordinator_entry" || form === "coordinator_form") title = data.name || data["नाम"] || pName || "समन्वयक प्रविष्टि";
       const details = buildEventDetails(item, form, data, displayDate, formDate);
-      const eventPhotos = getEventPhotos(item, globalPhotoMap);
+      const eventPhotoObjs = getEventPhotoObjs(item, globalPhotoMap);
+    const eventPhotos = eventPhotoObjs.map(p => p.url);
       eventPhotos.forEach(u => { urlToEvent.set(u, { title, formType: getFormTypeLabel(form), details }); });
     });
 
@@ -2220,10 +2539,6 @@ body{overflow-x:hidden;}
   window.renderTimeline = function(timeline, photoUrlByKey) { return renderTimeline(timeline, photoUrlByKey || globalPhotoMap); };
   window.globalPhotoMap = globalPhotoMap;
   window._globalPhotoMap = globalPhotoMap;
-  // Expose switchTab globally so inline onclick can call it
-  window.switchTab = switchTab;
-  window.currentFilter = currentFilter;
-  window.applyFilter = applyFilter;
 
 })();
 </script>
@@ -2266,8 +2581,6 @@ body{overflow-x:hidden;}
   document.addEventListener('click', function(e) {
     const btn = e.target.closest('.ripple-container');
     if (!btn) return;
-    // Skip tab buttons - they handle their own events
-    if (btn.id === 'btnTabTimeline' || btn.id === 'btnTabPhotos') return;
     const rect = btn.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
     const ripple = document.createElement('span');
@@ -2374,8 +2687,6 @@ body{overflow-x:hidden;}
     if (step2) new MutationObserver(syncBar).observe(step2, { attributes: true, attributeFilter: ['class'] });
     if (resultsContainer) new MutationObserver(syncBar).observe(resultsContainer, { attributes: true, attributeFilter: ['class'] });
     syncBar();
-    // Extra: hide mobile bar immediately when results shown
-    window._hideMobileBar = function() { if(mobileBottomBar) mobileBottomBar.style.display='none'; };
   })();
 
   // ── Intercept setStatus for toast ──
@@ -2439,6 +2750,32 @@ body{overflow-x:hidden;}
       });
     }
   });
+
+
+  // ── iOS: force front camera (best-effort) ──
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      const ua = navigator.userAgent || "";
+      const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+      if (!isIOS) return;
+      const selfieInput = document.getElementById('selfieInput');
+      if (!selfieInput) return;
+      // Some iOS builds ignore capture when the input is fully transparent.
+      selfieInput.style.opacity = '0.001';
+      selfieInput.setAttribute('accept', 'image/*');
+      selfieInput.setAttribute('capture', 'user');
+      const zone = selfieInput.closest('label') || document.querySelector('label.upload-zone');
+      if (zone) {
+        zone.addEventListener('click', () => {
+          try {
+            selfieInput.setAttribute('accept', 'image/*');
+            selfieInput.setAttribute('capture', 'user');
+          } catch (_) {}
+        }, { passive: true });
+      }
+    } catch (e) {}
+  });
+
   </script>
 
 <script>

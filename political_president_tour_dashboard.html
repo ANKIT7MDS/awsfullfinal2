@@ -421,7 +421,9 @@ async function loadData(append = false) {
         limit: PAGE_SIZE,
         start_ms: String(startMs),
         end_ms: String(endMs),
-        form_type: "president_tour_form", // server-side filter
+        // DynamoDB में "president_tour" stored है; Lambda alias भी handle करता है
+        form_type: "president_tour_form",
+        form_types: ["president_tour_form", "president_tour"],
       };
       if (pageKey) apiPayload.next_key = pageKey;
 
@@ -447,15 +449,64 @@ async function loadData(append = false) {
   }
 }
 
-// Each entry = one tour event (one photo upload)
-// No grouping needed — hR entry is a unique tour visit
+// ════════════════════════════════════════════════════════
+// GROUP by event_id — same program ke saare photos ek card
+// event_id = sha1(form_type|level|district|mandal|date|place|program_type|program_name)
+// Same program = same event_id = group together
+// ════════════════════════════════════════════════════════
 function groupTourEntries(items) {
-  // Normalize: ensure each item has photo_url accessible easily
-  return items.map(item => {
-    item._photos = item.photo_url ? [item.photo_url] : [];
-    item._count = 1;
-    return item;
+  const grouped = new Map();
+  const order = [];
+
+  items.forEach(item => {
+    const eventId = (item.event_id || "").trim();
+    // Use event_id as group key; fallback to entry_id (unique per photo)
+    const key = eventId || item.entry_id;
+
+    if (!grouped.has(key)) {
+      const rep = Object.assign({}, item);
+      rep._photos = [];
+      rep._count = 0;
+      rep._entries = [];
+      grouped.set(key, rep);
+      order.push(key);
+    }
+
+    const grp = grouped.get(key);
+    grp._count++;
+    grp._entries.push(item.entry_id);
+
+    // Collect photo_url (unique)
+    if (item.photo_url && !grp._photos.includes(item.photo_url)) {
+      grp._photos.push(item.photo_url);
+    }
+
+    // Keep highest attendance
+    const att = parseInt((item.data || {}).total_attendance) || 0;
+    const cur = parseInt((grp.data || {}).total_attendance) || 0;
+    if (att > cur && grp.data) grp.data.total_attendance = att;
   });
+
+  return order.map(k => grouped.get(k));
+}
+
+// Parse DD/MM/YYYY or YYYY-MM-DD → timestamp (local time, IST safe)
+function parseTourDate(dateStr) {
+  if (!dateStr) return 0;
+  const s = dateStr.trim();
+  // DD/MM/YYYY format (as used in president_tour form)
+  const ddmmyyyy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    return new Date(+ddmmyyyy[3], +ddmmyyyy[2]-1, +ddmmyyyy[1]).getTime();
+  }
+  // YYYY-MM-DD format
+  const yyyymmdd = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (yyyymmdd) {
+    return new Date(+yyyymmdd[1], +yyyymmdd[2]-1, +yyyymmdd[3]).getTime();
+  }
+  // Fallback
+  const d = new Date(s);
+  return isNaN(d) ? 0 : d.getTime();
 }
 
 function applyFilters() {
@@ -468,18 +519,10 @@ function applyFilters() {
   filteredTours = allTours.filter(t => {
     const d = t.data || {};
     const dateStr = (d.tour_date || d.date || "").trim();
-    let dateMs = 0;
-    if (dateStr) {
-      // "YYYY-MM-DD" format — parse as local date to avoid UTC timezone shift
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        const [y,mo,dy] = dateStr.split("-").map(Number);
-        dateMs = new Date(y, mo-1, dy).getTime(); // local time
-      } else {
-        dateMs = new Date(dateStr).getTime();
-      }
-    }
-    // Fallback: use created_at (epoch ms stored as string)
-    if (!dateMs || isNaN(dateMs)) dateMs = parseInt(t.created_at) || 0;
+    // parseTourDate handles DD/MM/YYYY and YYYY-MM-DD correctly
+    let dateMs = parseTourDate(dateStr);
+    // Fallback: use created_at (epoch ms)
+    if (!dateMs) dateMs = parseInt(t.created_at) || 0;
     
     if (from && dateMs < from) return false;
     if (to !== Infinity && dateMs > to + 86400000) return false; // +1 day buffer
@@ -515,10 +558,10 @@ function updateStats() {
   $("s-attendance").textContent = totalAttend.toLocaleString("hi-IN");
   const uniqueDistricts = new Set(filteredTours.map(t => (t.data || {}).district).filter(Boolean));
   $("s-districts").textContent = uniqueDistricts.size;
-  // हर entry में एक photo है (president_tour में हर photo = अलग entry)
-  const totalPhotos = filteredTours.filter(t => t.photo_url || t.s3_key).length;
+  // _count = number of photos per grouped event
+  const totalPhotos = filteredTours.reduce((s,t) => s + (t._count || (t.photo_url?1:0)), 0);
   $("s-photos").textContent = totalPhotos;
-  $("result-count").textContent = `${filteredTours.length} टूर मिले (कुल ${allTours.length} loaded)`;
+  $("result-count").textContent = `${filteredTours.length} कार्यक्रम मिले`;
 }
 
 // ─── RENDER ───
@@ -544,10 +587,11 @@ function renderGrid() {
 
   filteredTours.forEach((tour, i) => {
     const d = tour.data || {};
-    const photos = tour.photo_url ? [tour.photo_url] : 
-                   (tour._photos && tour._photos.length ? tour._photos : 
-                   (tour.s3_key ? [tour.s3_key] : []));
-    const totalCount = photos.length;
+    // _photos = all grouped photos; fallback to single photo_url
+    const photos = (tour._photos && tour._photos.length)
+      ? tour._photos
+      : (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []));
+    const totalCount = tour._count || photos.length;
     const date = d.tour_date || d.date || "";
     const level = d.program_level || "";
     const district = d.district || "";
@@ -567,7 +611,12 @@ function renderGrid() {
     card.style.animationDelay = (i * 0.04) + "s";
     card.innerHTML = `
       <div class="relative" style="height:160px;background:#0b1530;overflow:hidden;cursor:pointer" onclick="openSlide(${i}, 0)">
-        ${photos[0] ? `<img src="${photos[0]}" alt="" style="width:100%;height:100%;object-fit:cover;opacity:0.85" onerror="this.style.display='none'">` : ""}
+        ${photos.length > 1
+          ? `<div style="display:grid;grid-template-columns:${photos.length>=4?'1fr 1fr':'1fr'};grid-template-rows:${photos.length>=4?'1fr 1fr':photos.length>=2?'1fr 1fr':'1fr'};height:100%;gap:1px">
+              ${photos.slice(0,4).map(p=>`<img src="${p}" style="width:100%;height:100%;object-fit:cover;opacity:0.88" onerror="this.style.background='#1e293b'">`).join('')}
+            </div>`
+          : photos[0] ? `<img src="${photos[0]}" alt="" style="width:100%;height:100%;object-fit:cover;opacity:0.85" onerror="this.style.display='none'">` : ""
+        }
         <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(2,6,23,.9),transparent 50%)"></div>
         <div style="position:absolute;bottom:10px;left:12px;right:12px">
           <div class="flex flex-wrap gap-1.5 mb-1.5">
@@ -576,6 +625,7 @@ function renderGrid() {
           </div>
           <div class="text-white font-bold text-sm truncate">${pname || location || "Tour"}</div>
         </div>
+        ${totalCount > 1 ? `<div style="position:absolute;top:8px;right:8px;background:rgba(249,115,22,.92);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px"><i class="fa-solid fa-images" style="margin-right:3px"></i>${totalCount}</div>` : ""}
       </div>
       <div class="p-4 space-y-2.5">
         <div class="flex items-center justify-between">
@@ -613,8 +663,10 @@ function renderList() {
 
   filteredTours.forEach((tour, i) => {
     const d = tour.data || {};
-    const photos = tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []);
-  const photoCount = photos.length;
+    const photos = (tour._photos && tour._photos.length)
+    ? tour._photos
+    : (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []));
+  const photoCount = tour._count || photos.length;
     const date = d.tour_date || d.date || "";
     const levelPill = (d.program_level || "") === "जिला" ? "pill-orange" : (d.program_level || "") === "विधानसभा" ? "pill-blue" : "pill-green";
 
@@ -712,7 +764,7 @@ function startSlideshow() {
 
 function navSlide(dir) {
   const tour = filteredTours[slideIndex];
-  const photos = tour ? (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : [])) : [];
+  const photos = tour ? ((tour._photos && tour._photos.length) ? tour._photos : (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []))) : [];
   slidePhotoIndex += dir;
   if (slidePhotoIndex < 0) {
     // go to prev tour
@@ -736,8 +788,10 @@ function renderSlide() {
   const tour = filteredTours[slideIndex];
   if (!tour) return;
   const d = tour.data || {};
-  const photos = tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []);
-  const photoCount = photos.length;
+  const photos = (tour._photos && tour._photos.length)
+    ? tour._photos
+    : (tour.photo_url ? [tour.photo_url] : (tour.s3_key ? [tour.s3_key] : []));
+  const photoCount = tour._count || photos.length;
 
   $("ssCounter").textContent = `${slideIndex+1} / ${filteredTours.length}`;
   $("ssProgressBar").style.width = `${((slideIndex+1)/filteredTours.length)*100}%`;

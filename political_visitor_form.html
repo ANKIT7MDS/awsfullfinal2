@@ -1250,16 +1250,24 @@ function openPopup(sd){
   const displayName = name.startsWith("श्री") || name.startsWith("श्रीमती") ? name : `श्री ${name}`;
   _$("pp-name").textContent = displayName;
 
-  // Visit count
+  // Visit count with badge
   _$("pp-vi").textContent = totalVisit;
   _$("pp-vi-sub").textContent = `इस कार्यालय पर आपकी उपस्थिति`;
+  // Frequency badge
+  const viEl = _$("pp-vi");
+  if(viEl) {
+    if(totalVisit >= 10) { viEl.style.color = "#f59e0b"; viEl.title = "🌟 नियमित कार्यकर्ता"; }
+    else if(totalVisit >= 5) { viEl.style.color = "#10b981"; viEl.title = "⭐ सक्रिय कार्यकर्ता"; }
+    else { viEl.style.color = ""; viEl.title = ""; }
+  }
 
   // ── Better swagat message ──
   const orgName = (_$("org-name")&&_$("org-name").textContent.trim()) || "भाजपा कार्यालय";
   const visitWord = totalVisit===1 ? "पहली" : totalVisit===2 ? "दूसरी" : totalVisit===3 ? "तीसरी" : `${totalVisit}वीं`;
+  const visitMilestone = totalVisit >= 10 ? ` 🌟 आप हमारे नियमित कार्यकर्ता हैं!` : totalVisit >= 5 ? ` ⭐ आप सक्रिय कार्यकर्ता हैं!` : totalVisit === 1 ? ` 🙏 पहली बार आपका स्वागत है!` : "";
   _$("pp-swagat-msg").innerHTML =
     `<b style="color:var(--o3)">${orgName}</b> पर आपका हार्दिक स्वागत है!<br>
-     <span style="font-size:13px;color:rgba(200,190,180,.75);">यह आपकी <b style="color:var(--o1)">${visitWord} विजिट</b> है।</span>`;
+     <span style="font-size:13px;color:rgba(200,190,180,.75);">यह आपकी <b style="color:var(--o1)">${visitWord} विजिट</b> है।${visitMilestone}</span>`;
 
   // Stats
   _$("pp-ev").textContent = totalEvents;

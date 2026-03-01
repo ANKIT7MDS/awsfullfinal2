@@ -115,6 +115,27 @@ select.inp option{background:#fff;color:var(--text);}
 .new-btn{width:100%;padding:15px;border-radius:13px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--saf),var(--saf2));color:#fff;font-size:16px;font-weight:800;font-family:'Noto Sans Devanagari','Baloo 2',sans-serif;box-shadow:0 6px 18px rgba(255,107,0,.38);-webkit-tap-highlight-color:transparent;}
 
 /* BIG CONFIRM POPUP */
+.live-counter-strip {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 4px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.25);
+}
+.live-counter-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 6px rgba(74,222,128,0.8);
+    animation: livePulse 1.5s infinite;
+}
+@keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
 #confirm-overlay{position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65);backdrop-filter:blur(10px);padding:14px;}
 #confirm-overlay.open{display:flex;}
 .cfm-card{width:100%;max-width:400px;background:linear-gradient(160deg,#f0fdf4,#dcfce7);border-radius:26px;border:3px solid #22c55e;padding:36px 22px 28px;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.38);animation:sheetup .32s cubic-bezier(.22,.8,.28,1);position:relative;overflow:hidden;}
@@ -250,6 +271,12 @@ function _elApplyBranding(cfg, formType){
         <div id="org-name" class="deva">पार्टी उपस्थिति</div>
         <div id="org-sub">Party Attendance</div>
       </div>
+    </div>
+    <!-- Live Attendance Counter -->
+    <div class="live-counter-strip" id="liveCounterStrip" style="display:none;">
+      <div class="live-counter-dot"></div>
+      <span class="deva">आज की उपस्थिति:</span>
+      <span id="liveCounterVal" style="font-size:15px;color:#fbbf24;">—</span>
     </div>
   </div>
   <div id="hdr-cam-img-wrap"><img id="hdr-cam-img" alt=""/></div>
@@ -538,6 +565,36 @@ function closeConfirm(){
 }
 
 // ═══════════════════════════════
+// LIVE ATTENDANCE COUNTER
+// ═══════════════════════════════
+let _counterInterval = null;
+async function fetchTodayCount(){
+  if(!CID) return;
+  try{
+    const now = Date.now();
+    const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+    const resp = await api("admin_stats", {
+      collection_id: CID,
+      start_ms: startOfDay.getTime().toString(),
+      end_ms: now.toString()
+    });
+    const counts = resp.counts || {};
+    const total = Object.values(counts).reduce((s,v)=>s+v, 0);
+    const el = _$("liveCounterVal");
+    const strip = _$("liveCounterStrip");
+    if(el && strip){
+      el.textContent = total;
+      strip.style.display = "flex";
+    }
+  }catch(e){ console.warn("Counter fetch failed:", e); }
+}
+function startLiveCounter(){
+  fetchTodayCount();
+  if(_counterInterval) clearInterval(_counterInterval);
+  _counterInterval = setInterval(fetchTodayCount, 30000); // every 30 seconds
+}
+
+// ═══════════════════════════════
 // RESOLVE CID FROM TOKEN
 // ═══════════════════════════════
 async function resolveCid(){
@@ -547,7 +604,7 @@ async function resolveCid(){
     const c = r.collection_id||r.cid||
       (r.config&&(r.config.collection_id||r.config.cid))||
       (r.settings&&(r.settings.collection_id||r.settings.cid))||"";
-    if(c){ CID=c.trim(); console.log("✅ CID:",CID); }
+    if(c){ CID=c.trim(); console.log("✅ CID:",CID); startLiveCounter(); }
   }catch(e){ console.warn("resolveCid fail",e); }
 }
 

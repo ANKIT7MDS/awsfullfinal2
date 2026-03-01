@@ -657,6 +657,9 @@
             <button class="lb-action" id="lbFav" onclick="toggleAction('fav')">
                 <i class="fa-solid fa-heart"></i> <span>Favorite</span>
             </button>
+            <button class="lb-action" id="lbDownload" onclick="downloadSinglePhoto()">
+                <i class="fa-solid fa-download"></i> <span>Save</span>
+            </button>
         </div>
     </div>
 
@@ -946,6 +949,31 @@
         }
         
         // ZIP DOWNLOAD
+        async function downloadSinglePhoto() {
+            const p = photos[idx];
+            if(!p || !p.url) return;
+            const btn = document.getElementById('lbDownload');
+            const origHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Saving...</span>';
+            btn.disabled = true;
+            try {
+                const res = await fetch(p.url, { mode: 'cors', cache: 'no-store' });
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'photo_' + (idx + 1) + '.jpg';
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Saved!</span>';
+                setTimeout(() => { btn.innerHTML = origHTML; btn.disabled = false; }, 2000);
+            } catch(e) {
+                // Fallback: open in new tab
+                window.open(p.url, '_blank');
+                btn.innerHTML = origHTML;
+                btn.disabled = false;
+            }
+        }
+
         async function downloadZip() {
             const btn = document.querySelector('button[onclick="downloadZip()"]');
             const originalText = btn.innerHTML;

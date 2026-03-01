@@ -117,6 +117,34 @@
     .ph-card:hover .ph-overlay { opacity: 1; }
 
     /* UTILS */
+    .storage-bar-wrap {
+        margin-top: 8px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 6px;
+        height: 6px;
+        overflow: hidden;
+    }
+    .storage-bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        background: linear-gradient(90deg, #22c55e, #f97316);
+        transition: width 1s ease;
+        min-width: 2px;
+    }
+    .storage-bar-fill.warn { background: linear-gradient(90deg, #f97316, #ef4444); }
+    .storage-bar-fill.critical { background: linear-gradient(90deg, #ef4444, #dc2626); animation: pulse-bar 1s infinite; }
+    @keyframes pulse-bar { 0%,100%{opacity:1} 50%{opacity:0.6} }
+    .expiry-banner {
+        display: none;
+        padding: 10px 18px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        font-weight: 600;
+        border-left: 4px solid;
+    }
+    .expiry-banner.warn { background: rgba(251,191,36,0.12); border-color: #fbbf24; color: #fbbf24; }
+    .expiry-banner.critical { background: rgba(239,68,68,0.12); border-color: #ef4444; color: #ef4444; }
     .kpi-box { background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); padding: 24px; border-radius: 16px; border: 1px solid var(--border-color); position: relative; overflow: hidden; }
     .kpi-box::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); opacity: 0.5; }
     .kpi-val { font-size: 32px; font-weight: 800; color: #fff; margin-top: 8px; font-family: 'Outfit', sans-serif; }
@@ -275,10 +303,21 @@ body{overflow-x:hidden;}
       </div>
 
       <!-- PERSONAL STATS GRID (Hidden for pure admin, Visible for photographer/impersonation) -->
+      <!-- Expiry Warning Banner -->
+      <div class="expiry-banner" id="expiryBanner">
+        <i class="fa-solid fa-triangle-exclamation"></i> <span id="expiryBannerText"></span>
+      </div>
       <div class="grid" id="phStatsGrid" style="margin-bottom: 32px;">
         <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">COLLECTIONS</div><div class="kpi-val" id="dCols">0</div></div>
         <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">TOTAL PHOTOS</div><div class="kpi-val" id="dPhotos">Loading...</div></div>
-        <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div><div class="kpi-val" id="dStorage">Loading...</div></div>
+        <div class="kpi-box">
+          <div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STORAGE USED</div>
+          <div class="kpi-val" id="dStorage">Loading...</div>
+          <div class="storage-bar-wrap" id="storageBarWrap" style="display:none;">
+            <div class="storage-bar-fill" id="storageBarFill" style="width:0%"></div>
+          </div>
+          <div class="text-sm" id="storageBarLabel" style="color:var(--text-muted);font-size:11px;margin-top:4px;"></div>
+        </div>
         <div class="kpi-box"><div class="text-sm" style="font-weight: 700; color: var(--text-muted);">STATUS</div><div class="kpi-val" id="dStatus" style="font-size: 20px; color: var(--primary);">Active</div></div>
       </div>
 
@@ -1203,6 +1242,36 @@ if(id === 'tClient') loadClientSelections();
       $('#dCols').textContent = allCols.length;
       $('#dPhotos').textContent = realTotalPhotos > 0 ? realTotalPhotos.toLocaleString() : "0";
       $('#dStorage').textContent = realTotalStorage > 0 ? formatBytes(realTotalStorage) : "0 B";
+      // Storage progress bar
+      if(sData && sData.storage_limit_bytes > 0) {
+        const pct = Math.min(100, Math.round((realTotalStorage / sData.storage_limit_bytes) * 100));
+        const fill = $('#storageBarFill');
+        const wrap = $('#storageBarWrap');
+        const lbl = $('#storageBarLabel');
+        if(fill && wrap && lbl) {
+          wrap.style.display = 'block';
+          fill.style.width = pct + '%';
+          fill.className = 'storage-bar-fill' + (pct >= 90 ? ' critical' : pct >= 70 ? ' warn' : '');
+          lbl.textContent = pct + '% used of ' + formatBytes(sData.storage_limit_bytes);
+        }
+      }
+      // Expiry warning
+      if(sData && sData.expiry_date) {
+        const daysLeft = Math.ceil((new Date(sData.expiry_date) - new Date()) / (1000*60*60*24));
+        const banner = $('#expiryBanner');
+        const bannerText = $('#expiryBannerText');
+        if(banner && bannerText) {
+          if(daysLeft <= 7 && daysLeft > 0) {
+            banner.className = 'expiry-banner critical';
+            banner.style.display = 'block';
+            bannerText.textContent = 'आपका plan ' + daysLeft + ' दिन में expire होगा! तुरंत renew करें।';
+          } else if(daysLeft <= 30 && daysLeft > 0) {
+            banner.className = 'expiry-banner warn';
+            banner.style.display = 'block';
+            bannerText.textContent = 'आपका plan ' + daysLeft + ' दिन में expire होगा।';
+          }
+        }
+      }
       $('#dStatus').textContent = (sData && (sData.status || sData.account_status)) ? (sData.status || sData.account_status) : 'Active';
 
       // Deep compute per collection from events (non-breaking)

@@ -181,6 +181,21 @@
         color: #fff; font-size: 26px; pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
 
+    .score-badge {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        background: rgba(0,0,0,0.72);
+        color: #4ade80;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 20px;
+        backdrop-filter: blur(4px);
+        pointer-events: none;
+        letter-spacing: 0.3px;
+        border: 1px solid rgba(74,222,128,0.3);
+    }
     .fav-btn {
         position: absolute; bottom: 8px; right: 8px; 
         background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
@@ -548,7 +563,7 @@
         <p style="color:var(--muted); font-size:14px; margin-bottom:15px;">Don’t worry — try another selfie with better lighting.</p>
         
         <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:20px; text-align:left; font-size:13px; color:#ccc;">
-            <strong>Tips for better results:</strong>
+            <strong>बेहतर results के लिए Tips:</strong>
             <ul style="margin:5px 0 0 20px; padding:0;">
                 <li>Face the camera clearly</li>
                 <li>Avoid sunglasses or masks</li>
@@ -973,6 +988,7 @@
                     onerror="if(!this.dataset.retried){this.dataset.retried=true; this.src='${p.url}'; this.referrerPolicy='no-referrer';} else {this.closest('.photo-item').style.display='none';}"
                 >
                 <div class="select-ring"></div>
+                ${p.quality_score && p.quality_score > 0 ? `<div class="score-badge">${Math.round(p.quality_score)}%</div>` : ''}
                 <button class="fav-btn ${isFav}" onclick="toggleFav(event, '${p.photo_id}', ${idx})">
                     <i class="${isFav?'fa-solid':'fa-regular'} fa-heart"></i>
                 </button>
@@ -1210,7 +1226,7 @@
         if(currentViewIndex < 0) return;
         const p = displayedMatches[currentViewIndex];
         if(navigator.share) {
-            navigator.share({ title: 'My Event Photo', url: p.url }).catch(()=>{});
+            navigator.share({ title: 'मेरी Event Photo', text: 'EventLens से मेरी photo देखो! 📸', url: p.url }).catch(()=>{});
         } else {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Check out my photo: ' + p.url)}`, '_blank');
         }

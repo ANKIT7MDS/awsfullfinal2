@@ -475,24 +475,9 @@ function groupTourEntries(items) {
   const order = [];
 
   items.forEach(item => {
-    const eventId = (item.event_id || "").trim();
-    let key;
-    if (eventId) {
-      // Lambda computed event_id — best grouping key
-      key = eventId;
-    } else {
-      // Fallback: program_name + tour_date + district से manual group key
-      const d = item.data || {};
-      const pname = (d.program_name || "").trim().toLowerCase();
-      const date  = (d.tour_date || d.date || "").trim();
-      const dist  = (d.district || item.district || "").trim().toLowerCase();
-      const ft    = (item.form_type || "").trim();
-      if (pname || date) {
-        key = `${ft}|${date}|${pname}|${dist}`;
-      } else {
-        key = item.entry_id; // truly unique entry
-      }
-    }
+    // हर entry_id = एक अलग program/photo upload
+    // event_id से group नहीं — migration में same event_id बन गया था
+    const key = item.entry_id;
 
     if (!grouped.has(key)) {
       const rep = Object.assign({}, item);

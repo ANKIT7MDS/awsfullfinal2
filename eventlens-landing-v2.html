@@ -1,1064 +1,1187 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>EventLens — Your Photos. One Selfie Away.</title>
-<meta name="description" content="India's smartest event photo platform. AI face recognition delivers every guest's photos in seconds. Built for photographers, loved by guests."/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Manrope:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"/>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --ink:#08080c;
-  --surface:#111116;
-  --card:#16161d;
-  --border:rgba(255,255,255,0.07);
-  --border2:rgba(255,255,255,0.12);
-  --green:#1afa7e;
-  --green2:#0dcc60;
-  --saffron:#ff7120;
-  --gold:#f0b429;
-  --white:#f0f0f4;
-  --muted:#6c6c7e;
-  --text:#b8b8cc;
-  --r:14px;
-}
-html{scroll-behavior:smooth;}
-body{
-  background:var(--ink);color:var(--text);
-  font-family:'Manrope',sans-serif;font-size:16px;
-  line-height:1.6;overflow-x:hidden;
-}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#08080c" />
+  <title>EventLens — Your Photos. One Selfie Away.</title>
+  <meta name="description" content="AI face recognition galleries for Indian photographers. Guests take one selfie and instantly get only their photos. QR + WhatsApp sharing, branding, PIN galleries, and client favorites." />
 
-/* grain */
-body::after{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.04'/%3E%3C/svg%3E");
-  opacity:0.5;mix-blend-mode:overlay;
-}
+  <!-- Social preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="EventLens — Your Photos. One Selfie Away." />
+  <meta property="og:description" content="Guests take one selfie — EventLens finds every photo they’re in. Instant. Accurate. No app downloads." />
+  <meta property="og:image" content="" />
+  <meta name="twitter:card" content="summary_large_image" />
 
-/* ═══ NAV ═══ */
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 48px;height:68px;
-  background:rgba(8,8,12,0.8);
-  backdrop-filter:blur(24px) saturate(180%);
-  border-bottom:1px solid var(--border);
-  transition:all 0.3s;
-}
-.logo{
-  font-family:'Playfair Display',serif;
-  font-size:20px;font-weight:900;
-  color:var(--white);letter-spacing:-0.3px;
-  display:flex;align-items:center;gap:10px;
-  text-decoration:none;
-}
-.logo-dot{
-  width:9px;height:9px;border-radius:50%;
-  background:var(--green);
-  box-shadow:0 0 12px var(--green);
-  animation:pulse 2.5s ease infinite;
-}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.6}}
-.nav-links{display:flex;gap:36px;align-items:center;}
-.nav-links a{
-  font-size:13.5px;font-weight:500;color:var(--muted);
-  text-decoration:none;letter-spacing:0.2px;
-  transition:color 0.2s;
-}
-.nav-links a:hover{color:var(--white);}
-.nav-cta{
-  background:var(--green);color:#000;
-  padding:9px 22px;border-radius:50px;
-  font-weight:700;font-size:13px;letter-spacing:0.3px;
-  text-decoration:none;transition:all 0.25s;
-}
-.nav-cta:hover{background:var(--green2);box-shadow:0 0 24px rgba(26,250,126,0.3);transform:translateY(-1px);}
-.mob-menu{display:none;background:none;border:none;color:var(--white);font-size:20px;cursor:pointer;padding:4px;}
+  <!-- Fonts + Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Manrope:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 
-/* ═══ HERO ═══ */
-.hero{
-  min-height:100vh;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;padding:110px 24px 60px;
-  position:relative;overflow:hidden;
-}
-.hero-mesh{
-  position:absolute;inset:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 70% 50% at 30% 20%,rgba(26,250,126,0.06) 0%,transparent 60%),
-    radial-gradient(ellipse 50% 60% at 80% 70%,rgba(255,113,32,0.04) 0%,transparent 60%),
-    radial-gradient(ellipse 40% 30% at 50% 100%,rgba(240,180,41,0.03) 0%,transparent 50%);
-}
-.hero-chip{
-  display:inline-flex;align-items:center;gap:8px;
-  background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.2);
-  color:var(--green);padding:6px 16px;border-radius:50px;
-  font-size:11.5px;font-weight:700;letter-spacing:1.5px;
-  text-transform:uppercase;margin-bottom:32px;
-  animation:fadeUp 0.7s ease both;
-}
-.hero-chip i{font-size:8px;animation:pulse 1.5s infinite;}
-.hero-h1{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(44px,7.5vw,96px);
-  font-weight:900;line-height:0.95;
-  color:var(--white);
-  letter-spacing:-3px;
-  margin-bottom:28px;
-  animation:fadeUp 0.7s ease 0.1s both;
-}
-.hero-h1 em{font-style:normal;color:var(--green);position:relative;}
-.hero-h1 em::after{
-  content:'';position:absolute;left:0;right:0;bottom:-4px;
-  height:3px;background:var(--green);border-radius:2px;
-  opacity:0.5;
-}
-.hero-p{
-  max-width:560px;font-size:17px;color:var(--muted);
-  line-height:1.75;margin:0 auto 48px;font-weight:400;
-  animation:fadeUp 0.7s ease 0.2s both;
-}
-.hero-btns{
-  display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
-  animation:fadeUp 0.7s ease 0.3s both;
-}
-.btn-g{
-  background:var(--green);color:#000;
-  padding:14px 32px;border-radius:50px;
-  font-weight:700;font-size:14.5px;
-  text-decoration:none;transition:all 0.25s;
-  display:inline-flex;align-items:center;gap:10px;
-  letter-spacing:0.2px;
-}
-.btn-g:hover{background:var(--green2);transform:translateY(-2px);box-shadow:0 16px 40px rgba(26,250,126,0.2);}
-.btn-outline{
-  background:transparent;color:var(--white);
-  padding:14px 32px;border-radius:50px;
-  font-weight:600;font-size:14.5px;border:1px solid var(--border2);
-  text-decoration:none;transition:all 0.25s;
-  display:inline-flex;align-items:center;gap:10px;
-}
-.btn-outline:hover{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.04);}
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "EventLens",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "AI face recognition galleries for event photography. Guests take one selfie and instantly get only their photos.",
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "INR",
+      "price": "999",
+      "category": "subscription"
+    }
+  }
+  </script>
 
-/* ═══ HERO VISUAL - 3 Phone Screens ═══ */
-.hero-screens{
-  margin-top:72px;display:flex;gap:16px;justify-content:center;
-  align-items:flex-end;
-  animation:fadeUp 0.9s ease 0.4s both;
-}
-.screen{
-  background:var(--surface);border:1px solid var(--border2);
-  border-radius:24px;overflow:hidden;
-  box-shadow:0 32px 80px rgba(0,0,0,0.8);
-  position:relative;
-}
-.screen.center{width:220px;height:400px;z-index:2;margin-bottom:0;}
-.screen.side{width:170px;height:320px;opacity:0.7;margin-bottom:-20px;}
-.screen-bar{height:3px;background:linear-gradient(90deg,var(--green),#00c8ff,var(--green));background-size:200%;animation:slide 3s linear infinite;}
-@keyframes slide{0%{background-position:200%}100%{background-position:-200%}}
-.screen-content{padding:16px;height:calc(100% - 3px);}
-.sc-header{
-  display:flex;align-items:center;gap:8px;
-  margin-bottom:14px;padding-bottom:10px;
-  border-bottom:1px solid var(--border);
-}
-.sc-logo{font-family:'Playfair Display',serif;font-size:12px;font-weight:900;color:var(--white);}
-.sc-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
-.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
-.ph{border-radius:8px;aspect-ratio:1;position:relative;overflow:hidden;}
-.ph-1{background:linear-gradient(135deg,#1a2f24,#0d1f15);}
-.ph-2{background:linear-gradient(135deg,#1a2030,#0d1422);}
-.ph-3{background:linear-gradient(135deg,#2a1f0e,#1a1208);}
-.ph-4{background:linear-gradient(135deg,#1f1a2f,#100d1f);}
-.ph-match{
-  position:absolute;inset:0;border:2px solid var(--green);border-radius:8px;
-  display:flex;align-items:flex-end;padding:4px;
-}
-.ph-badge{
-  background:rgba(0,0,0,0.8);color:var(--green);
-  font-size:8px;font-weight:800;padding:2px 5px;border-radius:4px;width:100%;text-align:center;
-}
-.sc-search{
-  background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.2);
-  border-radius:8px;padding:6px 10px;
-  display:flex;align-items:center;gap:6px;margin-bottom:12px;
-}
-.sc-search-txt{font-size:9px;color:var(--green);font-weight:600;}
-.sc-label{font-size:9px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;}
-.sc-stat-row{display:flex;gap:6px;margin-bottom:8px;}
-.sc-stat{flex:1;background:var(--card);border-radius:6px;padding:6px;text-align:center;}
-.sc-stat-n{font-size:13px;font-weight:800;color:var(--white);}
-.sc-stat-l{font-size:7px;color:var(--muted);font-weight:600;}
-.sc-event{background:var(--card);border-radius:6px;padding:8px;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
-.sc-ev-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.sc-ev-name{font-size:8px;color:var(--white);font-weight:600;}
-.sc-ev-count{font-size:7px;color:var(--muted);margin-left:auto;}
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --ink:#08080c;
+      --surface:#111116;
+      --card:#15151d;
+      --card2:#121218;
+      --border:rgba(255,255,255,0.07);
+      --border2:rgba(255,255,255,0.12);
+      --green:#1afa7e;
+      --green2:#0dcc60;
+      --saffron:#ff7120;
+      --gold:#f0b429;
+      --white:#f0f0f4;
+      --muted:#7b7b92;
+      --text:#b8b8cc;
+      --r:16px;
+      --shadow: 0 24px 90px rgba(0,0,0,0.45);
+    }
+    html{scroll-behavior:smooth}
+    body{
+      background:var(--ink);
+      color:var(--text);
+      font-family:'Manrope',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      line-height:1.6;
+      overflow-x:hidden;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:1120px;margin:0 auto;padding:0 22px}
 
-/* ═══ MARQUEE ═══ */
-.marquee-wrap{
-  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  padding:16px 0;overflow:hidden;position:relative;
-}
-.marquee-wrap::before,.marquee-wrap::after{
-  content:'';position:absolute;top:0;bottom:0;width:120px;z-index:2;
-}
-.marquee-wrap::before{left:0;background:linear-gradient(90deg,var(--ink),transparent);}
-.marquee-wrap::after{right:0;background:linear-gradient(-90deg,var(--ink),transparent);}
-.marquee-track{display:flex;gap:0;animation:marquee 28s linear infinite;width:max-content;}
-@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.marquee-item{
-  display:flex;align-items:center;gap:10px;
-  padding:0 32px;font-size:13px;font-weight:500;color:var(--muted);
-  white-space:nowrap;border-right:1px solid var(--border);
-}
-.marquee-item i{color:var(--green);font-size:11px;}
+    /* subtle grain */
+    body::after{
+      content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23g)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity:.55;mix-blend-mode:overlay;
+    }
 
-/* ═══ SECTION BASE ═══ */
-.section{padding:96px 24px;}
-.wrap{max-width:1120px;margin:0 auto;}
-.tag{
-  font-size:11px;font-weight:700;letter-spacing:2px;
-  text-transform:uppercase;color:var(--green);
-  display:flex;align-items:center;gap:10px;margin-bottom:18px;
-}
-.tag::before{content:'';width:28px;height:1.5px;background:var(--green);}
-.h2{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(30px,4vw,52px);
-  font-weight:900;color:var(--white);
-  letter-spacing:-1.5px;line-height:1.05;margin-bottom:18px;
-}
-.lead{font-size:16.5px;color:var(--muted);max-width:520px;line-height:1.75;}
+    /* NAV */
+    nav{
+      position:fixed;left:0;right:0;top:0;z-index:120;
+      height:70px;
+      background:rgba(8,8,12,0.72);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--border);
+    }
+    .nav-in{
+      height:70px;display:flex;align-items:center;justify-content:space-between;gap:18px;
+    }
+    .logo{
+      display:flex;align-items:center;gap:10px;
+      font-weight:900;letter-spacing:.2px;color:var(--white);
+      font-size:18px;
+    }
+    .logo-dot{
+      width:12px;height:12px;border-radius:99px;
+      background:linear-gradient(135deg,var(--green),var(--saffron));
+      box-shadow:0 0 0 5px rgba(26,250,126,0.08);
+    }
+    .nav-links{
+      display:flex;gap:18px;align-items:center;
+    }
+    .nav-links a{
+      font-size:14px;color:rgba(255,255,255,0.78);
+      padding:10px 10px;border-radius:12px;
+      transition:background .2s,color .2s;
+    }
+    .nav-links a:hover{background:rgba(255,255,255,0.05);color:var(--white)}
+    .nav-cta{
+      display:flex;align-items:center;gap:10px;
+      background:linear-gradient(135deg,var(--green),var(--green2));
+      color:#000;font-weight:900;
+      padding:11px 14px;border-radius:14px;
+      border:1px solid rgba(0,0,0,0.18);
+      box-shadow:0 20px 60px rgba(26,250,126,0.14);
+      font-size:14px;
+      transition:transform .15s;
+      white-space:nowrap;
+    }
+    .nav-cta:hover{transform:translateY(-1px)}
+    .nav-ghost{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 12px;border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+      color:rgba(255,255,255,0.9);
+      font-weight:800;font-size:14px;
+      white-space:nowrap;
+    }
+    .nav-ghost:hover{border-color:var(--border2)}
+    .mob-btn{display:none}
+    .drawer{
+      display:none;position:fixed;inset:0;z-index:140;
+      background:rgba(0,0,0,0.55);
+      backdrop-filter:blur(6px);
+    }
+    .drawer-card{
+      position:absolute;right:14px;top:74px;left:14px;
+      background:rgba(17,17,22,0.95);
+      border:1px solid var(--border);
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+    .drawer a{
+      display:block;padding:14px 16px;
+      border-top:1px solid rgba(255,255,255,0.06);
+      color:rgba(255,255,255,0.9);
+      font-weight:700;
+    }
+    .drawer a:first-child{border-top:none}
+    .drawer .row{
+      display:flex;gap:10px;padding:14px 16px;border-top:1px solid rgba(255,255,255,0.06);
+    }
+    .drawer .row a{border:none;flex:1;text-align:center;border-radius:14px}
 
-/* reveal */
-.r{opacity:0;transform:translateY(28px);transition:all 0.65s cubic-bezier(0.16,1,0.3,1);}
-.r.in{opacity:1;transform:none;}
-.r.d1{transition-delay:0.1s}.r.d2{transition-delay:0.2s}.r.d3{transition-delay:0.3s}.r.d4{transition-delay:0.4s}
+    /* HERO */
+    header.hero{
+      padding-top:110px;padding-bottom:64px;
+      position:relative;
+    }
+    .mesh{
+      position:absolute;inset:-180px -180px auto -180px;height:520px;
+      background:
+        radial-gradient(500px 320px at 20% 20%, rgba(26,250,126,0.18), transparent 60%),
+        radial-gradient(480px 320px at 80% 30%, rgba(255,113,32,0.18), transparent 60%),
+        radial-gradient(420px 280px at 60% 80%, rgba(240,180,41,0.14), transparent 60%);
+      filter:blur(18px);
+      opacity:0.95;
+      pointer-events:none;
+    }
+    .hero-chip{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:8px 12px;border-radius:999px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.03);
+      color:rgba(255,255,255,0.86);
+      font-weight:700;font-size:13px;
+    }
+    .hero-chip i{color:var(--green);font-size:10px}
+    .hero-grid{
+      margin-top:22px;
+      display:grid;grid-template-columns:1.2fr .8fr;gap:26px;align-items:center;
+    }
+    h1{
+      font-family:'Playfair Display',serif;
+      color:var(--white);
+      font-size:56px;line-height:1.05;
+      letter-spacing:-0.6px;
+    }
+    h1 em{font-style:normal;color:var(--green)}
+    .lead{
+      margin-top:14px;
+      font-size:17px;
+      color:rgba(255,255,255,0.74);
+      max-width:54ch;
+    }
+    .hero-actions{
+      margin-top:22px;
+      display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+    }
+    .btn{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:13px 16px;border-radius:14px;
+      font-weight:900;font-size:15px;
+      border:1px solid transparent;
+      transition:transform .15s,border-color .2s,background .2s;
+      white-space:nowrap;
+    }
+    .btn-primary{
+      color:#000;background:linear-gradient(135deg,var(--green),var(--green2));
+      box-shadow:0 20px 60px rgba(26,250,126,0.14);
+    }
+    .btn-primary:hover{transform:translateY(-1px)}
+    .btn-outline{
+      color:rgba(255,255,255,0.9);
+      border-color:var(--border2);
+      background:rgba(255,255,255,0.02);
+    }
+    .btn-outline:hover{border-color:rgba(255,255,255,0.20);transform:translateY(-1px)}
+    .subnote{
+      margin-top:10px;
+      font-size:13px;color:rgba(255,255,255,0.55);
+    }
+    .pill-row{
+      margin-top:18px;
+      display:flex;gap:10px;flex-wrap:wrap;
+    }
+    .pill{
+      display:inline-flex;gap:8px;align-items:center;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.02);
+      font-size:13px;color:rgba(255,255,255,0.74);
+      font-weight:700;
+    }
+    .pill i{color:var(--gold)}
+    .hero-card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero-card::before{
+      content:"";position:absolute;inset:-1px;
+      background:radial-gradient(600px 180px at 20% 0%, rgba(26,250,126,0.20), transparent 55%),
+                 radial-gradient(520px 180px at 80% 0%, rgba(255,113,32,0.18), transparent 60%);
+      opacity:0.65;pointer-events:none;
+    }
+    .mock{
+      position:relative;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:18px;
+      overflow:hidden;
+      background:rgba(8,8,12,0.55);
+    }
+    .mock-top{
+      height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      color:rgba(255,255,255,0.65);font-size:12px;
+    }
+    .dot{width:10px;height:10px;border-radius:99px;background:rgba(255,255,255,0.14)}
+    .mock-body{padding:14px}
+    .mini{
+      display:flex;gap:10px;align-items:center;
+      padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);
+      background:rgba(255,255,255,0.03);
+      margin-bottom:10px;
+    }
+    .mini:last-child{margin-bottom:0}
+    .ico{
+      width:38px;height:38px;border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(26,250,126,0.10);color:var(--green);
+      border:1px solid rgba(26,250,126,0.16);
+      flex-shrink:0;
+    }
+    .mini b{display:block;color:var(--white);font-size:14px}
+    .mini span{display:block;color:rgba(255,255,255,0.62);font-size:12.5px;margin-top:2px}
 
-/* ═══ HOW IT WORKS ═══ */
-.steps-grid{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  gap:1px;margin-top:64px;
-  background:var(--border);border-radius:20px;overflow:hidden;
-}
-.step{
-  background:var(--surface);padding:40px 28px;
-  position:relative;transition:background 0.3s;
-}
-.step:hover{background:var(--card);}
-.step-n{
-  font-family:'Playfair Display',serif;
-  font-size:52px;font-weight:900;
-  color:rgba(26,250,126,0.08);line-height:1;
-  position:absolute;top:20px;right:20px;
-}
-.step-ico{
-  width:52px;height:52px;border-radius:14px;
-  background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.15);
-  display:flex;align-items:center;justify-content:center;
-  color:var(--green);font-size:22px;margin-bottom:24px;
-}
-.step h3{
-  font-family:'Playfair Display',serif;
-  font-size:18px;font-weight:700;color:var(--white);
-  margin-bottom:10px;
-}
-.step p{font-size:13.5px;color:var(--muted);line-height:1.7;}
+    /* SECTIONS */
+    section{
+      padding:70px 0;
+      border-top:1px solid rgba(255,255,255,0.06);
+    }
+    .kicker{
+      display:inline-flex;gap:10px;align-items:center;
+      color:rgba(255,255,255,0.8);font-weight:900;font-size:13px;
+      padding:8px 12px;border-radius:999px;
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .kicker i{color:var(--saffron)}
+    .h2{
+      margin-top:12px;
+      font-family:'Playfair Display',serif;
+      color:var(--white);
+      font-size:38px;line-height:1.15;
+      letter-spacing:-0.4px;
+    }
+    .p{
+      margin-top:10px;
+      color:rgba(255,255,255,0.70);
+      font-size:16px;
+      max-width:78ch;
+    }
 
-/* ═══ VS COMPETITORS ═══ */
-.vs-table{
-  width:100%;border-collapse:separate;border-spacing:0;
-  margin-top:56px;border-radius:18px;overflow:hidden;
-  border:1px solid var(--border);
-}
-.vs-table th{
-  padding:16px 20px;font-size:12px;font-weight:700;
-  letter-spacing:0.5px;text-align:center;
-  background:var(--card);
-}
-.vs-table th:first-child{text-align:left;width:30%;}
-.vs-table th.hl{background:rgba(26,250,126,0.08);color:var(--green);}
-.vs-table td{
-  padding:14px 20px;font-size:13.5px;border-top:1px solid var(--border);
-  text-align:center;color:var(--muted);
-}
-.vs-table td:first-child{text-align:left;color:var(--text);font-weight:500;}
-.vs-table td.hl{background:rgba(26,250,126,0.04);}
-.chk{color:var(--green);font-weight:700;}
-.cross{color:#444;}
-.part{color:var(--gold);}
+    /* USE CASES */
+    .grid-4{
+      margin-top:22px;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+    }
+    .card{
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
+      transition:transform .15s,border-color .2s;
+      min-height:150px;
+    }
+    .card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.16)}
+    .card .top{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-bottom:12px;
+    }
+    .badge{
+      font-size:12px;font-weight:900;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.02);
+      color:rgba(255,255,255,0.82);
+      white-space:nowrap;
+    }
+    .card h3{color:var(--white);font-size:16px}
+    .card p{margin-top:6px;color:rgba(255,255,255,0.65);font-size:13.5px}
+    .card ul{margin-top:10px;list-style:none;display:flex;flex-direction:column;gap:8px}
+    .card li{display:flex;gap:10px;color:rgba(255,255,255,0.70);font-size:13.5px}
+    .card li i{color:var(--green);margin-top:3px}
 
-/* ═══ FEATURES GRID ═══ */
-.features{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:1px;margin-top:56px;
-  background:var(--border);border-radius:20px;overflow:hidden;
-}
-.feat{background:var(--surface);padding:32px 28px;transition:background 0.3s;}
-.feat:hover{background:var(--card);}
-.feat-ico{font-size:28px;margin-bottom:16px;}
-.feat h4{
-  font-family:'Playfair Display',serif;
-  font-size:17px;font-weight:700;color:var(--white);margin-bottom:8px;
-}
-.feat p{font-size:13.5px;color:var(--muted);line-height:1.7;}
-.feat-new{
-  display:inline-block;
-  background:rgba(26,250,126,0.1);color:var(--green);
-  font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;
-  margin-bottom:10px;letter-spacing:0.5px;
-}
-.feat-soon{
-  display:inline-block;
-  background:rgba(240,180,41,0.1);color:var(--gold);
-  font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;
-  margin-bottom:10px;letter-spacing:0.5px;
-}
+    /* HOW IT WORKS */
+    .how{
+      margin-top:22px;
+      display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    }
+    .panel{
+      border:1px solid var(--border);
+      border-radius:20px;
+      background:rgba(255,255,255,0.02);
+      padding:16px;
+      position:relative;
+      overflow:hidden;
+    }
+    .panel::before{
+      content:"";position:absolute;inset:-1px;
+      background:radial-gradient(560px 220px at 20% 0%, rgba(26,250,126,0.12), transparent 55%),
+                 radial-gradient(560px 220px at 80% 0%, rgba(240,180,41,0.10), transparent 60%);
+      opacity:0.55;pointer-events:none;
+    }
+    .panel h3{position:relative;color:var(--white);font-size:16px}
+    .steps{position:relative;margin-top:12px;display:flex;flex-direction:column;gap:10px}
+    .step{
+      display:flex;gap:12px;align-items:flex-start;
+      padding:12px;border-radius:16px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:rgba(255,255,255,0.03);
+    }
+    .num{
+      width:28px;height:28px;border-radius:10px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(255,113,32,0.12);
+      color:var(--saffron);
+      border:1px solid rgba(255,113,32,0.18);
+      font-weight:900;font-size:13px;flex-shrink:0;
+      margin-top:1px;
+    }
+    .step b{display:block;color:var(--white);font-size:14px}
+    .step span{display:block;color:rgba(255,255,255,0.64);font-size:12.5px;margin-top:2px}
 
-/* ═══ POLITICAL SECTION ═══ */
-.pol-section{
-  background:var(--surface);
-  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  padding:96px 24px;
-}
-.pol-inner{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1.1fr;gap:80px;align-items:center;}
-.pol-forms{display:flex;flex-direction:column;gap:10px;margin-top:40px;}
-.pol-form-row{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:12px;padding:16px 20px;
-  display:flex;align-items:center;gap:14px;
-  transition:all 0.25s;cursor:default;
-}
-.pol-form-row:hover{border-color:rgba(255,113,32,0.3);transform:translateX(4px);}
-.pol-form-ico{
-  width:40px;height:40px;border-radius:10px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font-size:18px;
-}
-.pol-form-title{font-size:14px;font-weight:600;color:var(--white);}
-.pol-form-sub{font-size:12px;color:var(--muted);margin-top:2px;font-family:'Noto Sans Devanagari',sans-serif;}
-.pol-form-count{
-  margin-left:auto;font-size:11px;font-weight:700;
-  background:rgba(255,113,32,0.1);color:var(--saffron);
-  padding:3px 10px;border-radius:50px;white-space:nowrap;
-}
-.pol-dashboard{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:20px;padding:24px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.5);
-}
-.pol-dash-top{
-  border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:16px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.pol-dash-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--white);}
-.pol-live-dot{
-  display:flex;align-items:center;gap:6px;
-  background:rgba(26,250,126,0.1);padding:5px 12px;border-radius:50px;
-}
-.pol-live-d{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.5s infinite;}
-.pol-live-t{font-size:11px;font-weight:700;color:var(--green);}
-.pol-stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
-.pol-stat{background:var(--surface);border-radius:10px;padding:12px;text-align:center;}
-.pol-stat-n{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--white);}
-.pol-stat-n span{color:var(--saffron);}
-.pol-stat-l{font-size:10px;color:var(--muted);margin-top:2px;font-family:'Noto Sans Devanagari',sans-serif;}
-.pol-bar-row{margin-bottom:8px;}
-.pol-bar-label{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;}
-.pol-bar-track{background:rgba(255,255,255,0.05);border-radius:99px;height:6px;overflow:hidden;}
-.pol-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--saffron),var(--gold));}
+    /* FEATURE BENTO */
+    .bento{
+      margin-top:22px;
+      display:grid;grid-template-columns:repeat(12,1fr);gap:14px;
+    }
+    .b{
+      border:1px solid var(--border);
+      border-radius:22px;
+      background:rgba(255,255,255,0.02);
+      padding:18px;
+      position:relative;overflow:hidden;
+    }
+    .b::before{
+      content:"";position:absolute;inset:-1px;
+      background:radial-gradient(520px 220px at 20% 0%, rgba(26,250,126,0.10), transparent 55%),
+                 radial-gradient(520px 220px at 80% 0%, rgba(255,113,32,0.10), transparent 60%);
+      opacity:0.55;pointer-events:none;
+    }
+    .b .btop{position:relative;display:flex;gap:12px;align-items:flex-start}
+    .b .bico{
+      width:46px;height:46px;border-radius:16px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(26,250,126,0.10);color:var(--green);
+      border:1px solid rgba(26,250,126,0.16);
+      flex-shrink:0;
+      font-size:18px;
+    }
+    .b h4{position:relative;color:var(--white);font-size:16px}
+    .b p{position:relative;margin-top:6px;color:rgba(255,255,255,0.65);font-size:13.5px}
+    .span-6{grid-column:span 6}
+    .span-4{grid-column:span 4}
+    .span-8{grid-column:span 8}
+    .span-12{grid-column:span 12}
 
-/* ═══ PRICING ═══ */
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px;}
-.price-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:20px;padding:36px 28px;position:relative;
-  transition:all 0.3s;
-}
-.price-card:hover{transform:translateY(-4px);}
-.price-card.pop{
-  background:linear-gradient(160deg,#0c160f,#091210);
-  border-color:rgba(26,250,126,0.25);
-  box-shadow:0 0 40px rgba(26,250,126,0.06);
-}
-.pop-badge{
-  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
-  background:var(--green);color:#000;
-  font-size:11px;font-weight:800;letter-spacing:0.8px;
-  padding:4px 16px;border-radius:50px;white-space:nowrap;
-  text-transform:uppercase;
-}
-.price-tier{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;}
-.price-amt{
-  font-family:'Playfair Display',serif;
-  font-size:48px;font-weight:900;color:var(--white);line-height:1;
-}
-.price-amt sup{font-size:22px;vertical-align:top;margin-top:10px;display:inline-block;}
-.price-per{font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:28px;}
-.price-feats{list-style:none;margin-bottom:32px;}
-.price-feats li{
-  padding:9px 0;border-bottom:1px solid var(--border);
-  font-size:13.5px;color:var(--text);
-  display:flex;align-items:center;gap:10px;
-}
-.price-feats li:last-child{border:none;}
-.price-feats li i{font-size:11px;width:14px;flex-shrink:0;}
-.price-feats li.off{color:var(--muted);}
-.price-feats li.off i{color:rgba(255,255,255,0.12);}
-.price-btn{
-  display:block;text-align:center;padding:13px;border-radius:12px;
-  font-weight:700;font-size:14px;text-decoration:none;transition:all 0.2s;
-}
-.pbg{background:var(--green);color:#000;}
-.pbg:hover{background:var(--green2);}
-.pbo{background:transparent;color:var(--white);border:1px solid var(--border2);}
-.pbo:hover{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.04);}
+    /* COMPARE */
+    .compare{
+      margin-top:22px;
+      border:1px solid var(--border);
+      border-radius:20px;
+      overflow:hidden;
+      background:rgba(255,255,255,0.02);
+    }
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:14px 14px;border-bottom:1px solid rgba(255,255,255,0.06);text-align:left}
+    th{font-size:12px;color:rgba(255,255,255,0.62);letter-spacing:.3px;text-transform:uppercase}
+    td{color:rgba(255,255,255,0.78);font-size:13.5px}
+    tr:last-child td{border-bottom:none}
+    .yes{color:var(--green);font-weight:900}
+    .mid{color:rgba(255,255,255,0.72)}
+    .note{margin-top:10px;color:rgba(255,255,255,0.55);font-size:12.5px}
 
-/* ═══ TESTIMONIALS ═══ */
-.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px;}
-.testi{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:18px;padding:28px;transition:all 0.3s;
-}
-.testi:hover{border-color:var(--border2);}
-.stars{color:var(--gold);font-size:12px;margin-bottom:14px;letter-spacing:2px;}
-.testi-q{font-size:14px;color:var(--text);line-height:1.75;margin-bottom:20px;}
-.testi-q::before{content:'\201C';font-size:28px;color:var(--green);line-height:0;vertical-align:-10px;margin-right:3px;}
-.testi-au{display:flex;align-items:center;gap:12px;}
-.testi-av{
-  width:38px;height:38px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Playfair Display',serif;font-size:15px;font-weight:700;
-}
-.testi-n{font-size:13.5px;font-weight:600;color:var(--white);}
-.testi-r{font-size:12px;color:var(--muted);}
+    /* PRICING */
+    .pricing{
+      margin-top:22px;
+      display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+    }
+    .plan{
+      border:1px solid var(--border);
+      border-radius:22px;
+      background:rgba(255,255,255,0.02);
+      padding:18px;
+      position:relative;overflow:hidden;
+    }
+    .plan.pop{border-color:rgba(26,250,126,0.22);box-shadow:0 26px 90px rgba(26,250,126,0.10)}
+    .plan .tag{
+      display:inline-flex;align-items:center;gap:8px;
+      font-size:12px;font-weight:900;
+      padding:6px 10px;border-radius:999px;
+      background:rgba(26,250,126,0.10);
+      border:1px solid rgba(26,250,126,0.16);
+      color:rgba(255,255,255,0.88);
+    }
+    .plan h3{margin-top:12px;color:var(--white);font-size:16px}
+    .price{margin-top:10px;color:var(--white);font-weight:900;font-size:34px;letter-spacing:-0.4px}
+    .price small{font-size:13px;color:rgba(255,255,255,0.55);font-weight:700}
+    .plan ul{margin-top:14px;list-style:none;display:flex;flex-direction:column;gap:10px}
+    .plan li{display:flex;gap:10px;color:rgba(255,255,255,0.72);font-size:13.5px}
+    .plan li i{color:var(--green);margin-top:3px}
+    .plan .cta{margin-top:16px;width:100%}
 
-/* ═══ CTA FINAL ═══ */
-.cta-final{
-  padding:120px 24px;text-align:center;position:relative;overflow:hidden;
-}
-.cta-final::before{
-  content:'';position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  width:700px;height:700px;
-  background:radial-gradient(circle,rgba(26,250,126,0.05) 0%,transparent 70%);
-  pointer-events:none;
-}
-.cta-h{
-  font-family:'Playfair Display',serif;
-  font-size:clamp(38px,6vw,70px);font-weight:900;
-  color:var(--white);letter-spacing:-2px;line-height:1;
-  margin-bottom:20px;
-}
+    /* FAQ */
+    .faq{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    details{
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:rgba(255,255,255,0.02);
+      padding:14px 14px;
+    }
+    summary{
+      cursor:pointer;
+      color:rgba(255,255,255,0.90);
+      font-weight:900;
+      list-style:none;
+      display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+    }
+    summary::-webkit-details-marker{display:none}
+    summary .q{font-size:14px}
+    summary i{color:rgba(255,255,255,0.55);margin-top:3px}
+    details[open] summary i{transform:rotate(180deg)}
+    details p{margin-top:10px;color:rgba(255,255,255,0.67);font-size:13.5px}
 
-/* ═══ CONTACT ═══ */
-.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start;}
-.contact-form{
-  background:var(--card);border:1px solid var(--border);
-  border-radius:20px;padding:36px;
-}
-.form-row{margin-bottom:16px;}
-.form-label{font-size:12.5px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;letter-spacing:0.3px;}
-.form-input{
-  width:100%;background:var(--surface);
-  border:1px solid var(--border);color:var(--white);
-  padding:12px 16px;border-radius:10px;
-  font-size:14px;font-family:'Manrope',sans-serif;
-  outline:none;transition:border-color 0.2s;
-  -webkit-appearance:none;
-}
-.form-input:focus{border-color:var(--green);}
-.form-input::placeholder{color:var(--muted);}
+    /* CONTACT */
+    .contact{
+      margin-top:22px;
+      display:grid;grid-template-columns:1.05fr .95fr;gap:14px;
+    }
+    .contact-card{
+      border:1px solid var(--border);
+      border-radius:22px;
+      background:rgba(255,255,255,0.02);
+      padding:18px;
+    }
+    .contact-card h3{color:var(--white);font-size:16px}
+    .contact-card p{margin-top:8px;color:rgba(255,255,255,0.68);font-size:13.5px}
+    .row{margin-top:14px;display:flex;gap:12px;align-items:center}
+    .row .icon{
+      width:42px;height:42px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.08);
+      color:var(--green);
+    }
+    .row b{display:block;color:var(--white);font-size:14px}
+    .row span{display:block;color:rgba(255,255,255,0.62);font-size:13px;margin-top:1px}
+    .form label{display:block;font-size:12.5px;color:rgba(255,255,255,0.7);font-weight:800;margin:12px 0 6px}
+    .in{
+      width:100%;padding:12px 12px;border-radius:14px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(0,0,0,0.18);
+      color:rgba(255,255,255,0.90);
+      outline:none;
+      font-family:'Manrope',sans-serif;
+    }
+    .in:focus{border-color:rgba(26,250,126,0.30);box-shadow:0 0 0 4px rgba(26,250,126,0.08)}
+    textarea.in{resize:vertical}
 
-/* ═══ FOOTER ═══ */
-footer{
-  border-top:1px solid var(--border);
-  padding:40px 48px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:20px;
-}
-.footer-links{display:flex;gap:28px;flex-wrap:wrap;}
-.footer-links a{font-size:13px;color:var(--muted);text-decoration:none;transition:color 0.2s;}
-.footer-links a:hover{color:var(--white);}
-.footer-copy{font-size:12px;color:var(--muted);}
+    /* FOOTER */
+    footer{
+      border-top:1px solid rgba(255,255,255,0.06);
+      padding:36px 0;
+    }
+    .foot{
+      display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    }
+    .foot-links{display:flex;gap:12px;flex-wrap:wrap}
+    .foot-links a{
+      font-size:13px;color:rgba(255,255,255,0.65);
+      padding:8px 10px;border-radius:12px;border:1px solid transparent;
+    }
+    .foot-links a:hover{border-color:rgba(255,255,255,0.10);color:rgba(255,255,255,0.9)}
+    .copy{margin-top:10px;color:rgba(255,255,255,0.45);font-size:12.5px}
 
-@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    /* reveal */
+    .r{opacity:0;transform:translateY(10px);transition:opacity .6s,transform .6s}
+    .r.in{opacity:1;transform:none}
+    .d1{transition-delay:.08s}
+    .d2{transition-delay:.16s}
+    .d3{transition-delay:.24s}
 
-/* ═══ MOBILE ═══ */
-@media(max-width:900px){
-  nav{padding:0 20px;}
-  .nav-links{display:none;}
-  .mob-menu{display:block;}
-  .hero-screens .screen.side{display:none;}
-  .steps-grid{grid-template-columns:1fr 1fr;}
-  .features{grid-template-columns:1fr 1fr;}
-  .pol-inner{grid-template-columns:1fr;}
-  .pricing-grid{grid-template-columns:1fr;}
-  .testi-grid{grid-template-columns:1fr;}
-  .contact-grid{grid-template-columns:1fr;}
-  .vs-table{font-size:12px;}
-  footer{padding:32px 20px;}
-}
-@media(max-width:600px){
-  .hero-screens{flex-direction:column;align-items:center;}
-  .screen.center{width:240px;height:380px;}
-  .steps-grid,.features{grid-template-columns:1fr;}
-  .vs-table td,.vs-table th{padding:10px 12px;font-size:11px;}
-}
-</style>
+    /* RESPONSIVE */
+    @media (max-width:980px){
+      .hero-grid{grid-template-columns:1fr;gap:18px}
+      h1{font-size:46px}
+      .grid-4{grid-template-columns:1fr 1fr}
+      .how{grid-template-columns:1fr}
+      .pricing{grid-template-columns:1fr}
+      .contact{grid-template-columns:1fr}
+      .faq{grid-template-columns:1fr}
+      .nav-links{display:none}
+      .nav-ghost{display:none}
+      .mob-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.9)}
+      .drawer{display:block;opacity:0;pointer-events:none;transition:opacity .2s}
+      .drawer.open{opacity:1;pointer-events:auto}
+    }
+    @media (max-width:520px){
+      h1{font-size:40px}
+      .grid-4{grid-template-columns:1fr}
+    }
+  </style>
 </head>
+
 <body>
+  <!-- NAV -->
+  <nav id="nav">
+    <div class="container nav-in">
+      <a class="logo" href="#"><span class="logo-dot"></span> EventLens</a>
 
-<!-- NAV -->
-<nav id="nav">
-  <a href="#" class="logo"><div class="logo-dot"></div>EventLens</a>
-  <div class="nav-links">
-    <a href="#how">How it works</a>
-    <a href="#features">Features</a>
-    <a href="#political">Political</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#contact">Contact</a>
-  </div>
-  <a href="index.html" class="nav-cta">Photographer Login →</a>
-  <button class="mob-menu" onclick="document.querySelector('.nav-links').style.display='flex';this.style.display='none'"><i class="fa-solid fa-bars"></i></button>
-</nav>
+      <div class="nav-links" aria-label="Primary">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#compare">Compare</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#contact">Contact</a>
+      </div>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-mesh"></div>
-  <div class="hero-chip"><i class="fa-solid fa-circle"></i> AI Face Recognition · Made in India</div>
-  <h1 class="hero-h1">Your Photos.<br><em>One Selfie</em> Away.</h1>
-  <p class="hero-p">Guests at your event take one selfie — EventLens finds every photo they're in. Instant. Accurate. No app download.</p>
-  <div class="hero-btns">
-    <a href="#pricing" class="btn-g"><i class="fa-solid fa-camera"></i> Start for Free</a>
-    <a href="#how" class="btn-outline"><i class="fa-solid fa-play"></i> See How It Works</a>
-  </div>
-
-  <div class="hero-screens">
-    <div class="screen side">
-      <div class="screen-bar"></div>
-      <div class="screen-content">
-        <div class="sc-header"><div class="sc-dot"></div><div class="sc-logo">EventLens</div></div>
-        <div class="sc-label">Your Collections</div>
-        <div class="sc-event"><div class="sc-ev-dot" style="background:#1afa7e"></div><div class="sc-ev-name">Sharma Wedding</div><div class="sc-ev-count">840 photos</div></div>
-        <div class="sc-event"><div class="sc-ev-dot" style="background:#f0b429"></div><div class="sc-ev-name">Gupta Sangeet</div><div class="sc-ev-count">412 photos</div></div>
-        <div class="sc-event"><div class="sc-ev-dot" style="background:#00c8ff"></div><div class="sc-ev-name">Tech Summit</div><div class="sc-ev-count">267 photos</div></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <a class="nav-ghost" href="#contact"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+        <a class="nav-cta" href="index.html"><i class="fa-solid fa-arrow-right"></i> Photographer Login</a>
+        <button class="mob-btn" id="mobBtn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
       </div>
     </div>
-    <div class="screen center">
-      <div class="screen-bar"></div>
-      <div class="screen-content">
-        <div class="sc-header"><div class="sc-dot"></div><div class="sc-logo">EventLens</div></div>
-        <div class="sc-search"><i class="fa-solid fa-face-smile" style="color:var(--green);font-size:12px;"></i><div class="sc-search-txt">Selfie uploaded — Searching 840 photos...</div></div>
-        <div class="sc-label">Found 12 Photos</div>
-        <div class="photo-grid">
-          <div class="ph ph-1"><div class="ph-match"><div class="ph-badge">98% match</div></div></div>
-          <div class="ph ph-2"><div class="ph-match"><div class="ph-badge">96% match</div></div></div>
-          <div class="ph ph-3"><div class="ph-match"><div class="ph-badge">94% match</div></div></div>
-          <div class="ph ph-4"><div class="ph-match"><div class="ph-badge">91% match</div></div></div>
-        </div>
-        <div style="margin-top:10px;background:var(--card);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px;">
-          <i class="fa-solid fa-download" style="color:var(--green);font-size:11px;"></i>
-          <span style="font-size:9px;color:var(--white);font-weight:600;">Download All (12 Photos)</span>
-        </div>
-      </div>
-    </div>
-    <div class="screen side">
-      <div class="screen-bar"></div>
-      <div class="screen-content">
-        <div class="sc-header"><div class="sc-dot"></div><div class="sc-logo">EventLens</div></div>
-        <div class="sc-label">Event Dashboard</div>
-        <div class="sc-stat-row">
-          <div class="sc-stat"><div class="sc-stat-n">840</div><div class="sc-stat-l">Photos</div></div>
-          <div class="sc-stat"><div class="sc-stat-n" style="color:var(--green)">247</div><div class="sc-stat-l">Searches</div></div>
-        </div>
-        <div class="sc-stat-row">
-          <div class="sc-stat"><div class="sc-stat-n" style="color:var(--gold)">4.2GB</div><div class="sc-stat-l">Storage</div></div>
-          <div class="sc-stat"><div class="sc-stat-n" style="color:#00c8ff">98%</div><div class="sc-stat-l">Accuracy</div></div>
-        </div>
+  </nav>
+
+  <!-- MOBILE DRAWER -->
+  <div class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-card">
+      <a href="#how" class="drawer-link">How it works</a>
+      <a href="#features" class="drawer-link">Features</a>
+      <a href="#compare" class="drawer-link">Compare</a>
+      <a href="#pricing" class="drawer-link">Pricing</a>
+      <a href="#contact" class="drawer-link">Contact</a>
+      <div class="row">
+        <a class="btn btn-outline" href="#contact"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+        <a class="btn btn-primary" href="index.html"><i class="fa-solid fa-arrow-right"></i> Login</a>
       </div>
     </div>
   </div>
-</section>
 
-<!-- MARQUEE -->
-<div class="marquee-wrap">
-  <div class="marquee-track">
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> AI Face Recognition</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> QR Code Gallery Sharing</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> Instant Guest Delivery</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> Custom Branding</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> PIN Protected Galleries</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> HD Downloads</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> WhatsApp Sharing</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> AWS Powered · 99.9% Uptime</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> Political Module</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> Real-time Analytics</div>
-    <!-- repeat -->
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> AI Face Recognition</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> QR Code Gallery Sharing</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> Instant Guest Delivery</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> Custom Branding</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> PIN Protected Galleries</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> HD Downloads</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> WhatsApp Sharing</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> AWS Powered · 99.9% Uptime</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> Political Module</div>
-    <div class="marquee-item"><i class="fa-solid fa-check"></i> Real-time Analytics</div>
-  </div>
-</div>
+  <!-- HERO -->
+  <header class="hero">
+    <div class="mesh"></div>
+    <div class="container">
+      <div class="hero-chip r in">
+        <i class="fa-solid fa-circle"></i>
+        AI Face Recognition · Made for India · ₹ Pricing
+      </div>
 
-<!-- HOW IT WORKS -->
-<section class="section" id="how">
-  <div class="wrap">
-    <div class="tag r">Photography Module</div>
-    <h2 class="h2 r d1">Simple for photographers.<br>Magical for guests.</h2>
-    <p class="lead r d2">Everything happens automatically. Upload once, guests find their photos forever.</p>
-    <div class="steps-grid r d2">
-      <div class="step">
-        <div class="step-n">01</div>
-        <div class="step-ico"><i class="fa-solid fa-upload"></i></div>
-        <h3>Photographer Uploads</h3>
-        <p>Upload event photos from any device. AI indexes every face automatically in seconds — no manual tagging.</p>
-      </div>
-      <div class="step">
-        <div class="step-n">02</div>
-        <div class="step-ico"><i class="fa-solid fa-qrcode"></i></div>
-        <h3>Share QR / Link</h3>
-        <p>Generate a branded QR code or WhatsApp-ready link. Display QR at the venue — guests scan and go.</p>
-      </div>
-      <div class="step">
-        <div class="step-n">03</div>
-        <div class="step-ico"><i class="fa-solid fa-face-smile"></i></div>
-        <h3>Selfie Search</h3>
-        <p>Guest takes one selfie in browser — no app needed. AI returns all their photos in under 3 seconds.</p>
-      </div>
-      <div class="step">
-        <div class="step-n">04</div>
-        <div class="step-ico"><i class="fa-solid fa-heart"></i></div>
-        <h3>Download & Share</h3>
-        <p>Guests download HD photos, mark favorites. Photographer sees selections. Share on WhatsApp instantly.</p>
-      </div>
-    </div>
-  </div>
-</section>
+      <div class="hero-grid">
+        <div>
+          <h1 class="r d1">Your Photos.<br /><em>One Selfie</em> Away.</h1>
+          <p class="lead r d2">
+            Guests take one selfie — EventLens finds every photo they’re in and shows only their photos.
+            Faster than “send me my pics” calls. Better than Drive links.
+          </p>
 
-<!-- VS COMPETITORS -->
-<section class="section" style="padding-top:0">
-  <div class="wrap">
-    <div class="tag r">Why EventLens</div>
-    <h2 class="h2 r d1">Built for India.<br>Beats global players.</h2>
-    <div class="r d2">
-      <table class="vs-table">
-        <thead>
-          <tr>
-            <th>Feature</th>
-            <th class="hl">EventLens ✦</th>
-            <th>KwikPic</th>
-            <th>FotoOwl</th>
-            <th>Others</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>AI Selfie Face Search</td>
-            <td class="hl chk">✓ AWS Rekognition</td>
-            <td class="chk">✓</td>
-            <td class="chk">✓</td>
-            <td class="chk">✓</td>
-          </tr>
-          <tr>
-            <td>No App Download Needed</td>
-            <td class="hl chk">✓ Browser only</td>
-            <td class="cross">✗ App required</td>
-            <td class="chk">✓</td>
-            <td class="cross">✗</td>
-          </tr>
-          <tr>
-            <td>Political Organizations Module</td>
-            <td class="hl chk">✓ Complete suite</td>
-            <td class="cross">✗</td>
-            <td class="cross">✗</td>
-            <td class="cross">✗</td>
-          </tr>
-          <tr>
-            <td>Hindi / Devanagari UI</td>
-            <td class="hl chk">✓ Full support</td>
-            <td class="cross">✗</td>
-            <td class="cross">✗</td>
-            <td class="cross">✗</td>
-          </tr>
-          <tr>
-            <td>Custom Branding per Event</td>
-            <td class="hl chk">✓</td>
-            <td class="chk">✓ Paid</td>
-            <td class="chk">✓ Paid</td>
-            <td class="part">~ Partial</td>
-          </tr>
-          <tr>
-            <td>Photo Sell / Watermark</td>
-            <td class="hl part">~ Coming Soon</td>
-            <td class="chk">✓</td>
-            <td class="part">~ Partial</td>
-            <td class="cross">✗</td>
-          </tr>
-          <tr>
-            <td>WhatsApp-native Sharing</td>
-            <td class="hl chk">✓ Built-in</td>
-            <td class="part">~ Partial</td>
-            <td class="cross">✗</td>
-            <td class="cross">✗</td>
-          </tr>
-          <tr>
-            <td>Pricing (India)</td>
-            <td class="hl chk">✓ ₹999/mo</td>
-            <td>₹1,999+/mo</td>
-            <td>₹2,500+/mo</td>
-            <td>$$$ USD</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURES -->
-<section class="section" id="features" style="padding-top:0">
-  <div class="wrap">
-    <div class="tag r">Features</div>
-    <h2 class="h2 r d1">Everything you need.<br>Nothing you don't.</h2>
-    <div class="features r d2">
-      <div class="feat">
-        <div class="feat-ico">🤳</div>
-        <h4>Selfie Face Search</h4>
-        <p>Guests take a selfie — AWS Rekognition finds all their photos across the entire event in under 3 seconds.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-ico">📲</div>
-        <h4>QR Code at Venue</h4>
-        <p>Print QR codes for display at weddings or events. Guests scan → selfie → photos. Zero friction. No app needed.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-ico">🎨</div>
-        <h4>Custom Branding</h4>
-        <p>Your logo, colors, and studio name on every gallery page. Clients see your brand, not EventLens.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-ico">🔒</div>
-        <h4>PIN Protected Gallery</h4>
-        <p>Add a PIN to any gallery. Only invited guests get access. Full control over who sees your photos.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-ico">⏱️</div>
-        <h4>Time Slot Groups</h4>
-        <p>Photos auto-grouped by Morning Ceremony, Evening Vibes, Night Party. Guests navigate naturally.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-ico">❤️</div>
-        <h4>Favorites & Selection</h4>
-        <p>Guests mark favorites, photographer sees the list. Perfect for edit selection or album planning.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-new">Coming Soon</div>
-        <div class="feat-ico">💸</div>
-        <h4>Sell Your Photos</h4>
-        <p>Watermark photos, set per-download price. Guests pay — you earn. Like KwikPic, but built for India.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-new">Coming Soon</div>
-        <div class="feat-ico">📺</div>
-        <h4>Live Slideshow Screen</h4>
-        <p>Display photos on a big screen at the venue as they're uploaded. Creates excitement at the event.</p>
-      </div>
-      <div class="feat">
-        <div class="feat-soon">Planned</div>
-        <div class="feat-ico">📧</div>
-        <h4>Auto Notification</h4>
-        <p>Notify guests on WhatsApp or email when their photos are ready. Zero manual work for photographer.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- POLITICAL MODULE -->
-<div class="pol-section" id="political">
-  <div class="pol-inner wrap">
-    <div>
-      <div class="tag r">Political Module</div>
-      <h2 class="h2 r d1" style="color:var(--white);">कार्यकर्ता प्रबंधन —<br><span style="color:var(--saffron);">Face Recognition से।</span></h2>
-      <p class="lead r d2" style="font-family:'Noto Sans Devanagari','Manrope',sans-serif;">राजनीतिक दलों के लिए पूरा ecosystem — visitor tracking से लेकर mandal reporting तक। सब कुछ एक dashboard में।</p>
-      <div class="pol-forms r d3">
-        <div class="pol-form-row">
-          <div class="pol-form-ico" style="background:rgba(255,113,32,0.1);">🏢</div>
-          <div><div class="pol-form-title">Visitor Form</div><div class="pol-form-sub">कार्यालय आगंतुक — Face Scan entry</div></div>
-          <div class="pol-form-count">Daily</div>
-        </div>
-        <div class="pol-form-row">
-          <div class="pol-form-ico" style="background:rgba(240,180,41,0.1);">✅</div>
-          <div><div class="pol-form-title">Party Attendance</div><div class="pol-form-sub">कार्यक्रम उपस्थिति — Live counter</div></div>
-          <div class="pol-form-count">Per Event</div>
-        </div>
-        <div class="pol-form-row">
-          <div class="pol-form-ico" style="background:rgba(0,200,255,0.08);">🚩</div>
-          <div><div class="pol-form-title">President Tour</div><div class="pol-form-sub">जिला अध्यक्ष — Tour tracking & photos</div></div>
-          <div class="pol-form-count">Tour-wise</div>
-        </div>
-        <div class="pol-form-row">
-          <div class="pol-form-ico" style="background:rgba(26,250,126,0.08);">👤</div>
-          <div><div class="pol-form-title">Coordinator Form</div><div class="pol-form-sub">संयोजक जानकारी — Mandal level</div></div>
-          <div class="pol-form-count">Mandal</div>
-        </div>
-        <div class="pol-form-row">
-          <div class="pol-form-ico" style="background:rgba(255,113,32,0.08);">📋</div>
-          <div><div class="pol-form-title">Mandal Reporting</div><div class="pol-form-sub">कार्यक्रम रिपोर्ट — After event</div></div>
-          <div class="pol-form-count">Weekly</div>
-        </div>
-      </div>
-    </div>
-    <div class="r d2">
-      <div class="pol-dashboard">
-        <div class="pol-dash-top">
-          <div class="pol-dash-title">Admin Console</div>
-          <div class="pol-live-dot"><div class="pol-live-d"></div><div class="pol-live-t">Live</div></div>
-        </div>
-        <div class="pol-stats-grid">
-          <div class="pol-stat"><div class="pol-stat-n"><span>247</span></div><div class="pol-stat-l">आज की उपस्थिति</div></div>
-          <div class="pol-stat"><div class="pol-stat-n">1,842</div><div class="pol-stat-l">कुल कार्यकर्ता</div></div>
-          <div class="pol-stat"><div class="pol-stat-n">38</div><div class="pol-stat-l">मंडल रिपोर्ट</div></div>
-        </div>
-        <div style="margin-bottom:16px;">
-          <div class="pol-bar-row">
-            <div class="pol-bar-label"><span>Visitor Form</span><span style="color:var(--saffron)">847</span></div>
-            <div class="pol-bar-track"><div class="pol-bar-fill" style="width:68%"></div></div>
+          <div class="hero-actions r d3">
+            <a class="btn btn-primary" href="#pricing"><i class="fa-solid fa-camera"></i> Start Free Trial</a>
+            <a class="btn btn-outline" href="#how"><i class="fa-solid fa-play"></i> See the flow</a>
           </div>
-          <div class="pol-bar-row">
-            <div class="pol-bar-label"><span>Attendance</span><span style="color:var(--saffron)">512</span></div>
-            <div class="pol-bar-track"><div class="pol-bar-fill" style="width:41%"></div></div>
-          </div>
-          <div class="pol-bar-row">
-            <div class="pol-bar-label"><span>President Tour</span><span style="color:var(--saffron)">234</span></div>
-            <div class="pol-bar-track"><div class="pol-bar-fill" style="width:19%"></div></div>
-          </div>
-          <div class="pol-bar-row">
-            <div class="pol-bar-label"><span>Mandal Report</span><span style="color:var(--saffron)">249</span></div>
-            <div class="pol-bar-track"><div class="pol-bar-fill" style="width:20%"></div></div>
+
+          <div class="subnote r d3">No app downloads for guests • QR at venue • PIN-protected galleries</div>
+
+          <div class="pill-row r d3">
+            <span class="pill"><i class="fa-solid fa-qrcode"></i> QR + WhatsApp sharing</span>
+            <span class="pill"><i class="fa-solid fa-user-shield"></i> Privacy-first access</span>
+            <span class="pill"><i class="fa-solid fa-palette"></i> Your studio branding</span>
           </div>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button style="flex:1;background:rgba(255,113,32,0.1);border:1px solid rgba(255,113,32,0.2);color:var(--saffron);border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif;"><i class="fa-solid fa-download"></i> Export CSV</button>
-          <button style="flex:1;background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.15);color:var(--green);border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Manrope',sans-serif;"><i class="fa-solid fa-chart-line"></i> Analytics</button>
-        </div>
-      </div>
-      <div style="margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px;">
-        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px;letter-spacing:0.5px;text-transform:uppercase;">Karyakarta Intelligence</div>
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-          <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,113,32,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;">👤</div>
-          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Ramesh Kumar</div><div style="font-size:11px;color:var(--muted);">7वीं विजिट · जिला: Indore</div></div>
-          <div style="background:rgba(255,113,32,0.1);color:var(--saffron);font-size:10px;font-weight:800;padding:3px 8px;border-radius:50px;">🌟 नियमित</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
-          <div style="width:36px;height:36px;border-radius:50%;background:rgba(26,250,126,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;">👤</div>
-          <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--white);">Sunita Devi</div><div style="font-size:11px;color:var(--muted);">2री विजिट · जिला: Bhopal</div></div>
-          <div style="background:rgba(26,250,126,0.08);color:var(--green);font-size:10px;font-weight:800;padding:3px 8px;border-radius:50px;">⭐ सक्रिय</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- TESTIMONIALS -->
-<section class="section">
-  <div class="wrap">
-    <div class="tag r">Reviews</div>
-    <h2 class="h2 r d1">Photographers love it.</h2>
-    <div class="testi-grid">
-      <div class="testi r d1">
-        <div class="stars">★★★★★</div>
-        <div class="testi-q">Earlier guests used to call asking for their photos. Now they find everything themselves in seconds. My WhatsApp is peaceful now.</div>
-        <div class="testi-au">
-          <div class="testi-av" style="background:rgba(26,250,126,0.12);color:var(--green);">R</div>
-          <div><div class="testi-n">Rajan Mehta</div><div class="testi-r">Wedding Photographer · Indore</div></div>
-        </div>
-      </div>
-      <div class="testi r d2">
-        <div class="stars">★★★★★</div>
-        <div class="testi-q">We put a QR code at the event. 300+ guests used it the same night. No one called. Best feature for large events.</div>
-        <div class="testi-au">
-          <div class="testi-av" style="background:rgba(0,200,255,0.1);color:#00c8ff;">P</div>
-          <div><div class="testi-n">Priya Sharma</div><div class="testi-r">Event Photographer · Mumbai</div></div>
-        </div>
-      </div>
-      <div class="testi r d3">
-        <div class="stars">★★★★★</div>
-        <div class="testi-q">The political module is exactly what we needed. Visitor tracking + face recognition at our office is working perfectly.</div>
-        <div class="testi-au">
-          <div class="testi-av" style="background:rgba(255,113,32,0.12);color:var(--saffron);">A</div>
-          <div><div class="testi-n">Amit Joshi</div><div class="testi-r" style="font-family:'Noto Sans Devanagari',sans-serif;">जिला अध्यक्ष · Madhya Pradesh</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- PRICING -->
-<section class="section" id="pricing" style="background:var(--surface);border-top:1px solid var(--border);">
-  <div class="wrap">
-    <div class="tag r">Pricing</div>
-    <h2 class="h2 r d1">Pay in ₹. Grow without limits.</h2>
-    <p class="lead r d2">No USD pricing. No hidden fees. Cancel anytime.</p>
-    <div class="pricing-grid">
-      <div class="price-card r d1">
-        <div class="price-tier">Starter</div>
-        <div class="price-amt"><sup>₹</sup>999</div>
-        <div class="price-per">per month · GST extra</div>
-        <ul class="price-feats">
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> 10 GB Storage</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> 5 Events / month</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> 1,000 Guest Searches</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> QR Code Sharing</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Basic Gallery</li>
-          <li class="off"><i class="fa-solid fa-xmark"></i> Custom Branding</li>
-          <li class="off"><i class="fa-solid fa-xmark"></i> Political Module</li>
-        </ul>
-        <a href="#contact" class="price-btn pbo">Get Started</a>
-      </div>
-      <div class="price-card pop r d2">
-        <div class="pop-badge">Most Popular</div>
-        <div class="price-tier">Professional</div>
-        <div class="price-amt"><sup>₹</sup>2,499</div>
-        <div class="price-per">per month · GST extra</div>
-        <ul class="price-feats">
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> 100 GB Storage</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Unlimited Events</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Unlimited Searches</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Custom Branding</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> PIN Protected Galleries</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Priority Support</li>
-          <li class="off"><i class="fa-solid fa-xmark"></i> Political Module</li>
-        </ul>
-        <a href="#contact" class="price-btn pbg">Start Free Trial →</a>
-      </div>
-      <div class="price-card r d3">
-        <div class="price-tier">Organization</div>
-        <div class="price-amt" style="font-size:36px;margin-top:6px;">Custom</div>
-        <div class="price-per" style="margin-bottom:28px;">Contact for quote</div>
-        <ul class="price-feats">
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Unlimited Storage</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Photography Module</li>
-          <li><i class="fa-solid fa-check" style="color:var(--saffron)"></i> Political Module ✦</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Multi-user Access</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Dedicated Support</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Custom SLA & Training</li>
-          <li><i class="fa-solid fa-check" style="color:var(--green)"></i> White-label Option</li>
-        </ul>
-        <a href="#contact" class="price-btn pbo">Contact Us</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CONTACT -->
-<section class="section" id="contact">
-  <div class="wrap">
-    <div class="contact-grid">
-      <div>
-        <div class="tag r">Get In Touch</div>
-        <h2 class="h2 r d1">Start your<br>free trial today.</h2>
-        <p class="lead r d2" style="margin-bottom:40px;">Talk to us on WhatsApp. We set you up in 10 minutes — no technical knowledge needed.</p>
-        <div style="display:flex;flex-direction:column;gap:18px;" class="r d3">
-          <div style="display:flex;align-items:center;gap:16px;">
-            <div style="width:46px;height:46px;background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:20px;flex-shrink:0;">
-              <i class="fa-brands fa-whatsapp"></i>
+        <div class="hero-card r d2">
+          <div class="mock">
+            <div class="mock-top">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span style="margin-left:8px">Live preview (mock)</span>
             </div>
+            <div class="mock-body">
+              <div class="mini">
+                <div class="ico"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <div>
+                  <b>Upload photos</b>
+                  <span>Bulk upload to an event gallery</span>
+                </div>
+              </div>
+              <div class="mini">
+                <div class="ico"><i class="fa-solid fa-qrcode"></i></div>
+                <div>
+                  <b>Share one QR</b>
+                  <span>Guests scan → open link instantly</span>
+                </div>
+              </div>
+              <div class="mini">
+                <div class="ico"><i class="fa-solid fa-face-smile"></i></div>
+                <div>
+                  <b>Selfie → photos</b>
+                  <span>They see only their moments</span>
+                </div>
+              </div>
+              <div class="mini">
+                <div class="ico"><i class="fa-solid fa-heart"></i></div>
+                <div>
+                  <b>Favorites</b>
+                  <span>Clients select photos for album/edit</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="note" style="position:relative;margin-top:12px">
+            Inspired by the best parts of Kwikpic & FotoOwl: clear use-cases, strong CTAs, and feature-led layout — but built to fit Indian pricing + workflows.
+          </p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- USE CASES -->
+  <section>
+    <div class="container">
+      <div class="kicker r"><i class="fa-solid fa-sparkles"></i> Use cases</div>
+      <div class="h2 r d1">Made for Indian events that go big.</div>
+      <div class="p r d2">Weddings, corporate events, sports, schools — wherever thousands of photos need instant delivery without chaos.</div>
+
+      <div class="grid-4">
+        <div class="card r">
+          <div class="top">
+            <h3><i class="fa-solid fa-ring"></i> Weddings</h3>
+            <span class="badge">QR at venue</span>
+          </div>
+          <p>One link for everyone. Guests find themselves in seconds.</p>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Sangeet / Haldi / Reception groups</li>
+            <li><i class="fa-solid fa-check"></i> PIN for private families</li>
+            <li><i class="fa-solid fa-check"></i> Favorites for album selection</li>
+          </ul>
+        </div>
+
+        <div class="card r d1">
+          <div class="top">
+            <h3><i class="fa-solid fa-building"></i> Corporate</h3>
+            <span class="badge">Branding</span>
+          </div>
+          <p>Professional galleries with your brand or client’s brand.</p>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Sponsor/brand header + colors</li>
+            <li><i class="fa-solid fa-check"></i> Shareable link (WhatsApp-ready)</li>
+            <li><i class="fa-solid fa-check"></i> Fast search for attendees</li>
+          </ul>
+        </div>
+
+        <div class="card r d2">
+          <div class="top">
+            <h3><i class="fa-solid fa-person-running"></i> Sports</h3>
+            <span class="badge">High volume</span>
+          </div>
+          <p>Thousands of athletes, thousands of photos — instant delivery.</p>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Team-wise / slot-wise groups</li>
+            <li><i class="fa-solid fa-check"></i> QR posters at entry/exit</li>
+            <li><i class="fa-solid fa-check"></i> Mobile-first guest flow</li>
+          </ul>
+        </div>
+
+        <div class="card r d3">
+          <div class="top">
+            <h3><i class="fa-solid fa-school"></i> Schools</h3>
+            <span class="badge">Parents love it</span>
+          </div>
+          <p>Parents get only their child’s photos. No endless scrolling.</p>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Privacy-first access</li>
+            <li><i class="fa-solid fa-check"></i> Easy WhatsApp distribution</li>
+            <li><i class="fa-solid fa-check"></i> Bulk download options</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <div class="container">
+      <div class="kicker r"><i class="fa-solid fa-road"></i> How it works</div>
+      <div class="h2 r d1">Simple for photographers. Magical for guests.</div>
+      <div class="p r d2">A clean two-sided flow: you upload once, guests self-serve forever.</div>
+
+      <div class="how">
+        <div class="panel r">
+          <h3><i class="fa-solid fa-camera-retro"></i> Photographer flow</h3>
+          <div class="steps">
+            <div class="step">
+              <div class="num">1</div>
+              <div><b>Create collection & event</b><span>Organize by wedding / ceremony / day.</span></div>
+            </div>
+            <div class="step">
+              <div class="num">2</div>
+              <div><b>Upload photos</b><span>Bulk upload — EventLens indexes faces automatically.</span></div>
+            </div>
+            <div class="step">
+              <div class="num">3</div>
+              <div><b>Share QR / link</b><span>Print a QR code or send via WhatsApp.</span></div>
+            </div>
+            <div class="step">
+              <div class="num">4</div>
+              <div><b>Get favorites</b><span>Clients select shots for edit/album.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel r d1">
+          <h3><i class="fa-solid fa-user"></i> Guest flow</h3>
+          <div class="steps">
+            <div class="step">
+              <div class="num">1</div>
+              <div><b>Scan QR / open link</b><span>No app install needed. Works in browser.</span></div>
+            </div>
+            <div class="step">
+              <div class="num">2</div>
+              <div><b>Take one selfie</b><span>AI matches their face and finds their photos.</span></div>
+            </div>
+            <div class="step">
+              <div class="num">3</div>
+              <div><b>See only their photos</b><span>Private by design: no mixed gallery scrolling.</span></div>
+            </div>
+            <div class="step">
+              <div class="num">4</div>
+              <div><b>Download & favorite</b><span>Save images and mark favorites for the photographer.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note r d2" style="margin-top:12px">
+        Tip: Put a QR stand at the venue exit. Guests scan while leaving — it drives instant engagement.
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="container">
+      <div class="kicker r"><i class="fa-solid fa-grid-2"></i> Features</div>
+      <div class="h2 r d1">Everything you need. Nothing you don’t.</div>
+      <div class="p r d2">Inspired by what photographers love in Kwikpic & FotoOwl (branding, selection, monetization), but kept lightweight and fast.</div>
+
+      <div class="bento">
+        <div class="b span-6 r">
+          <div class="btop">
+            <div class="bico"><i class="fa-solid fa-face-smile"></i></div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--white);">WhatsApp</div>
-              <div style="font-size:13px;color:var(--muted);">+91 XXXXX XXXXX — Reply in 5 mins</div>
+              <h4>Selfie face search</h4>
+              <p>Guests take a selfie — EventLens finds every photo they’re in across the event, in seconds.</p>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:16px;">
-            <div style="width:46px;height:46px;background:rgba(26,250,126,0.08);border:1px solid rgba(26,250,126,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:18px;flex-shrink:0;">
-              <i class="fa-solid fa-envelope"></i>
-            </div>
+        </div>
+
+        <div class="b span-6 r d1">
+          <div class="btop">
+            <div class="bico"><i class="fa-solid fa-qrcode"></i></div>
             <div>
-              <div style="font-size:14px;font-weight:600;color:var(--white);">Email</div>
-              <div style="font-size:13px;color:var(--muted);"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2b434e4747446b4e5d4e455f474e4558054245">[email&#160;protected]</a></div>
+              <h4>QR + WhatsApp sharing</h4>
+              <p>One QR code for the whole venue. One link for the whole family group chat.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="b span-4 r d2">
+          <div class="btop">
+            <div class="bico"><i class="fa-solid fa-palette"></i></div>
+            <div>
+              <h4>Custom branding</h4>
+              <p>Your logo, colors, and studio name on every gallery page.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="b span-4 r d2">
+          <div class="btop">
+            <div class="bico"><i class="fa-solid fa-user-shield"></i></div>
+            <div>
+              <h4>PIN-protected galleries</h4>
+              <p>Add a PIN to any gallery for extra privacy and control.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="b span-4 r d2">
+          <div class="btop">
+            <div class="bico"><i class="fa-solid fa-heart"></i></div>
+            <div>
+              <h4>Favorites & selection</h4>
+              <p>Guests mark favorites. You get a clean selection list for editing and albums.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="b span-8 r d3">
+          <div class="btop">
+            <div class="bico"><i class="fa-solid fa-clock"></i></div>
+            <div>
+              <h4>Time-slot groups</h4>
+              <p>Auto-group by Morning / Evening / Night, or ceremony-wise. Guests navigate naturally.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="b span-4 r d3">
+          <div class="btop">
+            <div class="bico"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+            <div>
+              <h4>₹ pricing</h4>
+              <p>Built for Indian photographers with India-first plans and support.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="b span-12 r d3">
+          <div class="btop">
+            <div class="bico"><i class="fa-solid fa-bolt"></i></div>
+            <div>
+              <h4>Coming soon: Monetization + notifications</h4>
+              <p><b>Photo selling / watermark</b>, WhatsApp/email auto notifications, and live slideshow screens for venues.</p>
             </div>
           </div>
         </div>
       </div>
-      <div class="contact-form r d2">
-        <div class="form-row">
-          <label class="form-label">Your Name</label>
-          <input id="cName" class="form-input" type="text" placeholder="Rajan Mehta"/>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section id="compare">
+    <div class="container">
+      <div class="kicker r"><i class="fa-solid fa-scale-balanced"></i> Compare</div>
+      <div class="h2 r d1">EventLens vs Kwikpic vs FotoOwl</div>
+      <div class="p r d2">A quick, practical comparison for Indian workflows. (Always verify with the latest vendor docs.)</div>
+
+      <div class="compare r d3">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>EventLens</th>
+              <th>Kwikpic</th>
+              <th>FotoOwl</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Guest access</td>
+              <td class="yes">Browser link / QR</td>
+              <td class="mid">Web + Mobile (some participant features app-only)</td>
+              <td class="yes">Browser galleries</td>
+            </tr>
+            <tr>
+              <td>Face search</td>
+              <td class="yes">Included</td>
+              <td class="yes">Included</td>
+              <td class="yes">Included</td>
+            </tr>
+            <tr>
+              <td>Pricing focus</td>
+              <td class="yes">₹ India-first</td>
+              <td class="yes">₹ Plans + add-ons</td>
+              <td class="mid">USD plans + WhatsApp credits</td>
+            </tr>
+            <tr>
+              <td>Branding</td>
+              <td class="yes">Included</td>
+              <td class="mid">Available (often as add-on)</td>
+              <td class="mid">Limited/plan-based</td>
+            </tr>
+            <tr>
+              <td>Client selection</td>
+              <td class="yes">Favorites list</td>
+              <td class="mid">Available (as add-on)</td>
+              <td class="yes">Photo selection tools</td>
+            </tr>
+            <tr>
+              <td>Photo selling</td>
+              <td class="mid">Coming soon</td>
+              <td class="yes">Available</td>
+              <td class="yes">Available</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note r d3">
+        Source references (for transparency):
+        <br/>• Kwikpic Helpdesk (pricing & app/web notes): <a href="https://www.kwikpic.in/helpdesk/intro/" target="_blank" rel="noreferrer">kwikpic.in/helpdesk/intro</a>
+        <br/>• FotoOwl product + pricing: <a href="https://fotoowl.ai/" target="_blank" rel="noreferrer">fotoowl.ai</a> and <a href="https://fotoowl.ai/pricing" target="_blank" rel="noreferrer">fotoowl.ai/pricing</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="container">
+      <div class="kicker r"><i class="fa-solid fa-tags"></i> Pricing</div>
+      <div class="h2 r d1">Pay in ₹. Grow without limits.</div>
+      <div class="p r d2">No USD surprises. No hidden fees. Upgrade when you’re ready.</div>
+
+      <div class="pricing">
+        <div class="plan r">
+          <span class="tag"><i class="fa-solid fa-seedling"></i> Starter</span>
+          <h3>For new studios & small events</h3>
+          <div class="price">₹999 <small>/ month · GST extra</small></div>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> 10 GB storage</li>
+            <li><i class="fa-solid fa-check"></i> 5 events / month</li>
+            <li><i class="fa-solid fa-check"></i> 1,000 guest searches</li>
+            <li><i class="fa-solid fa-check"></i> QR + link sharing</li>
+            <li><i class="fa-solid fa-check"></i> Basic branding</li>
+          </ul>
+          <a class="btn btn-outline cta" href="#contact"><i class="fa-solid fa-comments"></i> Get started</a>
         </div>
-        <div class="form-row">
-          <label class="form-label">WhatsApp Number</label>
-          <input id="cPhone" class="form-input" type="tel" placeholder="+91 98765 43210"/>
+
+        <div class="plan pop r d1">
+          <span class="tag"><i class="fa-solid fa-star"></i> Most Popular</span>
+          <h3>Professional</h3>
+          <div class="price">₹2,499 <small>/ month · GST extra</small></div>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> 100 GB storage</li>
+            <li><i class="fa-solid fa-check"></i> Unlimited events</li>
+            <li><i class="fa-solid fa-check"></i> Unlimited guest searches</li>
+            <li><i class="fa-solid fa-check"></i> Full custom branding</li>
+            <li><i class="fa-solid fa-check"></i> PIN protected galleries</li>
+            <li><i class="fa-solid fa-check"></i> Priority support</li>
+          </ul>
+          <a class="btn btn-primary cta" href="index.html"><i class="fa-solid fa-arrow-right"></i> Start Free Trial</a>
+          <div class="note" style="margin-top:10px">Trial is time-limited. No credit card needed.</div>
         </div>
-        <div class="form-row">
-          <label class="form-label">I need EventLens for...</label>
-          <select id="cType" class="form-input">
+
+        <div class="plan r d2">
+          <span class="tag"><i class="fa-solid fa-building"></i> Organization</span>
+          <h3>Enterprise & political orgs</h3>
+          <div class="price">Custom <small>· contact for quote</small></div>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Custom storage & limits</li>
+            <li><i class="fa-solid fa-check"></i> Multi-user access</li>
+            <li><i class="fa-solid fa-check"></i> Dedicated support</li>
+            <li><i class="fa-solid fa-check"></i> Custom SLA & training</li>
+            <li><i class="fa-solid fa-check"></i> White-label option</li>
+          </ul>
+          <a class="btn btn-outline cta" href="#contact"><i class="fa-solid fa-phone"></i> Talk to sales</a>
+        </div>
+      </div>
+
+      <div class="note r d2" style="margin-top:12px">
+        Want annual pricing? Add it as a toggle later (like FotoOwl does) once billing is finalized.
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section>
+    <div class="container">
+      <div class="kicker r"><i class="fa-solid fa-circle-question"></i> FAQ</div>
+      <div class="h2 r d1">Questions photographers ask before switching.</div>
+      <div class="p r d2">Short answers. No marketing fluff.</div>
+
+      <div class="faq">
+        <details class="r">
+          <summary><span class="q">Do guests need to install an app?</span><i class="fa-solid fa-chevron-down"></i></summary>
+          <p>No. Guests can use a normal browser link / QR code. (You can add an optional app later, but keep the default frictionless.)</p>
+        </details>
+
+        <details class="r d1">
+          <summary><span class="q">Will guests see other people’s photos?</span><i class="fa-solid fa-chevron-down"></i></summary>
+          <p>EventLens is privacy-first: the guest flow is designed to show only matched photos. Add an optional PIN for extra control.</p>
+        </details>
+
+        <details class="r d2">
+          <summary><span class="q">Can clients select photos for editing or album?</span><i class="fa-solid fa-chevron-down"></i></summary>
+          <p>Yes. Guests can mark favorites. You get a clean selection list without endless WhatsApp screenshots.</p>
+        </details>
+
+        <details class="r d3">
+          <summary><span class="q">What about pricing and limits?</span><i class="fa-solid fa-chevron-down"></i></summary>
+          <p>Plans are in ₹, designed for Indian studios. You can enforce storage/search limits per photographer account.</p>
+        </details>
+
+        <details class="r">
+          <summary><span class="q">Can I add my studio branding?</span><i class="fa-solid fa-chevron-down"></i></summary>
+          <p>Yes — logo, colors, and studio name on the gallery pages. You can also add per-event branding for corporate clients.</p>
+        </details>
+
+        <details class="r d1">
+          <summary><span class="q">Do you compress images?</span><i class="fa-solid fa-chevron-down"></i></summary>
+          <p>You control the upload quality. For best experience, offer both “fast preview” and “original download” options as needed.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="container">
+      <div class="kicker r"><i class="fa-solid fa-message"></i> Contact</div>
+      <div class="h2 r d1">Want a quick setup call?</div>
+      <div class="p r d2">Tell us your event type. We’ll help you go live fast — QR, branding, and best practices.</div>
+
+      <div class="contact">
+        <div class="contact-card r">
+          <h3>Talk to us</h3>
+          <p>Fast replies on WhatsApp. Email also works.</p>
+
+          <div class="row">
+            <div class="icon"><i class="fa-brands fa-whatsapp"></i></div>
+            <div><b>WhatsApp</b><span>Replace <i>91XXXXXXXXXX</i> in the code with your number</span></div>
+          </div>
+
+          <div class="row">
+            <div class="icon"><i class="fa-solid fa-envelope"></i></div>
+            <div><b>Email</b><span><a href="mailto:hello@eventlens.in">hello@eventlens.in</a></span></div>
+          </div>
+
+          <div class="note" style="margin-top:14px">
+            Pro tip: add a “Sample Gallery” link here once you have a demo link_id ready.
+          </div>
+        </div>
+
+        <div class="contact-card form r d1">
+          <h3>Send a WhatsApp message</h3>
+
+          <label for="cName">Your name</label>
+          <input id="cName" class="in" type="text" placeholder="Rajan Mehta" />
+
+          <label for="cPhone">Your WhatsApp number</label>
+          <input id="cPhone" class="in" type="tel" placeholder="+91 98765 43210" />
+
+          <label for="cType">I need EventLens for…</label>
+          <select id="cType" class="in">
             <option value="">Select</option>
             <option>Wedding / Event Photography</option>
             <option>Photography Studio</option>
-            <option>Political Organization</option>
             <option>Corporate Events</option>
+            <option>Sports / School</option>
+            <option>Political Organization</option>
             <option>Other</option>
           </select>
+
+          <label for="cMsg">Message (optional)</label>
+          <textarea id="cMsg" class="in" rows="3" placeholder="Tell us about your event or need..."></textarea>
+
+          <div style="margin-top:14px">
+            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="sendWA()">
+              <i class="fa-brands fa-whatsapp"></i> Chat on WhatsApp
+            </button>
+          </div>
+
+          <div class="note" style="margin-top:10px">This opens WhatsApp with a pre-filled message.</div>
         </div>
-        <div class="form-row">
-          <label class="form-label">Message (optional)</label>
-          <textarea id="cMsg" class="form-input" rows="3" placeholder="Tell us about your event or need..."></textarea>
-        </div>
-        <button onclick="sendWA()" style="width:100%;background:var(--green);color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;font-family:'Manrope',sans-serif;letter-spacing:0.2px;transition:background 0.2s;display:flex;align-items:center;justify-content:center;gap:10px;" onmouseover="this.style.background='var(--green2)'" onmouseout="this.style.background='var(--green)'">
-          <i class="fa-brands fa-whatsapp" style="font-size:18px;"></i> Chat on WhatsApp
-        </button>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- CTA FINAL -->
-<div class="cta-final">
-  <h2 class="cta-h r">Every guest deserves<br>to find <em style="color:var(--green);font-style:normal;">their moment.</em></h2>
-  <p class="lead r d1" style="margin:0 auto 40px;text-align:center;">Join photographers and organizations across India who use EventLens.</p>
-  <div class="hero-btns r d2">
-    <a href="index.html" class="btn-g"><i class="fa-solid fa-arrow-right"></i> Photographer Login</a>
-    <a href="#contact" class="btn-outline">Request Demo</a>
-  </div>
-</div>
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      <div class="foot">
+        <a class="logo" href="#"><span class="logo-dot"></span> EventLens</a>
+        <div class="foot-links">
+          <a href="#how">How it works</a>
+          <a href="#features">Features</a>
+          <a href="#compare">Compare</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#contact">Contact</a>
+          <a href="index.html">Login</a>
+        </div>
+      </div>
+      <div class="copy">© 2026 EventLens · Made with ❤️ in India</div>
+    </div>
+  </footer>
 
-<!-- FOOTER -->
-<footer>
-  <a href="#" class="logo" style="font-size:18px;"><div class="logo-dot"></div>EventLens</a>
-  <div class="footer-links">
-    <a href="#how">How it works</a>
-    <a href="#features">Features</a>
-    <a href="#political">Political</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#contact">Contact</a>
-    <a href="index.html">Login</a>
-  </div>
-  <div class="footer-copy">© 2025 EventLens · Made with ❤️ in India</div>
-</footer>
+  <script>
+    // Scroll reveal
+    const ro = new IntersectionObserver((es)=> {
+      es.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.r').forEach(el => ro.observe(el));
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-// scroll reveal
-const ro=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')})},{threshold:0.1});
-document.querySelectorAll('.r').forEach(el=>ro.observe(el));
+    // Nav subtle border on scroll
+    window.addEventListener('scroll', () => {
+      const n = document.getElementById('nav');
+      if (!n) return;
+      n.style.borderBottomColor = (window.scrollY > 60) ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)';
+    });
 
-// nav opacity on scroll
-window.addEventListener('scroll',()=>{
-  const n=document.getElementById('nav');
-  if(n)n.style.borderColor=scrollY>60?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.07)';
-});
+    // Mobile drawer
+    const drawer = document.getElementById('drawer');
+    const mobBtn = document.getElementById('mobBtn');
+    function closeDrawer(){
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden','true');
+    }
+    function openDrawer(){
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden','false');
+    }
+    mobBtn?.addEventListener('click', (e)=>{ e.preventDefault(); openDrawer(); });
+    drawer?.addEventListener('click', (e)=>{ if (e.target === drawer) closeDrawer(); });
+    document.querySelectorAll('.drawer-link').forEach(a => a.addEventListener('click', closeDrawer));
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeDrawer(); });
 
-// whatsapp
-function sendWA(){
-  const n=document.getElementById('cName')?.value||'Guest';
-  const p=document.getElementById('cPhone')?.value||'';
-  const t=document.getElementById('cType')?.value||'';
-  const m=document.getElementById('
+    // WhatsApp
+    function sendWA(){
+      const n = (document.getElementById('cName')?.value || 'Guest').trim();
+      const p = (document.getElementById('cPhone')?.value || '').trim();
+      const t = (document.getElementById('cType')?.value || '').trim();
+      const m = (document.getElementById('cMsg')?.value || '').trim();
+
+      const txt =
+`Hi EventLens! 👋
+
+Name: ${n}
+Phone: ${p || '-'}
+Need: ${t || '-'}` + (m ? `
+
+Message: ${m}` : '');
+
+      // TODO: Replace with your business WhatsApp number (digits only, country code included)
+      const waNumber = '91XXXXXXXXXX';
+      window.open('https://wa.me/' + waNumber + '?text=' + encodeURIComponent(txt), '_blank');
+    }
+    window.sendWA = sendWA;
+  </script>
+</body>
+</html>

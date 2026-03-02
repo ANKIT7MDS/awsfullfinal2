@@ -475,9 +475,21 @@ function groupTourEntries(items) {
   const order = [];
 
   items.forEach(item => {
-    // हर entry_id = एक अलग program/photo upload
-    // event_id से group नहीं — migration में same event_id बन गया था
-    const key = item.entry_id;
+    const d = item.data || {};
+    const eventId = (item.event_id || "").trim();
+    const loc = (d.tour_location || "").trim().toLowerCase();
+
+    // FINAL grouping: event_id + tour_location
+    // Data से confirm: same event_id + same location = same program ke photos
+    // same event_id + alag location = alag program
+    let key;
+    if (eventId) {
+      key = `${eventId}|${loc}`;
+    } else {
+      const pname = (d.program_name || "").trim().toLowerCase();
+      const date  = (d.tour_date || d.date || "").trim();
+      key = `${pname}|${date}|${loc}` || item.entry_id;
+    }
 
     if (!grouped.has(key)) {
       const rep = Object.assign({}, item);

@@ -417,17 +417,18 @@ async function loadData(append = false) {
 
     // Loading status element
     const skeletonEl = $("skeleton-grid");
+    let emptyPages = 0;
 
     do {
       // Show progress to user
-      if (skeletonEl && totalFetched > 0) {
+      if (skeletonEl && allTours.length > 0) {
         const info = skeletonEl.querySelector(".load-progress") || (() => {
           const d = document.createElement("div");
           d.className = "load-progress text-slate-400 text-sm text-center py-2";
           skeletonEl.appendChild(d);
           return d;
         })();
-        info.textContent = `⏳ Loading... ${totalFetched} entries fetched`;
+        info.textContent = `⏳ ${allTours.length} कार्यक्रम मिले...`;
       }
 
       const apiPayload = {
@@ -435,21 +436,33 @@ async function loadData(append = false) {
         limit: PAGE_SIZE,
         start_ms: String(startMs),
         end_ms: String(endMs),
-        form_type: "president_tour_form",
-        form_types: ["president_tour_form", "president_tour"],
+        // form_type: "all" — सब fetch करो, client side filter होगा
       };
       if (pageKey) apiPayload.next_key = pageKey;
 
       const res = await apiCall("admin_list", apiPayload);
       const rawItems = res.items || [];
 
-      allTours = allTours.concat(rawItems);
+      // Client-side: सिर्फ president_tour entries रखो
+      const tourItems = rawItems.filter(it => {
+        const ft = (it.form_type || it.ft || "").toLowerCase().trim();
+        return ft === "president_tour" || ft === "president_tour_form";
+      });
+
+      allTours = allTours.concat(tourItems);
       totalFetched += rawItems.length;
       pageKey = res.next_key || null;
       lastKey = pageKey;
 
-      // Stop if Lambda returns empty page
-      if (rawItems.length === 0) break;
+      // Empty page counter — ज्यादा consecutive empty pages = done
+      if (tourItems.length === 0) {
+        emptyPages++;
+      } else {
+        emptyPages = 0;
+      }
+
+      // 5 consecutive empty pages = no more tour data
+      if (emptyPages >= 5) break;
 
     } while (pageKey && totalFetched < MAX_FETCH);
 

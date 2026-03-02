@@ -417,8 +417,6 @@ async function loadData(append = false) {
 
     // Loading status element
     const skeletonEl = $("skeleton-grid");
-    let emptyPages = 0;
-
     do {
       // Show progress to user
       if (skeletonEl && allTours.length > 0) {
@@ -436,33 +434,20 @@ async function loadData(append = false) {
         limit: PAGE_SIZE,
         start_ms: String(startMs),
         end_ms: String(endMs),
-        // form_type: "all" — सब fetch करो, client side filter होगा
+        // Lambda में president_tour alias expand होता है → सभी variants cover होंगे
+        form_type: "president_tour",
       };
       if (pageKey) apiPayload.next_key = pageKey;
 
       const res = await apiCall("admin_list", apiPayload);
       const rawItems = res.items || [];
 
-      // Client-side: सिर्फ president_tour entries रखो
-      const tourItems = rawItems.filter(it => {
-        const ft = (it.form_type || it.ft || "").toLowerCase().trim();
-        return ft === "president_tour" || ft === "president_tour_form";
-      });
-
-      allTours = allTours.concat(tourItems);
+      allTours = allTours.concat(rawItems);
       totalFetched += rawItems.length;
       pageKey = res.next_key || null;
       lastKey = pageKey;
 
-      // Empty page counter — ज्यादा consecutive empty pages = done
-      if (tourItems.length === 0) {
-        emptyPages++;
-      } else {
-        emptyPages = 0;
-      }
-
-      // 5 consecutive empty pages = no more tour data
-      if (emptyPages >= 5) break;
+      if (rawItems.length === 0 && !pageKey) break;
 
     } while (pageKey && totalFetched < MAX_FETCH);
 

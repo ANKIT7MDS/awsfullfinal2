@@ -404,29 +404,29 @@ async function loadData(append = false) {
     const toDate = $("f-to").value;
     const nowMs = Date.now();
     const endMs = toDate ? new Date(toDate + "T23:59:59").getTime() : nowMs;
-    // 3 साल पीछे तक fetch करो ताकि पुरानी entries भी आएं
     const startMs = fromDate ? new Date(fromDate + "T00:00:00").getTime() : nowMs - 3 * 365 * 24 * 3600 * 1000;
 
     if (!append) allTours = [];
 
-    // Paginate: fetch all pages (500+ entries)
     let pageKey = (append && lastKey) ? lastKey : null;
     let totalFetched = 0;
-    const MAX_FETCH = 2000; // सभी entries fetch करो
-    const PAGE_SIZE = 200; // Lambda max 200 support करता है — कम API calls
+    const MAX_FETCH = 5000;
+    const PAGE_SIZE = 200;
 
-    // Loading status element
     const skeletonEl = $("skeleton-grid");
+
+    // KEY FIX: DynamoDB FilterExpression के साथ empty pages आती हैं
+    // (items=[], लेकिन next_key है) — next_key है तो हमेशा continue करो
     do {
-      // Show progress to user
-      if (skeletonEl && allTours.length > 0) {
+      // Progress update
+      if (skeletonEl) {
         const info = skeletonEl.querySelector(".load-progress") || (() => {
           const d = document.createElement("div");
-          d.className = "load-progress text-slate-400 text-sm text-center py-2";
-          skeletonEl.appendChild(d);
+          d.className = "load-progress text-slate-400 text-xs text-center py-2";
+          skeletonEl.prepend(d);
           return d;
         })();
-        info.textContent = `⏳ ${allTours.length} कार्यक्रम मिले...`;
+        info.textContent = `⏳ ${allTours.length} entries loaded, fetching more...`;
       }
 
       const apiPayload = {
@@ -434,7 +434,6 @@ async function loadData(append = false) {
         limit: PAGE_SIZE,
         start_ms: String(startMs),
         end_ms: String(endMs),
-        // Lambda में president_tour alias expand होता है → सभी variants cover होंगे
         form_type: "president_tour",
       };
       if (pageKey) apiPayload.next_key = pageKey;
@@ -442,16 +441,21 @@ async function loadData(append = false) {
       const res = await apiCall("admin_list", apiPayload);
       const rawItems = res.items || [];
 
-      allTours = allTours.concat(rawItems);
-      totalFetched += rawItems.length;
+      if (rawItems.length > 0) {
+        allTours = allTours.concat(rawItems);
+        totalFetched += rawItems.length;
+      }
+
       pageKey = res.next_key || null;
       lastKey = pageKey;
 
-      if (rawItems.length === 0 && !pageKey) break;
+      // ONLY stop when DynamoDB says no more pages (next_key = null)
+      // Empty items with next_key = normal DynamoDB behavior with FilterExpression
+      if (!pageKey) break;
+      if (totalFetched >= MAX_FETCH) break;
 
-    } while (pageKey && totalFetched < MAX_FETCH);
+    } while (true);
 
-    // "Load More" button — only if still more pages left
     $("loadMoreWrap").classList.toggle("hidden", !lastKey);
     applyFilters();
   } catch(e) {

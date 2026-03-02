@@ -410,25 +410,25 @@ async function loadData(append = false) {
 
     let pageKey = (append && lastKey) ? lastKey : null;
     let totalFetched = 0;
-    const MAX_FETCH = 5000;
+    // Total raw items fetch करो — 13890 total हैं, 2807 president_tour
+    // 200 items per page → 70 pages → लेकिन Lambda call में बहुत time
+    // इसलिए form_type filter Lambda में हटाओ, client-side करो
+    const MAX_RAW = 5000; // सभी entries fetch करो
     const PAGE_SIZE = 200;
 
     const skeletonEl = $("skeleton-grid");
 
-    // KEY FIX: DynamoDB FilterExpression के साथ empty pages आती हैं
-    // (items=[], लेकिन next_key है) — next_key है तो हमेशा continue करो
     do {
-      // Progress update
-      if (skeletonEl) {
-        const info = skeletonEl.querySelector(".load-progress") || (() => {
-          const d = document.createElement("div");
-          d.className = "load-progress text-slate-400 text-xs text-center py-2";
-          skeletonEl.prepend(d);
-          return d;
-        })();
-        info.textContent = `⏳ ${allTours.length} entries loaded, fetching more...`;
-      }
+      // Progress
+      const info = (skeletonEl && (skeletonEl.querySelector(".load-progress") || (() => {
+        const d = document.createElement("div");
+        d.className = "load-progress text-slate-400 text-xs text-center py-2";
+        skeletonEl.prepend(d); return d;
+      })())) || null;
+      if (info) info.textContent = `⏳ ${allTours.length} president_tour entries... (${totalFetched} total scanned)`;
 
+      // form_type=president_tour → Lambda FilterExpression लगाएगा
+      // Lambda एक call में 3000 raw items scan करता है → ~600 president_tour निकलते हैं
       const apiPayload = {
         collection_id: cidParam,
         limit: PAGE_SIZE,
@@ -441,21 +441,19 @@ async function loadData(append = false) {
       const res = await apiCall("admin_list", apiPayload);
       const rawItems = res.items || [];
 
-      if (rawItems.length > 0) {
-        allTours = allTours.concat(rawItems);
-        totalFetched += rawItems.length;
-      }
+      if (rawItems.length > 0) allTours = allTours.concat(rawItems);
+      totalFetched += rawItems.length;
 
       pageKey = res.next_key || null;
       lastKey = pageKey;
 
-      // ONLY stop when DynamoDB says no more pages (next_key = null)
-      // Empty items with next_key = normal DynamoDB behavior with FilterExpression
+      // next_key null = DynamoDB pages खत्म = सब data मिल गया
       if (!pageKey) break;
-      if (totalFetched >= MAX_FETCH) break;
+      if (allTours.length >= MAX_RAW) break;
 
     } while (true);
 
+    console.log(`Loaded: ${allTours.length} president_tour from ${totalFetched} total raw items`);
     $("loadMoreWrap").classList.toggle("hidden", !lastKey);
     applyFilters();
   } catch(e) {

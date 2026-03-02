@@ -470,6 +470,9 @@ async function loadData(append = false) {
 // event_id = sha1(form_type|level|district|mandal|date|place|program_type|program_name)
 // Same program = same event_id = group together
 // ════════════════════════════════════════════════════════
+// normalize: extra spaces हटाओ
+function _norm(s) { return (s||"").replace(/\s+/g," ").trim().toLowerCase(); }
+
 function groupTourEntries(items) {
   const grouped = new Map();
   const order = [];
@@ -477,16 +480,15 @@ function groupTourEntries(items) {
   items.forEach(item => {
     const d = item.data || {};
     const eventId = (item.event_id || "").trim();
-    const loc = (d.tour_location || "").trim().toLowerCase();
+    // normalize location — extra spaces, case
+    const loc = _norm(d.tour_location);
 
-    // FINAL grouping: event_id + tour_location
-    // Data से confirm: same event_id + same location = same program ke photos
-    // same event_id + alag location = alag program
+    // event_id + normalized_location = unique program
     let key;
     if (eventId) {
       key = `${eventId}|${loc}`;
     } else {
-      const pname = (d.program_name || "").trim().toLowerCase();
+      const pname = _norm(d.program_name);
       const date  = (d.tour_date || d.date || "").trim();
       key = `${pname}|${date}|${loc}` || item.entry_id;
     }
@@ -496,6 +498,7 @@ function groupTourEntries(items) {
       rep._photos = [];
       rep._count = 0;
       rep._entries = [];
+      rep._groupKey = key; // debug के लिए
       grouped.set(key, rep);
       order.push(key);
     }
@@ -504,12 +507,11 @@ function groupTourEntries(items) {
     grp._count++;
     grp._entries.push(item.entry_id);
 
-    // Collect photo_url (unique)
     if (item.photo_url && !grp._photos.includes(item.photo_url)) {
       grp._photos.push(item.photo_url);
     }
 
-    // Keep highest attendance
+    // highest attendance रखो
     const att = parseInt((item.data || {}).total_attendance) || 0;
     const cur = parseInt((grp.data || {}).total_attendance) || 0;
     if (att > cur && grp.data) grp.data.total_attendance = att;
